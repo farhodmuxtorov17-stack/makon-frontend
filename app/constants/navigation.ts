@@ -144,7 +144,8 @@ export const ROUTE_ACCESS: Array<{ prefix: string; roles: Role[] }> = [
   { prefix: '/facility/materials', roles: ['FACILITY', 'BUILDING_MANAGER', 'WAREHOUSE_OPERATOR'] },
   { prefix: '/facility', roles: ['FACILITY', 'BUILDING_MANAGER', 'SUPER_HEAD'] },
 
-  { prefix: '/warehouse', roles: ['WAREHOUSE_OPERATOR', 'BUILDING_MANAGER'] },
+  // Ombor omborchining moduli; bino rahbari material so‘rovi orqali ishlaydi
+  { prefix: '/warehouse', roles: ['WAREHOUSE_OPERATOR'] },
   { prefix: '/meters', roles: ['SUPER_HEAD', 'BUILDING_MANAGER', 'FACILITY'] },
   { prefix: '/reports', roles: ['SUPER_HEAD', 'BUILDING_MANAGER', 'ACCOUNTANT'] },
 

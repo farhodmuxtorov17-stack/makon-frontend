@@ -285,61 +285,23 @@ const myPlanCenter = computed(() => {
         </template>
 
         <div class="grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
-          <div class="overflow-hidden rounded-field bg-surface-sunken ring-1 ring-ink-200">
-            <svg
-              viewBox="0 0 320 210"
-              preserveAspectRatio="xMidYMid slice"
-              class="block h-full min-h-[200px] w-full"
-              role="img"
-              aria-label="Unit ichki ko‘rinishi"
-            >
-              <defs>
-                <clipPath id="cabRoomClip">
-                  <rect width="320" height="210" rx="12" />
-                </clipPath>
-                <linearGradient id="cabWall" x1="0" y1="0" x2="0" y2="1">
-                  <stop stop-color="#f8fafd" />
-                  <stop offset="1" stop-color="#eef2f8" />
-                </linearGradient>
-                <linearGradient id="cabSky" x1="0" y1="0" x2="0" y2="1">
-                  <stop stop-color="#e0eaff" />
-                  <stop offset="1" stop-color="#d3f4ea" />
-                </linearGradient>
-              </defs>
-
-              <g clip-path="url(#cabRoomClip)">
-                <rect width="320" height="210" fill="url(#cabWall)" />
-                <rect y="152" width="320" height="58" fill="#e5ebf5" />
-                <path d="M0 152h320" stroke="#cbd4e3" stroke-width="1.6" />
-                <ellipse cx="146" cy="182" rx="112" ry="18" fill="#dfe7f4" />
-
-                <rect x="26" y="28" width="118" height="94" rx="6" fill="url(#cabSky)" stroke="#cbd4e3" stroke-width="2" />
-                <path d="M85 28v94M26 75h118" stroke="#cbd4e3" stroke-width="1.6" />
-                <path d="M36 108c14-22 26-14 34-26 9-13 22-6 30 4 6 8 14 10 22 6v30H36z" fill="#c7d9fe" opacity=".7" />
-
-                <path d="M196 16v26" stroke="#94a2b8" stroke-width="2" stroke-linecap="round" />
-                <path d="M180 42h32l-7 15h-18z" fill="#0256f7" />
-                <circle cx="196" cy="62" r="3" fill="#faa53f" />
-
-                <rect x="234" y="40" width="52" height="38" rx="4" fill="#ffffff" stroke="#cbd4e3" stroke-width="2" />
-                <path d="M239 72l12-15 8 9 7-7 15 13z" fill="#a1bffd" />
-
-                <rect x="34" y="118" width="112" height="26" rx="8" fill="#c7d9fe" />
-                <rect x="26" y="134" width="128" height="24" rx="9" fill="#a1bffd" />
-                <rect x="22" y="128" width="13" height="32" rx="6" fill="#739afa" />
-                <rect x="145" y="128" width="13" height="32" rx="6" fill="#739afa" />
-                <rect x="46" y="122" width="26" height="18" rx="5" fill="#eef4ff" />
-                <rect x="108" y="122" width="26" height="18" rx="5" fill="#eef4ff" />
-
-                <rect x="176" y="142" width="76" height="7" rx="3.5" fill="#94a2b8" />
-                <path d="M184 149v14M244 149v14" stroke="#94a2b8" stroke-width="3" stroke-linecap="round" />
-                <rect x="196" y="132" width="34" height="10" rx="3" fill="#16b99a" />
-
-                <path d="M272 154h30l-4 26h-22z" fill="#faa53f" />
-                <path d="M287 154c-12-4-18-14-16-26 12 1 19 9 20 20 3-11 11-18 22-18 1 13-8 23-22 24z" fill="#16b99a" />
-              </g>
-            </svg>
-          </div>
+          <UiPhoto
+            name="interior-office"
+            :alt="`Unit ${myUnit?.code ?? ''} ichki ko‘rinishi`"
+            ratio="aspect-[16/10]"
+            rounded="rounded-field"
+            sizes="(max-width: 640px) 100vw, 340px"
+          >
+            <span
+              class="pointer-events-none absolute inset-0 bg-gradient-to-t from-ink-900/65 via-ink-900/10 to-transparent"
+            />
+            <span class="absolute bottom-3 left-3.5 right-3.5">
+              <span class="block text-[14px] font-semibold text-white drop-shadow">
+                Unit {{ myUnit?.code }}
+              </span>
+              <span class="block text-[12px] text-white/85">{{ myUnit?.usage }}</span>
+            </span>
+          </UiPhoto>
 
           <div class="flex flex-col">
             <div class="rounded-field bg-surface-sunken p-3 ring-1 ring-ink-200">

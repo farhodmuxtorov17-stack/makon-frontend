@@ -18,7 +18,7 @@ const props = withDefaults(
     label: string
     value: string
     unit?: string
-    /** Foizdagi o‘zgarish; musbat, o‘sish, manfiy: pasayish */
+    /** Foizdagi o‘zgarish: musbat qiymat o‘sishni, manfiy qiymat pasayishni bildiradi */
     delta?: number
     /** Ba’zi ko‘rsatkichlarda pasayish yaxshi (masalan vacancy, qarzdorlik) */
     invert?: boolean
