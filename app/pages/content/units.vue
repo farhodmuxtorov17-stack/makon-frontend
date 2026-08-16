@@ -173,7 +173,7 @@ const stateOptions = computed(() => {
   return [
     { value: 'all', label: `Barchasi (${rows.value.length})` },
     { value: 'done', label: `To‘liq (${done})` },
-    { value: 'todo', label: `To‘liq emas (${rows.value.length - done})` },
+    { value: 'incomplete', label: `To‘liq emas (${rows.value.length - done})` },
   ]
 })
 
@@ -184,7 +184,7 @@ const filtered = computed(() => {
     if (fBuilding.value !== 'all' && r.buildingId !== fBuilding.value) return false
     if (fFloor.value !== 'all' && String(r.floor) !== fFloor.value) return false
     if (fState.value === 'done' && r.pct !== 100) return false
-    if (fState.value === 'todo' && r.pct === 100) return false
+    if (fState.value === 'incomplete' && r.pct === 100) return false
     if (q) {
       const haystack = `${r.code} ${r.buildingName} ${r.floorName} ${r.usage}`.toLowerCase()
       if (!haystack.includes(q)) return false

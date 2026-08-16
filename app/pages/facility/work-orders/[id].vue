@@ -580,6 +580,7 @@ function printAct() {
       <button
         type="button"
         class="grid size-24 place-items-center rounded-field border-2 border-dashed border-ink-300 bg-ink-50 text-ink-500 transition-colors hover:border-brand-400 hover:bg-brand-50 hover:text-brand-600"
+        aria-label="Dalil surati qo‘shish"
         @click="evidenceStaged = evidenceStaged + 1"
       >
         <UiIcon name="plus" :size="24" />
