@@ -1,0 +1,1183 @@
+// MAKON ko‘chmas mulk boshqaruv tizimining ma’lumotlar sxemasi.
+//
+// Status ro‘yxatlari `app/constants/statuses.ts` bilan aynan bir xil.
+// Taksonomiya maydonlari (bino turi, foydalanish turi, muhimlik, kategoriya)
+// ma’lumotnoma sifatida matn ustunlarida saqlanadi: ular «Sozlamalar,
+// Ma’lumotnomalar» sahifasidan tahrirlanadi va kompilyatsiya vaqtidagi
+// ro‘yxat emas.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Ro‘yxatlar
+
+/// Tizimdagi ettita rol. Global texnik rol yo‘q, uning vakolatlari SUPER_HEAD da.
+enum Role {
+  SUPER_HEAD
+  BUILDING_MANAGER
+  ACCOUNTANT
+  FACILITY
+  WAREHOUSE_OPERATOR
+  CONTENT_OPERATOR
+  TENANT_OWNER
+}
+
+enum OrganizationKind {
+  INDIVIDUAL
+  LEGAL_ENTITY
+}
+
+enum BuildingStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+enum UnitStatus {
+  DRAFT
+  VACANT
+  APPLICATION_IN_REVIEW
+  RESERVED
+  RENTED
+  SOLD
+  MAINTENANCE
+  HIDDEN
+  ARCHIVED
+}
+
+enum ListingStatus {
+  DRAFT
+  PUBLISHED
+  PAUSED
+  ARCHIVED
+}
+
+enum ApplicationStatus {
+  DRAFT
+  SUBMITTED
+  BUILDING_REVIEW
+  FINANCE_REVIEW
+  OFFER_SENT
+  OFFER_ACCEPTED
+  DOCUMENTS
+  APPROVED
+  REJECTED
+  CANCELLED
+  COMPLETED
+}
+
+/// Ijara sikli: unit tanlashdan faol shartnomagacha.
+enum LeaseStatus {
+  YANGI
+  OPERATSIYA_TASDIQLADI
+  MOLIYA_TASDIQLADI
+  QORALAMA_TAYYOR
+  DIDOX_YUBORILDI
+  DIDOX_IMZOLANDI
+  FAOL
+  RAD_ETILDI
+}
+
+enum ContractStatus {
+  DRAFT
+  REVIEW
+  SIGNED
+  ACTIVE
+  EXPIRED
+  TERMINATED
+  COMPLETED
+}
+
+enum InvoiceStatus {
+  DRAFT
+  ISSUED
+  PARTIALLY_PAID
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+enum ServiceStatus {
+  NEW
+  TRIAGE
+  ASSIGNED
+  INSPECTION
+  MATERIAL_PENDING
+  IN_PROGRESS
+  COMPLETED
+  TENANT_CONFIRMATION
+  CLOSED
+  RETURNED
+  REJECTED
+}
+
+enum MaterialStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  REJECTED
+  ISSUED
+  CANCELLED
+}
+
+enum WorkOrderStatus {
+  PLANNED
+  ASSIGNED
+  IN_PROGRESS
+  MATERIAL_PENDING
+  COMPLETED
+  ACCEPTED
+  RETURNED
+  CANCELLED
+}
+
+/// Didox tomonidagi holat. Tizim uni faqat kuzatadi.
+enum DidoxState {
+  YUBORILGAN
+  KORIB_CHIQILMOQDA
+  IMZOLANGAN
+  RAD_ETILGAN
+}
+
+enum ScheduleKind {
+  DEPOSIT
+  RENT
+}
+
+enum SchedulePeriodStatus {
+  PLANNED
+  ISSUED
+  PAID
+}
+
+enum BillingPeriodStatus {
+  OPEN
+  CALCULATING
+  LOCKED
+  CLOSED
+}
+
+enum PaymentStatus {
+  PENDING
+  CONFIRMED
+  REJECTED
+}
+
+enum PaymentMethod {
+  BANK_TRANSFER
+  CARD
+  CASH
+  OFFSET
+}
+
+enum DebtStatus {
+  OPEN
+  IN_CLAIM
+  RESTRUCTURED
+  SETTLED
+  WRITTEN_OFF
+}
+
+enum StockMovementKind {
+  INBOUND
+  OUTBOUND
+  TRANSFER
+  ADJUSTMENT
+  WRITE_OFF
+}
+
+enum InventorySessionStatus {
+  OPEN
+  COUNTING
+  RECONCILED
+  CLOSED
+}
+
+enum MeterStatus {
+  ACTIVE
+  MAINTENANCE
+  ARCHIVED
+}
+
+enum DocumentKind {
+  CONTRACT_DRAFT
+  SIGNED_CONTRACT
+  ACT
+  INVOICE
+  PAYMENT_ORDER
+  SCHEDULE
+  PHOTO
+  OTHER
+}
+
+enum OtpPurpose {
+  REGISTRATION
+  PASSWORD_RESET
+}
+
+enum NotificationChannel {
+  IN_APP
+  TELEGRAM
+  EMAIL
+}
+
+// ---------------------------------------------------------------------------
+// Tashkilot va foydalanuvchi
+
+model Organization {
+  id         String           @id @default(cuid())
+  name       String
+  kind       OrganizationKind @default(LEGAL_ENTITY)
+  /// Soliq to‘lovchi identifikatsiya raqami
+  tin        String?          @unique
+  director   String?
+  phone      String?
+  email      String?
+  address    String?
+  /// Ijaraga beruvchi tomon (o‘z tashkiloti) yoki tashqi ijarachi
+  isLandlord Boolean          @default(false)
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+
+  users           User[]
+  leaseCases      LeaseCase[]
+  contracts       Contract[]
+  invoices        Invoice[]
+  debts           Debt[]
+  payments        Payment[]
+  serviceRequests ServiceRequest[]
+  documents       Document[]
+
+  @@index([name])
+  @@index([tin])
+  @@map("organizations")
+}
+
+model User {
+  id             String    @id @default(cuid())
+  /// Xodim kirishi uchun login, ijarachida telefon raqami bo‘ladi
+  login          String    @unique
+  passwordHash   String
+  fullName       String
+  role           Role
+  position       String?
+  phone          String    @unique
+  email          String?   @unique
+  isActive       Boolean   @default(true)
+  organizationId String
+  /// Ko‘rish sohasi: faqat shu binolar. Bo‘sh ro‘yxat cheklovsiz degani.
+  buildingScope  String[]  @default([])
+  /// Omborchi uchun biriktirilgan ombor(lar)
+  warehouseScope String[]  @default([])
+  lastLoginAt    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  organization       Organization      @relation(fields: [organizationId], references: [id])
+  refreshTokens      RefreshToken[]
+  auditLogs          AuditLog[]
+  notifications      Notification[]
+  managedBuildings   Building[]        @relation("BuildingManager")
+  assignedWorkOrders WorkOrder[]       @relation("WorkOrderAssignee")
+  materialRequests   MaterialRequest[]
+  stockMovements     StockMovement[]
+  meterReadings      MeterReading[]
+  uploadedDocuments  Document[]
+
+  @@index([organizationId])
+  @@index([role])
+  @@index([isActive])
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String    @id @default(cuid())
+  userId    String
+  /// Tokenning o‘zi emas, uning SHA-256 yig‘indisi saqlanadi
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  userAgent String?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("refresh_tokens")
+}
+
+/// Ijarachi ro‘yxatdan o‘tishida telefonga yuboriladigan bir martalik kod.
+model OtpCode {
+  id         String     @id @default(cuid())
+  phone      String
+  codeHash   String
+  purpose    OtpPurpose @default(REGISTRATION)
+  attempts   Int        @default(0)
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime   @default(now())
+
+  @@index([phone, purpose])
+  @@index([expiresAt])
+  @@map("otp_codes")
+}
+
+// ---------------------------------------------------------------------------
+// Obyekt reyestri
+
+model Building {
+  id                  String         @id @default(cuid())
+  code                String         @unique
+  name                String
+  slug                String         @unique
+  /// Ma’lumotnoma qiymati: «Biznes markaz», «Savdo markaz» va boshqalar
+  type                String
+  city                String
+  district            String
+  street              String
+  buildYear           Int
+  buildingClass       String
+  floors              Int
+  undergroundFloors   Int            @default(0)
+  unitCount           Int            @default(0)
+  occupiedUnits       Int            @default(0)
+  vacantUnits         Int            @default(0)
+  /// Ijaraga beriladigan umumiy maydon, m²
+  gla                 Decimal        @db.Decimal(14, 2)
+  vacantArea          Decimal        @db.Decimal(14, 2)
+  occupancy           Int            @default(0)
+  monthlyRevenue      Decimal        @default(0) @db.Decimal(18, 2)
+  debt                Decimal        @default(0) @db.Decimal(18, 2)
+  sla                 Int            @default(0)
+  serviceRequestCount Int            @default(0)
+  lat                 Float
+  lon                 Float
+  photo               String
+  gallery             String[]       @default([])
+  managerId           String?
+  managerName         String?
+  managerPhone        String?
+  status              BuildingStatus @default(ACTIVE)
+  amenities           String[]       @default([])
+  equipment           String[]       @default([])
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+
+  manager         User?            @relation("BuildingManager", fields: [managerId], references: [id])
+  floorPlans      Floor[]
+  units           Unit[]
+  leaseCases      LeaseCase[]
+  contracts       Contract[]
+  invoices        Invoice[]
+  debts           Debt[]
+  serviceRequests ServiceRequest[]
+  workOrders      WorkOrder[]
+  meters          Meter[]
+  warehouses      Warehouse[]
+
+  @@index([status])
+  @@index([city, district])
+  @@index([managerId])
+  @@map("buildings")
+}
+
+model Floor {
+  id         String   @id @default(cuid())
+  buildingId String
+  /// Qavat raqami, yerto‘la uchun manfiy
+  level      Int
+  label      String
+  /// Qavat rejasining tasviri, public/img/ dagi asos nomi
+  plan       String?
+  totalArea  Decimal? @db.Decimal(14, 2)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  building Building @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  units    Unit[]
+
+  @@unique([buildingId, level])
+  @@index([buildingId])
+  @@map("floors")
+}
+
+model Unit {
+  id           String        @id @default(cuid())
+  code         String
+  buildingId   String
+  floorId      String?
+  /// Qavat raqami, qavat rejasi bilan bir xil
+  floor        Int
+  rooms        Int           @default(1)
+  area         Decimal       @db.Decimal(12, 2)
+  /// Ma’lumotnoma qiymati: «Ofis», «Savdo», «Ombor», «Turar joy», «Texnik zona»
+  usage        String
+  /// Taklif turi: «Ijara», «Sotuv», «Ikkalasi»
+  offer        String
+  status       UnitStatus    @default(DRAFT)
+  listing      ListingStatus @default(DRAFT)
+  price        Decimal       @db.Decimal(18, 2)
+  /// Narx birligi: «so‘m / oy» yoki «so‘m / m²»
+  priceUnit    String
+  tenantName   String?
+  contractCode String?
+  equipment    String[]      @default([])
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  building        Building         @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  floorPlan       Floor?           @relation(fields: [floorId], references: [id])
+  polygon         UnitPolygon?
+  leaseCases      LeaseCase[]
+  contracts       Contract[]
+  invoices        Invoice[]
+  serviceRequests ServiceRequest[]
+  meters          Meter[]
+
+  @@unique([buildingId, code])
+  @@index([buildingId])
+  @@index([floorId])
+  @@index([status])
+  @@index([listing])
+  @@index([buildingId, floor])
+  @@index([usage])
+  @@map("units")
+}
+
+/// Qavat rejasidagi ko‘pburchak, 0..1 normalizatsiyasida saqlanadi.
+model UnitPolygon {
+  id        String   @id @default(cuid())
+  unitId    String   @unique
+  /// [[x, y], ...] ko‘rinishidagi nuqtalar ro‘yxati
+  points    Json
+  /// Chizmani kiritgan kontent operatori
+  authorId  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  unit Unit @relation(fields: [unitId], references: [id], onDelete: Cascade)
+
+  @@map("unit_polygons")
+}
+
+// ---------------------------------------------------------------------------
+// Ijara sikli
+
+/// Ariza va ijara ishi bitta yozuvda: ijarachi, bino rahbari va buxgalter
+/// aynan shu yozuvning holatini ko‘radi.
+model LeaseCase {
+  id                String            @id @default(cuid())
+  code              String            @unique
+  status            LeaseStatus       @default(YANGI)
+  /// Ariza reyestrining holati, katalog va ro‘yxat filtrlari uchun
+  applicationStatus ApplicationStatus @default(SUBMITTED)
+  organizationId    String
+  unitId            String
+  buildingId        String
+  /// Ariza turi: «Ijaraga olish» yoki «Sotib olish»
+  requestType       String
+  /// Ijarachi taklif qilgan narx, so‘m
+  offerPrice        Decimal           @db.Decimal(18, 2)
+  startDate         DateTime          @db.Date
+  /// Muddat, oy
+  term              Int
+  note              String            @default("")
+  contactPerson     String?
+  contactPhone      String?
+  contactedAt       DateTime?
+  contactedById     String?
+  rejectReason      String            @default("")
+  submittedAt       DateTime          @default(now())
+  activatedAt       DateTime?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+
+  organization    Organization      @relation(fields: [organizationId], references: [id])
+  unit            Unit              @relation(fields: [unitId], references: [id])
+  building        Building          @relation(fields: [buildingId], references: [id])
+  commercialOffer CommercialOffer?
+  schedule        PaymentSchedule[]
+  contract        Contract?
+  didoxTickets    DidoxTicket[]
+  documents       Document[]
+
+  @@index([status])
+  @@index([applicationStatus])
+  @@index([buildingId])
+  @@index([organizationId])
+  @@index([unitId])
+  @@index([submittedAt])
+  @@map("lease_cases")
+}
+
+/// Kelishilgan tijorat shartlari. To‘lov grafigi shu yozuvdan hisoblanadi.
+model CommercialOffer {
+  id                  String    @id @default(cuid())
+  leaseCaseId         String    @unique
+  /// Oylik ijara narxi, so‘m
+  monthlyRent         Decimal   @db.Decimal(18, 2)
+  /// Kafolat depoziti, so‘m
+  deposit             Decimal   @default(0) @db.Decimal(18, 2)
+  /// Servis to‘lovi, so‘m / m² / oy
+  servicePerSqm       Decimal   @default(0) @db.Decimal(18, 2)
+  /// To‘lov davriyligi: «Oylik», «Choraklik», «Yillik»
+  periodicity         String    @default("Oylik")
+  /// Buxgalter tuzatish kiritgan bo‘lsa, sababi
+  adjustmentReason    String    @default("")
+  approvedByOpsId     String?
+  approvedByOpsAt     DateTime?
+  approvedByFinanceId String?
+  approvedByFinanceAt DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  leaseCase LeaseCase @relation(fields: [leaseCaseId], references: [id], onDelete: Cascade)
+
+  @@map("commercial_offers")
+}
+
+/// To‘lov grafigining bir davri. Depozit alohida satr bo‘lib turadi.
+model PaymentSchedule {
+  id          String               @id @default(cuid())
+  leaseCaseId String
+  contractId  String?
+  kind        ScheduleKind         @default(RENT)
+  label       String
+  dueAt       DateTime             @db.Date
+  months      Int                  @default(1)
+  rent        Decimal              @default(0) @db.Decimal(18, 2)
+  service     Decimal              @default(0) @db.Decimal(18, 2)
+  total       Decimal              @db.Decimal(18, 2)
+  status      SchedulePeriodStatus @default(PLANNED)
+  position    Int                  @default(0)
+  invoiceId   String?              @unique
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+
+  leaseCase LeaseCase @relation(fields: [leaseCaseId], references: [id], onDelete: Cascade)
+  contract  Contract? @relation(fields: [contractId], references: [id])
+  invoice   Invoice?  @relation(fields: [invoiceId], references: [id])
+
+  @@index([leaseCaseId])
+  @@index([contractId])
+  @@index([status])
+  @@index([dueAt])
+  @@map("payment_schedules")
+}
+
+model Contract {
+  id                String         @id @default(cuid())
+  code              String         @unique
+  /// Shartnoma turi: «Ijara» yoki «Sotuv»
+  type              String         @default("Ijara")
+  status            ContractStatus @default(DRAFT)
+  leaseCaseId       String?        @unique
+  organizationId    String
+  buildingId        String
+  unitId            String
+  tenantName        String
+  buildingName      String
+  unitCode          String
+  startsAt          DateTime       @db.Date
+  endsAt            DateTime?      @db.Date
+  amount            Decimal        @db.Decimal(18, 2)
+  /// To‘lov sharti matni, masalan «Oylik oldindan to‘lov»
+  paymentTerm       String
+  /// Shartnoma qoralamasining tuzilgan matni: tomonlar, obyekt, bandlar
+  body              Json?
+  composedAt        DateTime?
+  signedAt          DateTime?
+  activatedAt       DateTime?
+  terminatedAt      DateTime?
+  terminationReason String?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  leaseCase    LeaseCase?              @relation(fields: [leaseCaseId], references: [id])
+  organization Organization            @relation(fields: [organizationId], references: [id])
+  building     Building                @relation(fields: [buildingId], references: [id])
+  unit         Unit                    @relation(fields: [unitId], references: [id])
+  schedule     PaymentSchedule[]
+  invoices     Invoice[]
+  documents    Document[]
+  timeline     ContractTimelineEntry[]
+
+  @@index([status])
+  @@index([buildingId])
+  @@index([organizationId])
+  @@index([unitId])
+  @@index([startsAt])
+  @@map("contracts")
+}
+
+/// Shartnoma kartochkasidagi bosqichlar chizig‘i.
+model ContractTimelineEntry {
+  id         String    @id @default(cuid())
+  contractId String
+  label      String
+  occurredAt DateTime?
+  actor      String
+  done       Boolean   @default(false)
+  position   Int       @default(0)
+
+  contract Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  @@index([contractId])
+  @@map("contract_timeline_entries")
+}
+
+/// Didox tashqi xizmatidagi hujjat chiptasi. Imzo faqat Didox tomonida qo‘yiladi.
+model DidoxTicket {
+  id            String     @id @default(cuid())
+  leaseCaseId   String
+  /// Didox tizimidagi hujjat raqami
+  docNumber     String     @unique
+  externalId    String?
+  recipientName String
+  recipientTin  String
+  state         DidoxState @default(YUBORILGAN)
+  sentAt        DateTime   @default(now())
+  sentById      String?
+  sentByName    String?
+  lastCheckedAt DateTime?
+  signedFileUrl String?
+  /// Holat o‘zgarishlari tarixi: [{ state, at, note }]
+  history       Json       @default("[]")
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  leaseCase LeaseCase @relation(fields: [leaseCaseId], references: [id], onDelete: Cascade)
+
+  @@index([leaseCaseId])
+  @@index([state])
+  @@map("didox_tickets")
+}
+
+// ---------------------------------------------------------------------------
+// Billing
+
+model BillingPeriod {
+  id           String              @id @default(cuid())
+  /// Davr kaliti, masalan 2026-08
+  code         String              @unique
+  label        String
+  year         Int
+  month        Int
+  startsAt     DateTime            @db.Date
+  endsAt       DateTime            @db.Date
+  status       BillingPeriodStatus @default(OPEN)
+  charged      Decimal             @default(0) @db.Decimal(18, 2)
+  discounts    Decimal             @default(0) @db.Decimal(18, 2)
+  vat          Decimal             @default(0) @db.Decimal(18, 2)
+  total        Decimal             @default(0) @db.Decimal(18, 2)
+  paidTotal    Decimal             @default(0) @db.Decimal(18, 2)
+  debtTotal    Decimal             @default(0) @db.Decimal(18, 2)
+  overdueTotal Decimal             @default(0) @db.Decimal(18, 2)
+  closedAt     DateTime?
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+
+  invoices Invoice[]
+
+  @@index([status])
+  @@index([year, month])
+  @@map("billing_periods")
+}
+
+model Invoice {
+  id             String        @id @default(cuid())
+  code           String        @unique
+  organizationId String
+  contractId     String?
+  buildingId     String
+  unitId         String?
+  periodId       String?
+  /// Davr nomi, masalan «Avgust 2026»
+  periodLabel    String
+  issuedAt       DateTime      @db.Date
+  dueAt          DateTime      @db.Date
+  total          Decimal       @db.Decimal(18, 2)
+  paid           Decimal       @default(0) @db.Decimal(18, 2)
+  status         InvoiceStatus @default(DRAFT)
+  /// Qarzdorlik yoshi: 0-30, 31-60, 61-90, 90+
+  agingBucket    String?
+  tenantName     String
+  buildingName   String
+  unitCode       String
+  note           String        @default("")
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  organization Organization     @relation(fields: [organizationId], references: [id])
+  contract     Contract?        @relation(fields: [contractId], references: [id])
+  building     Building         @relation(fields: [buildingId], references: [id])
+  unit         Unit?            @relation(fields: [unitId], references: [id])
+  period       BillingPeriod?   @relation(fields: [periodId], references: [id])
+  lines        InvoiceLine[]
+  payments     Payment[]
+  debts        Debt[]
+  schedule     PaymentSchedule?
+
+  @@index([status])
+  @@index([organizationId])
+  @@index([buildingId])
+  @@index([contractId])
+  @@index([periodId])
+  @@index([dueAt])
+  @@index([agingBucket])
+  @@map("invoices")
+}
+
+model InvoiceLine {
+  id        String  @id @default(cuid())
+  invoiceId String
+  service   String
+  unit      String
+  tariff    Decimal @db.Decimal(18, 2)
+  qty       Decimal @db.Decimal(14, 3)
+  sum       Decimal @db.Decimal(18, 2)
+  position  Int     @default(0)
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId])
+  @@map("invoice_lines")
+}
+
+model Payment {
+  id             String        @id @default(cuid())
+  code           String        @unique
+  invoiceId      String
+  organizationId String
+  amount         Decimal       @db.Decimal(18, 2)
+  method         PaymentMethod @default(BANK_TRANSFER)
+  status         PaymentStatus @default(PENDING)
+  paidAt         DateTime      @db.Date
+  /// To‘lov topshirig‘i raqami
+  reference      String?
+  confirmedById  String?
+  confirmedAt    DateTime?
+  rejectReason   String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  invoice      Invoice      @relation(fields: [invoiceId], references: [id])
+  organization Organization @relation(fields: [organizationId], references: [id])
+
+  @@index([invoiceId])
+  @@index([organizationId])
+  @@index([status])
+  @@index([paidAt])
+  @@map("payments")
+}
+
+model Debt {
+  id             String     @id @default(cuid())
+  organizationId String
+  buildingId     String
+  invoiceId      String?
+  amount         Decimal    @db.Decimal(18, 2)
+  daysOverdue    Int        @default(0)
+  /// Qarzdorlik yoshi: 0-30, 31-60, 61-90, 90+
+  agingBucket    String
+  status         DebtStatus @default(OPEN)
+  note           String     @default("")
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  building     Building     @relation(fields: [buildingId], references: [id])
+  invoice      Invoice?     @relation(fields: [invoiceId], references: [id])
+
+  @@index([organizationId])
+  @@index([buildingId])
+  @@index([status])
+  @@index([agingBucket])
+  @@map("debts")
+}
+
+// ---------------------------------------------------------------------------
+// Servis desk va ish topshiriqlari
+
+model ServiceRequest {
+  id             String        @id @default(cuid())
+  code           String        @unique
+  title          String
+  /// Ma’lumotnoma qiymati: «Santexnika», «Elektr», «Konditsioner» va boshqalar
+  category       String
+  buildingId     String
+  unitId         String?
+  organizationId String?
+  /// Unit yoki umumiy zona nomi
+  unitCode       String
+  requesterName  String
+  /// Muhimlik: «Past», «O‘rtacha», «Yuqori»
+  priority       String        @default("O‘rtacha")
+  status         ServiceStatus @default(NEW)
+  assigneeName   String?
+  dueAt          DateTime?
+  slaBreached    Boolean       @default(false)
+  description    String        @default("")
+  progress       Int           @default(0)
+  closedAt       DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  building     Building      @relation(fields: [buildingId], references: [id])
+  unit         Unit?         @relation(fields: [unitId], references: [id])
+  organization Organization? @relation(fields: [organizationId], references: [id])
+  workOrders   WorkOrder[]
+  documents    Document[]
+
+  @@index([status])
+  @@index([buildingId])
+  @@index([organizationId])
+  @@index([priority])
+  @@index([createdAt])
+  @@index([slaBreached])
+  @@map("service_requests")
+}
+
+model WorkOrder {
+  id               String          @id @default(cuid())
+  code             String          @unique
+  serviceRequestId String?
+  buildingId       String
+  title            String
+  status           WorkOrderStatus @default(PLANNED)
+  assigneeId       String?
+  assigneeName     String?
+  startedAt        DateTime?
+  completedAt      DateTime?
+  dueAt            DateTime?
+  progress         Int             @default(0)
+  /// Bajarilishi kerak bo‘lgan ishlar ro‘yxati: [{ label, done }]
+  checklist        Json            @default("[]")
+  resultNote       String          @default("")
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  serviceRequest   ServiceRequest?   @relation(fields: [serviceRequestId], references: [id])
+  building         Building          @relation(fields: [buildingId], references: [id])
+  assignee         User?             @relation("WorkOrderAssignee", fields: [assigneeId], references: [id])
+  materialRequests MaterialRequest[]
+  documents        Document[]
+
+  @@index([status])
+  @@index([buildingId])
+  @@index([assigneeId])
+  @@index([serviceRequestId])
+  @@map("work_orders")
+}
+
+model MaterialRequest {
+  id            String         @id @default(cuid())
+  code          String         @unique
+  workOrderId   String?
+  /// Ish topshirig‘i yoki servis arizasining kodi
+  workOrderCode String
+  buildingId    String?
+  buildingName  String
+  requesterId   String?
+  requesterName String
+  warehouseId   String?
+  status        MaterialStatus @default(DRAFT)
+  itemCount     Int            @default(0)
+  amount        Decimal        @default(0) @db.Decimal(18, 2)
+  approvedById  String?
+  approvedAt    DateTime?
+  issuedAt      DateTime?
+  rejectReason  String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  workOrder WorkOrder?            @relation(fields: [workOrderId], references: [id])
+  requester User?                 @relation(fields: [requesterId], references: [id])
+  warehouse Warehouse?            @relation(fields: [warehouseId], references: [id])
+  lines     MaterialRequestLine[]
+
+  @@index([status])
+  @@index([workOrderId])
+  @@index([warehouseId])
+  @@index([createdAt])
+  @@map("material_requests")
+}
+
+model MaterialRequestLine {
+  id                String  @id @default(cuid())
+  materialRequestId String
+  warehouseItemId   String?
+  name              String
+  unit              String
+  qty               Decimal @db.Decimal(14, 3)
+  price             Decimal @db.Decimal(18, 2)
+  sum               Decimal @db.Decimal(18, 2)
+
+  materialRequest MaterialRequest @relation(fields: [materialRequestId], references: [id], onDelete: Cascade)
+  warehouseItem   WarehouseItem?  @relation(fields: [warehouseItemId], references: [id])
+
+  @@index([materialRequestId])
+  @@index([warehouseItemId])
+  @@map("material_request_lines")
+}
+
+// ---------------------------------------------------------------------------
+// Ombor
+
+model Warehouse {
+  id         String   @id @default(cuid())
+  code       String   @unique
+  name       String
+  buildingId String?
+  address    String?
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  building          Building?          @relation(fields: [buildingId], references: [id])
+  items             WarehouseItem[]
+  movements         StockMovement[]
+  materialRequests  MaterialRequest[]
+  inventorySessions InventorySession[]
+
+  @@index([buildingId])
+  @@map("warehouses")
+}
+
+model WarehouseItem {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  name        String
+  /// Ma’lumotnoma qiymati: «Mebel», «Elektr jihozlar» va boshqalar
+  category    String
+  unit        String
+  qty         Decimal  @default(0) @db.Decimal(14, 3)
+  minQty      Decimal  @default(0) @db.Decimal(14, 3)
+  price       Decimal  @default(0) @db.Decimal(18, 2)
+  warehouseId String
+  addedAt     DateTime @db.Date
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  warehouse            Warehouse             @relation(fields: [warehouseId], references: [id])
+  movements            StockMovement[]
+  materialRequestLines MaterialRequestLine[]
+  inventoryLines       InventoryLine[]
+
+  @@index([warehouseId])
+  @@index([category])
+  @@index([name])
+  @@map("warehouse_items")
+}
+
+model StockMovement {
+  id                String            @id @default(cuid())
+  code              String            @unique
+  warehouseItemId   String
+  warehouseId       String
+  kind              StockMovementKind
+  qty               Decimal           @db.Decimal(14, 3)
+  price             Decimal           @default(0) @db.Decimal(18, 2)
+  sum               Decimal           @default(0) @db.Decimal(18, 2)
+  /// Elektron nakladnoy raqami
+  waybillNumber     String?
+  reason            String            @default("")
+  materialRequestId String?
+  performedById     String?
+  occurredAt        DateTime          @default(now())
+  createdAt         DateTime          @default(now())
+
+  warehouseItem WarehouseItem @relation(fields: [warehouseItemId], references: [id])
+  warehouse     Warehouse     @relation(fields: [warehouseId], references: [id])
+  performedBy   User?         @relation(fields: [performedById], references: [id])
+
+  @@index([warehouseItemId])
+  @@index([warehouseId])
+  @@index([kind])
+  @@index([occurredAt])
+  @@map("stock_movements")
+}
+
+model InventorySession {
+  id          String                 @id @default(cuid())
+  code        String                 @unique
+  warehouseId String
+  status      InventorySessionStatus @default(OPEN)
+  startedAt   DateTime               @default(now())
+  closedAt    DateTime?
+  startedById String?
+  note        String                 @default("")
+  createdAt   DateTime               @default(now())
+  updatedAt   DateTime               @updatedAt
+
+  warehouse Warehouse       @relation(fields: [warehouseId], references: [id])
+  lines     InventoryLine[]
+
+  @@index([warehouseId])
+  @@index([status])
+  @@map("inventory_sessions")
+}
+
+model InventoryLine {
+  id              String  @id @default(cuid())
+  sessionId       String
+  warehouseItemId String
+  expectedQty     Decimal @db.Decimal(14, 3)
+  countedQty      Decimal @db.Decimal(14, 3)
+  difference      Decimal @db.Decimal(14, 3)
+  note            String  @default("")
+
+  session       InventorySession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  warehouseItem WarehouseItem    @relation(fields: [warehouseItemId], references: [id])
+
+  @@unique([sessionId, warehouseItemId])
+  @@index([sessionId])
+  @@map("inventory_lines")
+}
+
+// ---------------------------------------------------------------------------
+// Hisoblagichlar
+
+model Meter {
+  id              String      @id @default(cuid())
+  code            String      @unique
+  /// Ma’lumotnoma qiymati: «Elektr», «Suv», «Gaz», «Issiqlik»
+  type            String
+  serial          String      @unique
+  buildingId      String
+  unitId          String?
+  location        String
+  /// O‘lchov birligi: kVt-soat, m³, Gkal
+  measureUnit     String
+  lastReading     Decimal     @default(0) @db.Decimal(16, 3)
+  previousReading Decimal     @default(0) @db.Decimal(16, 3)
+  readAt          DateTime?   @db.Date
+  verifyAt        DateTime?   @db.Date
+  status          MeterStatus @default(ACTIVE)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  building Building       @relation(fields: [buildingId], references: [id])
+  unit     Unit?          @relation(fields: [unitId], references: [id])
+  readings MeterReading[]
+
+  @@index([buildingId])
+  @@index([unitId])
+  @@index([status])
+  @@index([type])
+  @@map("meters")
+}
+
+model MeterReading {
+  id            String   @id @default(cuid())
+  meterId       String
+  value         Decimal  @db.Decimal(16, 3)
+  previousValue Decimal  @default(0) @db.Decimal(16, 3)
+  consumption   Decimal  @default(0) @db.Decimal(16, 3)
+  readAt        DateTime @db.Date
+  recordedById  String?
+  note          String   @default("")
+  createdAt     DateTime @default(now())
+
+  meter      Meter @relation(fields: [meterId], references: [id], onDelete: Cascade)
+  recordedBy User? @relation(fields: [recordedById], references: [id])
+
+  @@index([meterId])
+  @@index([readAt])
+  @@map("meter_readings")
+}
+
+// ---------------------------------------------------------------------------
+// Hujjatlar, bildirishnomalar, audit
+
+model Document {
+  id               String       @id @default(cuid())
+  kind             DocumentKind @default(OTHER)
+  fileName         String
+  /// Saqlash joyidagi manzil yoki kalit
+  storageKey       String
+  mimeType         String
+  extension        String
+  size             Int
+  /// Yuklangan faylning SHA-256 nazorat yig‘indisi
+  hash             String?
+  organizationId   String?
+  leaseCaseId      String?
+  contractId       String?
+  serviceRequestId String?
+  workOrderId      String?
+  uploadedById     String?
+  uploadedByName   String?
+  createdAt        DateTime     @default(now())
+
+  organization   Organization?   @relation(fields: [organizationId], references: [id])
+  leaseCase      LeaseCase?      @relation(fields: [leaseCaseId], references: [id])
+  contract       Contract?       @relation(fields: [contractId], references: [id])
+  serviceRequest ServiceRequest? @relation(fields: [serviceRequestId], references: [id])
+  workOrder      WorkOrder?      @relation(fields: [workOrderId], references: [id])
+  uploadedBy     User?           @relation(fields: [uploadedById], references: [id])
+
+  @@index([leaseCaseId])
+  @@index([contractId])
+  @@index([serviceRequestId])
+  @@index([workOrderId])
+  @@index([organizationId])
+  @@index([kind])
+  @@map("documents")
+}
+
+model Notification {
+  id        String              @id @default(cuid())
+  userId    String
+  title     String
+  body      String
+  /// Ma’lumotnoma qiymati: «To‘lovlar», «Arizalar», «Servis», «Hujjatlar», «Tizim»
+  category  String
+  icon      String              @default("bell")
+  channel   NotificationChannel @default(IN_APP)
+  read      Boolean             @default(false)
+  readAt    DateTime?
+  /// Bildirishnoma tegishli bo‘lgan yozuv havolasi
+  link      String?
+  createdAt DateTime            @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, read])
+  @@index([category])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+/// Har bir holat o‘tishi va muhim amal shu jadvalga tushadi.
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  actorName  String
+  /// Rol nomi, masalan «Bino rahbari»
+  actorRole  String
+  action     String
+  /// Yozuv turi: leaseCase, invoice, unit va boshqalar
+  entityType String
+  entityId   String
+  detail     String   @default("")
+  /// Qo‘shimcha ma’lumot: oldingi va yangi holat
+  meta       Json?
+  ip         String?
+  createdAt  DateTime @default(now())
+
+  actor User? @relation(fields: [actorId], references: [id])
+
+  @@index([entityType, entityId])
+  @@index([actorId])
+  @@index([createdAt])
+  @@index([action])
+  @@map("audit_logs")
+}

@@ -52,15 +52,19 @@ const SIZES: Record<string, { box: string; text: string; px: number }> = {
 
 const dims = computed(() => SIZES[props.size] ?? SIZES.md!)
 
-/** Ism bo‘yicha barqaror rang, bir xil odam doim bir xil ohangda */
+/**
+ * Ism bo‘yicha barqaror ohang: bir xil odam doim bir xil rangda ko‘rinadi.
+ * Gradient yuzaga chuqurlik beradi, ustidagi yorug‘lik esa avatarni yassi
+ * doiradan ajratib turadi.
+ */
 const TINTS = [
-  'bg-brand-50 text-brand-700',
-  'bg-teal-50 text-teal-700',
-  'bg-info-50 text-info-700',
-  'bg-warn-50 text-warn-700',
-  'bg-lime-50 text-lime-700',
-  'bg-rose-50 text-rose-700',
-  'bg-indigo-50 text-indigo-700',
+  { from: '#4E8BFB', to: '#0139B0' },
+  { from: '#3FBDA8', to: '#04835D' },
+  { from: '#A98BF2', to: '#6A3BC4' },
+  { from: '#F5B45C', to: '#BD6512' },
+  { from: '#9ACD5A', to: '#4E7D1C' },
+  { from: '#F2789A', to: '#B81F49' },
+  { from: '#7C8CEE', to: '#3A45B0' },
 ]
 
 const tint = computed(() => {
@@ -68,6 +72,10 @@ const tint = computed(() => {
   for (const ch of props.fullName) h = (h * 31 + ch.charCodeAt(0)) >>> 0
   return TINTS[h % TINTS.length]!
 })
+
+const tintStyle = computed(() => ({
+  backgroundImage: `linear-gradient(145deg, ${tint.value.from} 0%, ${tint.value.to} 100%)`,
+}))
 
 const ringClass = computed(() =>
   props.ring && props.role
@@ -80,8 +88,9 @@ const src = computed(() => (props.userId ? assetUrl(`img/people/${props.userId}.
 
 <template>
   <span
-    class="relative grid shrink-0 place-items-center overflow-hidden rounded-full font-bold"
-    :class="[dims.box, dims.text, ringClass, src && !failed ? 'bg-ink-100' : tint]"
+    class="relative grid shrink-0 place-items-center overflow-hidden rounded-full font-bold text-white"
+    :class="[dims.box, dims.text, ringClass, src && !failed ? 'bg-ink-100' : '']"
+    :style="src && !failed ? undefined : tintStyle"
     :title="fullName"
   >
     <img
@@ -95,6 +104,16 @@ const src = computed(() => (props.userId ? assetUrl(`img/people/${props.userId}.
       class="size-full object-cover"
       @error="failed = true"
     />
-    <template v-else>{{ initials }}</template>
+
+    <template v-else>
+      <!-- Yuqoridan tushuvchi yumshoq yorug‘lik -->
+      <span
+        class="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/25 to-transparent"
+        aria-hidden="true"
+      />
+      <span class="relative tracking-wide drop-shadow-[0_1px_1px_rgba(0,0,0,0.25)]">
+        {{ initials }}
+      </span>
+    </template>
   </span>
 </template>

@@ -1,0 +1,18 @@
+# Bog‘liqliklar
+node_modules/
+
+# Yig‘ilgan versiya
+dist/
+coverage/
+*.tsbuildinfo
+
+# Muhit sozlamalari
+.env
+.env.*
+!.env.example
+
+# Yuklangan hujjatlar
+storage/
+
+# Loglar
+*.log
