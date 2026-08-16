@@ -1,0 +1,252 @@
+<script setup lang="ts">
+import { LEASE_STATUS } from '~/constants/statuses'
+import { scheduleTotals, type LeaseCase, type LeaseStatus } from '~/stores/lease'
+import { area, dateShort, sum, timeOf } from '~/utils/format'
+
+const auth = useAuthStore()
+const lease = useLeaseStore()
+
+lease.seed()
+
+/** Rolga qarab «mening vazifalarim» boshqa bosqichni bildiradi */
+const myStatuses = computed<LeaseStatus[]>(() => {
+  if (auth.role === 'BUILDING_MANAGER')
+    return ['YANGI', 'QORALAMA_TAYYOR', 'DIDOX_YUBORILDI', 'DIDOX_IMZOLANDI']
+  if (auth.role === 'ACCOUNTANT') return ['OPERATSIYA_TASDIQLADI', 'MOLIYA_TASDIQLADI']
+  return [
+    'YANGI',
+    'OPERATSIYA_TASDIQLADI',
+    'QORALAMA_TAYYOR',
+    'DIDOX_YUBORILDI',
+    'DIDOX_IMZOLANDI',
+  ]
+})
+
+const rows = computed(() => lease.cases)
+
+const mineRows = computed(() => rows.value.filter((c) => myStatuses.value.includes(c.status)))
+
+const scopeTab = ref('mine')
+const statusFilter = ref('all')
+const buildingFilter = ref('')
+const search = ref('')
+
+const scopeTabs = computed(() => [
+  { value: 'mine', label: 'Mening vazifalarim', count: mineRows.value.length },
+  { value: 'all', label: 'Barcha arizalar', count: rows.value.length },
+])
+
+const scoped = computed(() => (scopeTab.value === 'mine' ? mineRows.value : rows.value))
+
+const PENDING: LeaseStatus[] = [
+  'YANGI',
+  'OPERATSIYA_TASDIQLADI',
+  'MOLIYA_TASDIQLADI',
+  'QORALAMA_TAYYOR',
+  'DIDOX_YUBORILDI',
+  'DIDOX_IMZOLANDI',
+]
+
+const statusChips = computed(() => [
+  { value: 'all', label: 'Barchasi', count: scoped.value.length },
+  {
+    value: 'pending',
+    label: 'Jarayonda',
+    count: scoped.value.filter((c) => PENDING.includes(c.status)).length,
+  },
+  {
+    value: 'active',
+    label: 'Faol',
+    count: scoped.value.filter((c) => c.status === 'FAOL').length,
+  },
+  {
+    value: 'rejected',
+    label: 'Rad etilgan',
+    count: scoped.value.filter((c) => c.status === 'RAD_ETILDI').length,
+  },
+])
+
+const buildingOptions = computed(() => [
+  { value: '', label: 'Barcha obyektlar' },
+  ...[...new Set(rows.value.map((c) => c.buildingName))].map((n) => ({ value: n, label: n })),
+])
+
+const filtered = computed(() =>
+  scoped.value.filter((c) => {
+    if (buildingFilter.value && c.buildingName !== buildingFilter.value) return false
+    if (statusFilter.value === 'pending' && !PENDING.includes(c.status)) return false
+    if (statusFilter.value === 'active' && c.status !== 'FAOL') return false
+    if (statusFilter.value === 'rejected' && c.status !== 'RAD_ETILDI') return false
+
+    const q = search.value.trim().toLowerCase()
+    if (!q) return true
+    return [c.code, c.org.name, c.unitCode, c.buildingName].some((v) =>
+      v.toLowerCase().includes(q),
+    )
+  }),
+)
+
+/** Bosqich shu rol qaroriga bog‘liqmi — navbatda ajratib ko‘rsatiladi */
+function isMine(c: LeaseCase) {
+  return myStatuses.value.includes(c.status)
+}
+
+function amount(c: LeaseCase) {
+  if (c.schedule.length) return sum(scheduleTotals(c.schedule).total)
+  return `${sum(c.request.offerPrice)} / oy`
+}
+
+const NEXT_STEP: Record<string, string> = {
+  YANGI: 'Bino rahbari shartlarni kelishadi va tasdiqlaydi',
+  OPERATSIYA_TASDIQLADI: 'Buxgalter moliyaviy shartlarni tasdiqlaydi',
+  MOLIYA_TASDIQLADI: 'Tizim shartnoma qoralamasini tuzmoqda',
+  QORALAMA_TAYYOR: 'Hujjat Didox orqali yuboriladi',
+  DIDOX_YUBORILDI: 'Didox holati tekshiriladi',
+  DIDOX_IMZOLANDI: 'Imzolangan fayl yuklanadi va shartnoma faollashtiriladi',
+  FAOL: 'Shartnoma amalda',
+  RAD_ETILDI: 'Sikl to‘xtatilgan',
+}
+</script>
+
+<template>
+  <AppTopbar
+    title="Arizalar navbati"
+    subtitle="Ijara sikli — unit tanlashdan faol shartnomagacha"
+  >
+    <template #actions>
+      <UiButton variant="secondary" size="sm" to="/contracts">
+        <UiIcon name="contract" :size="16" />
+        Shartnomalar
+      </UiButton>
+    </template>
+  </AppTopbar>
+
+  <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-4 sm:p-6">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <UiTabs v-model="scopeTab" :tabs="scopeTabs" />
+
+      <div class="flex flex-wrap items-center gap-2.5">
+        <UiInput v-model="search" placeholder="Ariza, tashkilot yoki unit" class="w-full sm:w-64">
+          <template #prefix><UiIcon name="search" :size="17" /></template>
+        </UiInput>
+        <UiSelect v-model="buildingFilter" :options="buildingOptions" size="sm" class="w-full sm:w-48" />
+      </div>
+    </div>
+
+    <div class="flex flex-wrap gap-2">
+      <button
+        v-for="c in statusChips"
+        :key="c.value"
+        type="button"
+        class="inline-flex min-h-10 items-center gap-2 rounded-pill px-3.5 text-[13px] font-semibold ring-1 ring-inset transition-colors duration-150"
+        :class="
+          statusFilter === c.value
+            ? 'bg-brand-500 text-white ring-brand-500'
+            : 'bg-surface text-ink-600 ring-ink-200 hover:bg-ink-50'
+        "
+        :aria-pressed="statusFilter === c.value"
+        @click="statusFilter = c.value"
+      >
+        {{ c.label }}
+        <span
+          class="tabular rounded-pill px-1.5 text-[11px] font-bold"
+          :class="statusFilter === c.value ? 'bg-white/25' : 'bg-ink-100 text-ink-600'"
+        >
+          {{ c.count }}
+        </span>
+      </button>
+    </div>
+
+    <div v-if="filtered.length" class="grid gap-4 2xl:grid-cols-2">
+      <UiCard v-for="c in filtered" :key="c.id">
+        <div class="flex flex-wrap items-start justify-between gap-3">
+          <div class="min-w-0">
+            <div class="flex flex-wrap items-center gap-2">
+              <NuxtLink
+                :to="`/applications/${c.id}`"
+                class="rounded-[6px] text-[15px] font-bold text-ink-900 transition-colors hover:text-brand-600"
+              >
+                {{ c.code }}
+              </NuxtLink>
+              <span
+                v-if="isMine(c) && c.status !== 'FAOL' && c.status !== 'RAD_ETILDI'"
+                class="inline-flex items-center gap-1 rounded-pill bg-danger-50 px-2 py-0.5 text-[11px] font-bold text-danger-600 ring-1 ring-inset ring-danger-100"
+              >
+                <span class="size-1.5 rounded-full bg-danger-500" aria-hidden="true" />
+                Sizning qaroringiz
+              </span>
+            </div>
+            <p class="mt-0.5 truncate text-[13px] text-ink-600">{{ c.org.name }}</p>
+          </div>
+          <UiStatus kind="lease" :value="c.status" />
+        </div>
+
+        <dl class="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-4">
+          <div class="min-w-0">
+            <dt class="text-[12px] text-ink-500">Obyekt</dt>
+            <dd class="mt-0.5 truncate text-[13px] font-semibold text-ink-800">
+              {{ c.buildingName }}
+            </dd>
+          </div>
+          <div class="min-w-0">
+            <dt class="text-[12px] text-ink-500">Unit</dt>
+            <dd class="tabular mt-0.5 truncate text-[13px] font-semibold text-ink-800">
+              {{ c.unitCode }} · {{ area(c.area) }}
+            </dd>
+          </div>
+          <div class="min-w-0">
+            <dt class="text-[12px] text-ink-500">Muddat</dt>
+            <dd class="tabular mt-0.5 text-[13px] font-semibold text-ink-800">
+              {{ c.request.term }} oy
+            </dd>
+          </div>
+          <div class="min-w-0">
+            <dt class="text-[12px] text-ink-500">Summa</dt>
+            <dd class="tabular mt-0.5 truncate text-[13px] font-semibold text-ink-900">
+              {{ amount(c) }}
+            </dd>
+          </div>
+        </dl>
+
+        <div class="mt-4">
+          <LeaseFlow :status="c.status" />
+        </div>
+
+        <div class="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-ink-100 pt-4">
+          <span class="min-w-0 text-[12px] text-ink-500">
+            <span class="tabular">
+              {{ dateShort(c.request.submittedAt) }} {{ timeOf(c.request.submittedAt) }}
+            </span>
+            · {{ NEXT_STEP[c.status] ?? LEASE_STATUS[c.status]?.label }}
+          </span>
+
+          <UiButton
+            :variant="isMine(c) ? 'primary' : 'secondary'"
+            size="sm"
+            :to="`/applications/${c.id}`"
+          >
+            <UiIcon :name="isMine(c) ? 'arrowRight' : 'eye'" :size="15" />
+            {{ isMine(c) ? 'Ko‘rib chiqish' : 'Ko‘rish' }}
+          </UiButton>
+        </div>
+      </UiCard>
+    </div>
+
+    <UiCard v-else>
+      <UiEmpty
+        icon="clipboard"
+        title="Ariza topilmadi"
+        description="Tanlangan filtrlar bo‘yicha yozuv yo‘q. Shartlarni kengaytiring yoki barcha arizalarni oching."
+        action-label="Barcha arizalar"
+        @action="
+          () => {
+            scopeTab = 'all'
+            statusFilter = 'all'
+            buildingFilter = ''
+            search = ''
+          }
+        "
+      />
+    </UiCard>
+  </main>
+</template>

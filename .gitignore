@@ -1,0 +1,39 @@
+# Bog‘liqliklar
+node_modules/
+
+# Nuxt
+.nuxt/
+.output/
+.data/
+dist/
+.nitro/
+.cache/
+
+# Muhit sozlamalari
+.env
+.env.*
+!.env.example
+
+# Tahrirlash muhiti
+.claude/
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# Tizim fayllari
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Loglar
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Yig‘ilgan versiya
+.output/
