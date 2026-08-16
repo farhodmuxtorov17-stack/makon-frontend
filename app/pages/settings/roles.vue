@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { userCountByRole } from '~/data/users'
 import {
   ROLE_CAPABILITIES,
   ROLE_META,
@@ -248,15 +249,7 @@ function confirmSave() {
 }
 
 /** «Foydalanuvchilar» ro‘yxatidagi hisoblar soni bilan bir xil */
-const USER_COUNT: Record<Role, number> = {
-  SUPER_HEAD: 2,
-  BUILDING_MANAGER: 3,
-  ACCOUNTANT: 2,
-  FACILITY: 2,
-  WAREHOUSE_OPERATOR: 2,
-  CONTENT_OPERATOR: 3,
-  TENANT_OWNER: 2,
-}
+const USER_COUNT = userCountByRole()
 
 const totalUsers = ROLES.reduce((sum, role) => sum + USER_COUNT[role], 0)
 

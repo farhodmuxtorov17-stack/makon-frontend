@@ -29,6 +29,8 @@ const props = withDefaults(
     legend?: Array<{ label: string; class: string }>
     /** Ochilganda barcha nuqtalar ko‘rinadigan qilib joylashtiriladi */
     autoFit?: boolean
+    /** Tashqaridan ajratib ko‘rsatiladigan nuqta, masalan ro‘yxatdagi karta ustida */
+    highlight?: string | null
   }>(),
   {
     markers: () => [],
@@ -41,10 +43,14 @@ const props = withDefaults(
     stats: () => [],
     legend: () => [],
     autoFit: true,
+    highlight: null,
   },
 )
 
-const emit = defineEmits<{ markerClick: [marker: MapMarker] }>()
+const emit = defineEmits<{
+  markerClick: [marker: MapMarker]
+  markerHover: [id: string | null]
+}>()
 
 const TILE = 256
 
@@ -127,6 +133,27 @@ const placed = computed(() =>
     top: lat2px(m.lat, zoom.value) - origin.value.y,
   })),
 )
+
+/** Pin gradienti uchun ochiq va toʻq ohang */
+const TONE_HEX: Record<string, [string, string]> = {
+  brand: ['#4E8BFB', '#0139B0'],
+  ok: ['#3FBDA8', '#04835D'],
+  warn: ['#F5B45C', '#BD6512'],
+  danger: ['#FB7679', '#BD131A'],
+  info: ['#A98BF2', '#6A3BC4'],
+}
+
+function pinTone(tone?: string): [string, string] {
+  return TONE_HEX[tone ?? 'brand'] ?? TONE_HEX.brand!
+}
+
+const TONE_RING_SOLID: Record<string, string> = {
+  brand: 'ring-brand-500',
+  ok: 'ring-ok-500',
+  warn: 'ring-warn-500',
+  danger: 'ring-danger-500',
+  info: 'ring-info-500',
+}
 
 const TONE_DOT: Record<string, string> = {
   brand: 'bg-brand-500',
@@ -274,23 +301,75 @@ function hideTile(e: Event) {
         v-for="m in placed"
         :key="m.id"
         data-marker
-        class="absolute -translate-x-1/2 -translate-y-1/2"
+        class="absolute -translate-x-1/2 -translate-y-full"
+        :class="highlight === m.id || active === m.id ? 'z-10' : ''"
         :style="{ left: `${m.left}px`, top: `${m.top}px` }"
       >
         <button
           type="button"
-          class="group relative grid size-9 place-items-center rounded-full bg-surface shadow-pop ring-2 ring-white transition-transform hover:scale-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500"
+          class="group relative block transition-[transform,filter] duration-200 ease-out focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-brand-500"
+          :class="
+            active === m.id
+              ? 'scale-[1.18] drop-shadow-[0_8px_14px_rgba(19,28,43,0.35)]'
+              : highlight === m.id
+                ? 'scale-110 drop-shadow-[0_6px_12px_rgba(19,28,43,0.28)]'
+                : 'drop-shadow-[0_3px_6px_rgba(19,28,43,0.22)] hover:scale-105'
+          "
           :aria-label="`${m.label}${m.caption ? ', ' + m.caption : ''}`"
           :aria-expanded="active === m.id"
           @click="pick(m)"
+          @mouseenter="emit('markerHover', m.id)"
+          @mouseleave="emit('markerHover', null)"
+          @focus="emit('markerHover', m.id)"
+          @blur="emit('markerHover', null)"
         >
-          <span class="size-3.5 rounded-full" :class="TONE_DOT[m.tone ?? 'brand']" />
+          <svg width="44" height="54" viewBox="0 0 44 54" fill="none" class="block">
+            <defs>
+              <linearGradient :id="`pin-${m.id}`" x1="8" y1="4" x2="36" y2="42">
+                <stop :stop-color="pinTone(m.tone)[0]" />
+                <stop offset="1" :stop-color="pinTone(m.tone)[1]" />
+              </linearGradient>
+            </defs>
+
+            <!-- Yerdagi soya -->
+            <ellipse cx="22" cy="49.5" rx="7" ry="2.4" fill="#131C2B" opacity=".22" />
+
+            <!-- Pin gavdasi: yumaloq bosh va pastga qarab ingichkalashuvchi uch -->
+            <path
+              d="M22 3.5c-8.8 0-16 7.1-16 15.9 0 5.6 2.6 9.6 6.2 13.6l8 8.9c1 1.1 2.6 1.1 3.6 0l8-8.9c3.6-4 6.2-8 6.2-13.6 0-8.8-7.2-15.9-16-15.9z"
+              :fill="`url(#pin-${m.id})`"
+              stroke="#FFFFFF"
+              stroke-width="2.4"
+              stroke-linejoin="round"
+            />
+
+            <!-- Yuqoridan tushuvchi yorugʻlik -->
+            <path
+              d="M22 6.4c-7 0-12.8 5.4-13 12.2 3.4-3.6 7.9-5.6 13-5.6s9.6 2 13 5.6c-.2-6.8-6-12.2-13-12.2z"
+              fill="#FFFFFF"
+              opacity=".22"
+            />
+
+            <text
+              x="22"
+              y="24.5"
+              text-anchor="middle"
+              class="tabular"
+              font-size="13.5"
+              font-weight="700"
+              fill="#FFFFFF"
+            >
+              {{ m.value !== undefined ? Math.round(m.value) : '' }}
+            </text>
+          </svg>
+
+          <!-- Tanlangan pin ostidagi puls halqasi -->
           <span
-            v-if="m.value !== undefined"
-            class="tabular absolute -right-1.5 -top-1.5 rounded-full bg-ink-900 px-1.5 text-[10px] font-bold leading-4 text-white"
-          >
-            {{ Math.round(m.value) }}
-          </span>
+            v-if="active === m.id"
+            class="pointer-events-none absolute bottom-1 left-1/2 size-3 -translate-x-1/2 rounded-full ring-2"
+            :class="TONE_RING_SOLID[m.tone ?? 'brand']"
+            aria-hidden="true"
+          />
         </button>
 
         <!-- Ma’lumot kartasi -->

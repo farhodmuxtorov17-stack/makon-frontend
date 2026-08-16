@@ -128,12 +128,12 @@ const USAGE_OPTIONS = [
   { value: 'Turar joy', label: 'Turar joy' },
 ]
 
+/** Bir tumanda bir nechta obyekt bo‘lishi mumkin, ro‘yxatda hudud bir marta chiqadi */
 const PLACE_OPTIONS = [
   { value: '', label: 'Barchasi' },
-  ...BUILDINGS.map((b) => ({
-    value: `${b.city}|${b.district}`,
-    label: `${b.city}, ${b.district}`,
-  })),
+  ...[...new Set(BUILDINGS.map((b) => `${b.city}|${b.district}`))]
+    .sort((a, b) => a.localeCompare(b))
+    .map((value) => ({ value, label: value.replace('|', ', ') })),
 ]
 
 const PRICE_OPTIONS = [
@@ -210,6 +210,11 @@ const objects = computed(() =>
       vacant: own.reduce((s, l) => s + l.unit.area, 0),
     }
   }),
+)
+
+/** Kartalar bo‘limi portfelning eng yirik obyektlarini ko‘rsatadi, to‘liq ro‘yxat katalogda */
+const featuredObjects = computed(() =>
+  [...objects.value].sort((a, b) => b.gla - a.gla).slice(0, 8),
 )
 
 const favourites = ref<string[]>([])
@@ -318,7 +323,7 @@ const ARTICLES = [
     tag: 'Bozor tahlili',
     date: '2026-07-28',
     title: 'Toshkent ofis bozorida bandlik 87 foizga yetdi',
-    text: 'Platformadagi besh obyekt bo‘yicha o‘rtacha bandlik 87 foizni tashkil etdi. A klass biznes markazlarda bo‘sh maydon ulushi eng past darajada qoldi, B klass ofislarda esa yangi ijarachilar hisobiga bandlik barqarorlashdi. Tahlil obyektlar bo‘yicha oylik yopilgan shartnomalar va bo‘shagan unitlar nisbatiga asoslangan.',
+    text: 'Portfeldagi barcha obyektlar bo‘yicha maydonga o‘lchangan o‘rtacha bandlik 87 foizni tashkil etdi. A klass biznes markazlarda bo‘sh maydon ulushi eng past darajada qoldi, B klass ofislarda esa yangi ijarachilar hisobiga bandlik barqarorlashdi. Tahlil obyektlar bo‘yicha oylik yopilgan shartnomalar va bo‘shagan unitlar nisbatiga asoslangan.',
   },
   {
     id: 'a2',
@@ -383,9 +388,9 @@ function openArticle(a: (typeof ARTICLES)[number]) {
         </h1>
 
         <p class="mt-4 max-w-[58ch] text-[15px] leading-relaxed text-white/80 sm:text-[16px]">
-          Ofis, do‘kon, ombor yoki turar joy, beshta boshqariladigan obyektning bo‘sh bloklari
-          maydon, narx va qavat bo‘yicha ochiq ko‘rsatilgan. Joyni tanlang va to‘g‘ridan-to‘g‘ri
-          ariza yuboring.
+          Ofis, do‘kon, ombor yoki turar joy, boshqaruvdagi {{ PORTFOLIO_TOTALS.buildings }} ta
+          obyektning bo‘sh bloklari maydon, narx va qavat bo‘yicha ochiq ko‘rsatilgan. Joyni
+          tanlang va to‘g‘ridan-to‘g‘ri ariza yuboring.
         </p>
 
         <!-- Qidiruv paneli -->
@@ -673,8 +678,9 @@ function openArticle(a: (typeof ARTICLES)[number]) {
             <p class="text-[11.5px] font-bold uppercase tracking-wide text-brand-600">Joylashuv</p>
             <h2 class="mt-2 text-[22px] font-bold sm:text-[26px]">Obyektlar xaritasi</h2>
             <p class="mt-2 text-[14px] leading-relaxed text-ink-600">
-              Beshta obyektning haqiqiy joylashuvi. Nishonchani bosing, bandlik darajasi va
-              obyektga o‘tish havolasi ochiladi.
+              Toshkent shahri va viloyatidagi {{ PORTFOLIO_TOTALS.buildings }} ta obyektning
+              haqiqiy joylashuvi. Nishonchani bosing, bandlik darajasi va obyektga o‘tish havolasi
+              ochiladi.
             </p>
           </div>
           <NuxtLink

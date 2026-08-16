@@ -23,14 +23,25 @@ const props = withDefaults(
   { size: 'md', ring: false },
 )
 
-const failed = ref(false)
+/**
+ * Surat fayli webp, jpg yoki png bo‘lishi mumkin. Birinchisi topilmasa,
+ * keyingisi sinaladi; hech biri bo‘lmasa bosh harflar ko‘rsatiladi.
+ */
+const EXTENSIONS = ['webp', 'jpg', 'jpeg', 'png']
+
+const attempt = ref(0)
+const failed = computed(() => attempt.value >= EXTENSIONS.length)
 
 watch(
   () => props.userId,
   () => {
-    failed.value = false
+    attempt.value = 0
   },
 )
+
+function nextExtension() {
+  attempt.value += 1
+}
 
 const initials = computed(() =>
   props.fullName
@@ -83,7 +94,11 @@ const ringClass = computed(() =>
     : '',
 )
 
-const src = computed(() => (props.userId ? assetUrl(`img/people/${props.userId}.webp`) : ''))
+const src = computed(() =>
+  props.userId && !failed.value
+    ? assetUrl(`img/people/${props.userId}.${EXTENSIONS[attempt.value]}`)
+    : '',
+)
 </script>
 
 <template>
@@ -95,6 +110,7 @@ const src = computed(() => (props.userId ? assetUrl(`img/people/${props.userId}.
   >
     <img
       v-if="src && !failed"
+      :key="src"
       :src="src"
       :alt="fullName"
       :width="dims.px"
@@ -102,7 +118,7 @@ const src = computed(() => (props.userId ? assetUrl(`img/people/${props.userId}.
       loading="lazy"
       decoding="async"
       class="size-full object-cover"
-      @error="failed = true"
+      @error="nextExtension"
     />
 
     <template v-else>

@@ -1,15 +1,29 @@
 <script setup lang="ts">
+import { useStorage } from '@vueuse/core'
 import { BUILDINGS } from '~/data/buildings'
 
 const route = useRoute()
 
+/** Sahifa butun ekranni egallasa (katalog qidiruvi), pastki blok chiqarilmaydi */
+const fullscreen = computed(() => route.meta.fullscreen === true)
+
+/** Sarlavhadagi ixcham menyu */
+const HEADER_NAV = [
+  { label: 'Katalog', to: '/catalog' },
+  { label: 'Obyekt joylash', to: '/register' },
+]
+
 const NAV = [
   { label: 'Katalog', to: '/catalog' },
+  { label: 'Obyekt joylash', to: '/register' },
   { label: 'Obyektlar', to: '/#obyektlar' },
   { label: 'Xarita', to: '/#xarita' },
   { label: 'Xizmatlar', to: '/#xizmatlar' },
-  { label: 'Blog', to: '/#blog' },
+  { label: 'Sevimlilar', to: '/catalog?fav=1' },
+  { label: 'Yordam markazi', to: '/help' },
 ]
+
+const favourites = useStorage<string[]>('makon.favourites', [])
 
 const QUICK = [
   { label: 'Bo‘sh joylar katalogi', to: '/catalog' },
@@ -143,7 +157,10 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="flex min-h-dvh flex-col bg-canvas">
+  <div
+    class="flex min-h-dvh flex-col bg-canvas"
+    :class="fullscreen ? 'lg:h-dvh lg:overflow-hidden' : ''"
+  >
     <header
       class="sticky top-0 z-40 border-b bg-surface/90 backdrop-blur-md transition-shadow duration-200 ease-out"
       :class="scrolled ? 'border-ink-200 shadow-card' : 'border-ink-200/60'"
@@ -158,7 +175,7 @@ onBeforeUnmount(() => {
 
         <nav class="ml-3 hidden items-center gap-0.5 lg:flex" aria-label="Asosiy menyu">
           <NuxtLink
-            v-for="n in NAV"
+            v-for="n in HEADER_NAV"
             :key="n.to"
             :to="n.to"
             class="rounded-field px-3 py-2 text-[13.5px] font-semibold transition-colors duration-150"
@@ -173,12 +190,52 @@ onBeforeUnmount(() => {
           </NuxtLink>
         </nav>
 
-        <div class="ml-auto flex items-center gap-2.5">
-          <div class="hidden items-center gap-2.5 md:flex">
-            <LocaleSwitch />
-            <UiButton variant="secondary" size="sm" to="/login">Kirish</UiButton>
-            <UiButton size="sm" to="/login">Ro‘yxatdan o‘tish</UiButton>
-          </div>
+        <div class="ml-auto flex items-center gap-1.5">
+          <NuxtLink
+            to="/catalog?fav=1"
+            class="relative grid size-10 place-items-center rounded-field text-ink-600 transition-colors duration-150 hover:bg-ink-100 hover:text-danger-500"
+            aria-label="Sevimli e’lonlar"
+          >
+            <svg
+              class="size-[19px]"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.7"
+              aria-hidden="true"
+            >
+              <path
+                d="M12 20.2 4.9 13.3a4.6 4.6 0 0 1 6.5-6.5l.6.6.6-.6a4.6 4.6 0 0 1 6.5 6.5z"
+                stroke-linejoin="round"
+              />
+            </svg>
+            <span
+              v-if="favourites.length"
+              class="tabular absolute right-0.5 top-0.5 min-w-[16px] rounded-full bg-danger-500 px-1 text-center text-[10px] font-bold leading-4 text-white"
+            >
+              {{ favourites.length }}
+            </span>
+          </NuxtLink>
+
+          <LocaleSwitch class="hidden md:block" />
+
+          <NuxtLink
+            to="/help"
+            class="hidden size-10 place-items-center rounded-field text-ink-600 transition-colors duration-150 hover:bg-ink-100 hover:text-ink-900 md:grid"
+            aria-label="Yordam markazi"
+          >
+            <UiIcon name="help" :size="19" />
+          </NuxtLink>
+
+          <NuxtLink
+            to="/profile"
+            class="hidden size-10 place-items-center rounded-field text-ink-600 transition-colors duration-150 hover:bg-ink-100 hover:text-ink-900 md:grid"
+            aria-label="Shaxsiy kabinet"
+          >
+            <UiIcon name="user" :size="19" />
+          </NuxtLink>
+
+          <UiButton size="sm" to="/login" class="ml-1 hidden md:inline-flex">Kirish</UiButton>
 
           <button
             ref="menuToggle"
@@ -282,11 +339,14 @@ onBeforeUnmount(() => {
       </div>
     </Transition>
 
-    <main class="flex-1">
+    <main class="min-h-0 flex-1">
       <slot />
     </main>
 
-    <footer class="mt-auto border-t border-ink-200 bg-ink-900">
+    <footer
+      class="mt-auto border-t border-ink-200 bg-ink-900"
+      :class="fullscreen ? 'lg:hidden' : ''"
+    >
       <div class="mx-auto max-w-[1360px] px-4 py-12 lg:px-8 lg:py-14">
         <div class="grid gap-10 lg:grid-cols-[minmax(0,1.5fr)_repeat(3,minmax(0,1fr))]">
           <div>
