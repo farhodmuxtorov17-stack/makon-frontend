@@ -60,7 +60,7 @@ export function useHeaderData() {
 
   async function loadRates() {
     try {
-      const local = await $fetch<Array<Record<string, string>>>('/data/cbu.json')
+      const local = await $fetch<Array<Record<string, string>>>(assetUrl('data/cbu.json'))
       rates.value = local.map((r) => ({
         code: r.Ccy!,
         label: r.CcyNm_UZ!,

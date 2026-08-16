@@ -75,7 +75,7 @@ const ringClass = computed(() =>
     : '',
 )
 
-const src = computed(() => (props.userId ? `/img/people/${props.userId}.webp` : ''))
+const src = computed(() => (props.userId ? assetUrl(`img/people/${props.userId}.webp`) : ''))
 </script>
 
 <template>

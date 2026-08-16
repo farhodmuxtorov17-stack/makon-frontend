@@ -38,9 +38,9 @@ watch(
 
 const srcset = computed(() =>
   [
-    `/img/${props.name}-sm.webp 480w`,
-    `/img/${props.name}-md.webp 900w`,
-    `/img/${props.name}-lg.webp 1600w`,
+    `${assetUrl(`img/${props.name}-sm.webp`)} 480w`,
+    `${assetUrl(`img/${props.name}-md.webp`)} 900w`,
+    `${assetUrl(`img/${props.name}-lg.webp`)} 1600w`,
   ].join(', '),
 )
 </script>
@@ -52,7 +52,7 @@ const srcset = computed(() =>
   >
     <img
       v-if="!failed"
-      :src="`/img/${name}-md.webp`"
+      :src="assetUrl(`img/${name}-md.webp`)"
       :srcset="srcset"
       :sizes="sizes"
       :alt="alt"

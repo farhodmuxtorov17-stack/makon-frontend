@@ -30,10 +30,10 @@ const props = withDefaults(
     unit?: string
     /** Izometrik yuqori va yon yuza — hajmli ko‘rinish */
     depth?: boolean
-    /** Ustun ustidagi qiymat yozuvi (ko‘rsatilmasa — avtomatik hal qilinadi) */
-    valueLabels?: boolean
+    /** Ustun ustidagi qiymat yozuvi; `auto` — siyrak diagrammalarda ko‘rinadi */
+    valueLabels?: boolean | 'auto'
   }>(),
-  { height: 200 },
+  { height: 200, valueLabels: 'auto' },
 )
 
 /* --- Ohanglar: bitta asosiy rangdan butun gradient oilasi hosil qilinadi --- */
@@ -102,7 +102,8 @@ const max = computed(() => {
 })
 
 function pct(v: number) {
-  const share = (v / (max.value || 1)) * 100
+  // Qiymat yozuvlari ko‘rsatilsa — tepada joy qoldiriladi
+  const share = (v / (max.value || 1)) * 100 * (showValues.value ? 0.87 : 1)
   return v > 0 ? Math.max(share, 1.5) : 0
 }
 
@@ -125,8 +126,8 @@ function fmt(v: number) {
 }
 
 const showValues = computed(() => {
-  if (props.valueLabels !== undefined) return props.valueLabels
-  return props.labels.length <= 8 && (props.stacked || props.series.length === 1)
+  if (props.valueLabels !== 'auto') return props.valueLabels === true
+  return props.labels.length <= 8 && (props.stacked === true || props.series.length === 1)
 })
 
 /* --- Kirish animatsiyasi (harakat kamaytirilgan bo‘lsa — darhol to‘liq holat) --- */

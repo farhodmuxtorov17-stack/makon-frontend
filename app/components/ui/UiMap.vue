@@ -111,7 +111,7 @@ const tiles = computed(() => {
       const wrapped = ((tx % max) + max) % max
       out.push({
         key: `${z}/${tx}/${ty}`,
-        src: `/map/${z}/${wrapped}/${ty}.png`,
+        src: assetUrl(`map/${z}/${wrapped}/${ty}.png`),
         left: tx * TILE - x,
         top: ty * TILE - y,
       })
