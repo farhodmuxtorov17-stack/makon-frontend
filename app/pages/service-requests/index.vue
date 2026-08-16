@@ -597,7 +597,7 @@ function submitRequest() {
   <UiModal
     v-model="createOpen"
     title="Yangi ariza"
-    subtitle="Muammoni tavsiflang — ariza xizmat ko‘rsatish navbatiga tushadi"
+    subtitle="Muammoni tavsiflang, ariza xizmat ko‘rsatish navbatiga tushadi"
     size="lg"
   >
     <div class="space-y-4">

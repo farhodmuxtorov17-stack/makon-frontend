@@ -25,7 +25,7 @@ const periods = [
   { value: 'q2-2025', label: '2-chorak 2025' },
 ]
 
-/** Qavatlar kesimidagi bandlik — unit ma’lumotlaridan hisoblanadi */
+/** Qavatlar kesimidagi bandlik, unit ma’lumotlaridan hisoblanadi */
 const floorOccupancy = computed(() => {
   const units = unitsOfBuilding(selected.value)
   const floors = [...new Set(units.map((u) => u.floor))].sort((a, b) => b - a)
@@ -66,7 +66,7 @@ const pendingApprovals = computed(
     ).length,
 )
 
-/** Hisobot sanasi — ma’lumotlar mos keladigan davr */
+/** Hisobot sanasi: ma’lumotlar mos keladigan davr */
 const REPORT_DATE = new Date('2025-05-23')
 
 const endingSoon = computed(
@@ -75,7 +75,7 @@ const endingSoon = computed(
       (c) =>
         c.buildingName === building.value.name &&
         c.status === 'ACTIVE' &&
-        c.endsAt !== '—' &&
+        c.endsAt !== '-' &&
         (new Date(c.endsAt).getTime() - REPORT_DATE.getTime()) / 86_400_000 <= 365,
     ).length,
 )
@@ -134,7 +134,7 @@ const PROBLEM_TONE = {
   violet: 'bg-info-50 text-info-600',
 }
 
-/** Har bir davr uchun oldingi nuqtalar koeffitsienti — oxirgisi joriy qiymat */
+/** Har bir davr uchun oldingi nuqtalar koeffitsienti, oxirgisi joriy qiymat */
 const PERIOD_TREND: Record<string, { labels: string[]; factors: number[] }> = {
   'may-2025': {
     labels: ['Yanvar', 'Fevral', 'Mart', 'Aprel', 'May'],
@@ -434,7 +434,7 @@ const revenueSeries = computed(() => {
                 <span
                   class="block truncate text-[13.5px] font-semibold text-ink-900 group-hover:text-brand-600"
                 >
-                  {{ a.type }} — {{ a.unitCode }}
+                  {{ a.type }} · {{ a.unitCode }}
                 </span>
                 <span class="block truncate text-[12px] text-ink-500">
                   {{ a.tenant }} · {{ num(a.area, 2) }} m²

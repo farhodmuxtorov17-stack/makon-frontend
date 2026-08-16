@@ -6,7 +6,7 @@ import { num } from '~/utils/format'
 import { docxBlob, type DocxLine } from '~/utils/docx'
 
 /**
- * Ijara sikli — bitta umumiy haqiqat manbasi.
+ * Ijara sikli: bitta umumiy haqiqat manbasi.
  *
  * Ijarachi, bino rahbari va buxgalter ekranlari aynan shu do‘kondan o‘qiydi
  * va unga yozadi, shuning uchun uchala rol bir xil holatni ko‘radi va holat
@@ -27,7 +27,7 @@ export type LeaseStatus =
   | 'FAOL'
   | 'RAD_ETILDI'
 
-/** Muvaffaqiyatli oqim tartibi — bosqich indeksini hisoblash uchun */
+/** Muvaffaqiyatli oqim tartibi, bosqich indeksini hisoblash uchun */
 export const LEASE_FLOW: LeaseStatus[] = [
   'YANGI',
   'OPERATSIYA_TASDIQLADI',
@@ -46,7 +46,7 @@ export const PERIODICITY_MONTHS: Record<Periodicity, number> = {
   Yillik: 12,
 }
 
-/** Didox tomonidagi holat — tizim uni faqat kuzatadi */
+/** Didox tomonidagi holat, tizim uni faqat kuzatadi */
 export type DidoxState = 'Yuborilgan' | 'Ko‘rib chiqilmoqda' | 'Imzolangan'
 
 export const DIDOX_FLOW: DidoxState[] = ['Yuborilgan', 'Ko‘rib chiqilmoqda', 'Imzolangan']
@@ -79,7 +79,7 @@ export interface LeaseOffer {
   /** Servis to‘lovi, so‘m / m² / oy */
   servicePerSqm: number
   periodicity: Periodicity
-  /** Buxgalter tuzatish kiritgan bo‘lsa — sababi */
+  /** Buxgalter tuzatish kiritgan bo‘lsa, sababi */
   adjustmentReason: string
 }
 
@@ -366,7 +366,7 @@ function contractLines(doc: ContractDoc): DocxLine[] {
 
   lines.push({ text: '4. TO‘LOV GRAFIGI', style: 'heading' })
   for (const r of doc.schedule) {
-    lines.push({ text: `${dmy(r.dueAt)} — ${r.label} — ${money(r.total)}`, style: 'small' })
+    lines.push({ text: `${dmy(r.dueAt)}, ${r.label}: ${money(r.total)}`, style: 'small' })
   }
 
   lines.push({ text: '5. SHARTNOMA BANDLARI', style: 'heading' })
@@ -384,19 +384,19 @@ function contractLines(doc: ContractDoc): DocxLine[] {
   return lines
 }
 
-/** Shartnoma qoralamasi — haqiqiy Word fayli */
+/** Shartnoma qoralamasi: haqiqiy Word fayli */
 export function contractDocx(doc: ContractDoc): Blob {
   return docxBlob(contractLines(doc))
 }
 
-/** Didox’dan qaytgan imzolangan nusxa — imzo paneli qo‘shilgan hujjat */
+/** Didox’dan qaytgan imzolangan nusxa, imzo paneli qo‘shilgan hujjat */
 export function signedContractDocx(doc: ContractDoc, ticket: DidoxTicket): Blob {
   const lines = contractLines(doc)
   lines.push({ text: 'DIDOX RAQAMLI IMZO QAYDNOMASI', style: 'heading' })
   lines.push({ text: `Didox hujjat raqami: ${ticket.docNumber}` })
   lines.push({ text: `Yuborilgan: ${ticket.sentAt}`, style: 'small' })
   for (const h of ticket.history) {
-    lines.push({ text: `${h.at} — ${h.state}. ${h.note}`, style: 'small' })
+    lines.push({ text: `${h.at}, ${h.state}. ${h.note}`, style: 'small' })
   }
   lines.push({
     text: `Imzolovchi tomonlar: ${doc.landlord.name} (STIR ${doc.landlord.tin}) va ${doc.tenant.name} (STIR ${doc.tenant.tin}).`,
@@ -410,7 +410,7 @@ export function signedContractDocx(doc: ContractDoc, ticket: DidoxTicket): Blob 
 }
 
 // ---------------------------------------------------------------------------
-// Boshlang‘ich yozuvlar — reyestrda allaqachon mavjud arizalar
+// Boshlang‘ich yozuvlar: reyestrda allaqachon mavjud arizalar
 
 interface SeedInput {
   id: string
@@ -780,7 +780,7 @@ export const useLeaseStore = defineStore('lease', {
       })
     },
 
-    /** Buxgalter moliyaviy shartlarni tasdiqlaydi — qoralama darhol tuziladi */
+    /** Buxgalter moliyaviy shartlarni tasdiqlaydi, qoralama darhol tuziladi */
     approveFinance(id: string, actor: string, offer: LeaseOffer) {
       const item = this.byId(id)
       if (!item || item.status !== 'OPERATSIYA_TASDIQLADI') return
@@ -850,7 +850,7 @@ export const useLeaseStore = defineStore('lease', {
           { label: 'Kafolat depoziti', value: money(item.offer.deposit) },
           {
             label: 'Servis to‘lovi',
-            value: `${money(item.offer.servicePerSqm)} / m² / oy — jami ${money(service)}`,
+            value: `${money(item.offer.servicePerSqm)} / m² / oy, jami ${money(service)}`,
           },
           { label: 'To‘lov davriyligi', value: item.offer.periodicity },
           { label: 'Muddat', value: `${item.request.term} oy` },
@@ -893,7 +893,7 @@ export const useLeaseStore = defineStore('lease', {
         actor: 'Tizim',
         roleLabel: 'Avtomatik',
         action: 'Shartnoma qoralamasi tuzildi',
-        detail: `${code} — ${item.request.term} oy, ${money(totals.total)} (DOCX)`,
+        detail: `${code}: ${item.request.term} oy, ${money(totals.total)} (DOCX)`,
       })
     },
 
@@ -955,7 +955,7 @@ export const useLeaseStore = defineStore('lease', {
         actor,
         roleLabel: 'Bino rahbari',
         action: 'Didox holati tekshirildi',
-        detail: `${ticket.docNumber} — yangi holat: ${next}`,
+        detail: `${ticket.docNumber}, yangi holat: ${next}`,
       })
 
       if (next === 'Imzolangan') item.status = 'DIDOX_IMZOLANDI'
@@ -995,7 +995,7 @@ export const useLeaseStore = defineStore('lease', {
       this.log(item, { actor, roleLabel, action: 'Ariza rad etildi', detail: reason })
     },
 
-    /** Oldingi bosqichga qaytarish — sabab bilan */
+    /** Oldingi bosqichga qaytarish, sabab bilan */
     returnForRework(id: string, actor: string, roleLabel: string, reason: string) {
       const item = this.byId(id)
       if (!item) return
@@ -1028,7 +1028,7 @@ export const useLeaseStore = defineStore('lease', {
         {
           icon: 'building',
           label: 'Unit holati «Band» ga o‘tdi',
-          detail: `${item.buildingName} · Unit ${item.unitCode} — ${item.org.name} nomiga rasmiylashtirildi`,
+          detail: `${item.buildingName} · Unit ${item.unitCode}, ${item.org.name} nomiga rasmiylashtirildi`,
         },
         {
           icon: 'eye',
@@ -1122,7 +1122,7 @@ export const useLeaseStore = defineStore('lease', {
           documents: [
             {
               name: item.signedDocument?.fileName ?? `${doc.code}.docx`,
-              size: item.signedDocument ? `${Math.round(item.signedDocument.size / 1024)} KB` : '—',
+              size: item.signedDocument ? `${Math.round(item.signedDocument.size / 1024)} KB` : '-',
               type: item.signedDocument?.extension === 'pdf' ? 'pdf' : 'docx',
             },
             { name: 'To‘lov jadvali.xlsx', size: '286 KB', type: 'xlsx' },

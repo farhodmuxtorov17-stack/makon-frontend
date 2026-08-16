@@ -214,7 +214,7 @@ interface DiffView {
 function diffView(item: { id: string; qty: number }): DiffView {
   if (!isCounted(item.id))
     return {
-      label: '—',
+      label: '-',
       text: 'Sanalmagan',
       badge: 'bg-ink-100 text-ink-600 ring-ink-200',
       mark: 'none',
@@ -749,7 +749,7 @@ const actLineRows = computed(() =>
         class="flex items-start gap-2 rounded-field bg-warn-50 px-3.5 py-3 text-[12.5px] text-warn-700"
       >
         <UiIcon name="warning" :size="16" class="mt-0.5 shrink-0" />
-        {{ sessionItems.length - countedCount }} ta pozitsiya sanalmadi — ular hisobdagi miqdor
+        {{ sessionItems.length - countedCount }} ta pozitsiya sanalmadi, ular hisobdagi miqdor
         bilan aktga kiritiladi.
       </p>
 
@@ -791,7 +791,7 @@ const actLineRows = computed(() =>
         class="flex items-start gap-2 rounded-field bg-ok-50 px-3.5 py-3 text-[12.5px] text-ok-700"
       >
         <UiIcon name="check" :size="16" class="mt-0.5 shrink-0" />
-        Farq aniqlanmadi — sanalgan miqdorlar hisobdagi qoldiqqa to‘liq mos keldi.
+        Farq aniqlanmadi: sanalgan miqdorlar hisobdagi qoldiqqa to‘liq mos keldi.
       </p>
 
       <div class="flex flex-wrap items-center justify-between gap-2 rounded-field bg-surface-sunken px-4 py-3">

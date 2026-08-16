@@ -11,7 +11,7 @@ withDefaults(
     /** Asosiy amal */
     actionLabel?: string
     actionTo?: string
-    /** Ikkilamchi amal — odatda filtrlarni tozalash */
+    /** Ikkilamchi amal: odatda filtrlarni tozalash */
     secondaryLabel?: string
     compact?: boolean
     tone?: 'neutral' | 'brand' | 'ok' | 'warn'

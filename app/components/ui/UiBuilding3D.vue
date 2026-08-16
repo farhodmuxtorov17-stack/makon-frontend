@@ -10,7 +10,7 @@ import { area as areaLabel } from '~/utils/format'
  * darajalari, ijaraga beriladigan maydon va bino turi plitalar balandligi
  * hamda tayanch konturi o‘lchamlarini beradi. Har bir qavatning unit
  * ko‘pburchaklari (0..1 normalizatsiyada) o‘sha plitaning ustki yuzasiga
- * bir xil proyeksiya matritsasi orqali tushiriladi — shu sababli 3D dagi
+ * bir xil proyeksiya matritsasi orqali tushiriladi, shu sababli 3D dagi
  * reja 2D reja bilan bir xil geometriya bo‘ladi.
  *
  * Proyeksiya: model z o‘qi atrofida `rotation` burchagiga buriladi, so‘ng
@@ -66,7 +66,7 @@ interface UnitShape {
 }
 
 interface InteriorItem {
-  /** 'p' — birlashtirilgan yo‘l, 'c' — bosh yoki gul tojining doirasi */
+  /** 'p': birlashtirilgan yo‘l, 'c', bosh yoki gul tojining doirasi */
   k: 'p' | 'c'
   d?: string
   f: string
@@ -135,10 +135,10 @@ const MODES: Array<{ value: ViewMode; label: string; hint: string }> = [
     label: 'Jihozlangan',
     hint: 'Tanlangan qavat devor, eshik, jihoz va xodimlar bilan',
   },
-  { value: 'wire', label: 'Karkas', hint: 'Faqat qirralar — ichki tuzilma ko‘rinadi' },
+  { value: 'wire', label: 'Karkas', hint: 'Faqat qirralar, ichki tuzilma ko‘rinadi' },
 ]
 
-/** Holat legendasi — tartib va ranglar buyurtmachi maketidan */
+/** Holat legendasi: tartib va ranglar buyurtmachi maketidan */
 const CATEGORIES: Array<{ key: string; label: string; color: string }> = [
   { key: 'vacant', label: 'Bo‘sh', color: '#16B99A' },
   { key: 'rented', label: 'Ijarada', color: '#0256F7' },
@@ -157,10 +157,10 @@ const CATEGORY_OF: Record<string, string> = {
 }
 
 const EMPTY_COLOR = '#AFC0D6'
-/** Unit konturlari egallamagan yuza — yo‘lak va yadro */
+/** Unit konturlari egallamagan yuza, yo‘lak va yadro */
 const CORRIDOR = '#E4EBF5'
 
-/** Qavat balandligi, m — bino turiga qarab (ombor balandroq, turar joy pastroq) */
+/** Qavat balandligi, m: bino turiga qarab (ombor balandroq, turar joy pastroq) */
 const FLOOR_HEIGHT: Record<string, number> = {
   'Biznes markaz': 3.9,
   'Ofis binosi': 3.7,
@@ -211,7 +211,7 @@ function rgbOf(hex: string): [number, number, number] {
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255]
 }
 
-/** amount > 0 — oqartiradi, amount < 0 — qoraytiradi (yuz soyalari uchun) */
+/** amount > 0: oqartiradi, amount < 0: qoraytiradi (yuz soyalari uchun) */
 function shade(hex: string, amount: number) {
   const [r, g, b] = rgbOf(hex)
   const k = Math.abs(amount)
@@ -276,7 +276,7 @@ const levels = computed<LevelInfo[]>(() => {
   })
 })
 
-/** Ko‘pburchak yuzasi (0..1 birlik kvadratidagi ulush) — Gauss formulasi */
+/** Ko‘pburchak yuzasi (0..1 birlik kvadratidagi ulush), Gauss formulasi */
 function polygonShare(polygon: number[][]) {
   let sum = 0
   for (let i = 0; i < polygon.length; i++) {
@@ -295,7 +295,7 @@ function polygonShare(polygon: number[][]) {
  * Tayanch konturi o‘lchami unit yozuvlaridan olinadi: reja ko‘pburchaklari
  * birlik kvadratining qancha ulushini egallasa, e’lon qilingan maydonlar
  * yig‘indisi o‘sha ulushga to‘g‘ri keladi. Shu sababli 3D ga tushirilgan
- * kontur haqiqiy m² bilan mos bo‘ladi. Unit yozuvi bo‘lmasa — GLA bo‘yicha.
+ * kontur haqiqiy m² bilan mos bo‘ladi. Unit yozuvi bo‘lmasa, GLA bo‘yicha.
  */
 const dims = computed(() => {
   const b = props.building
@@ -331,7 +331,7 @@ const hoveredLevel = computed(() => levels.value.find((l) => l.floor === hovered
    Interyer: devor, eshik, yo‘lak, yadro, jihoz va xodimlar.
    Butun tartib metrda, plita mahalliy koordinatasida quriladi va faqat
    tanlangan qavat uchun hisoblanadi. Tayyor tartib `interiorPlan` da
-   saqlanadi — kamera burilganda u qayta hisoblanmaydi, faqat proyeksiya
+   saqlanadi: kamera burilganda u qayta hisoblanmaydi, faqat proyeksiya
    bosqichi ishlaydi.
    ========================================================================== */
 
@@ -422,7 +422,7 @@ interface InteriorPlan {
 
 const EMPTY_PLAN: InteriorPlan = { level: 0, quads: [], boxes: [], dots: [], parts: 0 }
 
-/** lg dan pastda jihoz va xodimlar chizilmaydi — faqat devor va eshiklar */
+/** lg dan pastda jihoz va xodimlar chizilmaydi, faqat devor va eshiklar */
 const isWide = useMediaQuery('(min-width: 1024px)')
 
 const interiorLevel = computed<0 | 1 | 2>(() => {
@@ -451,7 +451,7 @@ function buildWalls(
 
   for (const room of rooms) {
     const poly = room.poly
-    // Yo‘lakka qaragan qirra — qavat markaziga eng yaqini
+    // Yo‘lakka qaragan qirra, qavat markaziga eng yaqini
     let doorEdge = 0
     let bestDist = Infinity
     for (let i = 0; i < poly.length; i++) {
@@ -764,7 +764,7 @@ const interiorPlan = computed<InteriorPlan>(() => {
   }
 
   const parts = quads.length + boxes.length * 3 + dots.length
-  // Element soni chegaradan oshsa — jihoz va odamlarsiz sodda ko‘rinish
+  // Element soni chegaradan oshsa, jihoz va odamlarsiz sodda ko‘rinish
   if (parts > 1200) {
     return {
       level: 1,
@@ -794,7 +794,7 @@ const scene = computed(() => {
   const sel = selectedIndex.value
   const step = explode.value * geo.h * 2.6
   // Jihozlangan rejimda tanlangan qavat ustida xona balandligidan kengroq
-  // ochilish qoldiriladi — interyer to‘liq ko‘rinadi
+  // ochilish qoldiriladi: interyer to‘liq ko‘rinadi
   const wallH = Math.min(2.6, geo.h * 0.72)
   const openLift =
     sel >= 0 ? (mode === 'furnished' ? Math.max(geo.h * 0.95, wallH * 2.1) : geo.h * 0.95) : 0
@@ -835,7 +835,7 @@ const scene = computed(() => {
   ]
 
   // Yuz ko‘rinadimi: aylantirilgan normalning kameraga qaragan tashkil
-  // etuvchisi manfiy bo‘lsa — yuz bizga qaragan.
+  // etuvchisi manfiy bo‘lsa, yuz bizga qaragan.
   const faceState = normals.map(([nx, ny]) => {
     const nu = nx * ct - ny * st
     const nv = nx * st + ny * ct
@@ -893,7 +893,7 @@ const scene = computed(() => {
 
     const showInterior = isSel && plan.level > 0
     const topRing = corners.map((c) => pt(c[0], c[1], z1)).join(' ')
-    // Unit konturlari egallamagan yuza — yo‘lak va yadro hududi
+    // Unit konturlari egallamagan yuza, yo‘lak va yadro hududi
     const topFill = showInterior
       ? CORRIDOR
       : mode === 'interior' || mode === 'furnished'
@@ -958,7 +958,7 @@ const scene = computed(() => {
     // --- interyerni proyeksiya qilamiz: tartib metrda tayyor turadi, bu
     //     bosqichda faqat nuqtalar ekranga tushiriladi va chuqurlik bo‘yicha
     //     saralanadi. Bir xil bo‘yoqli ketma-ket qismlar bitta yo‘lga
-    //     birlashtiriladi — kamera burilganda yangilanadigan tugun kam bo‘ladi.
+    //     birlashtiriladi: kamera burilganda yangilanadigan tugun kam bo‘ladi.
     let interior: InteriorItem[] | null = null
     if (showInterior) {
       const zf = z1 + geo.slab * 0.06
@@ -1066,7 +1066,7 @@ const scene = computed(() => {
       short: info.short,
       underground: info.underground,
       selected: isSel,
-      // Jihozlangan rejimda tepadagi qavatlar shaffof — kesim hosil bo‘ladi
+      // Jihozlangan rejimda tepadagi qavatlar shaffof, kesim hosil bo‘ladi
       dim: isSel ? 1 : mode === 'furnished' && sel >= 0 && i > sel ? 0.16 : sel >= 0 ? 0.68 : 1,
       parts,
       topPoints: topRing,
@@ -1384,7 +1384,7 @@ function resetView() {
 
           <!-- Devor, eshik, yadro, jihoz va xodimlar: chuqurlik bo‘yicha
                saralangan va bo‘yoq bo‘yicha birlashtirilgan qismlar.
-               Bosishni ushlamaydi — xona tanlash unit konturi orqali ishlaydi. -->
+               Bosishni ushlamaydi: xona tanlash unit konturi orqali ishlaydi. -->
           <g v-if="slab.interior" class="pointer-events-none">
             <template v-for="(it, ii) in slab.interior" :key="ii">
               <path

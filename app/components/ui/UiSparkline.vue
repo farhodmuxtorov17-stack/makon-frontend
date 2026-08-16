@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * Ixcham dinamika chizig‘i — gradient to‘ldirish bilan, karta pastki qirrasiga
+ * Ixcham dinamika chizig‘i, gradient to‘ldirish bilan, karta pastki qirrasiga
  * tegib turadigan qilib joylashtirish uchun mo‘ljallangan.
  */
 export type ChartTone =
@@ -17,7 +17,7 @@ const props = withDefaults(
   defineProps<{
     values: number[]
     tone?: ChartTone
-    /** To‘ldirishsiz — faqat chiziq */
+    /** To‘ldirishsiz: faqat chiziq */
     bare?: boolean
     /** Ekran o‘qigich uchun izoh */
     label?: string

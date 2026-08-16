@@ -320,7 +320,7 @@ function confirmExport() {
         <UiField label="Sana oralig‘i" :error="rangeInvalid ? 'Tugash sanasi boshlanish sanasidan oldin' : ''">
           <div class="flex items-center gap-2">
             <UiInput v-model="draftFrom" type="date" :invalid="rangeInvalid" />
-            <span class="text-ink-400">—</span>
+            <span class="text-ink-400">-</span>
             <UiInput v-model="draftTo" type="date" :invalid="rangeInvalid" />
           </div>
         </UiField>
@@ -384,7 +384,7 @@ function confirmExport() {
 
       <p v-if="filterChanged" class="mt-3 flex items-center gap-2 text-[12.5px] font-medium text-warn-700">
         <UiIcon name="info" :size="15" />
-        Filtrlar o‘zgartirildi — natijalarni yangilash uchun «Filtrlarni qo‘llash» tugmasini bosing.
+        Filtrlar o‘zgartirildi: natijalarni yangilash uchun «Filtrlarni qo‘llash» tugmasini bosing.
       </p>
     </UiCard>
 
@@ -586,8 +586,7 @@ function confirmExport() {
       >
         <UiIcon name="check" :size="16" class="mt-0.5 shrink-0" />
         <span>
-          «{{ lastExport.title }}» ({{ lastExport.format }}) tayyorlandi —
-          {{ lastExport.scope }}, {{ lastExport.period }}.
+          «{{ lastExport.title }}» ({{ lastExport.format }}) tayyorlandi, {{ lastExport.scope }}, {{ lastExport.period }}.
         </span>
       </p>
 

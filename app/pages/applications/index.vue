@@ -86,7 +86,7 @@ const filtered = computed(() =>
   }),
 )
 
-/** Bosqich shu rol qaroriga bog‘liqmi — navbatda ajratib ko‘rsatiladi */
+/** Bosqich shu rol qaroriga bog‘liqmi, navbatda ajratib ko‘rsatiladi */
 function isMine(c: LeaseCase) {
   return myStatuses.value.includes(c.status)
 }
@@ -111,7 +111,7 @@ const NEXT_STEP: Record<string, string> = {
 <template>
   <AppTopbar
     title="Arizalar navbati"
-    subtitle="Ijara sikli — unit tanlashdan faol shartnomagacha"
+    subtitle="Ijara sikli: unit tanlashdan faol shartnomagacha"
   >
     <template #actions>
       <UiButton variant="secondary" size="sm" to="/contracts">

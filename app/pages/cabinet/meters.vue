@@ -137,7 +137,7 @@ const savedMessage = ref('')
 const entryMeter = computed(() => meters.value.find((m) => m.id === entryMeterId.value)!)
 
 const meterOptions = computed(() =>
-  meters.value.map((m) => ({ value: m.id, label: `${m.type} — ${m.code}` })),
+  meters.value.map((m) => ({ value: m.id, label: `${m.type}, ${m.code}` })),
 )
 
 function openEntry(id: string) {
@@ -322,7 +322,7 @@ function saveReading() {
             <button
               type="button"
               class="grid size-9 place-items-center rounded-field text-brand-600 transition-colors hover:bg-brand-50"
-              :aria-label="`${row.code} — ko‘rsatkich kiritish`"
+              :aria-label="`${row.code}, ko‘rsatkich kiritish`"
               @click.stop="openEntry(String(row.id))"
             >
               <UiIcon name="edit" :size="17" />

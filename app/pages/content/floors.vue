@@ -338,7 +338,7 @@ function addPolygon() {
   }
   units.value.push(unit)
   selectedId.value = unit.id
-  notice.value = `Yangi poligon qo‘shildi — «${unit.code}». Atributlarni to‘ldiring.`
+  notice.value = `Yangi poligon qo‘shildi, «${unit.code}». Atributlarni to‘ldiring.`
 }
 
 function copyPolygon() {
@@ -564,7 +564,7 @@ function selectRow(row: PlanUnit) {
             class="mx-4 mb-4 flex items-start gap-2.5 rounded-field bg-ink-50 px-3.5 py-3 text-[12.5px] text-ink-600 ring-1 ring-inset ring-ink-200 lg:mx-5"
           >
             <UiIcon name="lock" :size="16" class="mt-0.5 shrink-0 text-ink-400" />
-            <span>Sizda reja tahrirlash huquqi yo‘q — reja faqat ko‘rish uchun ochilgan.</span>
+            <span>Sizda reja tahrirlash huquqi yo‘q, reja faqat ko‘rish uchun ochilgan.</span>
           </div>
 
           <div class="px-4 pb-5 lg:px-5">
@@ -750,7 +750,7 @@ function selectRow(row: PlanUnit) {
 
         <UiCard
           title="Qavatdagi unitlar"
-          subtitle="Qatorni bosing — reja va shakl tanlanadi"
+          subtitle="Qatorni bosing: reja va shakl tanlanadi"
           flush
           :padded="false"
         >
@@ -931,16 +931,16 @@ function selectRow(row: PlanUnit) {
               </div>
               <div class="flex items-center justify-between gap-4 py-2.5">
                 <dt class="text-[12.5px] text-ink-500">Foydalanish turi</dt>
-                <dd class="text-[13px] font-semibold text-ink-900">{{ selected.usage || '—' }}</dd>
+                <dd class="text-[13px] font-semibold text-ink-900">{{ selected.usage || '-' }}</dd>
               </div>
               <div class="flex items-center justify-between gap-4 py-2.5">
                 <dt class="text-[12.5px] text-ink-500">Taklif turi</dt>
-                <dd class="text-[13px] font-semibold text-ink-900">{{ selected.offer || '—' }}</dd>
+                <dd class="text-[13px] font-semibold text-ink-900">{{ selected.offer || '-' }}</dd>
               </div>
               <div class="flex items-start justify-between gap-4 py-2.5">
                 <dt class="text-[12.5px] text-ink-500">Jihozlar</dt>
                 <dd class="max-w-[60%] text-right text-[13px] font-semibold text-ink-900">
-                  {{ selected.equipment.join(', ') || '—' }}
+                  {{ selected.equipment.join(', ') || '-' }}
                 </dd>
               </div>
             </dl>

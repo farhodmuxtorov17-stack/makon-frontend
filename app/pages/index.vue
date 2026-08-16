@@ -23,7 +23,7 @@ const listings = computed<Listing[]>(() =>
   ),
 )
 
-/** Har bir obyektdan navbat bilan olinadi — bitta bino ro‘yxatni egallab qolmasin */
+/** Har bir obyektdan navbat bilan olinadi, bitta bino ro‘yxatni egallab qolmasin */
 const featured = computed<Listing[]>(() => {
   const groups = new Map<string, Listing[]>()
   for (const l of listings.value) {
@@ -252,7 +252,7 @@ const SERVICES = [
     icon: 'shield',
     tone: 'bg-ok-50 text-ok-600',
     title: 'Ariza va shartnoma',
-    text: 'Tanlangan unitga onlayn ariza yuboring. Shartnoma qoralamasi avtomatik tuziladi va imzolangach tizimda saqlanadi — qog‘oz almashinuvi talab etilmaydi.',
+    text: 'Tanlangan unitga onlayn ariza yuboring. Shartnoma qoralamasi avtomatik tuziladi va imzolangach tizimda saqlanadi, qog‘oz almashinuvi talab etilmaydi.',
   },
   {
     icon: 'contract',
@@ -379,12 +379,11 @@ function openArticle(a: (typeof ARTICLES)[number]) {
         <h1
           class="mt-5 max-w-[18ch] text-[34px] font-extrabold leading-[1.08] text-white sm:text-[44px] lg:text-[54px]"
         >
-          Toshkentdagi bo‘sh maydonlar —
-          <span class="text-brand-400">bitta ishonchli katalogda</span>
+          Toshkentdagi bo‘sh maydonlar, <span class="text-brand-400">bitta ishonchli katalogda</span>
         </h1>
 
         <p class="mt-4 max-w-[58ch] text-[15px] leading-relaxed text-white/80 sm:text-[16px]">
-          Ofis, do‘kon, ombor yoki turar joy — beshta boshqariladigan obyektning bo‘sh bloklari
+          Ofis, do‘kon, ombor yoki turar joy, beshta boshqariladigan obyektning bo‘sh bloklari
           maydon, narx va qavat bo‘yicha ochiq ko‘rsatilgan. Joyni tanlang va to‘g‘ridan-to‘g‘ri
           ariza yuboring.
         </p>
@@ -568,7 +567,7 @@ function openArticle(a: (typeof ARTICLES)[number]) {
               >
                 <UiPhoto
                   :name="l.building.photo"
-                  :alt="`${l.building.name} — ${l.unit.code}-unit`"
+                  :alt="`${l.building.name}, ${l.unit.code}-unit`"
                   ratio="aspect-[16/10]"
                   rounded="rounded-none"
                   sizes="(max-width: 640px) 100vw, 420px"
@@ -674,7 +673,7 @@ function openArticle(a: (typeof ARTICLES)[number]) {
             <p class="text-[11.5px] font-bold uppercase tracking-wide text-brand-600">Joylashuv</p>
             <h2 class="mt-2 text-[22px] font-bold sm:text-[26px]">Obyektlar xaritasi</h2>
             <p class="mt-2 text-[14px] leading-relaxed text-ink-600">
-              Beshta obyektning haqiqiy joylashuvi. Nishonchani bosing — bandlik darajasi va
+              Beshta obyektning haqiqiy joylashuvi. Nishonchani bosing, bandlik darajasi va
               obyektga o‘tish havolasi ochiladi.
             </p>
           </div>
@@ -749,7 +748,7 @@ function openArticle(a: (typeof ARTICLES)[number]) {
             <NuxtLink :to="`/catalog/${o.slug}`" class="relative block">
               <UiPhoto
                 :name="o.photo"
-                :alt="`${o.name} — ${o.type}`"
+                :alt="`${o.name}: ${o.type}`"
                 ratio="aspect-[16/10]"
                 rounded="rounded-none"
                 sizes="(max-width: 640px) 100vw, 420px"
@@ -863,7 +862,7 @@ function openArticle(a: (typeof ARTICLES)[number]) {
         </p>
         <h2 class="mt-2 text-[22px] font-bold sm:text-[26px]">Uch bosqichda mos joyni toping</h2>
         <p class="mt-2 text-[14px] leading-relaxed text-ink-600">
-          Qidiruvdan shartnomagacha bo‘lgan yo‘l bitta tizim ichida kechadi — hujjatni qayta
+          Qidiruvdan shartnomagacha bo‘lgan yo‘l bitta tizim ichida kechadi, hujjatni qayta
           to‘ldirish yoki ma’lumotni takroran kiritish talab etilmaydi.
         </p>
       </div>
@@ -899,7 +898,7 @@ function openArticle(a: (typeof ARTICLES)[number]) {
         <div class="max-w-[62ch]">
           <p class="text-[11.5px] font-bold uppercase tracking-wide text-brand-600">Xizmatlar</p>
           <h2 class="mt-2 text-[22px] font-bold sm:text-[26px]">
-            Joy tanlashdan shartnoma va servisgacha — bitta oqimda
+            Joy tanlashdan shartnoma va servisgacha, bitta oqimda
           </h2>
           <p class="mt-2 text-[14px] leading-relaxed text-ink-600">
             Platforma ijarachi va mulk egasi o‘rtasidagi barcha bosqichlarni qamrab oladi: e’lon,
@@ -937,7 +936,7 @@ function openArticle(a: (typeof ARTICLES)[number]) {
             <p class="mt-3 max-w-[58ch] text-[14px] leading-relaxed text-ink-600">
               MAKON obyekt, unit, ariza, shartnoma, hisob-kitob va servis jarayonlarini bitta
               ma’lumot bazasida birlashtiradi. Ommaviy katalogda faqat bo‘sh joylar va ularning
-              mavjudligi ko‘rsatiladi — band unitlar bo‘yicha ijarachi va moliyaviy ma’lumotlar
+              mavjudligi ko‘rsatiladi: band unitlar bo‘yicha ijarachi va moliyaviy ma’lumotlar
               ochiq emas.
             </p>
 

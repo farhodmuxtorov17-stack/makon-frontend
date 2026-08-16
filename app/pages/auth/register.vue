@@ -198,7 +198,7 @@ function submit() {
               </template>
             </div>
             <p class="mt-3 text-[11px] font-semibold uppercase tracking-wide text-ink-500">
-              3-qadam / 3 — Hisob ma’lumotlari
+              3-qadam / 3: Hisob ma’lumotlari
             </p>
           </div>
 

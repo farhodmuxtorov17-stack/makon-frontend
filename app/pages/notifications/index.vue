@@ -512,7 +512,7 @@ const channels = [
       <UiIcon name="info" :size="18" class="mt-0.5 shrink-0 text-brand-600" />
       <p class="text-[13px] leading-snug text-brand-700">
         Joriy bosqichda barcha xabarlar tizim ichida ko‘rsatiladi. SMS, e-mail va Telegram kanallari
-        keyingi bosqichda ulanadi — ulanmaguncha ular orqali xabar yuborilmaydi.
+        keyingi bosqichda ulanadi, ulanmaguncha ular orqali xabar yuborilmaydi.
       </p>
     </div>
   </main>

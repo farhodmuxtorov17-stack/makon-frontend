@@ -376,7 +376,7 @@ const COMPARE_ROWS: Array<{ label: string; get: (l: Listing) => string }> = [
       <div>
         <h1 class="text-2xl font-bold">Bo‘sh joylar katalogi</h1>
         <p class="mt-1 text-[13.5px] text-ink-500">
-          Ofis, savdo, ombor va turar joy maydonlari — mavjud e’lonlar bo‘yicha tanlov
+          Ofis, savdo, ombor va turar joy maydonlari, mavjud e’lonlar bo‘yicha tanlov
         </p>
       </div>
       <UiTabs v-model="offer" :tabs="OFFER_TABS" />
@@ -547,7 +547,7 @@ const COMPARE_ROWS: Array<{ label: string; get: (l: Listing) => string }> = [
 
           <div class="mt-3 flex flex-wrap items-center justify-between gap-3 px-1.5 pb-1">
             <p class="text-[12.5px] text-ink-500">
-              Xaritadagi nuqtani bosing — ro‘yxat shu obyekt bo‘yicha filtrlanadi.
+              Xaritadagi nuqtani bosing, ro‘yxat shu obyekt bo‘yicha filtrlanadi.
             </p>
             <button
               v-if="activeObject"
@@ -581,7 +581,7 @@ const COMPARE_ROWS: Array<{ label: string; get: (l: Listing) => string }> = [
             >
               <UiPhoto
                 :name="l.building.photo"
-                :alt="`${l.building.name} — ${l.building.city}, ${l.building.district}`"
+                :alt="`${l.building.name}, ${l.building.city}, ${l.building.district}`"
                 rounded="rounded-none"
                 :ratio="
                   view === 'grid'

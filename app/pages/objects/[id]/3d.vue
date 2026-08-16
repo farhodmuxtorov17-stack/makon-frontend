@@ -30,7 +30,7 @@ interface FloorRow {
   planFloor: number
 }
 
-/** Holat legendasi — tartib va ranglar buyurtmachi maketidan */
+/** Holat legendasi: tartib va ranglar buyurtmachi maketidan */
 const CATEGORIES: Array<{ key: string; label: string; color: string }> = [
   { key: 'vacant', label: 'Bo‘sh', color: '#16B99A' },
   { key: 'rented', label: 'Ijarada', color: '#0256F7' },
@@ -111,7 +111,7 @@ const floorRows = computed<FloorRow[]>(() => {
   })
 })
 
-/** Ro‘yxat yuqoridan pastga — yuqori qavat tepada turadi */
+/** Ro‘yxat yuqoridan pastga, yuqori qavat tepada turadi */
 const floorsDesc = computed(() => [...floorRows.value].reverse())
 const floorsWithPlan = computed(() => floorRows.value.filter((f) => f.total > 0))
 
@@ -202,7 +202,7 @@ function contractLabel(unit: Unit) {
 const auth = useAuthStore()
 const applyOpen = ref(false)
 
-/** Bo‘sh unitga ariza yuborish — rolga qarab yo‘naltiradi */
+/** Bo‘sh unitga ariza yuborish, rolga qarab yo‘naltiradi */
 function goApply() {
   const unit = currentUnit.value
   if (!unit || unit.status !== 'VACANT') return
@@ -439,13 +439,13 @@ function goApply() {
               <div class="flex items-center justify-between gap-4 py-2.5">
                 <dt class="text-[12.5px] text-ink-500">Jami maydon</dt>
                 <dd class="tabular text-[13px] font-bold text-ink-900">
-                  {{ currentFloor.total ? area(currentFloor.totalArea) : '—' }}
+                  {{ currentFloor.total ? area(currentFloor.totalArea) : '-' }}
                 </dd>
               </div>
               <div class="flex items-center justify-between gap-4 py-2.5">
                 <dt class="text-[12.5px] text-ink-500">Bo‘sh maydon</dt>
                 <dd class="tabular text-[13px] font-bold text-ok-600">
-                  {{ currentFloor.total ? area(currentFloor.vacantArea) : '—' }}
+                  {{ currentFloor.total ? area(currentFloor.vacantArea) : '-' }}
                 </dd>
               </div>
               <div class="flex items-center justify-between gap-4 py-2.5">
@@ -540,7 +540,7 @@ function goApply() {
               <div class="flex items-start gap-4 py-2.5">
                 <dt class="w-[112px] shrink-0 text-[12.5px] text-ink-500">Ijarachi</dt>
                 <dd class="min-w-0 flex-1 text-[13px] font-semibold text-ink-900">
-                  {{ currentUnit.tenant ?? '—' }}
+                  {{ currentUnit.tenant ?? '-' }}
                 </dd>
               </div>
               <div class="flex items-start gap-4 py-2.5">
@@ -594,7 +594,7 @@ function goApply() {
                 <UiIcon name="cube" :size="22" />
               </span>
               <p class="text-[13px] text-ink-500">
-                Hajmli ko‘rinishda yoki yuqoridagi ro‘yxatda unitni bosing — uning konturi
+                Hajmli ko‘rinishda yoki yuqoridagi ro‘yxatda unitni bosing, uning konturi
                 ajratiladi va shu yerda kartasi ochiladi.
               </p>
             </div>
@@ -607,7 +607,7 @@ function goApply() {
     <UiModal v-model="applyOpen" title="Ariza yuborish" size="sm">
       <p class="text-[13.5px] leading-relaxed text-ink-600">
         Ariza faqat ijarachi profilidan yuboriladi. Ichki rol bilan kirgan
-        foydalanuvchi ariza yarata olmaydi — bu ijarachi tomonidagi amal.
+        foydalanuvchi ariza yarata olmaydi, bu ijarachi tomonidagi amal.
       </p>
       <template #footer>
         <UiButton variant="secondary" @click="applyOpen = false">Yopish</UiButton>

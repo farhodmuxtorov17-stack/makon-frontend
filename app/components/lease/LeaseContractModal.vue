@@ -32,7 +32,7 @@ function download() {
         <p class="mt-1 text-[15px] font-bold text-ink-900">Ijara shartnomasi № {{ doc.code }}</p>
         <p class="tabular mt-0.5 text-[12.5px] text-ink-600">
           Tuzilgan sana {{ dateShort(doc.composedAt) }} · amal qilish muddati
-          {{ dateShort(doc.startsAt) }} — {{ dateShort(doc.endsAt) }}
+          {{ dateShort(doc.startsAt) }} · {{ dateShort(doc.endsAt) }}
         </p>
       </div>
 

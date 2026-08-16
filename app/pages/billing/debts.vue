@@ -112,7 +112,7 @@ function openHistory(row: Record<string, unknown>) {
 const exportOpen = ref(false)
 
 function runExport(format: 'PDF' | 'XLSX') {
-  banner.value = `Qarzdorlik reyestri ${format} formatida shakllantirildi — ${num(filtered.value.length)} ta yozuv, ${sum(filteredTotal.value)}.`
+  banner.value = `Qarzdorlik reyestri ${format} formatida shakllantirildi, ${num(filtered.value.length)} ta yozuv, ${sum(filteredTotal.value)}.`
   exportOpen.value = false
 }
 

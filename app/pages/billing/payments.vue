@@ -312,7 +312,7 @@ const agingTotal = AGING.reduce((s, a) => s + a.amount, 0)
             </span>
             <p class="mt-3 text-[13.5px] font-semibold text-ink-800">To‘lov tanlanmagan</p>
             <p class="mt-1 text-[12.5px] text-ink-500">
-              Chapdagi ro‘yxatdan hujjatni tanlang — tafsilotlar shu yerda ochiladi.
+              Chapdagi ro‘yxatdan hujjatni tanlang, tafsilotlar shu yerda ochiladi.
             </p>
           </div>
 

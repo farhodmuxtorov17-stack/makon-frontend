@@ -26,7 +26,7 @@ export interface Building {
   /** Xaritadagi haqiqiy joylashuv */
   lat: number
   lon: number
-  /** public/img/ dagi fotosurat asosi — {photo}-sm|md|lg.webp */
+  /** public/img/ dagi fotosurat asosi, {photo}-sm|md|lg.webp */
   photo: string
   /** Qo‘shimcha rakurslar (galereya uchun) */
   gallery: string[]

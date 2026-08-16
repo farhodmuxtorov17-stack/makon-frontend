@@ -407,7 +407,7 @@ const info = computed(() => {
               </UiButton>
             </div>
             <p v-else class="rounded-field bg-ok-50 px-4 py-3 text-[13px] font-medium text-ok-700">
-              Ariza yopilgan — qo‘shimcha amal talab etilmaydi.
+              Ariza yopilgan: qo‘shimcha amal talab etilmaydi.
             </p>
           </UiCard>
 

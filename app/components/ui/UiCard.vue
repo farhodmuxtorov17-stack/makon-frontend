@@ -5,7 +5,7 @@ withDefaults(
     subtitle?: string
     padded?: boolean
     flush?: boolean
-    /** Bosiladigan karta — ko‘tarilish effekti va kursor qo‘shiladi */
+    /** Bosiladigan karta: ko‘tarilish effekti va kursor qo‘shiladi */
     interactive?: boolean
     /** Sarlavha yonidagi ikonka */
     icon?: string

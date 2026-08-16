@@ -102,7 +102,7 @@ const STATUS_CLASS: Record<string, string> = {
       v-else
       icon="calendar"
       title="To‘lov grafigi hali hisoblanmagan"
-      description="Kommersiya taklifi shartlarini kiriting — grafik avtomatik hisoblanadi."
+      description="Kommersiya taklifi shartlarini kiriting, grafik avtomatik hisoblanadi."
       compact
     />
 

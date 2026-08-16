@@ -5,7 +5,7 @@ qavat va unit navigatsiyasi, ijara sikli, billing, servis desk, ombor va rolga
 asoslangan ish maydonlari bitta konturda birlashtirilgan.
 
 Frontend qismi. Backend integratsiyasi uchun ma’lumot qatlami `app/data/` da
-izolyatsiya qilingan — API ulanganda faqat shu qatlam almashtiriladi.
+izolyatsiya qilingan: API ulanganda faqat shu qatlam almashtiriladi.
 
 ---
 
@@ -42,7 +42,7 @@ npm run typecheck  # tiplarni tekshirish
 | 3D va grafiklar | Ichki SVG komponentlar | Tashqi kutubxonasiz |
 
 Tashqi CDN, tashqi shrift va tashqi rasm ishlatilmaydi. Shriftlar, xarita
-plitkalari va fotosuratlar repozitoriyda saqlanadi — ilova tarmoqsiz muhitda
+plitkalari va fotosuratlar repozitoriyda saqlanadi, ilova tarmoqsiz muhitda
 ham to‘liq ishlaydi.
 
 ### Katalog tuzilishi
@@ -88,25 +88,25 @@ Tizimda 7 rol. Har biri o‘z modullarini va o‘z ma’lumot doirasini ko‘rad
 
 Kirish ikki qatlamda tekshiriladi:
 
-- **Marshrut** — `ROUTE_ACCESS` (`app/constants/navigation.ts`)
-- **Amal** — `ROLE_CAPABILITIES` (`app/constants/roles.ts`)
+- **Marshrut**: `ROUTE_ACCESS` (`app/constants/navigation.ts`)
+- **Amal**: `ROLE_CAPABILITIES` (`app/constants/roles.ts`)
 
 Sahifani ko‘rish huquqi undagi qarorni qabul qilish huquqini bildirmaydi.
-Masalan super rahbar arizani ko‘radi, lekin uni tasdiqlamaydi — bu vakolat
+Masalan super rahbar arizani ko‘radi, lekin uni tasdiqlamaydi, bu vakolat
 operatsion rollarda.
 
 ---
 
 ## Autentifikatsiya
 
-**Xodimlar** — `/login`, login va parol. Hisoblarni super rahbar yaratadi,
+**Xodimlar**: `/login`, login va parol. Hisoblarni super rahbar yaratadi,
 rol hisobga biriktirilgan.
 
-**Ijarachilar** — uch qadamli o‘z-o‘zidan ro‘yxatdan o‘tish:
+**Ijarachilar**: uch qadamli o‘z-o‘zidan ro‘yxatdan o‘tish:
 
-1. `/register` — telefon raqami, bir martalik kod yuboriladi
-2. `/auth/verify` — 6 xonali kodni tasdiqlash
-3. `/auth/register` — akkaunt turi, rekvizitlar, parol
+1. `/register`: telefon raqami, bir martalik kod yuboriladi
+2. `/auth/verify`: 6 xonali kodni tasdiqlash
+3. `/auth/register`: akkaunt turi, rekvizitlar, parol
 
 Yakunda `TENANT_OWNER` roli bilan shaxsiy kabinet ochiladi.
 
@@ -129,7 +129,7 @@ YANGI  →  OPERATSIYA_TASDIQLADI  →  MOLIYA_TASDIQLADI  →  QORALAMA_TAYYOR
 2. Operator bog‘lanib shartlarni kelishadi, kommersiya taklifini tuzadi va tasdiqlaydi
 3. Buxgalter moliyaviy shartlarni va to‘lov grafigini tekshiradi
 4. Tizim shartnoma qoralamasini avtomatik shakllantiradi
-5. Hujjat Didox orqali imzolashga yuboriladi — imzolash tashqi tomonda bajariladi
+5. Hujjat Didox orqali imzolashga yuboriladi, imzolash tashqi tomonda bajariladi
 6. Imzolangan hujjat yuklanadi, nazorat yig‘indisi hisoblanadi
 7. Shartnoma faollashadi: unit band bo‘ladi, e’lon yopiladi, bino statistikasi
    qayta hisoblanadi, ijarachi kabineti va billing grafigi ishga tushadi
@@ -140,9 +140,9 @@ Har bir o‘tish audit yozuvini qoldiradi.
 
 ## Ma’lumot manbalari
 
-- Xarita plitkalari — © OpenStreetMap hissadorlari, © CARTO
-- Valyuta kursi — O‘zbekiston Respublikasi Markaziy banki
-- Ob-havo — joriy ko‘rsatkich, tarmoqsiz holatda mavsumiy o‘rtacha qiymat
+- Xarita plitkalari: © OpenStreetMap hissadorlari, © CARTO
+- Valyuta kursi: O‘zbekiston Respublikasi Markaziy banki
+- Ob-havo: joriy ko‘rsatkich, tarmoqsiz holatda mavsumiy o‘rtacha qiymat
 
 ---
 
@@ -154,8 +154,7 @@ npm run typecheck  # TypeScript strict
 ```
 
 `scripts/check-sfc.mjs` har bir komponentni Vue kompilyatori orqali o‘tkazadi
-va kompilyatsiyadan keyin qolib ketgan makro chaqiruvlarini ham aniqlaydi —
-bunday xato ish vaqtida butun ilovani to‘xtatib qo‘yishi mumkin.
+va kompilyatsiyadan keyin qolib ketgan makro chaqiruvlarini ham aniqlaydi, bunday xato ish vaqtida butun ilovani to‘xtatib qo‘yishi mumkin.
 
 ---
 

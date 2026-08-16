@@ -183,7 +183,7 @@ function createInvoice() {
     code,
     tenant: form.tenant.trim(),
     buildingName: form.building,
-    unitCode: form.unitCode.trim() || 'Unit —',
+    unitCode: form.unitCode.trim() || 'Unit -',
     period: form.period,
     issuedAt: '2025-05-19',
     dueAt: form.dueAt,
@@ -201,7 +201,7 @@ const agingSlices = AGING.map((a) => ({ label: a.bucket, value: a.amount, tone: 
 const agingTotal = AGING.reduce((s, a) => s + a.amount, 0)
 
 const contractId = ref(CONTRACTS[1]!.id)
-const contractOptions = CONTRACTS.map((c) => ({ value: c.id, label: `${c.code} — ${c.tenant}` }))
+const contractOptions = CONTRACTS.map((c) => ({ value: c.id, label: `${c.code}, ${c.tenant}` }))
 const activeContract = computed(
   () => CONTRACTS.find((c) => c.id === contractId.value) ?? CONTRACTS[0]!,
 )

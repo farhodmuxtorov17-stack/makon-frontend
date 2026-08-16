@@ -186,7 +186,7 @@ const nextDue = computed(
   () =>
     MY_INVOICES.value.filter((i) => i.total > i.paid)
       .map((i) => i.dueAt)
-      .sort()[0] ?? '—',
+      .sort()[0] ?? '-',
 )
 
 const status = ref('all')
@@ -299,13 +299,13 @@ function openPrint() {
       <UiKpi label="Qarzdorlik" :value="num(overdueTotal)" unit="so‘m" icon="warning" tone="danger" />
       <UiKpi
         label="Keyingi to‘lov sanasi"
-        :value="nextDue === '—' ? '—' : dateShort(nextDue)"
+        :value="nextDue === '-' ? '-' : dateShort(nextDue)"
         icon="calendar"
         tone="violet"
       />
     </section>
 
-    <UiCard title="Hisob-fakturalar" subtitle="Qatorni bosing — tarkibi va chop etish shakli ochiladi" flush>
+    <UiCard title="Hisob-fakturalar" subtitle="Qatorni bosing, tarkibi va chop etish shakli ochiladi" flush>
       <template #actions>
         <span class="rounded-pill bg-brand-50 px-2.5 py-1 text-[12px] font-bold text-brand-700">
           {{ filtered.length }} ta yozuv

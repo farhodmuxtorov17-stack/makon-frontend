@@ -224,7 +224,7 @@ const readiness = computed(() => {
   if (u.status === 'VACANT') return 'Foydalanishga tayyor'
   if (u.status === 'MAINTENANCE') return 'Ta’mirlash ishlari olib borilmoqda'
   if (u.status === 'RESERVED') return 'Bron qilingan, ariza ko‘rikda'
-  return 'Band — hozircha mavjud emas'
+  return 'Band: hozircha mavjud emas'
 })
 
 const summary = computed(() => {
@@ -265,7 +265,7 @@ function openPhoto(i: number) {
 }
 
 /**
- * «Ariza yuborish» — bo‘sh unit uchun ariza yo‘li. Tizimga kirmagan
+ * «Ariza yuborish»: bo‘sh unit uchun ariza yo‘li. Tizimga kirmagan
  * foydalanuvchi kirish sahifasiga, ijarachi esa to‘g‘ridan-to‘g‘ri ariza
  * formasiga yuboriladi.
  */
@@ -341,7 +341,7 @@ function goToOffer() {
             <UiPhoto
               v-if="activePhoto"
               :name="activePhoto.name"
-              :alt="`${building.name} — ${activePhoto.label}`"
+              :alt="`${building.name}: ${activePhoto.label}`"
               ratio="aspect-[16/9]"
               rounded="rounded-panel"
               sizes="(max-width: 1280px) 100vw, 840px"
@@ -526,7 +526,7 @@ function goToOffer() {
                       viewBox="0 0 100 100"
                       class="block w-full"
                       role="group"
-                      :aria-label="`${activeFloor}-qavat rejasi — unitni tanlang`"
+                      :aria-label="`${activeFloor}-qavat rejasi, unitni tanlang`"
                     >
                       <rect
                         x="2"
@@ -544,7 +544,7 @@ function goToOffer() {
                         role="button"
                         tabindex="0"
                         :aria-pressed="selectedId === u.id"
-                        :aria-label="`Unit ${u.code} — ${UNIT_STATUS[u.status]?.label ?? u.status} — ${area(u.area)}`"
+                        :aria-label="`Unit ${u.code}, ${UNIT_STATUS[u.status]?.label ?? u.status}, ${area(u.area)}`"
                         class="cursor-pointer outline-none focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brand-500"
                         @click="selectedId = u.id"
                         @keydown.enter.prevent="selectedId = u.id"
@@ -606,7 +606,7 @@ function goToOffer() {
               <div>
                 <h2 class="text-[17px] font-bold">Joylashuv</h2>
                 <p class="mt-1 text-[13px] text-ink-500">
-                  {{ building.district }}, {{ building.city }} — {{ building.street }}
+                  {{ building.district }}, {{ building.city }} · {{ building.street }}
                 </p>
               </div>
               <span
@@ -781,7 +781,7 @@ function goToOffer() {
 
             <UiPhoto
               :name="interiorPhoto"
-              :alt="`${building.name} — Unit ${selected.code} ichki ko‘rinishi`"
+              :alt="`${building.name}: Unit ${selected.code} ichki ko‘rinishi`"
               ratio="aspect-[16/9]"
               rounded="rounded-field"
               sizes="(max-width: 1280px) 92vw, 340px"
@@ -859,7 +859,7 @@ function goToOffer() {
 
             <p class="mt-3 text-[13.5px] leading-relaxed text-ink-600">
               Bu joy hozirda band. Ommaviy katalogda band unitlar bo‘yicha faqat mavjudlik holati
-              ko‘rsatiladi — ijarachi va shartnoma ma’lumotlari ochiq emas.
+              ko‘rsatiladi: ijarachi va shartnoma ma’lumotlari ochiq emas.
             </p>
 
             <ul class="mt-4 divide-y divide-ink-100">
@@ -898,13 +898,13 @@ function goToOffer() {
       <UiModal
         v-model="lightboxOpen"
         :title="activePhoto?.label ?? 'Obyekt galereyasi'"
-        :subtitle="`${building.name} — ${mainView + 1} / ${photos.length}`"
+        :subtitle="`${building.name}, ${mainView + 1} / ${photos.length}`"
         size="xl"
       >
         <div v-if="activePhoto" class="relative">
           <UiPhoto
             :name="activePhoto.name"
-            :alt="`${building.name} — ${activePhoto.label}`"
+            :alt="`${building.name}: ${activePhoto.label}`"
             ratio="aspect-[16/9]"
             rounded="rounded-panel"
             sizes="(max-width: 1024px) 92vw, 860px"
@@ -956,14 +956,14 @@ function goToOffer() {
 
       <UiModal
         v-model="viewOpen"
-        :title="selected ? `Unit ${selected.code} — batafsil ko‘rinish` : 'Unit ko‘rinishi'"
+        :title="selected ? `Unit ${selected.code}, batafsil ko‘rinish` : 'Unit ko‘rinishi'"
         :subtitle="building.name"
         size="lg"
       >
         <div v-if="selected && priceInfo">
           <UiPhoto
             :name="interiorPhoto"
-            :alt="`${building.name} — Unit ${selected.code}`"
+            :alt="`${building.name}: Unit ${selected.code}`"
             ratio="aspect-[16/9]"
             rounded="rounded-card"
             sizes="(max-width: 1024px) 92vw, 700px"
@@ -991,8 +991,7 @@ function goToOffer() {
           </div>
 
           <p class="mt-4 text-[13.5px] leading-relaxed text-ink-600">
-            {{ building.city }}, {{ building.district }}, {{ building.street }} —
-            {{ building.buildingClass }}, {{ building.buildYear }}-yilda foydalanishga topshirilgan.
+            {{ building.city }}, {{ building.district }}, {{ building.street }} · {{ building.buildingClass }}, {{ building.buildYear }}-yilda foydalanishga topshirilgan.
             Unit {{ selected.code }} {{ readiness.toLowerCase() }}.
           </p>
         </div>
@@ -1021,7 +1020,7 @@ function goToOffer() {
             <span v-else class="font-semibold text-ink-900">{{ building.name }}</span>
             <br />
             Joriy hisob ish maydoni roliga tegishli. Ijaraga olish arizasini tashkilot vakili
-            o‘zining shaxsiy kabinetidan yuboradi — ariza avtomatik ravishda tanlangan unitga
+            o‘zining shaxsiy kabinetidan yuboradi, ariza avtomatik ravishda tanlangan unitga
             biriktiriladi.
           </p>
         </div>

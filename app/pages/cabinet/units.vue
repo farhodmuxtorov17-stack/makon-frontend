@@ -98,12 +98,12 @@ const rows = computed(() =>
   myUnits.value.map((u) => ({
     id: u.id,
     code: u.code,
-    building: buildingById(u.buildingId)?.name ?? '—',
+    building: buildingById(u.buildingId)?.name ?? '-',
     floor: u.floor,
     rooms: u.rooms,
     area: u.area,
     usage: u.usage,
-    contractCode: u.contractCode ?? '—',
+    contractCode: u.contractCode ?? '-',
     status: u.status,
   })),
 )
@@ -159,7 +159,7 @@ const planOpen = ref(false)
     <section class="flex flex-wrap items-center justify-between gap-3">
       <UiTabs v-model="view" :tabs="viewTabs" />
       <p class="text-[13px] text-ink-500">
-        Unitni tanlang — pastda to‘liq tafsilotlar ochiladi.
+        Unitni tanlang: pastda to‘liq tafsilotlar ochiladi.
       </p>
     </section>
 
@@ -238,7 +238,7 @@ const planOpen = ref(false)
     </UiCard>
 
     <UiCard
-      :title="`Unit ${selected.code} — tafsilotlar`"
+      :title="`Unit ${selected.code}, tafsilotlar`"
       :subtitle="`${selectedBuilding.name} · ${selectedBuilding.district}`"
     >
       <template #actions>
@@ -343,7 +343,7 @@ const planOpen = ref(false)
                 <div class="flex items-center justify-between">
                   <dt class="text-[12.5px] text-ink-500">Muddat</dt>
                   <dd class="tabular text-[12.5px] font-semibold text-ink-800">
-                    {{ dateShort(selectedContract.startsAt) }} — {{ dateShort(selectedContract.endsAt) }}
+                    {{ dateShort(selectedContract.startsAt) }} · {{ dateShort(selectedContract.endsAt) }}
                   </dd>
                 </div>
                 <div class="flex items-center justify-between">

@@ -111,7 +111,7 @@ function applyConfirm() {
   if (confirmMode.value === 'generate') {
     p.invoices = p.contracts
     p.total = Math.round(p.contracts * 1_002_000)
-    banner.value = `${p.month} ${p.year} davri uchun ${num(p.invoices)} ta hisob-faktura shakllantirildi — jami ${sum(p.total)}.`
+    banner.value = `${p.month} ${p.year} davri uchun ${num(p.invoices)} ta hisob-faktura shakllantirildi, jami ${sum(p.total)}.`
   } else {
     p.closed = true
     banner.value = `${p.month} ${p.year} davri yopildi. Yangi hisob-fakturalar ushbu davrga qo‘shilmaydi.`
@@ -395,7 +395,7 @@ function createPeriod() {
       v-model="createOpen"
       size="sm"
       title="Yangi hisob davri"
-      subtitle="Yil va oyni tanlang — davr ochiq holatda yaratiladi"
+      subtitle="Yil va oyni tanlang, davr ochiq holatda yaratiladi"
     >
       <div class="grid gap-4 sm:grid-cols-2">
         <UiField label="Yil" required>

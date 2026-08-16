@@ -332,7 +332,7 @@ function docById(id: unknown) {
             <button
               type="button"
               class="grid size-9 place-items-center rounded-field text-ink-500 transition-colors hover:bg-ink-100 hover:text-ink-800"
-              :aria-label="`${row.name} — ko‘rish`"
+              :aria-label="`${row.name}, ko‘rish`"
               @click.stop="openPreview(docById(row.id))"
             >
               <UiIcon name="eye" :size="17" />
@@ -340,7 +340,7 @@ function docById(id: unknown) {
             <button
               type="button"
               class="grid size-9 place-items-center rounded-field text-brand-600 transition-colors hover:bg-brand-50"
-              :aria-label="`${row.name} — yuklab olish`"
+              :aria-label="`${row.name}, yuklab olish`"
               @click.stop="openDownload(docById(row.id))"
             >
               <UiIcon name="download" :size="17" />
@@ -388,7 +388,7 @@ function docById(id: unknown) {
           <div v-if="selected.category === 'Shartnoma'">
             <dt class="text-[11.5px] uppercase tracking-wide text-ink-500">Amal qilish muddati</dt>
             <dd class="tabular text-[13.5px] font-semibold text-ink-900">
-              {{ dateShort(myContract.startsAt) }} — {{ dateShort(myContract.endsAt) }}
+              {{ dateShort(myContract.startsAt) }} · {{ dateShort(myContract.endsAt) }}
             </dd>
           </div>
           <div v-if="selected.category === 'Shartnoma'">

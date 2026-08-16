@@ -7,7 +7,7 @@ export const ROLE_META: Record<Role, RoleMeta> = {
     caption: 'Portfel bo‘yicha strategik nazorat',
     level: 'Strategik boshqaruv',
     scope: 'Barcha obyektlar',
-    limitation: 'Ariza va to‘lovni tahrirlamaydi — qaror operatsion rollarda',
+    limitation: 'Ariza va to‘lovni tahrirlamaydi, qaror operatsion rollarda',
     tone: 'brand',
     home: '/dashboard/executive',
   },
@@ -74,7 +74,7 @@ export const ROLE_META: Record<Role, RoleMeta> = {
 }
 
 /**
- * Amal huquqlari — marshrutga kirish huquqidan alohida. Hujjatdagi «Cheklov»
+ * Amal huquqlari: marshrutga kirish huquqidan alohida. Hujjatdagi «Cheklov»
  * ustuni aynan shu jadval orqali kuchga kiradi.
  */
 export const ROLE_CAPABILITIES: Record<Role, Capability[]> = {
@@ -94,7 +94,7 @@ export const ROLE_CAPABILITIES: Record<Role, Capability[]> = {
 
 /**
  * Rol nishonchasi ranglari ataylab holat ranglaridan (yashil/sariq/qizil)
- * mustaqil — aks holda rol belgisi status belgisi bilan chalkashadi.
+ * mustaqil: aks holda rol belgisi status belgisi bilan chalkashadi.
  */
 export const ROLE_TONE_CLASSES: Record<RoleMeta['tone'], string> = {
   brand: 'bg-brand-50 text-brand-700 ring-brand-200',

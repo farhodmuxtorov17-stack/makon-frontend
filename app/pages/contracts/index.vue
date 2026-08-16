@@ -189,18 +189,18 @@ function createContract() {
     tenant: form.tenant.trim(),
     buildingId: BUILDINGS.find((b) => b.name === form.building)?.id ?? BUILDINGS[0]!.id,
     buildingName: form.building,
-    unitCode: form.unitCode.trim() || 'Unit —',
+    unitCode: form.unitCode.trim() || 'Unit -',
     startsAt: form.startsAt,
-    endsAt: form.type === 'Sotuv' ? '—' : form.endsAt,
+    endsAt: form.type === 'Sotuv' ? '-' : form.endsAt,
     status: 'DRAFT',
     amount: Number(form.amount),
     paymentTerm: form.paymentTerm,
     documents: [{ name: 'Shartnoma loyihasi.pdf', size: '1.4 MB', type: 'pdf' }],
     timeline: [
       { label: 'Yaratildi', date: '2025-05-19', actor: 'Nilufar Rahimova', done: true },
-      { label: 'Kelishildi', date: '—', actor: '—', done: false },
-      { label: 'Imzolandi', date: '—', actor: '—', done: false },
-      { label: 'Faollashdi', date: '—', actor: '—', done: false },
+      { label: 'Kelishildi', date: '-', actor: '-', done: false },
+      { label: 'Imzolandi', date: '-', actor: '-', done: false },
+      { label: 'Faollashdi', date: '-', actor: '-', done: false },
     ],
   }
   CONTRACTS.unshift(created)
@@ -342,7 +342,7 @@ function createContract() {
 
     <UiCard
       title="Shartnoma holati bosqichlari"
-      subtitle="Bosqichni bosing — reyestr shu bosqich bo‘yicha filtrlanadi"
+      subtitle="Bosqichni bosing, reyestr shu bosqich bo‘yicha filtrlanadi"
     >
       <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <div v-for="(s, i) in steps" :key="s.key" class="flex items-center gap-3">

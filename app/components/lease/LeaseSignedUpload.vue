@@ -30,11 +30,11 @@ async function onChange(event: Event) {
 
   const extension = (file.name.split('.').pop() ?? '').toLowerCase()
   if (!ACCEPTED.includes(extension)) {
-    error.value = `«.${extension || '—'}» formati qabul qilinmaydi. Didox’dan olingan imzolangan hujjatni PDF yoki DOCX ko‘rinishida yuklang.`
+    error.value = `«.${extension || '-'}» formati qabul qilinmaydi. Didox’dan olingan imzolangan hujjatni PDF yoki DOCX ko‘rinishida yuklang.`
     return
   }
   if (file.size === 0) {
-    error.value = 'Tanlangan fayl bo‘sh — hujjatni qaytadan yuklab oling.'
+    error.value = 'Tanlangan fayl bo‘sh, hujjatni qaytadan yuklab oling.'
     return
   }
 

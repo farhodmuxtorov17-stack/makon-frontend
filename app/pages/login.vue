@@ -9,8 +9,7 @@ const auth = useAuthStore()
 const route = useRoute()
 
 /**
- * Xodim hisoblarini super rahbar yaratadi va rolni hisobga biriktiradi —
- * shuning uchun kirish oynasida rol tanlanmaydi.
+ * Xodim hisoblarini super rahbar yaratadi va rolni hisobga biriktiradi, * shuning uchun kirish oynasida rol tanlanmaydi.
  */
 const ACCOUNTS: Array<{ login: string; email: string; role: Role }> = [
   { login: 'a.karimov', email: 'a.karimov@makon.uz', role: 'SUPER_HEAD' },
@@ -118,7 +117,7 @@ function submit() {
             Profilingizga kiring
           </h1>
           <p class="mt-2 text-[13.5px] leading-relaxed text-ink-500">
-            Login va parolni kiriting — tizim rolingizga mos ish maydonini ochadi.
+            Login va parolni kiriting, tizim rolingizga mos ish maydonini ochadi.
           </p>
 
           <!-- Noto‘g‘ri ma’lumot holati -->
@@ -300,7 +299,7 @@ function submit() {
             Butun portfel bitta oynada
           </h2>
           <p class="mt-3 text-[14px] leading-relaxed text-white/80">
-            Bandlik, shartnoma, hisob-kitob va texnik xizmat — har bir obyekt bo‘yicha yagona
+            Bandlik, shartnoma, hisob-kitob va texnik xizmat, har bir obyekt bo‘yicha yagona
             manzil.
           </p>
         </div>

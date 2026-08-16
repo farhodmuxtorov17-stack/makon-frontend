@@ -33,7 +33,7 @@ function onInput(event: Event) {
   let raw = el.value.replace(/\D/g, '')
   if (raw.startsWith('998')) raw = raw.slice(3)
   phoneDigits.value = raw.slice(0, 9)
-  // Qiymat o‘zgarmasa Vue maydonni yangilamaydi — niqobni qo‘lda qo‘llaymiz.
+  // Qiymat o‘zgarmasa Vue maydonni yangilamaydi, niqobni qo‘lda qo‘llaymiz.
   el.value = formatted.value
 }
 
@@ -85,7 +85,7 @@ function submit() {
               </template>
             </div>
             <p class="mt-3 text-[11px] font-semibold uppercase tracking-wide text-ink-500">
-              1-qadam / 3 — Telefon raqami
+              1-qadam / 3: Telefon raqami
             </p>
           </div>
 
@@ -93,7 +93,7 @@ function submit() {
             Ro‘yxatdan o‘tish
           </h1>
           <p class="mt-2 text-[13.5px] leading-relaxed text-ink-500">
-            Raqamingizni kiriting — bir martalik kod shu raqamga bog‘langan Telegram akkauntiga
+            Raqamingizni kiriting: bir martalik kod shu raqamga bog‘langan Telegram akkauntiga
             yuboriladi.
           </p>
 

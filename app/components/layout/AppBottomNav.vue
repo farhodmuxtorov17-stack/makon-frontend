@@ -62,7 +62,7 @@ function matches(to: string) {
 }
 
 /**
- * Bir nechta yo‘l mos kelsa eng aniq (eng uzun) manzil tanlanadi — aks holda
+ * Bir nechta yo‘l mos kelsa eng aniq (eng uzun) manzil tanlanadi, aks holda
  * «/cabinet» ichki sahifalarda ham faol ko‘rinib qoladi.
  */
 const activeTo = computed(() => {

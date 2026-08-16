@@ -187,7 +187,7 @@ function goToPage(target: number) {
 function submitExport() {
   const format = exportFormats.find((f) => f.value === exportFormat.value)
   const count = exportScope.value === 'filtered' ? filtered.value.length : BUILDINGS.length
-  notice.value = `Reyestr «${format?.label}» ko‘rinishida tayyorlandi — ${count} ta obyekt.`
+  notice.value = `Reyestr «${format?.label}» ko‘rinishida tayyorlandi, ${count} ta obyekt.`
   exportOpen.value = false
 }
 
@@ -386,7 +386,7 @@ function submitCreate() {
           <span class="tabular">{{ num(totals.units) }}</span> unit ·
           <span class="tabular text-ok-600">{{ num(totals.occupied) }}</span> band ·
           <span class="tabular text-warn-600">{{ num(totals.vacant) }}</span> bo‘sh
-          <span class="text-ink-400"> — ko‘rsatilmoqda {{ rangeLabel }}</span>
+          <span class="text-ink-400">, ko‘rsatilmoqda {{ rangeLabel }}</span>
         </p>
 
         <div class="flex items-center gap-4">

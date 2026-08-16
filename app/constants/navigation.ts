@@ -23,8 +23,7 @@ const SETTINGS_CHILDREN = [
 ]
 
 /**
- * Bildirishnoma va profil sidebar’da emas, faqat header’da bo‘ladi —
- * yon menyu ish modullariga ajratilgan.
+ * Bildirishnoma va profil sidebar’da emas, faqat header’da bo‘ladi, * yon menyu ish modullariga ajratilgan.
  */
 const HELP_ITEM = { label: 'Yordam markazi', to: '/help', icon: 'help' }
 

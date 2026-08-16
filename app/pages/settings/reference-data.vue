@@ -439,13 +439,13 @@ function confirmAction() {
   if (actionInfo.key === 'recount') {
     actionResult.value = `Qayta hisoblandi: ${draftRecords.value.length} ta yozuv.`
   } else if (actionInfo.key === 'import') {
-    actionResult.value = 'Import navbatga qo‘yildi — fayl yuklangach yozuvlar qo‘shiladi.'
+    actionResult.value = 'Import navbatga qo‘yildi, fayl yuklangach yozuvlar qo‘shiladi.'
   } else if (actionInfo.key === 'template') {
     actionResult.value = `Shablon tayyorlandi: ${draft.code}_shablon.xlsx`
   } else {
     actionResult.value = `Eksport tayyorlandi: ${draft.code}.xlsx (${draftRecords.value.length} ta yozuv)`
   }
-  logActivity(`${actionInfo.title} — «${draft.name}»`, 'refresh')
+  logActivity(`${actionInfo.title}, «${draft.name}»`, 'refresh')
   actionOpen.value = false
 }
 </script>
@@ -785,7 +785,7 @@ function confirmAction() {
                     v-if="!draftRecords.length"
                     class="px-4 py-8 text-center text-[13px] text-ink-500"
                   >
-                    Yozuvlar yo‘q — «Qo‘shish» tugmasi orqali kiriting.
+                    Yozuvlar yo‘q: «Qo‘shish» tugmasi orqali kiriting.
                   </li>
                   <li
                     v-for="r in draftRecords"

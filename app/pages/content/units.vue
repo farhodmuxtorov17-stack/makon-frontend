@@ -362,7 +362,7 @@ function saveUnit() {
   u.equipment = [...equipment.value]
 
   formError.value = ''
-  notice.value = `«${u.code}» uniti yangilandi — atribut to‘liqligi ${percent(completeness(u))}.`
+  notice.value = `«${u.code}» uniti yangilandi, atribut to‘liqligi ${percent(completeness(u))}.`
 }
 
 function applyBulk() {
@@ -440,7 +440,7 @@ function toneOf(pct: number) {
 
     <UiCard
       title="Unitlar jadvali"
-      subtitle="Qatorni bosing — yon panelda atributlar tahrirlanadi"
+      subtitle="Qatorni bosing: yon panelda atributlar tahrirlanadi"
       flush
       :padded="false"
     >
@@ -784,7 +784,7 @@ function toneOf(pct: number) {
 
                 <div v-else class="flex items-start gap-2.5 rounded-field bg-ink-50 px-3.5 py-3 text-[12.5px] text-ink-600 ring-1 ring-inset ring-ink-200">
                   <UiIcon name="lock" :size="16" class="mt-0.5 shrink-0 text-ink-400" />
-                  <span>Atributlarni tahrirlash huquqi berilmagan — ma’lumot faqat ko‘rish uchun.</span>
+                  <span>Atributlarni tahrirlash huquqi berilmagan, ma’lumot faqat ko‘rish uchun.</span>
                 </div>
 
                 <NuxtLink

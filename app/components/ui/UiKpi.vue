@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * Ko‘rsatkich kartasi — gradientli ikonka maydoni, yirik qiymat, o‘zgarish
+ * Ko‘rsatkich kartasi: gradientli ikonka maydoni, yirik qiymat, o‘zgarish
  * nishonchasi va karta qirralarigacha yetib boradigan dinamika chizig‘i.
  */
 export type ChartTone =
@@ -18,7 +18,7 @@ const props = withDefaults(
     label: string
     value: string
     unit?: string
-    /** Foizdagi o‘zgarish; musbat — o‘sish, manfiy — pasayish */
+    /** Foizdagi o‘zgarish; musbat, o‘sish, manfiy: pasayish */
     delta?: number
     /** Ba’zi ko‘rsatkichlarda pasayish yaxshi (masalan vacancy, qarzdorlik) */
     invert?: boolean

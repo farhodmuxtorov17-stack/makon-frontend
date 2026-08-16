@@ -80,7 +80,7 @@ onBeforeUnmount(() => {
   if (timer) clearTimeout(timer)
 })
 
-/** Katakka qaytilganda mavjud belgi ajratiladi — yangi raqam uni almashtiradi. */
+/** Katakka qaytilganda mavjud belgi ajratiladi, yangi raqam uni almashtiradi. */
 function onCellFocus(event: FocusEvent) {
   ;(event.target as HTMLInputElement).select()
 }
@@ -96,14 +96,14 @@ function onCellInput(event: Event, index: number) {
     return
   }
 
-  // Bir katakka bir nechta raqam tushsa — qolganlari keyingi kataklarga tarqaladi.
+  // Bir katakka bir nechta raqam tushsa, qolganlari keyingi kataklarga tarqaladi.
   const next = [...cells.value]
   for (let i = 0; i < digits.length && index + i < CODE_LENGTH; i++) {
     next[index + i] = digits[i] as string
   }
   cells.value = next
 
-  // Fokus darhol ko‘chadi — tez yozilganda keyingi belgi to‘g‘ri katakka tushadi.
+  // Fokus darhol ko‘chadi: tez yozilganda keyingi belgi to‘g‘ri katakka tushadi.
   focusAt(Math.min(index + digits.length, CODE_LENGTH - 1))
   if (next.join('').length === CODE_LENGTH) nextTick(submit)
 }
@@ -220,7 +220,7 @@ function resend() {
               </template>
             </div>
             <p class="mt-3 text-[11px] font-semibold uppercase tracking-wide text-ink-500">
-              2-qadam / 3 — Tasdiqlash kodi
+              2-qadam / 3: Tasdiqlash kodi
             </p>
           </div>
 
@@ -362,7 +362,7 @@ function resend() {
             Kirish faqat sizning raqamingiz orqali
           </h2>
           <p class="mt-3 text-[14px] leading-relaxed text-white/80">
-            Bir martalik kod hisobni raqamingizga bog‘laydi — hujjat va to‘lov ma’lumotlari
+            Bir martalik kod hisobni raqamingizga bog‘laydi, hujjat va to‘lov ma’lumotlari
             begona qo‘lga o‘tmaydi.
           </p>
         </div>

@@ -137,7 +137,7 @@ const unitRows = computed(() =>
     areaLabel: area(u.area),
     usage: u.usage,
     offer: u.offer,
-    tenant: u.tenant ?? '—',
+    tenant: u.tenant ?? '-',
     priceLabel: `${num(u.price)} ${u.priceUnit}`,
     status: u.status,
   })),
@@ -165,7 +165,7 @@ function submitEdit() {
 }
 
 function submitPdf() {
-  notice.value = `Bino pasporti PDF ko‘rinishida tayyorlandi — ${pdfSections.value.length} ta bo‘lim.`
+  notice.value = `Bino pasporti PDF ko‘rinishida tayyorlandi, ${pdfSections.value.length} ta bo‘lim.`
   pdfOpen.value = false
 }
 </script>
@@ -307,7 +307,7 @@ function submitPdf() {
                 type="button"
                 class="overflow-hidden rounded-[9px] ring-2 transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500"
                 :class="g === activePhoto ? 'ring-brand-500' : 'ring-transparent hover:ring-ink-300'"
-                :aria-label="`${building.name} — rakurs ${building.gallery.indexOf(g) + 1}`"
+                :aria-label="`${building.name}, rakurs ${building.gallery.indexOf(g) + 1}`"
                 :aria-pressed="g === activePhoto"
                 @click="activePhoto = g"
               >

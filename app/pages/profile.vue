@@ -4,7 +4,7 @@ import { ROLE_META } from '~/constants/roles'
 const auth = useAuthStore()
 const { locale, locales, setLocale } = useI18n()
 
-const roleLabel = computed(() => (auth.role ? ROLE_META[auth.role].label : '—'))
+const roleLabel = computed(() => (auth.role ? ROLE_META[auth.role].label : '-'))
 const roleCaption = computed(() => (auth.role ? ROLE_META[auth.role].caption : ''))
 
 const initials = computed(() =>
@@ -218,9 +218,9 @@ function toggleNotification(id: string) {
           />
           <div class="min-w-0">
             <h3 class="truncate text-[17px] font-bold text-ink-900">
-              {{ auth.user?.fullName ?? '—' }}
+              {{ auth.user?.fullName ?? '-' }}
             </h3>
-            <p class="truncate text-[13px] text-ink-500">{{ auth.user?.position ?? '—' }}</p>
+            <p class="truncate text-[13px] text-ink-500">{{ auth.user?.position ?? '-' }}</p>
           </div>
         </div>
 
@@ -233,15 +233,15 @@ function toggleNotification(id: string) {
         <dl class="mt-4 divide-y divide-ink-100 border-t border-ink-100">
           <div class="flex items-center justify-between py-2.5">
             <dt class="text-[12.5px] text-ink-500">Tashkilot</dt>
-            <dd class="text-[13px] font-semibold text-ink-900">{{ auth.user?.organization ?? '—' }}</dd>
+            <dd class="text-[13px] font-semibold text-ink-900">{{ auth.user?.organization ?? '-' }}</dd>
           </div>
           <div class="flex items-center justify-between py-2.5">
             <dt class="text-[12.5px] text-ink-500">Telefon</dt>
-            <dd class="tabular text-[13px] font-semibold text-ink-900">{{ auth.user?.phone ?? '—' }}</dd>
+            <dd class="tabular text-[13px] font-semibold text-ink-900">{{ auth.user?.phone ?? '-' }}</dd>
           </div>
           <div class="flex items-center justify-between py-2.5">
             <dt class="text-[12.5px] text-ink-500">E-mail</dt>
-            <dd class="truncate text-[13px] font-semibold text-ink-900">{{ auth.user?.email ?? '—' }}</dd>
+            <dd class="truncate text-[13px] font-semibold text-ink-900">{{ auth.user?.email ?? '-' }}</dd>
           </div>
         </dl>
 
@@ -418,7 +418,7 @@ function toggleNotification(id: string) {
 
       <p class="flex items-start gap-2 rounded-field bg-brand-50 px-3.5 py-2.5 text-[12px] text-brand-700">
         <UiIcon name="info" :size="15" class="mt-0.5 shrink-0" />
-        Parol o‘zgartirilgach boshqa qurilmalardagi seanslar amal qilishda davom etadi — kerak
+        Parol o‘zgartirilgach boshqa qurilmalardagi seanslar amal qilishda davom etadi, kerak
         bo‘lsa ularni «Xavfsizlik» bo‘limidan tugating.
       </p>
     </div>

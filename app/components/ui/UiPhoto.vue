@@ -9,7 +9,7 @@ const props = withDefaults(
     alt: string
     /** Tashqi o‘ram uchun nisbat sinfi */
     ratio?: string
-    /** Eng katta ko‘rsatiladigan kenglik — srcset tanlovi uchun */
+    /** Eng katta ko‘rsatiladigan kenglik, srcset tanlovi uchun */
     sizes?: string
     /** Shaffof fonli izometrik kesimlar uchun */
     contain?: boolean
@@ -27,7 +27,7 @@ const props = withDefaults(
 
 const failed = ref(false)
 
-// Nom o‘zgarsa yangi rasmga qayta urinamiz — aks holda bir marta xato bergan
+// Nom o‘zgarsa yangi rasmga qayta urinamiz, aks holda bir marta xato bergan
 // komponent boshqa hech qachon rasm ko‘rsatmaydi.
 watch(
   () => props.name,
@@ -64,7 +64,7 @@ const srcset = computed(() =>
       @error="failed = true"
     />
 
-    <!-- Rasm topilmasa — neytral o‘rin egallovchi, matnsiz -->
+    <!-- Rasm topilmasa: neytral o‘rin egallovchi, matnsiz -->
     <div v-else class="grid size-full place-items-center text-ink-300">
       <UiIcon name="building" :size="40" />
     </div>

@@ -40,7 +40,7 @@ watchEffect(() => {
 
 /**
  * Teleport qilingan tugun chiqish animatsiyasi tugashini kutadi; komponent
- * shu orada yo‘q qilinsa tugun body’da osilib qoladi — shuning uchun uni
+ * shu orada yo‘q qilinsa tugun body’da osilib qoladi, shuning uchun uni
  * qo‘lda olib tashlaymiz.
  */
 onBeforeUnmount(() => {

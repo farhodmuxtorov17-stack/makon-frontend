@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * Ish maydoni karkasi. Telefonda yon panel butunlay olib qo‘yiladi — uning
+ * Ish maydoni karkasi. Telefonda yon panel butunlay olib qo‘yiladi, uning
  * o‘rnini pastki navigatsiya qatori egallaydi; planshetdan boshlab yon panel
  * qaytadi (planshetda tor tasma, katta ekranda yorliqlar bilan).
  */

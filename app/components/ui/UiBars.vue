@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * Ustunli diagramma — gradient bilan bo‘yalgan ustunlar, ixtiyoriy izometrik
+ * Ustunli diagramma: gradient bilan bo‘yalgan ustunlar, ixtiyoriy izometrik
  * chuqurlik, ustunga kursor kelganda qiymatlar paneli.
  */
 export type ChartTone =
@@ -28,9 +28,9 @@ const props = withDefaults(
     height?: number
     /** Qiymat izohi (masalan "mln so‘m") */
     unit?: string
-    /** Izometrik yuqori va yon yuza — hajmli ko‘rinish */
+    /** Izometrik yuqori va yon yuza, hajmli ko‘rinish */
     depth?: boolean
-    /** Ustun ustidagi qiymat yozuvi; `auto` — siyrak diagrammalarda ko‘rinadi */
+    /** Ustun ustidagi qiymat yozuvi; `auto` bo‘lsa siyrak diagrammalarda ko‘rinadi */
     valueLabels?: boolean | 'auto'
   }>(),
   { height: 200, valueLabels: 'auto' },
@@ -102,7 +102,7 @@ const max = computed(() => {
 })
 
 function pct(v: number) {
-  // Qiymat yozuvlari ko‘rsatilsa — tepada joy qoldiriladi
+  // Qiymat yozuvlari ko‘rsatilsa, tepada joy qoldiriladi
   const share = (v / (max.value || 1)) * 100 * (showValues.value ? 0.87 : 1)
   return v > 0 ? Math.max(share, 1.5) : 0
 }
@@ -125,12 +125,25 @@ function fmt(v: number) {
   return num(v, 2)
 }
 
-const showValues = computed(() => {
-  if (props.valueLabels !== 'auto') return props.valueLabels === true
-  return props.labels.length <= 8 && (props.stacked === true || props.series.length === 1)
+const plot = ref<HTMLElement | null>(null)
+const { width: plotWidth } = useElementSize(plot)
+
+/** Ustun uchun ajratilgan kenglik qiymat yozuvini sig‘dira oladimi */
+const roomy = computed(() => {
+  if (!plotWidth.value) return true
+  return plotWidth.value / Math.max(props.labels.length, 1) >= 54
 })
 
-/* --- Kirish animatsiyasi (harakat kamaytirilgan bo‘lsa — darhol to‘liq holat) --- */
+const showValues = computed(() => {
+  if (props.valueLabels !== 'auto') return props.valueLabels === true
+  return (
+    roomy.value &&
+    props.labels.length <= 8 &&
+    (props.stacked === true || props.series.length === 1)
+  )
+})
+
+/* --- Kirish animatsiyasi (harakat kamaytirilgan bo‘lsa, darhol to‘liq holat) --- */
 
 const shown = ref(false)
 
@@ -175,7 +188,7 @@ const summary = computed(() => {
     return `${s.label}: ${fmt(Math.min(...vs))} dan ${fmt(Math.max(...vs))} gacha`
   })
   const span = props.labels.length
-    ? `${props.labels.length} ta ustun: ${props.labels[0]} — ${props.labels[props.labels.length - 1]}`
+    ? `${props.labels.length} ta ustun: ${props.labels[0]} dan ${props.labels[props.labels.length - 1]} gacha`
     : 'ustunlar yo‘q'
   return `Ustunli diagramma${props.unit ? `, ${props.unit}` : ''}. ${span}. ${rows.join('; ')}.`
 })
@@ -200,6 +213,7 @@ const summary = computed(() => {
         </div>
 
         <div
+          ref="plot"
           class="relative flex h-full items-end gap-1.5 sm:gap-3"
           :class="depth ? 'pe-1.5' : ''"
           role="img"
@@ -215,7 +229,7 @@ const summary = computed(() => {
               <!-- Qiymat yozuvi -->
               <span
                 v-if="showValues"
-                class="tabular pointer-events-none absolute inset-x-0 text-center text-[10.5px] font-semibold leading-none transition-opacity duration-300 ease-out"
+                class="tabular pointer-events-none absolute inset-x-0 whitespace-nowrap text-center text-[10.5px] font-semibold leading-none transition-opacity duration-300 ease-out"
                 :class="[
                   active === i ? 'text-ink-900' : 'text-ink-500',
                   shown ? 'opacity-100' : 'opacity-0',
@@ -233,35 +247,37 @@ const summary = computed(() => {
                 class="relative w-full max-w-[38px] origin-bottom transition-transform duration-500 ease-out"
                 :style="[{ height: `${pct(columnTotal(i))}%` }, grow(i)]"
               >
-                <template v-if="depth && columnTotal(i) > 0">
-                  <span
-                    class="absolute bottom-0 left-full h-full origin-bottom-left"
-                    :style="[
-                      sideFaceStyle(series[series.length - 1]?.tone ?? 'brand'),
-                      { width: `${DEPTH}px`, transform: 'skewY(-45deg)' },
-                    ]"
-                  />
-                  <span
-                    class="absolute inset-x-0 bottom-full origin-bottom-left"
-                    :style="[
-                      topFaceStyle(series[series.length - 1]?.tone ?? 'brand'),
-                      { height: `${DEPTH}px`, transform: 'skewX(-45deg)' },
-                    ]"
-                  />
-                </template>
+                <span
+                  v-if="depth && columnTotal(i) > 0"
+                  class="absolute inset-x-0 bottom-full origin-bottom-left"
+                  :style="[
+                    topFaceStyle(series[series.length - 1]?.tone ?? 'brand'),
+                    { height: `${DEPTH}px`, transform: 'skewX(-45deg)' },
+                  ]"
+                />
 
                 <div
-                  class="absolute inset-0 flex flex-col-reverse overflow-hidden"
-                  :class="depth ? 'rounded-t-[3px]' : 'rounded-t-[6px]'"
+                  class="absolute inset-0 flex flex-col-reverse"
+                  :class="depth ? '' : 'overflow-hidden rounded-t-[6px]'"
                 >
                   <span
                     v-for="s in series"
                     :key="s.label"
+                    class="relative"
                     :style="[
                       bodyStyle(s.tone),
                       { height: `${segShare(i, s.values[i] ?? 0)}%` },
                     ]"
-                  />
+                  >
+                    <span
+                      v-if="depth"
+                      class="absolute bottom-0 left-full h-full origin-bottom-left"
+                      :style="[
+                        sideFaceStyle(s.tone),
+                        { width: `${DEPTH}px`, transform: 'skewY(-45deg)' },
+                      ]"
+                    />
+                  </span>
                 </div>
               </div>
 

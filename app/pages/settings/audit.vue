@@ -147,8 +147,8 @@ const EVENTS: AuditEvent[] = [
     detail: 'Shartnoma tizim ichida tasdiqlandi va faol holatga o‘tdi.',
     diff: [
       { field: 'Status', before: 'Kelishilmoqda', after: 'Imzolangan' },
-      { field: 'Tasdiqlagan shaxs', before: '—', after: 'Nigora Aripova' },
-      { field: 'Tasdiqlash sanasi', before: '—', after: '17.05.2025' },
+      { field: 'Tasdiqlagan shaxs', before: '-', after: 'Nigora Aripova' },
+      { field: 'Tasdiqlash sanasi', before: '-', after: '17.05.2025' },
     ],
   },
   {
@@ -195,8 +195,8 @@ const EVENTS: AuditEvent[] = [
     ip: '10.0.14.44',
     detail: 'Yangi hisob-faktura shakllantirildi va ijarachiga yuborildi.',
     diff: [
-      { field: 'Summa', before: '—', after: '31 200 000 so‘m' },
-      { field: 'To‘lov muddati', before: '—', after: '25.05.2025' },
+      { field: 'Summa', before: '-', after: '31 200 000 so‘m' },
+      { field: 'To‘lov muddati', before: '-', after: '25.05.2025' },
     ],
   },
   {
@@ -240,8 +240,8 @@ const EVENTS: AuditEvent[] = [
     ip: '10.0.14.22',
     detail: 'Yangi foydalanuvchi yaratildi va texnik xizmat roliga biriktirildi.',
     diff: [
-      { field: 'Rol', before: '—', after: 'Pudratchi / xo‘jalik bo‘limi' },
-      { field: 'Obyekt biriktirish', before: '—', after: 'Green Business Center, Urban Office' },
+      { field: 'Rol', before: '-', after: 'Pudratchi / xo‘jalik bo‘limi' },
+      { field: 'Obyekt biriktirish', before: '-', after: 'Green Business Center, Urban Office' },
     ],
   },
   {
@@ -477,7 +477,7 @@ function confirmExport() {
       </div>
     </UiCard>
 
-    <UiCard title="Hodisalar ro‘yxati" subtitle="Qatorni bosing — to‘liq tafsilot va o‘zgarishlar" flush>
+    <UiCard title="Hodisalar ro‘yxati" subtitle="Qatorni bosing, to‘liq tafsilot va o‘zgarishlar" flush>
       <UiTable
         :columns="columns"
         :rows="filtered"
@@ -602,7 +602,7 @@ function confirmExport() {
           <p class="text-[13px] font-semibold text-ink-700">O‘zgarishlar (oldingi / yangi qiymat)</p>
 
           <p v-if="!selected.diff.length" class="mt-2 text-[13px] text-ink-500">
-            Bu hodisada maydon qiymatlari o‘zgarmagan — faqat amal fakti qayd etilgan.
+            Bu hodisada maydon qiymatlari o‘zgarmagan, faqat amal fakti qayd etilgan.
           </p>
 
           <ul v-else class="mt-2.5 space-y-2.5">
@@ -632,7 +632,7 @@ function confirmExport() {
 
         <p class="mt-5 flex items-start gap-2 rounded-field bg-ink-50 px-3.5 py-3 text-[12px] text-ink-600">
           <UiIcon name="lock" :size="15" class="mt-0.5 shrink-0" />
-          Yozuv o‘zgartirilmaydi va o‘chirilmaydi — audit jurnali faqat qo‘shiladigan rejimda
+          Yozuv o‘zgartirilmaydi va o‘chirilmaydi, audit jurnali faqat qo‘shiladigan rejimda
           ishlaydi.
         </p>
       </template>

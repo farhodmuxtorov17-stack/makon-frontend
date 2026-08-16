@@ -46,7 +46,7 @@ const portfolioSlices = computed(() => [
 
 const serviceCount = computed(() => visible.value.reduce((s, b) => s + b.serviceRequests, 0))
 
-/** Tanlangan obyektning portfeldagi ulushi — grafik shunga moslashadi */
+/** Tanlangan obyektning portfeldagi ulushi, grafik shunga moslashadi */
 const scopeShare = computed(() => totals.value.revenue / PORTFOLIO_TOTALS.revenue)
 
 const PERIOD_DATA: Record<string, { labels: string[]; revenue: number[]; debt: number[] }> = {

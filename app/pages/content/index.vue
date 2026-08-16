@@ -236,7 +236,7 @@ function resetFilters() {
 
     <UiCard
       title="Binolar bo‘yicha tayyorlik"
-      subtitle="Kartani bosing — navbat shu bino bo‘yicha filtrlanadi"
+      subtitle="Kartani bosing: navbat shu bino bo‘yicha filtrlanadi"
     >
       <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         <button
@@ -277,7 +277,7 @@ function resetFilters() {
 
     <UiCard
       title="Ish navbati"
-      subtitle="Qatorni bosing — qavat rejasi muharririda ochiladi"
+      subtitle="Qatorni bosing: qavat rejasi muharririda ochiladi"
       flush
       :padded="false"
     >

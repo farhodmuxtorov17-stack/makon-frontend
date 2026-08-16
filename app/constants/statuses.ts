@@ -1,9 +1,9 @@
 /**
- * Barcha status enumlari — texnik spetsifikatsiya §3.4.
+ * Barcha status enumlari: texnik spetsifikatsiya §3.4.
  *
  * Har bir status uchun rang bilan birga `shape` beriladi: talab bo‘yicha
  * status faqat rang bilan emas, matn va shakl bilan ham farqlanishi kerak
- * (§8.4, §22.4 — rang ko‘rmaydigan foydalanuvchilar uchun).
+ * (§8.4, §22.4: rang ko‘rmaydigan foydalanuvchilar uchun).
  */
 
 export type Tone = 'neutral' | 'brand' | 'ok' | 'warn' | 'danger' | 'violet'
@@ -19,8 +19,8 @@ export const UNIT_STATUS: Record<string, StatusDef> = {
   DRAFT: { label: 'Qoralama', tone: 'neutral', shape: 'square' },
   VACANT: { label: 'Bo‘sh', tone: 'ok', shape: 'ring' },
   APPLICATION_IN_REVIEW: { label: 'Ariza ko‘rikda', tone: 'warn', shape: 'clock' },
-  // Ranglar mijoz maketidagi legendaga mos: bo‘sh — yashil, ijarada — ko‘k,
-  // sotilgan — qizil, rezerv — sariq, texnik — kulrang.
+  // Ranglar mijoz maketidagi legendaga mos: bo‘sh, yashil, ijarada: ko‘k,
+  // sotilgan: qizil, rezerv: sariq, texnik: kulrang.
   RESERVED: { label: 'Rezerv', tone: 'warn', shape: 'dot' },
   RENTED: { label: 'Ijarada', tone: 'brand', shape: 'check' },
   SOLD: { label: 'Sotilgan', tone: 'danger', shape: 'check' },
@@ -51,7 +51,7 @@ export const APPLICATION_STATUS: Record<string, StatusDef> = {
 }
 
 /**
- * Ijara sikli — unit tanlashdan faol shartnomagacha bo‘lgan yagona status
+ * Ijara sikli: unit tanlashdan faol shartnomagacha bo‘lgan yagona status
  * mashinasi. Ijarachi, bino rahbari va buxgalter ekranlari shu registrdan
  * o‘qiydi, shuning uchun uch rol bir xil nom va belgini ko‘radi.
  */

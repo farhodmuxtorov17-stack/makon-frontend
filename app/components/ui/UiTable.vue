@@ -24,7 +24,7 @@ const emit = defineEmits<{ rowClick: [row: T] }>()
 
 /**
  * `rowClick` e’lon qilingan emit bo‘lgani uchun Vue uni `$attrs` dan olib
- * tashlaydi — shuning uchun tinglovchi bor-yo‘qligi vnode props’dan aniqlanadi.
+ * tashlaydi: shuning uchun tinglovchi bor-yo‘qligi vnode props’dan aniqlanadi.
  */
 const instance = getCurrentInstance()
 const hasRowClick = Boolean(instance?.vnode.props?.onRowClick)

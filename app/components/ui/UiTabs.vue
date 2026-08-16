@@ -2,7 +2,7 @@
 withDefaults(
   defineProps<{
     tabs: Array<{ value: string; label: string; count?: number }>
-    /** segment — maketdagi kulrang yo‘lakda oq pill; line — pastki chiziqli */
+    /** segment: maketdagi kulrang yo‘lakda oq pill; line, pastki chiziqli */
     variant?: 'segment' | 'line'
   }>(),
   { variant: 'segment' },

@@ -37,7 +37,7 @@ for (const file of files) {
     if (descriptor.script || descriptor.scriptSetup) {
       const compiled = compileScript(descriptor, { id })
 
-      // Kompilyator makrosi kompilyatsiyadan keyin ham qolgan bo‘lsa — u ish
+      // Kompilyator makrosi kompilyatsiyadan keyin ham qolgan bo‘lsa, u ish
       // vaqtida chaqiriladi va ReferenceError beradi (odatda yopilmagan qavs).
       const leftover = ['defineProps', 'defineEmits', 'defineSlots', 'defineModel', 'defineExpose']
         .filter((m) => new RegExp(`(^|[^.\\w])${m}\\s*[<(]`).test(compiled.content))

@@ -1,12 +1,12 @@
 @import 'tailwindcss';
 
 /* ==========================================================================
-   MAKON — dizayn tizimi tokenlari
+   MAKON dizayn tizimi tokenlari
    Ranglar interfeys maketlaridan piksel darajasida olingan.
    ========================================================================== */
 
 /* ==========================================================================
-   Shriftlar — loyiha ichida saqlanadi, tashqi so‘rov yuborilmaydi
+   Shriftlar loyiha ichida saqlanadi, tashqi so‘rov yuborilmaydi
    ========================================================================== */
 
 @font-face {
@@ -273,7 +273,7 @@
     -webkit-font-smoothing: antialiased;
   }
 
-  /* Sarlavhalar dekorativ chiziqlarsiz — faqat tipografika va oraliq bilan
+  /* Sarlavhalar dekorativ chiziqlarsiz, faqat tipografika va oraliq bilan
      ajratiladi (texnik spetsifikatsiya, §3.1). */
   h1,
   h2,
@@ -302,7 +302,7 @@
     max-width: 100%;
   }
 
-  /* Harakatni kamaytirish so‘ralgan bo‘lsa — animatsiyalar o‘chiriladi */
+  /* Harakatni kamaytirish so‘ralgan bo‘lsa, animatsiyalar o‘chiriladi */
   @media (prefers-reduced-motion: reduce) {
     html {
       scroll-behavior: auto;

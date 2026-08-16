@@ -15,7 +15,7 @@ withDefaults(
 const model = defineModel<string | number>()
 
 // id, inputmode va shu kabi atributlar ildiz <div> ga emas, haqiqiy
-// <input> ga tushishi kerak — aks holda yorliq maydonga bog‘lanmaydi.
+// <input> ga tushishi kerak, aks holda yorliq maydonga bog‘lanmaydi.
 // class/style esa tashqi o‘ramda qoladi, chunki kenglik shu yerda beriladi.
 defineOptions({ inheritAttrs: false })
 

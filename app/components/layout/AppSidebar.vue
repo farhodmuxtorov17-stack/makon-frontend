@@ -9,7 +9,7 @@ const sections = computed(() => (auth.role ? NAVIGATION[auth.role] : []))
 const meta = computed(() => auth.roleMeta)
 
 /**
- * Planshetda yon panel doim tor tasma ko‘rinishida — kontent uchun joy
+ * Planshetda yon panel doim tor tasma ko‘rinishida, kontent uchun joy
  * qoladi. Katta ekranda foydalanuvchi o‘zi yig‘ib qo‘yishi mumkin va tanlov
  * saqlanadi.
  */
@@ -48,7 +48,7 @@ function toggleGroup(to: string) {
 /**
  * Tasma rejimida yorliq yonma-yon oynachada ko‘rsatiladi. Navigatsiya
  * ro‘yxati o‘zi aylanadigan blok bo‘lgani uchun oynacha `body` ga
- * ko‘chiriladi — aks holda u qirqilib qolardi.
+ * ko‘chiriladi: aks holda u qirqilib qolardi.
  */
 const hint = ref<{ item: NavItem; top: number } | null>(null)
 
@@ -205,7 +205,7 @@ watch(() => route.fullPath, hideHint)
         v-if="rail"
         to="/help"
         class="mx-auto grid size-11 place-items-center rounded-field bg-brand-500 text-white shadow-brand transition-transform duration-200 hover:-translate-y-0.5"
-        aria-label="Yordam markazi — 24/7 qo‘llab-quvvatlash"
+        aria-label="Yordam markazi, 24/7 qo‘llab-quvvatlash"
         @mouseenter="showHint({ label: 'Yordam markazi', to: '/help', icon: 'headset' }, $event)"
         @mouseleave="hideHint"
         @focusin="showHint({ label: 'Yordam markazi', to: '/help', icon: 'headset' }, $event)"

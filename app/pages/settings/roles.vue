@@ -48,7 +48,7 @@ type AreaKey =
 interface AreaDef {
   key: AreaKey
   label: string
-  /** Bo‘limga tegishli marshrutlar — kirish huquqi shular bo‘yicha aniqlanadi */
+  /** Bo‘limga tegishli marshrutlar, kirish huquqi shular bo‘yicha aniqlanadi */
   prefixes: string[]
   /** Shu bo‘limda yozuv (qaror) huquqini beruvchi amallar */
   writes: Capability[]
@@ -134,7 +134,7 @@ const AREA_VIEW = AREAS.map((a) => ({
   ...a,
   writeLabel: a.writes.length
     ? a.writes.map((c) => CAPABILITY_LABELS[c]).join(' · ')
-    : 'Yozuv huquqi yo‘q — faqat ko‘rish',
+    : 'Yozuv huquqi yo‘q: faqat ko‘rish',
 }))
 
 const LEVEL_META: Record<AccessLevel, { label: string; badge: string; mark: string; desc: string }> =
@@ -149,7 +149,7 @@ const LEVEL_META: Record<AccessLevel, { label: string; badge: string; mark: stri
       label: 'Cheklangan',
       badge: 'bg-warn-50 text-warn-700 ring-warn-100',
       mark: 'text-warn-600',
-      desc: 'bo‘lim ochiq, lekin yozuv huquqi yo‘q — faqat ko‘rish',
+      desc: 'bo‘lim ochiq, lekin yozuv huquqi yo‘q, faqat ko‘rish',
     },
     none: {
       label: 'Yo‘q',
@@ -342,7 +342,7 @@ function capabilitiesOf(role: Role) {
 
     <UiCard
       title="Ruxsatlar matritsasi"
-      subtitle="Katakni bosing — holat «To‘liq → Cheklangan → Yo‘q» tartibida almashadi"
+      subtitle="Katakni bosing: holat «To‘liq → Cheklangan → Yo‘q» tartibida almashadi"
       flush
       :padded="false"
     >
@@ -367,7 +367,7 @@ function capabilitiesOf(role: Role) {
                 :key="a.key"
                 scope="col"
                 class="min-w-[124px] px-3 py-3 text-center text-[12px] font-semibold uppercase tracking-wide text-ink-500"
-                :title="`${a.label} — ${a.writeLabel}`"
+                :title="`${a.label}: ${a.writeLabel}`"
               >
                 {{ a.label }}
               </th>
@@ -408,7 +408,7 @@ function capabilitiesOf(role: Role) {
                   type="button"
                   class="mx-auto flex w-full max-w-[108px] flex-col items-center gap-1 rounded-field px-2 py-2 ring-1 ring-inset transition-colors hover:ring-brand-300"
                   :class="LEVEL_META[cell(role, a.key)].badge"
-                  :aria-label="`${ROLE_META[role].label} — ${a.label}: ${LEVEL_META[cell(role, a.key)].label}. Keyingi holat: ${LEVEL_META[nextLevel(cell(role, a.key))].label}`"
+                  :aria-label="`${ROLE_META[role].label}, ${a.label}: ${LEVEL_META[cell(role, a.key)].label}. Keyingi holat: ${LEVEL_META[nextLevel(cell(role, a.key))].label}`"
                   :title="`${a.label}: ${LEVEL_META[cell(role, a.key)].label} (o‘zgartirish uchun bosing)`"
                   @click="cycle(role, a.key)"
                 >
@@ -468,7 +468,7 @@ function capabilitiesOf(role: Role) {
               <circle cx="10" cy="10" r="8.4" fill="currentColor" opacity=".16" />
               <path d="m5.8 10.4 2.9 2.9 5.6-6.4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
-            <span><b class="font-semibold text-ink-800">To‘liq</b> — {{ LEVEL_META.full.desc }}</span>
+            <span><b class="font-semibold text-ink-800">To‘liq</b>, {{ LEVEL_META.full.desc }}</span>
           </li>
           <li class="flex items-start gap-2 text-[12.5px] text-ink-600">
             <svg class="mt-px size-5 shrink-0 text-warn-600" viewBox="0 0 20 20" fill="none" aria-hidden="true">
@@ -476,14 +476,14 @@ function capabilitiesOf(role: Role) {
               <circle cx="10" cy="10" r="2.4" fill="currentColor" />
             </svg>
             <span>
-              <b class="font-semibold text-ink-800">Cheklangan</b> — {{ LEVEL_META.scoped.desc }}
+              <b class="font-semibold text-ink-800">Cheklangan</b>, {{ LEVEL_META.scoped.desc }}
             </span>
           </li>
           <li class="flex items-start gap-2 text-[12.5px] text-ink-600">
             <svg class="mt-px size-5 shrink-0 text-ink-400" viewBox="0 0 20 20" fill="none" aria-hidden="true">
               <path d="M6 6l8 8M14 6l-8 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
             </svg>
-            <span><b class="font-semibold text-ink-800">Yo‘q</b> — {{ LEVEL_META.none.desc }}</span>
+            <span><b class="font-semibold text-ink-800">Yo‘q</b>, {{ LEVEL_META.none.desc }}</span>
           </li>
         </ul>
 
@@ -506,7 +506,7 @@ function capabilitiesOf(role: Role) {
 
         <p class="mt-3.5 text-[12px] leading-relaxed text-ink-500">
           Boshlang‘ich qiymatlar marshrut ruxsatlari va rol amal huquqlari jadvalidan hisoblanadi.
-          Shuning uchun «Super rahbar» arizalarni ko‘radi, lekin qaror qabul qilmaydi — u
+          Shuning uchun «Super rahbar» arizalarni ko‘radi, lekin qaror qabul qilmaydi, u
           «Cheklangan» darajada turadi.
         </p>
       </div>
@@ -579,7 +579,7 @@ function capabilitiesOf(role: Role) {
             {{ c.label }}
           </li>
           <li v-if="!capabilitiesOf(role).length" class="text-[12px] text-ink-500">
-            Yozuv huquqi berilmagan — faqat ko‘rish
+            Yozuv huquqi berilmagan: faqat ko‘rish
           </li>
         </ul>
 

@@ -30,9 +30,9 @@ const relatedDebt = computed(() =>
 )
 
 const currentApprover = computed(() => auth.user?.fullName ?? 'Jahongir Alimov')
-const approveDate = computed(() => approvalStep.value?.date ?? '—')
+const approveDate = computed(() => approvalStep.value?.date ?? '-')
 const approver = computed(() =>
-  isApproved.value ? (approvalStep.value?.actor ?? '—') : currentApprover.value,
+  isApproved.value ? (approvalStep.value?.actor ?? '-') : currentApprover.value,
 )
 const approveToday = '2025-05-19'
 
@@ -162,7 +162,7 @@ const DOC_TONE: Record<string, string> = {
               <div class="flex items-baseline justify-between gap-6 py-3">
                 <dt class="text-[13px] text-ink-500">Tugash sanasi</dt>
                 <dd class="text-[13.5px] font-semibold text-ink-900">
-                  {{ contract.endsAt === '—' ? 'Muddatsiz' : dateLong(contract.endsAt) }}
+                  {{ contract.endsAt === '-' ? 'Muddatsiz' : dateLong(contract.endsAt) }}
                 </dd>
               </div>
               <div class="flex items-baseline justify-between gap-6 py-3">
@@ -257,7 +257,7 @@ const DOC_TONE: Record<string, string> = {
                 <div class="min-w-0 flex-1 pt-1">
                   <p class="text-[13.5px] font-bold text-ink-900">{{ t.label }}</p>
                   <p class="mt-0.5 text-[12.5px] text-ink-500">
-                    {{ t.date === '—' ? 'Sana belgilanmagan' : dateLong(t.date) }} · {{ t.actor }}
+                    {{ t.date === '-' ? 'Sana belgilanmagan' : dateLong(t.date) }} · {{ t.actor }}
                   </p>
                 </div>
                 <span
@@ -381,8 +381,7 @@ const DOC_TONE: Record<string, string> = {
           <div class="flex items-baseline justify-between gap-4 py-2.5">
             <dt class="text-[13px] text-ink-500">Amal qilish muddati</dt>
             <dd class="text-[13.5px] font-semibold text-ink-900">
-              {{ dateShort(contract.startsAt) }} —
-              {{ contract.endsAt === '—' ? 'muddatsiz' : dateShort(contract.endsAt) }}
+              {{ dateShort(contract.startsAt) }} · {{ contract.endsAt === '-' ? 'muddatsiz' : dateShort(contract.endsAt) }}
             </dd>
           </div>
         </dl>

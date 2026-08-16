@@ -32,7 +32,7 @@ const errors = reactive({ unitId: '', price: '', startDate: '' })
 const unit = computed(() => (form.unitId ? unitById(form.unitId) : undefined))
 const building = computed(() => (unit.value ? buildingById(unit.value.buildingId) : undefined))
 
-/** Boshlanish sanasi standarti — keyingi oyning birinchi kuni */
+/** Boshlanish sanasi standarti, keyingi oyning birinchi kuni */
 function firstOfNextMonth() {
   const d = new Date()
   d.setDate(1)
@@ -237,7 +237,7 @@ function submit() {
                   {{ r.label }}
                 </dt>
                 <dd class="tabular mt-0.5 break-words text-[13px] font-semibold text-ink-900">
-                  {{ r.value || '—' }}
+                  {{ r.value || '-' }}
                 </dd>
               </span>
             </div>
@@ -245,7 +245,7 @@ function submit() {
 
           <p class="mt-3 flex items-start gap-2 text-[12px] leading-relaxed text-ink-500">
             <UiIcon name="lock" :size="14" class="mt-px shrink-0" />
-            Maydonlar faqat o‘qish uchun — rekvizitlar profil bo‘limida yangilanadi.
+            Maydonlar faqat o‘qish uchun, rekvizitlar profil bo‘limida yangilanadi.
           </p>
         </UiCard>
 

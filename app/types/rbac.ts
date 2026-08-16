@@ -1,6 +1,6 @@
 /**
  * Rollar «Rollar (Makon)» hujjatining 3-bo‘limiga (funksional spetsifikatsiya)
- * to‘liq mos keladi — tartib boshqaruv darajasi bo‘yicha.
+ * to‘liq mos keladi: tartib boshqaruv darajasi bo‘yicha.
  */
 export const ROLES = [
   'SUPER_HEAD',
@@ -42,11 +42,11 @@ export interface RoleMeta {
   label: string
   /** Rolning qisqacha vazifasi */
   caption: string
-  /** Boshqaruv darajasi — hujjatdagi «Tizimdagi darajasi» ustuni */
+  /** Boshqaruv darajasi: hujjatdagi «Tizimdagi darajasi» ustuni */
   level: string
-  /** Ma’lumot ko‘rish sohasi — hujjatdagi «Scope» ustuni */
+  /** Ma’lumot ko‘rish sohasi, hujjatdagi «Scope» ustuni */
   scope: string
-  /** Hujjatdagi «Cheklov» ustuni — interfeysda ochiq ko‘rsatiladi */
+  /** Hujjatdagi «Cheklov» ustuni, interfeysda ochiq ko‘rsatiladi */
   limitation: string
   /** Rol nishonchasi uchun rang kaliti */
   tone: 'brand' | 'teal' | 'amber' | 'violet' | 'slate' | 'indigo' | 'rose' | 'lime'
@@ -59,7 +59,7 @@ export interface SessionUser {
   fullName: string
   role: Role
   organization: string
-  /** Faqat shu binolar doirasida ma’lumot ko‘radi; bo‘sh bo‘lsa — cheklovsiz */
+  /** Faqat shu binolar doirasida ma’lumot ko‘radi; bo‘sh bo‘lsa, cheklovsiz */
   buildingScope: string[]
   /** Omborchi uchun biriktirilgan ombor(lar) */
   warehouseScope?: string[]

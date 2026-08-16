@@ -1,7 +1,7 @@
 /**
  * Header ko‘rsatkichlari: valyuta kursi va ob-havo.
  *
- * Ma’lumot avval loyihadagi snapshot’dan o‘qiladi — shu sababli tarmoqsiz
+ * Ma’lumot avval loyihadagi snapshot’dan o‘qiladi, shu sababli tarmoqsiz
  * muhitda ham header to‘liq ishlaydi. So‘ng jonli manbadan yangilashga
  * urinib ko‘riladi; muvaffaqiyatsiz bo‘lsa snapshot ko‘rsatilaveradi.
  */
@@ -22,7 +22,7 @@ export interface WeatherInfo {
   city: string
 }
 
-/** Open-Meteo ob-havo kodlari — o‘zbekcha izoh va ikonka */
+/** Open-Meteo ob-havo kodlari, o‘zbekcha izoh va ikonka */
 const WEATHER_CODES: Record<number, { label: string; icon: string }> = {
   0: { label: 'Ochiq', icon: 'sun' },
   1: { label: 'Asosan ochiq', icon: 'sun' },
@@ -43,7 +43,7 @@ const WEATHER_CODES: Record<number, { label: string; icon: string }> = {
   95: { label: 'Momaqaldiroq', icon: 'storm' },
 }
 
-/** Toshkent uchun avgust oyi o‘rtacha ko‘rsatkichi — tarmoqsiz holat uchun */
+/** Toshkent uchun avgust oyi o‘rtacha ko‘rsatkichi, tarmoqsiz holat uchun */
 const WEATHER_FALLBACK: WeatherInfo = {
   tempC: 31,
   code: 0,
@@ -69,7 +69,7 @@ export function useHeaderData() {
         date: r.Date!,
       }))
     } catch {
-      // snapshot topilmadi — header kursni ko‘rsatmaydi
+      // snapshot topilmadi: header kursni ko‘rsatmaydi
     }
 
     // Jonli manbadan yangilashga urinish; xatolik jimgina e’tiborsiz qoldiriladi
@@ -90,7 +90,7 @@ export function useHeaderData() {
         }))
       if (mapped.length) rates.value = mapped
     } catch {
-      // tarmoq yo‘q — snapshot qoladi
+      // tarmoq yo‘q: snapshot qoladi
     }
   }
 
@@ -116,7 +116,7 @@ export function useHeaderData() {
         city: 'Toshkent',
       }
     } catch {
-      // tarmoq yo‘q — mavsumiy o‘rtacha ko‘rsatiladi
+      // tarmoq yo‘q: mavsumiy o‘rtacha ko‘rsatiladi
     }
   }
 

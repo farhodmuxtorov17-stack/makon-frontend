@@ -5,14 +5,14 @@ import type { Role } from '~/types/rbac'
 /**
  * Foydalanuvchi avatari.
  *
- * Agar `public/img/people/{userId}.webp` mavjud bo‘lsa — haqiqiy fotosurat
+ * Agar `public/img/people/{userId}.webp` mavjud bo‘lsa, haqiqiy fotosurat
  * ko‘rsatiladi. Fayl qo‘yilmagan bo‘lsa, ism-familiya bosh harflaridan
  * tuzilgan avatar chiziladi. Xodim suratlari papkaga qo‘shilgan zahoti
  * butun tizim bo‘ylab avtomatik almashadi.
  */
 const props = withDefaults(
   defineProps<{
-    /** Foydalanuvchi identifikatori — fotosurat fayl nomi shundan olinadi */
+    /** Foydalanuvchi identifikatori, fotosurat fayl nomi shundan olinadi */
     userId?: string
     fullName: string
     role?: Role | null
@@ -52,7 +52,7 @@ const SIZES: Record<string, { box: string; text: string; px: number }> = {
 
 const dims = computed(() => SIZES[props.size] ?? SIZES.md!)
 
-/** Ism bo‘yicha barqaror rang — bir xil odam doim bir xil ohangda */
+/** Ism bo‘yicha barqaror rang, bir xil odam doim bir xil ohangda */
 const TINTS = [
   'bg-brand-50 text-brand-700',
   'bg-teal-50 text-teal-700',

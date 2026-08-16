@@ -426,7 +426,7 @@ const myPlanCenter = computed(() => {
             <p class="min-w-0 flex-1 text-[13px] font-semibold text-ok-700">
               Muddati o‘tgan qarzdorlik yo‘q
               <span class="block font-normal text-ok-600">
-                Keyingi to‘lov muddati — {{ dateShort(nextDueAt) }}
+                Keyingi to‘lov muddati: {{ dateShort(nextDueAt) }}
               </span>
             </p>
           </div>
@@ -573,7 +573,7 @@ const myPlanCenter = computed(() => {
             <button
               type="button"
               class="grid size-9 shrink-0 place-items-center rounded-field text-brand-600 transition-colors hover:bg-brand-50"
-              :aria-label="`${d.name} — yuklab olish`"
+              :aria-label="`${d.name}: yuklab olish`"
               @click="openDoc(d)"
             >
               <UiIcon name="download" :size="18" />
@@ -753,7 +753,7 @@ const myPlanCenter = computed(() => {
               <button
                 type="button"
                 class="grid size-7 shrink-0 place-items-center rounded-lg text-ink-400 transition-colors hover:bg-danger-50 hover:text-danger-600"
-                :aria-label="`${a} — biriktirmani olib tashlash`"
+                :aria-label="`${a}: biriktirmani olib tashlash`"
                 @click="removeAttachment(i)"
               >
                 <UiIcon name="x" :size="14" />

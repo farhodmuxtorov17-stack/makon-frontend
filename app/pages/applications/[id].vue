@@ -18,7 +18,7 @@ lease.seed()
 const item = computed(() => lease.byId(String(route.params.id)))
 const unit = computed(() => (item.value ? unitById(item.value.unitId) : undefined))
 
-const actorName = computed(() => auth.user?.fullName ?? '—')
+const actorName = computed(() => auth.user?.fullName ?? '-')
 const isManager = computed(() => auth.role === 'BUILDING_MANAGER')
 const isAccountant = computed(() => auth.role === 'ACCOUNTANT')
 
@@ -150,7 +150,7 @@ function approveOperation() {
 function approveFinance() {
   if (!item.value || formInvalid.value) return
   lease.approveFinance(item.value.id, actorName.value, draftOffer.value)
-  notice.value = 'Moliyaviy shartlar tasdiqlandi — shartnoma qoralamasi tayyor.'
+  notice.value = 'Moliyaviy shartlar tasdiqlandi, shartnoma qoralamasi tayyor.'
 }
 
 function sendDidox() {
@@ -162,13 +162,13 @@ function sendDidox() {
 function checkDidox() {
   if (!item.value) return
   lease.checkDidox(item.value.id, actorName.value)
-  notice.value = `Didox holati yangilandi: ${item.value.didox?.state ?? '—'}.`
+  notice.value = `Didox holati yangilandi: ${item.value.didox?.state ?? '-'}.`
 }
 
 function onUpload(file: Omit<SignedDocument, 'uploadedAt' | 'uploadedBy'>) {
   if (!item.value) return
   lease.attachSignedDocument(item.value.id, actorName.value, file)
-  notice.value = `${file.fileName} yuklandi — nazorat yig‘indisi hisoblandi.`
+  notice.value = `${file.fileName} yuklandi, nazorat yig‘indisi hisoblandi.`
 }
 
 function onRemoveUpload() {
@@ -180,7 +180,7 @@ function onRemoveUpload() {
 function activate() {
   if (!item.value || !canActivate.value) return
   lease.activate(item.value.id, actorName.value)
-  notice.value = 'Shartnoma faollashtirildi — o‘zgarishlar quyida ko‘rsatilgan.'
+  notice.value = 'Shartnoma faollashtirildi, o‘zgarishlar quyida ko‘rsatilgan.'
 }
 
 function confirmReject() {
@@ -221,7 +221,7 @@ function markContacted() {
   <AppTopbar
     :title="item?.code ?? 'Ariza topilmadi'"
     :subtitle="item ? `${item.org.name} · ${item.buildingName} · Unit ${item.unitCode}` : undefined"
-    :breadcrumb="[{ label: 'Arizalar', to: '/applications' }, { label: item?.code ?? '—' }]"
+    :breadcrumb="[{ label: 'Arizalar', to: '/applications' }, { label: item?.code ?? '-' }]"
   >
     <template #actions>
       <UiButton variant="secondary" size="sm" to="/applications">
@@ -447,7 +447,7 @@ function markContacted() {
           :title="canApproveFinance ? 'Moliyaviy shartlarni tekshirish' : 'Kelishilgan shartlar'"
           :subtitle="
             editing
-              ? 'Qiymatni o‘zgartiring — to‘lov grafigi darhol qayta hisoblanadi'
+              ? 'Qiymatni o‘zgartiring: to‘lov grafigi darhol qayta hisoblanadi'
               : 'Tasdiqlangan shartlar'
           "
           icon="wallet"

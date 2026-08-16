@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * Chiziqli diagramma — gradient maydon, yorug‘ shtrix, nuqta belgilari va
+ * Chiziqli diagramma: gradient maydon, yorug‘ shtrix, nuqta belgilari va
  * kursor ostidagi qiymatni ko‘rsatuvchi kesishma chizig‘i.
  */
 export type ChartTone =
@@ -61,7 +61,7 @@ function base(tone: ChartTone) {
   return BASE[tone] ?? BASE.brand
 }
 
-/* --- Koordinatalar (haqiqiy piksel o‘lchovida — belgilar cho‘zilmaydi) --- */
+/* --- Koordinatalar (haqiqiy piksel o‘lchovida, belgilar cho‘zilmaydi) --- */
 
 const uid = useId()
 const plot = ref<HTMLElement | null>(null)
@@ -110,7 +110,7 @@ function areaPath(values: number[]) {
   return `${linePath(values)} L${last[0].toFixed(2)} ${H.value} L${first[0].toFixed(2)} ${H.value} Z`
 }
 
-/** Seriya maydoni bo‘yaladimi: aniq ko‘rsatilmagan bo‘lsa — birinchisi bo‘yaladi */
+/** Seriya maydoni bo‘yaladimi: aniq ko‘rsatilmagan bo‘lsa, birinchisi bo‘yaladi */
 const declaredFill = computed(() => props.series.some((s) => s.fill))
 
 function filled(s: LineSeries, i: number) {
@@ -125,7 +125,7 @@ function dashOf(i: number) {
   return drawn.value ? (DASH[i % DASH.length] ?? '1') : '1'
 }
 
-/** 0 — doira, 1 — kvadrat, 2 — romb, 3 — uchburchak */
+/** 0: doira, 1: kvadrat, 2: romb, 3: uchburchak */
 function markerPath(i: number, x: number, y: number, r: number) {
   const shape = i % 4
   if (shape === 1) return `M${x - r} ${y - r}h${r * 2}v${r * 2}h${-r * 2}Z`
@@ -213,7 +213,7 @@ const summary = computed(() => {
     return `${s.label} (${SHAPE_NAME[i % 4]} belgisi): ${fmt(first)} dan ${fmt(last)} gacha, eng yuqori ${fmt(Math.max(...vs))}`
   })
   const span = props.labels.length
-    ? `${props.labels.length} ta davr: ${props.labels[0]} — ${props.labels[props.labels.length - 1]}`
+    ? `${props.labels.length} ta davr: ${props.labels[0]} dan ${props.labels[props.labels.length - 1]} gacha`
     : 'davrlar yo‘q'
   return `Chiziqli diagramma${props.unit ? `, ${props.unit}` : ''}. ${span}. ${rows.join('; ')}.`
 })

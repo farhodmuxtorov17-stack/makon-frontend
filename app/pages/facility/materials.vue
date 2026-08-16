@@ -77,7 +77,7 @@ function linesOf(r: MaterialRequest): RequestLine[] {
       ? Math.max(1, Math.round((r.amount - acc) / item.price))
       : Math.max(1, Math.round(per / item.price))
     if (!isLast) acc += qty * item.price
-    // oxirgi qator yaxlitlash qoldig‘ini o‘ziga oladi — jami so‘rov summasiga teng bo‘lishi uchun
+    // oxirgi qator yaxlitlash qoldig‘ini o‘ziga oladi, jami so‘rov summasiga teng bo‘lishi uchun
     const total = isLast ? r.amount - acc : qty * item.price
     return {
       id: item.id,

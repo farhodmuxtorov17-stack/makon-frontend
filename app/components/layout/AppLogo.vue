@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * MAKON belgisi — geometrik monogramma: «M» harfi ikki minora va ular
+ * MAKON belgisi: geometrik monogramma: «M» harfi ikki minora va ular
  * orasidagi o‘yiq shaklida qurilgan, ostida poydevor chizig‘i. Belgi 24px
  * balandlikda ham o‘qiladi, `mono` rejimida bir rangda chiziladi.
  */
@@ -12,7 +12,7 @@ withDefaults(
   { size: 'md' },
 )
 
-// Har bir nusxaning gradienti alohida — bir sahifada bir nechta belgi bo‘lsa
+// Har bir nusxaning gradienti alohida, bir sahifada bir nechta belgi bo‘lsa
 // ham havolalar chalkashmaydi.
 const uid = `makon-${useId()}`
 
@@ -20,7 +20,7 @@ const MARK = { sm: 'size-7', md: 'size-9', lg: 'size-11' }
 const WORD = { sm: 'text-[15px]', md: 'text-[19px]', lg: 'text-[23px]' }
 const GAP = { sm: 'gap-2', md: 'gap-2.5', lg: 'gap-3' }
 
-/** Monogramma konturi — ikki minora va ular orasidagi o‘yiq */
+/** Monogramma konturi: ikki minora va ular orasidagi o‘yiq */
 const GLYPH =
   'M10 25.9V10.3l10 7.4 10-7.4v15.6h-4.3v-7.1l-4.85 3.6a1.4 1.4 0 0 1-1.7 0L14.3 18.8v7.1z'
 </script>

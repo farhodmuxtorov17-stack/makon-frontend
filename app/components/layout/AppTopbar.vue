@@ -282,7 +282,7 @@ function signOut() {
         <LocaleSwitch class="shrink-0" />
 
         <!-- Bildirishnomalar. Telefon kengligida panel butun blokka
-             biriktiriladi — aks holda u ekran chetidan chiqib ketardi. -->
+             biriktiriladi: aks holda u ekran chetidan chiqib ketardi. -->
         <div class="static shrink-0 sm:relative">
           <button
             type="button"

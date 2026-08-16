@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * Halqasimon diagramma — har bir bo‘lak o‘z gradienti bilan, ichki soya,
+ * Halqasimon diagramma: har bir bo‘lak o‘z gradienti bilan, ichki soya,
  * kirishda o‘sish animatsiyasi va bo‘lak ustiga kelganda ajratib ko‘rsatish.
  */
 export type ChartTone =
@@ -119,7 +119,7 @@ const active = ref<number | null>(null)
 const current = computed(() => (active.value === null ? null : (segments.value[active.value] ?? null)))
 
 const summary = computed(() => {
-  const rows = segments.value.map((s) => `${s.label} — ${s.share}%`)
+  const rows = segments.value.map((s) => `${s.label}, ${s.share}%`)
   const head = props.centerLabel ? `${props.centerLabel}: ${props.centerValue ?? ''}. ` : ''
   return `Halqasimon diagramma. ${head}Bo‘laklar: ${rows.join(', ')}.`
 })
@@ -204,7 +204,7 @@ const summary = computed(() => {
           </g>
         </g>
 
-        <!-- Ichki soya — halqaga chuqurlik beradi -->
+        <!-- Ichki soya: halqaga chuqurlik beradi -->
         <circle
           cx="50"
           cy="50"
@@ -216,7 +216,7 @@ const summary = computed(() => {
 
       <div
         v-if="centerValue || current"
-        class="pointer-events-none absolute inset-0 grid place-content-center place-items-center px-8 text-center"
+        class="pointer-events-none absolute inset-0 grid place-content-center place-items-center px-6 text-center"
       >
         <span class="tabular text-xl font-bold text-ink-900">
           {{ current ? `${current.share}%` : centerValue }}

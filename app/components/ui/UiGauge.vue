@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * Radial ko‘rsatkich — gradientli yoy, orqasida yo‘lak, markazida foiz.
+ * Radial ko‘rsatkich: gradientli yoy, orqasida yo‘lak, markazida foiz.
  */
 export type ChartTone =
   | 'brand'

@@ -6,7 +6,7 @@ export interface MapMarker {
   label: string
   /** Nishoncha ostidagi qo‘shimcha qator */
   caption?: string
-  /** 0–100 — nuqta o‘lchami va rangi shu qiymatdan kelib chiqadi */
+  /** 0–100: nuqta o‘lchami va rangi shu qiymatdan kelib chiqadi */
   value?: number
   /** Qiymat yonida ko‘rsatiladigan birlik */
   valueLabel?: string
@@ -48,7 +48,7 @@ const emit = defineEmits<{ markerClick: [marker: MapMarker] }>()
 
 const TILE = 256
 
-/** Yuklab olingan plitkalar qamrovi — markaz shu chegaradan chiqmaydi */
+/** Yuklab olingan plitkalar qamrovi, markaz shu chegaradan chiqmaydi */
 const BOUNDS = { lonMin: 68.95, lonMax: 69.9, latMin: 41.0, latMax: 41.65 }
 
 const lon2px = (lon: number, z: number) => ((lon + 180) / 360) * 2 ** z * TILE
@@ -219,7 +219,7 @@ function pick(m: MapMarker) {
   emit('markerClick', m)
 }
 
-/** Plitka yo‘q bo‘lsa (masalan chekka hudud) — jimgina yashiriladi */
+/** Plitka yo‘q bo‘lsa (masalan chekka hudud), jimgina yashiriladi */
 function hideTile(e: Event) {
   ;(e.target as HTMLImageElement).style.visibility = 'hidden'
 }
@@ -280,7 +280,7 @@ function hideTile(e: Event) {
         <button
           type="button"
           class="group relative grid size-9 place-items-center rounded-full bg-surface shadow-pop ring-2 ring-white transition-transform hover:scale-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500"
-          :aria-label="`${m.label}${m.caption ? ' — ' + m.caption : ''}`"
+          :aria-label="`${m.label}${m.caption ? ', ' + m.caption : ''}`"
           :aria-expanded="active === m.id"
           @click="pick(m)"
         >

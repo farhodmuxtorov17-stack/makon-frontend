@@ -32,7 +32,7 @@ const createdCase = computed(() => {
 
 const noticeOpen = ref(true)
 
-/** Didox’da imzo kutayotgan hujjatlar — kabinetdagi eng muhim vazifa */
+/** Didox’da imzo kutayotgan hujjatlar, kabinetdagi eng muhim vazifa */
 const awaitingSignature = computed(() =>
   myCases.value.filter((c) => c.status === 'DIDOX_YUBORILDI'),
 )
@@ -57,7 +57,7 @@ const STAGE_HINT: Record<string, string> = {
   QORALAMA_TAYYOR: 'Shartnoma qoralamasi tayyor, Didox’ga yuborish kutilmoqda',
   DIDOX_YUBORILDI: 'Hujjat Didox’da imzolashingizni kutmoqda',
   DIDOX_IMZOLANDI: 'Didox’da imzolandi, shartnoma faollashtirilmoqda',
-  FAOL: 'Shartnoma amalda — unit va to‘lov grafigi kabinetingizda',
+  FAOL: 'Shartnoma amalda: unit va to‘lov grafigi kabinetingizda',
   RAD_ETILDI: 'Ariza rad etilgan',
 }
 </script>
@@ -116,7 +116,7 @@ const STAGE_HINT: Record<string, string> = {
           <div class="min-w-0">
             <p class="text-[15px] font-bold text-warn-700">Didox’da imzolash kutilmoqda</p>
             <p class="text-[12.5px] text-ink-600">
-              Hujjat Didox platformasiga yuborilgan — imzolash o‘sha yerda bajariladi
+              Hujjat Didox platformasiga yuborilgan, imzolash o‘sha yerda bajariladi
             </p>
           </div>
         </div>
@@ -235,8 +235,7 @@ const STAGE_HINT: Record<string, string> = {
             />
             <span>
               {{ STAGE_HINT[selected.status] }}
-              <span v-if="selected.status === 'RAD_ETILDI' && selected.rejectReason">
-                — {{ selected.rejectReason }}
+              <span v-if="selected.status === 'RAD_ETILDI' && selected.rejectReason">, {{ selected.rejectReason }}
               </span>
             </span>
           </p>

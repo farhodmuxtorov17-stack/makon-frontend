@@ -160,7 +160,7 @@ const users = ref<UserRow[]>([
     buildings: ['b-02'],
     status: 'ACTIVE',
     lastLogin: '17.05.2025 12:47',
-    position: 'Dream Retail — moliya menejeri',
+    position: 'Dream Retail: moliya menejeri',
     notifyInApp: true,
     notifyDigest: false,
     language: 'ru',
@@ -175,7 +175,7 @@ const users = ref<UserRow[]>([
     buildings: ['b-01'],
     status: 'INACTIVE',
     lastLogin: '12.05.2025 17:05',
-    position: 'FinTech Services — direktor',
+    position: 'FinTech Services, direktor',
     notifyInApp: false,
     notifyDigest: false,
     language: 'uz',
@@ -849,7 +849,7 @@ function toggleStatus(id: string) {
                   </ul>
 
                   <p v-if="draft.scopeAll" class="mt-2.5 text-[12px] text-ink-500">
-                    Hozir «Barcha obyektlar» tanlangan — alohida belgilash uchun quyidagi obyektni
+                    Hozir «Barcha obyektlar» tanlangan, alohida belgilash uchun quyidagi obyektni
                     belgilang, rejim avtomatik «Tanlangan obyekt» ga o‘tadi.
                   </p>
                 </div>

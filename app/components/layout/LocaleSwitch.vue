@@ -2,7 +2,7 @@
 import { useStorage } from '@vueuse/core'
 
 /**
- * Interfeys tili — o‘zbek yoki rus. Tanlov brauzer xotirasida saqlanadi va
+ * Interfeys tili: o‘zbek yoki rus. Tanlov brauzer xotirasida saqlanadi va
  * sahifa yangilangandan keyin ham saqlanadi. `<html lang>` shu tanlovga mos
  * ravishda yangilanadi.
  */

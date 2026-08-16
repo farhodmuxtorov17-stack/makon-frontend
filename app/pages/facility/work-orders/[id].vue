@@ -688,7 +688,7 @@ function printAct() {
         <div>
           <p class="text-[12px] text-ink-500">Topshirdi</p>
           <p class="mt-6 border-t border-ink-300 pt-1.5 text-[12.5px] text-ink-600">
-            {{ order.assignee ?? '—' }}
+            {{ order.assignee ?? '-' }}
           </p>
         </div>
         <div>

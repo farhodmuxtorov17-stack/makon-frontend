@@ -1,7 +1,7 @@
 /**
  * Word hujjatini (DOCX) tashqi kutubxonasiz yig‘ish.
  *
- * DOCX — bu OOXML qismlaridan iborat ZIP paket. Bu yerda siqishsiz («stored»)
+ * DOCX: bu OOXML qismlaridan iborat ZIP paket. Bu yerda siqishsiz («stored»)
  * ZIP yozuvchi va eng kichik to‘g‘ri hujjat tuzilmasi bor, shuning uchun
  * yuklab olingan fayl haqiqiy Word hujjati bo‘ladi.
  */
@@ -32,7 +32,7 @@ interface ZipEntry {
   data: Bytes
 }
 
-/** Siqishsiz ZIP paket — DOCX uchun yetarli va eng ishonchli usul */
+/** Siqishsiz ZIP paket: DOCX uchun yetarli va eng ishonchli usul */
 export function zipArchive(entries: ZipEntry[]): Blob {
   const encoder = new TextEncoder()
   const locals: Bytes[] = []

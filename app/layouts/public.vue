@@ -292,7 +292,7 @@ onBeforeUnmount(() => {
           <div>
             <AppLogo mono class="text-white" />
             <p class="mt-4 max-w-[46ch] text-[13.5px] leading-relaxed text-ink-400">
-              MAKON — ko‘chmas mulk obyektlarini boshqarish va bo‘sh maydonlarni e’lon qilish
+              MAKON: ko‘chmas mulk obyektlarini boshqarish va bo‘sh maydonlarni e’lon qilish
               platformasi. Ofis, savdo, ombor va turar joy maydonlari yagona katalogda; ariza,
               shartnoma va hisob-kitob jarayonlari yagona raqamli konturda yuritiladi.
             </p>

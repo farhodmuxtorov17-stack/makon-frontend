@@ -140,7 +140,7 @@ function runSearch() {
     searchNote.value = `${filteredFaq.value.length} ta javob topildi`
   } else {
     openFaq.value = ''
-    searchNote.value = 'So‘rov bo‘yicha javob topilmadi — murojaat yuborishingiz mumkin'
+    searchNote.value = 'So‘rov bo‘yicha javob topilmadi, murojaat yuborishingiz mumkin'
   }
 }
 
@@ -570,7 +570,7 @@ const systemServices = [
                 <button
                   type="button"
                   class="grid size-9 shrink-0 place-items-center rounded-field text-brand-600 transition-colors hover:bg-brand-50"
-                  :aria-label="`${m.name} — yuklab olish`"
+                  :aria-label="`${m.name}: yuklab olish`"
                   @click="openManual(m)"
                 >
                   <UiIcon name="download" :size="18" />
@@ -861,7 +861,7 @@ const systemServices = [
 
       <p v-if="supportSent" class="flex items-center gap-2 text-[13px] font-semibold text-ok-700">
         <UiIcon name="check" :size="16" />
-        So‘rovingiz qabul qilindi — mutaxassis siz bilan bog‘lanadi.
+        So‘rovingiz qabul qilindi, mutaxassis siz bilan bog‘lanadi.
       </p>
     </div>
 

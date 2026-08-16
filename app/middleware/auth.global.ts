@@ -24,7 +24,7 @@ export default defineNuxtRouteMiddleware((to) => {
   // Kirgan foydalanuvchi kirish yoki qayd oynasiga qaytmaydi.
   if (GUEST_ONLY.includes(path)) return navigateTo(home)
 
-  // Ruxsat berilmagan — taqiqlangan: noma’lum holatda ham kirish yopiladi.
+  // Ruxsat berilmagan: taqiqlangan: noma’lum holatda ham kirish yopiladi.
   // `path !== home` sharti yo‘naltirish halqasining oldini oladi.
   if (!isPublic && path !== home && !canAccess(path, auth.role)) {
     return navigateTo(home)

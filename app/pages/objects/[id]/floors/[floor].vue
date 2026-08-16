@@ -104,7 +104,7 @@ const shapes = computed(() =>
   }),
 )
 
-/** Tanlangan unitning reja shakli — modal ichidagi belgini joylash uchun */
+/** Tanlangan unitning reja shakli, modal ichidagi belgini joylash uchun */
 const selectedShape = computed(() => {
   const unit = selected.value
   if (!unit) return null
@@ -477,7 +477,7 @@ function goApply() {
                   Ijarachi / Xaridor
                 </dt>
                 <dd class="min-w-0 flex-1 text-[13px] font-semibold text-ink-900">
-                  {{ selected.tenant ?? '—' }}
+                  {{ selected.tenant ?? '-' }}
                 </dd>
               </div>
               <div class="flex items-start gap-4 py-2.5">
@@ -577,7 +577,7 @@ function goApply() {
       <UiModal
         v-if="selected"
         v-model="viewOpen"
-        :title="`Unit ${selected.code} — batafsil`"
+        :title="`Unit ${selected.code}, batafsil`"
         :subtitle="`${building.name} · ${floorTitle}`"
         size="lg"
       >
@@ -639,7 +639,7 @@ function goApply() {
             </div>
             <div class="flex items-center justify-between gap-4 py-2.5">
               <dt class="text-[12.5px] text-ink-500">Ijarachi / Xaridor</dt>
-              <dd class="text-[13px] font-semibold text-ink-900">{{ selected.tenant ?? '—' }}</dd>
+              <dd class="text-[13px] font-semibold text-ink-900">{{ selected.tenant ?? '-' }}</dd>
             </div>
             <div class="flex items-start justify-between gap-4 py-2.5">
               <dt class="text-[12.5px] text-ink-500">Shartnoma</dt>
@@ -676,7 +676,7 @@ function goApply() {
       <UiModal
         v-if="selected"
         v-model="applyOpen"
-        :title="`Ariza yuborish — Unit ${selected.code}`"
+        :title="`Ariza yuborish: Unit ${selected.code}`"
         :subtitle="`${area(selected.area)} · ${selected.usage} · ${num(selected.price)} ${selected.priceUnit}`"
       >
         <div class="flex gap-3 rounded-field bg-brand-50 p-4 ring-1 ring-inset ring-brand-100">

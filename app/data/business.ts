@@ -98,16 +98,16 @@ export const CONTRACTS: Contract[] = [
     buildingName: 'Industrial Park 2',
     unitCode: 'Unit B-12',
     startsAt: '2025-06-01',
-    endsAt: '—',
+    endsAt: '-',
     status: 'DRAFT',
     amount: 2450000000,
     paymentTerm: 'Bir martalik to‘lov',
     documents: [{ name: 'Sotuv shartnomasi loyihasi.pdf', size: '1.8 MB', type: 'pdf' }],
     timeline: [
       { label: 'Yaratildi', date: '2025-05-14', actor: 'Bobur Ismoilov', done: true },
-      { label: 'Kelishildi', date: '—', actor: '—', done: false },
-      { label: 'Imzolandi', date: '—', actor: '—', done: false },
-      { label: 'Faollashdi', date: '—', actor: '—', done: false },
+      { label: 'Kelishildi', date: '-', actor: '-', done: false },
+      { label: 'Imzolandi', date: '-', actor: '-', done: false },
+      { label: 'Faollashdi', date: '-', actor: '-', done: false },
     ],
   },
   {
@@ -127,8 +127,8 @@ export const CONTRACTS: Contract[] = [
     timeline: [
       { label: 'Yaratildi', date: '2025-05-11', actor: 'Nigora Aripova', done: true },
       { label: 'Kelishildi', date: '2025-05-15', actor: 'Nilufar Rahimova', done: true },
-      { label: 'Imzolandi', date: '—', actor: '—', done: false },
-      { label: 'Faollashdi', date: '—', actor: '—', done: false },
+      { label: 'Imzolandi', date: '-', actor: '-', done: false },
+      { label: 'Faollashdi', date: '-', actor: '-', done: false },
     ],
   },
   {

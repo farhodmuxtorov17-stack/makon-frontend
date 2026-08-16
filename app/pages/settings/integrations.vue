@@ -642,7 +642,7 @@ const activeHooks = computed(() => webhooks.value.filter((w) => w.active).length
             <div class="flex items-start justify-between gap-3">
               <dt class="shrink-0 text-ink-500">Javob vaqti</dt>
               <dd class="tabular text-right font-semibold text-ink-900">
-                {{ item.responseMs ? `${item.responseMs} ms` : '—' }}
+                {{ item.responseMs ? `${item.responseMs} ms` : '-' }}
               </dd>
             </div>
             <div class="flex items-start justify-between gap-3">
@@ -737,7 +737,7 @@ const activeHooks = computed(() => webhooks.value.filter((w) => w.active).length
           </UiButton>
 
           <p v-if="!item.enabled" class="text-center text-[11.5px] text-ink-500">
-            Integratsiya o‘chirilgan — tekshirish uchun avval yoqing
+            Integratsiya o‘chirilgan: tekshirish uchun avval yoqing
           </p>
         </div>
 
@@ -826,7 +826,7 @@ const activeHooks = computed(() => webhooks.value.filter((w) => w.active).length
             <UiIcon name="trash" :size="15" />
             Bekor qilish
           </UiButton>
-          <span v-else class="text-[12px] text-ink-400">—</span>
+          <span v-else class="text-[12px] text-ink-400">-</span>
         </template>
       </UiTable>
 
@@ -980,7 +980,7 @@ const activeHooks = computed(() => webhooks.value.filter((w) => w.active).length
         label="Maxfiy kalit"
         :hint="
           configTarget
-            ? `Joriy kalit: ${maskedKey(configTarget.keyPrefix, configTarget.keyTail)} — bo‘sh qoldirilsa o‘zgarmaydi`
+            ? `Joriy kalit: ${maskedKey(configTarget.keyPrefix, configTarget.keyTail)}, bo‘sh qoldirilsa o‘zgarmaydi`
             : ''
         "
       >
@@ -1077,7 +1077,7 @@ const activeHooks = computed(() => webhooks.value.filter((w) => w.active).length
   <UiModal
     v-model="issuedOpen"
     title="Kalit yaratildi"
-    subtitle="Qiymat faqat hozir ko‘rsatiladi — xavfsiz joyga ko‘chirib oling"
+    subtitle="Qiymat faqat hozir ko‘rsatiladi, xavfsiz joyga ko‘chirib oling"
     size="sm"
   >
     <div class="space-y-4">

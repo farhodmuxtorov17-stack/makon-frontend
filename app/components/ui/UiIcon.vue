@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * Ichki ikonka to‘plami — tashqi kutubxonasiz, chiziqli (outline) uslubda,
+ * Ichki ikonka to‘plami: tashqi kutubxonasiz, chiziqli (outline) uslubda,
  * 24x24 grid, 1.6px qalinlik. Barcha ikonkalar bir xil vizual tilda.
  */
 const props = withDefaults(defineProps<{ name: string; size?: number | string }>(), {
