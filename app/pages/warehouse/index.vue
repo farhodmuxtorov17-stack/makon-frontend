@@ -345,7 +345,7 @@ function saveIssue() {
       </UiCard>
 
       <UiCard title="Ombor harakati (bugun)" subtitle="Kirim, chiqim va joriy qoldiq">
-        <div class="grid grid-cols-3 gap-3">
+        <div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
           <div
             v-for="s in summary"
             :key="s.key"

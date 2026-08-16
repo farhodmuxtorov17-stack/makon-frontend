@@ -209,11 +209,13 @@ function toggleNotification(id: string) {
     <section class="grid gap-5 xl:grid-cols-[340px_minmax(0,1fr)]">
       <UiCard>
         <div class="flex items-center gap-4">
-          <span
-            class="grid size-16 shrink-0 place-items-center rounded-full bg-brand-50 text-[20px] font-bold text-brand-700"
-          >
-            {{ initials }}
-          </span>
+          <UiAvatar
+            :user-id="auth.user?.id"
+            :full-name="auth.user?.fullName ?? ''"
+            :role="auth.role"
+            size="xl"
+            ring
+          />
           <div class="min-w-0">
             <h3 class="truncate text-[17px] font-bold text-ink-900">
               {{ auth.user?.fullName ?? '—' }}

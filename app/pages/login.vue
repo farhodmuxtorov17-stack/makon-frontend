@@ -115,7 +115,7 @@ function submit() {
             Ish maydoniga kirish
           </p>
           <h1 class="mt-2 font-display text-[26px] font-extrabold leading-tight">
-            Hisobingizga kiring
+            Profilingizga kiring
           </h1>
           <p class="mt-2 text-[13.5px] leading-relaxed text-ink-500">
             Login va parolni kiriting — tizim rolingizga mos ish maydonini ochadi.

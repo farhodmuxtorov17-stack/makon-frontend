@@ -566,7 +566,7 @@ function confirmExport() {
 
       <UiCard title="Kommunal sarf tahlili" subtitle="Resurslar bo‘yicha sarf indeksi (birinchi oy = 100)">
         <UiLine :labels="months" :series="utilitySeries" :height="212" />
-        <dl class="mt-4 grid grid-cols-3 gap-3 border-t border-ink-100 pt-4">
+        <dl class="mt-4 grid grid-cols-2 gap-3 border-t border-ink-100 pt-4 sm:grid-cols-3">
           <div v-for="u in utilityBase" :key="u.label">
             <dt class="text-[12px] text-ink-500">{{ u.label }} ({{ u.unit }})</dt>
             <dd class="tabular mt-0.5 text-sm font-bold text-ink-900">{{ num(u.value) }}</dd>

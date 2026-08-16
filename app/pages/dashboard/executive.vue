@@ -217,7 +217,7 @@ const mapLegend = [
           :center-value="percent(totals.occupancy)"
           center-label="bandlik darajasi"
         />
-        <dl class="mt-5 grid grid-cols-3 gap-3 border-t border-ink-100 pt-4">
+        <dl class="mt-5 grid grid-cols-2 gap-3 border-t border-ink-100 pt-4 sm:grid-cols-3">
           <div>
             <dt class="text-[12px] text-ink-500">Jami maydon</dt>
             <dd class="tabular mt-0.5 text-sm font-bold text-ink-900">

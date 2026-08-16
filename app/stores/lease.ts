@@ -1164,7 +1164,13 @@ export const useLeaseStore = defineStore('lease', {
     },
   },
 
-  persist: true,
+  /**
+   * Ijara yozuvlari (shartnoma matni va to‘lov grafiklari bilan) cookie
+   * hajmidan katta, shuning uchun ular brauzer xotirasida saqlanadi.
+   */
+  persist: {
+    storage: piniaPluginPersistedstate.localStorage(),
+  },
 })
 
 export { dmy as leaseDate, money as leaseMoney, monthLabel as leaseMonth }

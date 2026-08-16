@@ -551,7 +551,22 @@ function contractLabel(unit: Unit) {
               </span>
             </div>
 
-            <UiButton block class="mt-4" :to="planLink">
+            <UiButton
+              v-if="currentUnit.status === 'VACANT'"
+              block
+              class="mt-4"
+              @click="goApply"
+            >
+              <UiIcon name="send" :size="16" />
+              Ariza yuborish
+            </UiButton>
+
+            <UiButton
+              block
+              class="mt-2"
+              :variant="currentUnit.status === 'VACANT' ? 'secondary' : 'primary'"
+              :to="planLink"
+            >
               <UiIcon name="arrowRight" :size="16" />
               2D rejada ochish
             </UiButton>

@@ -555,7 +555,7 @@ export const NOTIFICATIONS: AppNotification[] = [
   {
     id: 'n-06',
     title: 'Tizimga kirish: yangi qurilma',
-    body: 'Hisobingizga yangi qurilmadan kirildi: Chrome · Windows 11.',
+    body: 'Profilingizga yangi qurilmadan kirildi: Chrome · Windows 11.',
     category: 'Tizim',
     at: '19.05.2025',
     read: true,

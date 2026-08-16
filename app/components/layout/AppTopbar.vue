@@ -398,11 +398,12 @@ function signOut() {
             :aria-expanded="panel === 'profile'"
             @click="toggle('profile')"
           >
-            <span
-              class="grid size-9 shrink-0 place-items-center rounded-full bg-gradient-to-br from-brand-500 to-brand-700 text-[12.5px] font-bold text-white"
-            >
-              {{ initials }}
-            </span>
+            <UiAvatar
+              :user-id="auth.user?.id"
+              :full-name="auth.user?.fullName ?? ''"
+              :role="auth.role"
+              size="sm"
+            />
             <UiIcon
               name="chevronDown"
               :size="14"
@@ -423,11 +424,13 @@ function signOut() {
               class="absolute right-0 top-full z-30 mt-2 w-[272px] max-w-[calc(100vw-2rem)] overflow-hidden rounded-panel bg-surface shadow-pop ring-1 ring-ink-200"
             >
               <div class="flex items-start gap-3 border-b border-ink-100 px-4 py-3.5">
-                <span
-                  class="grid size-11 shrink-0 place-items-center rounded-full bg-gradient-to-br from-brand-500 to-brand-700 text-[14px] font-bold text-white"
-                >
-                  {{ initials }}
-                </span>
+                <UiAvatar
+                  :user-id="auth.user?.id"
+                  :full-name="auth.user?.fullName ?? ''"
+                  :role="auth.role"
+                  size="md"
+                  ring
+                />
                 <div class="min-w-0 flex-1">
                   <p class="truncate text-[13.5px] font-semibold text-ink-900">
                     {{ auth.user?.fullName }}

@@ -584,12 +584,7 @@ function toggleStatus(id: string) {
       >
         <template #cell-fullName="{ row }">
           <span class="flex items-center gap-3">
-            <span
-              class="grid size-9 shrink-0 place-items-center rounded-full text-[12.5px] font-bold ring-1 ring-inset"
-              :class="ROLE_TONE_CLASSES[row.meta.tone]"
-            >
-              {{ initials(row.fullName) }}
-            </span>
+            <UiAvatar :user-id="row.id" :full-name="row.fullName" :role="row.role" size="sm" />
             <span class="min-w-0">
               <span class="block truncate text-[13.5px] font-semibold text-ink-900">
                 {{ row.fullName }}
@@ -708,12 +703,7 @@ function toggleStatus(id: string) {
             </header>
 
             <div class="flex items-center gap-3.5 border-b border-ink-100 px-6 py-4">
-              <span
-                class="grid size-14 shrink-0 place-items-center rounded-full text-base font-bold ring-1 ring-inset"
-                :class="ROLE_TONE_CLASSES[ROLE_META[draft.role].tone]"
-              >
-                {{ initials(draft.fullName) }}
-              </span>
+              <UiAvatar :user-id="draft.id" :full-name="draft.fullName" :role="draft.role" size="lg" ring />
               <div class="min-w-0">
                 <p class="truncate text-[15px] font-bold text-ink-900">{{ draft.fullName }}</p>
                 <div class="mt-1.5 flex flex-wrap items-center gap-2">
