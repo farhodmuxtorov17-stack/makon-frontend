@@ -198,6 +198,22 @@ function contractLabel(unit: Unit) {
   if (unit.status === 'VACANT') return 'Shartnoma rasmiylashtirilmagan'
   return 'Shartnoma ma’lumotlari kiritilmagan'
 }
+
+const auth = useAuthStore()
+const applyOpen = ref(false)
+
+/** Bo‘sh unitga ariza yuborish — rolga qarab yo‘naltiradi */
+function goApply() {
+  const unit = currentUnit.value
+  if (!unit || unit.status !== 'VACANT') return
+  const next = `/cabinet/apply?unit=${unit.id}`
+  if (!auth.isAuthenticated) return navigateTo({ path: '/login', query: { next } })
+  if (auth.role !== 'TENANT_OWNER') {
+    applyOpen.value = true
+    return
+  }
+  return navigateTo(next)
+}
 </script>
 
 <template>
@@ -587,4 +603,14 @@ function contractLabel(unit: Unit) {
       </section>
     </main>
   </template>
+
+    <UiModal v-model="applyOpen" title="Ariza yuborish" size="sm">
+      <p class="text-[13.5px] leading-relaxed text-ink-600">
+        Ariza faqat ijarachi profilidan yuboriladi. Ichki rol bilan kirgan
+        foydalanuvchi ariza yarata olmaydi — bu ijarachi tomonidagi amal.
+      </p>
+      <template #footer>
+        <UiButton variant="secondary" @click="applyOpen = false">Yopish</UiButton>
+      </template>
+    </UiModal>
 </template>

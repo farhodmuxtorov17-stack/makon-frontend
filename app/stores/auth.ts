@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { ROLE_CAPABILITIES, ROLE_META } from '~/constants/roles'
 import type { Capability, Role, SessionUser } from '~/types/rbac'
 
-/** Har bir rol uchun namunaviy hisob — tizimga kirishda tanlanadi. */
+/** Rol bo‘yicha xodim hisoblari — login orqali aniqlanadi. */
 const ACCOUNTS: Record<Role, SessionUser> = {
   SUPER_HEAD: {
     id: 'u-001',

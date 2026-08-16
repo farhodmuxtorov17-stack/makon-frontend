@@ -110,6 +110,13 @@ function areaPath(values: number[]) {
   return `${linePath(values)} L${last[0].toFixed(2)} ${H.value} L${first[0].toFixed(2)} ${H.value} Z`
 }
 
+/** Seriya maydoni bo‘yaladimi: aniq ko‘rsatilmagan bo‘lsa — birinchisi bo‘yaladi */
+const declaredFill = computed(() => props.series.some((s) => s.fill))
+
+function filled(s: LineSeries, i: number) {
+  return s.fill ?? (!declaredFill.value && i === 0)
+}
+
 /* --- Seriyani rang bilan emas, shakl bilan ham ajratamiz --- */
 
 const DASH = ['1', '0.024 0.014', '0.005 0.013', '0.03 0.012 0.006 0.012']
@@ -293,7 +300,7 @@ const summary = computed(() => {
         <!-- Maydon to‘ldirishi -->
         <path
           v-for="(s, i) in series"
-          v-show="s.fill"
+          v-show="filled(s, i)"
           :key="`area${i}`"
           :d="areaPath(s.values)"
           :fill="`url(#${uid}-fill-${i})`"
