@@ -378,21 +378,28 @@ const stepCaption = computed(() =>
                       { label: 'Telefon', value: selectedOrg.phone, icon: 'phone' },
                     ]"
                     :key="r.label"
-                    class="flex items-start gap-3"
                   >
-                    <span
-                      class="grid size-8 shrink-0 place-items-center rounded-[9px] bg-surface-sunken text-brand-600 ring-1 ring-ink-200"
+                    <!--
+                      `dl` ichidagi `div` faqat `dt` va `dd` ni saqlashi mumkin,
+                      shuning uchun ikonka `dt` tarkibida turadi. `pl-11` ikonka
+                      kengligi (32px) va oraliq (12px) yig‘indisiga teng, demak
+                      qiymat yorliq ostida aynan bir chiziqda qoladi.
+                    -->
+                    <dt
+                      class="flex items-center gap-3 text-[11px] font-semibold uppercase tracking-wide text-ink-500"
                     >
-                      <UiIcon :name="r.icon" :size="15" />
-                    </span>
-                    <span class="min-w-0">
-                      <dt class="text-[11px] font-semibold uppercase tracking-wide text-ink-500">
-                        {{ r.label }}
-                      </dt>
-                      <dd class="tabular mt-0.5 break-words text-[13px] font-semibold text-ink-900">
-                        {{ r.value }}
-                      </dd>
-                    </span>
+                      <span
+                        class="grid size-8 shrink-0 place-items-center rounded-[9px] bg-surface-sunken text-brand-600 ring-1 ring-ink-200"
+                      >
+                        <UiIcon :name="r.icon" :size="15" />
+                      </span>
+                      {{ r.label }}
+                    </dt>
+                    <dd
+                      class="tabular mt-0.5 break-words pl-11 text-[13px] font-semibold text-ink-900"
+                    >
+                      {{ r.value }}
+                    </dd>
                   </div>
                 </dl>
 

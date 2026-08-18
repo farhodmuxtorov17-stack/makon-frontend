@@ -235,19 +235,22 @@ function submit() {
             <div
               v-for="r in orgRows"
               :key="r.label"
-              class="flex items-start gap-3 rounded-field bg-surface-sunken px-3.5 py-2.5 ring-1 ring-inset ring-ink-200"
+              class="rounded-field bg-surface-sunken px-3.5 py-2.5 ring-1 ring-inset ring-ink-200"
             >
-              <span class="grid size-8 shrink-0 place-items-center rounded-[9px] bg-white text-brand-600 ring-1 ring-ink-200">
-                <UiIcon :name="r.icon" :size="15" />
-              </span>
-              <span class="min-w-0">
-                <dt class="text-[11px] font-semibold uppercase tracking-wide text-ink-500">
-                  {{ r.label }}
-                </dt>
-                <dd class="tabular mt-0.5 break-words text-[13px] font-semibold text-ink-900">
-                  {{ r.value || '-' }}
-                </dd>
-              </span>
+              <!-- Ikonka `dt` ichida: `dl > div` faqat `dt`/`dd` ni saqlaydi -->
+              <dt
+                class="flex items-center gap-3 text-[11px] font-semibold uppercase tracking-wide text-ink-500"
+              >
+                <span
+                  class="grid size-8 shrink-0 place-items-center rounded-[9px] bg-white text-brand-600 ring-1 ring-ink-200"
+                >
+                  <UiIcon :name="r.icon" :size="15" />
+                </span>
+                {{ r.label }}
+              </dt>
+              <dd class="tabular mt-0.5 break-words pl-11 text-[13px] font-semibold text-ink-900">
+                {{ r.value || '-' }}
+              </dd>
             </div>
           </dl>
 
