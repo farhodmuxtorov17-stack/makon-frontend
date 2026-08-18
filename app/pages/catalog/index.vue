@@ -22,18 +22,26 @@ const CATEGORIES: Array<{ value: string; label: string; match: (l: Listing) => b
     match: (l) => l.building.type === 'Biznes markaz' || l.building.type === 'Ofis binosi',
   },
   { value: 'savdo', label: 'Savdo markazi', match: (l) => l.building.type === 'Savdo markaz' },
-  { value: 'sanoat', label: 'Sanoat', match: (l) => l.building.type === 'Ombor / logistika' },
+  {
+    value: 'ombor',
+    label: 'Ombor / logistika',
+    match: (l) => l.building.type === 'Ombor / logistika',
+  },
   { value: 'turar', label: 'Turar joy', match: (l) => l.building.type === 'Turar joy' },
-  { value: 'ombor', label: 'Ombor', match: (l) => l.unit.usage === 'Ombor' },
 ]
 
-/** Bosh sahifadagi «Maqsad» tanlovi shu jadval orqali mulk turiga o‘tkaziladi */
-const USAGE_CATEGORY: Record<string, string> = {
-  Ofis: 'biznes',
-  Savdo: 'savdo',
-  Ombor: 'ombor',
-  'Turar joy': 'turar',
-}
+/**
+ * Maqsad — mulk turidan ALOHIDA o‘lchov: biznes markazda ham ombor xonasi,
+ * savdo markazida ham ofis bo‘lishi mumkin. Ilgari bosh sahifadagi «Maqsad»
+ * tanlovi mulk turiga aylantirib yuborilardi, natijada «Ombor» tanlanganda
+ * boshqa binolarning rasmlari chiqardi.
+ */
+const USAGE_OPTIONS = ['Ofis', 'Savdo', 'Ombor', 'Turar joy']
+
+const usageSelectOptions = [
+  { value: '', label: 'Barcha maqsadlar' },
+  ...USAGE_OPTIONS.map((v) => ({ value: v, label: v })),
+]
 
 /** Bosh sahifa yuboradigan narx oralig‘i kalitlari, so‘m */
 const PRICE_BUCKETS: Record<string, [string, string]> = {
@@ -62,7 +70,7 @@ const MAP_TONE: Record<string, 'brand' | 'ok' | 'warn' | 'info'> = {
 const MAP_LEGEND = [
   { label: 'Ofis', class: 'bg-brand-500' },
   { label: 'Savdo', class: 'bg-info-500' },
-  { label: 'Sanoat va ombor', class: 'bg-warn-500' },
+  { label: 'Ombor / logistika', class: 'bg-warn-500' },
   { label: 'Turar joy', class: 'bg-ok-500' },
 ]
 
@@ -104,11 +112,10 @@ function initial(key: string) {
 
 function initialTypes(): string[] {
   const out: string[] = []
-  const push = (key: string) => {
+  for (const raw of initial('type').split(',')) {
+    const key = raw.trim()
     if (key && CATEGORIES.some((c) => c.value === key) && !out.includes(key)) out.push(key)
   }
-  for (const raw of initial('type').split(',')) push(raw.trim())
-  push(USAGE_CATEGORY[initial('usage')] ?? '')
   return out
 }
 
@@ -128,6 +135,7 @@ const distance = ref(DISTANCE_OPTIONS.some((o) => o.value === initial('dist')) ?
 const offer = ref(OFFER_TABS.some((o) => o.value === initial('offer')) ? initial('offer') : 'all')
 const sort = ref(SORT_OPTIONS.some((o) => o.value === initial('sort')) ? initial('sort') : 'top')
 const mode = ref(initial('mode') === 'map' ? 'map' : 'list')
+const usage = ref(USAGE_OPTIONS.includes(initial('usage')) ? initial('usage') : '')
 const onlyFavourites = ref(initial('fav') === '1')
 const objectId = ref(BUILDINGS.some((b) => b.id === initial('obyekt')) ? initial('obyekt') : '')
 
@@ -219,6 +227,7 @@ const base = computed(() =>
     if (!matchArea(l.unit)) return false
     if (!matchOffer(l.unit)) return false
     if (!matchDistance(l.building)) return false
+    if (usage.value && l.unit.usage !== usage.value) return false
     if (onlyFavourites.value && !favourites.value.includes(l.unit.id)) return false
     return true
   }),
@@ -293,6 +302,7 @@ const summary = computed(() => {
 const chips = computed(() => {
   const out: Array<{ key: string; label: string }> = []
   if (place.value) out.push({ key: 'place', label: place.value.replace('|', ', ') })
+  if (usage.value) out.push({ key: 'usage', label: `Maqsad: ${usage.value}` })
   if (onlyFavourites.value) out.push({ key: 'fav', label: 'Faqat sevimlilar' })
   if (activeObject.value) out.push({ key: 'obyekt', label: activeObject.value.name })
   return out
@@ -300,6 +310,7 @@ const chips = computed(() => {
 
 function clearChip(key: string) {
   if (key === 'place') place.value = ''
+  if (key === 'usage') usage.value = ''
   if (key === 'fav') onlyFavourites.value = false
   if (key === 'obyekt') objectId.value = ''
 }
@@ -312,6 +323,7 @@ const activeCount = computed(() => {
   if (areaMin.value !== '' || areaMax.value !== '') n++
   if (distance.value) n++
   if (place.value) n++
+  if (usage.value) n++
   if (offer.value !== 'all') n++
   if (onlyFavourites.value) n++
   if (objectId.value) n++
@@ -327,6 +339,7 @@ function resetFilters() {
   areaMin.value = ''
   areaMax.value = ''
   distance.value = ''
+  usage.value = ''
   offer.value = 'all'
   onlyFavourites.value = false
   objectId.value = ''
@@ -416,12 +429,14 @@ watch(
           v-model:area-min="areaMin"
           v-model:area-max="areaMax"
           v-model:distance="distance"
+          v-model:usage="usage"
           heading="Toshkent shahri"
           :summary="summary"
           :chips="chips"
           :types="typeOptions"
           :sort-options="SORT_OPTIONS"
           :distance-options="DISTANCE_OPTIONS"
+          :usage-options="usageSelectOptions"
           :active-count="activeCount"
           @reset="resetFilters"
           @clear-chip="clearChip"
@@ -743,12 +758,14 @@ watch(
                 v-model:area-min="areaMin"
                 v-model:area-max="areaMax"
                 v-model:distance="distance"
+          v-model:usage="usage"
                 heading="Toshkent shahri"
                 :summary="summary"
                 :chips="chips"
                 :types="typeOptions"
                 :sort-options="SORT_OPTIONS"
                 :distance-options="DISTANCE_OPTIONS"
+          :usage-options="usageSelectOptions"
                 :active-count="activeCount"
                 @reset="resetFilters"
                 @clear-chip="clearChip"

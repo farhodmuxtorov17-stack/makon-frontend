@@ -20,16 +20,9 @@ export interface Unit {
   tenant?: string
   contractCode?: string
   equipment: string[]
-  /** Qavat rejasidagi ko‘pburchak (0..1 normalizatsiyada) */
+  /** Qavat rejasidagi shakl, 0–1 oralig‘ida. `scripts/generate-floor-plans.mjs` hisoblaydi */
   polygon: number[][]
 }
-
-const P = (x: number, y: number, w: number, h: number) => [
-  [x, y],
-  [x + w, y],
-  [x + w, y + h],
-  [x, y + h],
-]
 
 export const UNITS: Unit[] = reactive([
   // --- Green Business Center, 7-qavat ---
@@ -48,7 +41,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Tech Solutions UZB MChJ',
     contractCode: 'MKON-2025-0157',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.06, 0.1, 0.19, 0.3),
+    polygon: [[0.0075, 0.0178], [0.2073, 0.0178], [0.2073, 0.4891], [0.0075, 0.4891]],
   },
   {
     id: 'u-702',
@@ -63,7 +56,7 @@ export const UNITS: Unit[] = reactive([
     price: 11800000,
     priceUnit: 'so‘m / oy',
     equipment: ['Konditsioner', 'Yong‘in datchigi'],
-    polygon: P(0.27, 0.1, 0.16, 0.3),
+    polygon: [[0.2073, 0.0178], [0.3557, 0.0178], [0.3557, 0.4891], [0.2073, 0.4891]],
   },
   {
     id: 'u-703',
@@ -80,7 +73,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'FinTech Services',
     contractCode: 'MKON-2025-0154',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi', 'Serverxona'],
-    polygon: P(0.45, 0.1, 0.22, 0.3),
+    polygon: [[0.0075, 0.6007], [0.3297, 0.6007], [0.3297, 0.9822], [0.0075, 0.9822]],
   },
   {
     id: 'u-704',
@@ -96,7 +89,7 @@ export const UNITS: Unit[] = reactive([
     priceUnit: 'so‘m / oy',
     tenant: 'Makon Solutions MCHJ',
     equipment: ['Konditsioner', 'Yong‘in datchigi'],
-    polygon: P(0.69, 0.1, 0.16, 0.3),
+    polygon: [[0.3297, 0.6007], [0.4971, 0.6007], [0.4971, 0.9822], [0.3297, 0.9822]],
   },
   {
     id: 'u-705',
@@ -113,7 +106,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Creative Agency',
     contractCode: 'MKON-2025-0149',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.06, 0.62, 0.19, 0.28),
+    polygon: [[0.4971, 0.6007], [0.7671, 0.6007], [0.7671, 0.9822], [0.4971, 0.9822]],
   },
   {
     id: 'u-706',
@@ -128,7 +121,7 @@ export const UNITS: Unit[] = reactive([
     price: 11200000,
     priceUnit: 'so‘m / oy',
     equipment: ['Konditsioner', 'Yong‘in datchigi'],
-    polygon: P(0.27, 0.62, 0.16, 0.28),
+    polygon: [[0.5608, 0.0178], [0.7025, 0.0178], [0.7025, 0.4891], [0.5608, 0.4891]],
   },
   {
     id: 'u-707',
@@ -143,7 +136,7 @@ export const UNITS: Unit[] = reactive([
     price: 14100000,
     priceUnit: 'so‘m / oy',
     equipment: ['Konditsioner', 'Yong‘in datchigi'],
-    polygon: P(0.45, 0.62, 0.22, 0.28),
+    polygon: [[0.7671, 0.6007], [0.9925, 0.6007], [0.9925, 0.9822], [0.7671, 0.9822]],
   },
   {
     id: 'u-708',
@@ -166,7 +159,7 @@ export const UNITS: Unit[] = reactive([
       'Serverxona',
       'Alohida sanuzel',
     ],
-    polygon: P(0.69, 0.62, 0.16, 0.28),
+    polygon: [[0.7025, 0.0178], [0.9925, 0.0178], [0.9925, 0.4891], [0.7025, 0.4891]],
   },
 
   // --- Green Business Center, 5-qavat ---
@@ -189,7 +182,7 @@ export const UNITS: Unit[] = reactive([
       'Alohida serverxona',
       'Ikkita sanuzel',
     ],
-    polygon: P(0.06, 0.1, 0.36, 0.34),
+    polygon: [[0.0059, 0.801], [0.9941, 0.801], [0.9941, 0.9908], [0.0059, 0.9908]],
   },
   {
     id: 'u-506',
@@ -210,7 +203,7 @@ export const UNITS: Unit[] = reactive([
       'Konferens zal',
       'Ikkita sanuzel',
     ],
-    polygon: P(0.46, 0.1, 0.39, 0.34),
+    polygon: [[0.0059, 0.0092], [0.9941, 0.0092], [0.9941, 0.2824], [0.0059, 0.2824]],
   },
   {
     id: 'u-501',
@@ -227,7 +220,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Urban Office MCHJ',
     contractCode: 'MKON-2025-0161',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.06, 0.56, 0.24, 0.34),
+    polygon: [[0.7857, 0.2824], [0.9941, 0.2824], [0.9941, 0.5961], [0.7857, 0.5961]],
   },
   {
     id: 'u-502',
@@ -244,7 +237,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Urban Office LLC',
     contractCode: 'MKON-2025-0158',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi', 'Oshxona'],
-    polygon: P(0.34, 0.56, 0.28, 0.34),
+    polygon: [[0.0059, 0.2824], [0.1884, 0.2824], [0.1884, 0.801], [0.0059, 0.801]],
   },
   {
     id: 'u-503',
@@ -261,7 +254,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Global Logistics & Trans',
     contractCode: 'MKON-2025-0155',
     equipment: ['Konditsioner', 'Yong‘in datchigi'],
-    polygon: P(0.66, 0.56, 0.19, 0.34),
+    polygon: [[0.7857, 0.5961], [0.9941, 0.5961], [0.9941, 0.801], [0.7857, 0.801]],
   },
 
   // --- Mega Mall ---
@@ -280,7 +273,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Dream Retail',
     contractCode: 'MKON-2025-0152',
     equipment: ['Konditsioner', 'Vitrina yoritgichi', 'Yong‘in datchigi'],
-    polygon: P(0.08, 0.12, 0.26, 0.32),
+    polygon: [[0.0313, 0.0304], [0.8758, 0.0304], [0.8758, 0.6277], [0.0313, 0.6277]],
   },
   {
     id: 'u-301',
@@ -295,7 +288,7 @@ export const UNITS: Unit[] = reactive([
     price: 18500000,
     priceUnit: 'so‘m / oy',
     equipment: ['Konditsioner', 'Vitrina yoritgichi'],
-    polygon: P(0.38, 0.12, 0.3, 0.32),
+    polygon: [[0.0286, 0.0231], [0.878, 0.0231], [0.878, 0.7168], [0.0286, 0.7168]],
   },
 
   // --- Industrial Park 2 ---
@@ -313,7 +306,7 @@ export const UNITS: Unit[] = reactive([
     priceUnit: 'so‘m / oy',
     tenant: 'Mega Invest Group',
     equipment: ['Yuk platformasi', 'Kran', 'Yong‘in gidranti'],
-    polygon: P(0.08, 0.14, 0.38, 0.34),
+    polygon: [[0.014, 0.6364], [0.986, 0.6364], [0.986, 0.989], [0.014, 0.989]],
   },
   {
     id: 'u-b14',
@@ -328,7 +321,7 @@ export const UNITS: Unit[] = reactive([
     price: 31000000,
     priceUnit: 'so‘m / oy',
     equipment: ['Yuk platformasi', 'Kran'],
-    polygon: P(0.5, 0.14, 0.42, 0.34),
+    polygon: [[0.014, 0.011], [0.9088, 0.011], [0.9088, 0.5386], [0.014, 0.5386]],
   },
 
   // --- Harmony Residence ---
@@ -347,7 +340,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Global Logistics & Trans',
     contractCode: 'MKON-2025-0155',
     equipment: ['Konditsioner', 'Balkon', 'Yong‘in datchigi'],
-    polygon: P(0.08, 0.12, 0.3, 0.34),
+    polygon: [[0.0178, 0.0361], [0.8638, 0.0361], [0.8638, 0.7784], [0.0178, 0.7784]],
   },
   {
     id: 'u-a604',
@@ -362,7 +355,7 @@ export const UNITS: Unit[] = reactive([
     price: 1250000,
     priceUnit: 'so‘m / m²',
     equipment: ['Konditsioner', 'Balkon'],
-    polygon: P(0.42, 0.12, 0.28, 0.34),
+    polygon: [[0.0215, 0.0361], [0.861, 0.0361], [0.861, 0.7784], [0.0215, 0.7784]],
   },
 
   // --- Urban Office ---
@@ -379,7 +372,7 @@ export const UNITS: Unit[] = reactive([
     price: 13400000,
     priceUnit: 'so‘m / oy',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.07, 0.12, 0.24, 0.32),
+    polygon: [[0.0203, 0.592], [0.5808, 0.592], [0.5808, 0.9822], [0.0203, 0.9822]],
   },
   {
     id: 'u-405',
@@ -395,7 +388,7 @@ export const UNITS: Unit[] = reactive([
     priceUnit: 'so‘m / oy',
     tenant: 'Alpha Solutions',
     equipment: ['Konditsioner', 'Yong‘in datchigi'],
-    polygon: P(0.35, 0.12, 0.2, 0.32),
+    polygon: [[0.5808, 0.592], [0.9797, 0.592], [0.9797, 0.9822], [0.5808, 0.9822]],
   },
   {
     id: 'u-408',
@@ -412,7 +405,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Beta Trade',
     contractCode: 'MKON-2025-0147',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi', 'Oshxona'],
-    polygon: P(0.59, 0.12, 0.28, 0.32),
+    polygon: [[0.0203, 0.0178], [0.7762, 0.0178], [0.7762, 0.4803], [0.0203, 0.4803]],
   },
   {
     id: 'u-302',
@@ -427,7 +420,7 @@ export const UNITS: Unit[] = reactive([
     price: 11100000,
     priceUnit: 'so‘m / oy',
     equipment: ['Konditsioner', 'Yong‘in datchigi'],
-    polygon: P(0.07, 0.56, 0.24, 0.32),
+    polygon: [[0.0276, 0.6782], [0.9724, 0.6782], [0.9724, 0.9794], [0.0276, 0.9794]],
   },
   {
     id: 'u-305',
@@ -443,7 +436,7 @@ export const UNITS: Unit[] = reactive([
     priceUnit: 'so‘m / oy',
     tenant: 'Gamma LLC',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.35, 0.56, 0.28, 0.32),
+    polygon: [[0.0276, 0.0206], [0.8017, 0.0206], [0.8017, 0.5487], [0.0276, 0.5487]],
   },
   // --- Chorsu Savdo Galereyasi ---
   {
@@ -459,7 +452,7 @@ export const UNITS: Unit[] = reactive([
     price: 11750000,
     priceUnit: 'so‘m / oy',
     equipment: ['Vitrina', 'Konditsioner'],
-    polygon: P(0.03, 0.06, 0.173, 0.36),
+    polygon: [[0.0128, 0.6241], [0.1692, 0.6241], [0.1692, 0.9863], [0.0128, 0.9863]],
   },
   {
     id: 'b-06-102',
@@ -476,7 +469,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Oq Yo‘l Servis',
     contractCode: 'MKON-2025-0134',
     equipment: ['Vitrina', 'Konditsioner'],
-    polygon: P(0.218, 0.06, 0.173, 0.36),
+    polygon: [[0.1692, 0.6241], [0.4218, 0.6241], [0.4218, 0.9863], [0.1692, 0.9863]],
   },
   {
     id: 'b-06-103',
@@ -491,7 +484,7 @@ export const UNITS: Unit[] = reactive([
     price: 21550000,
     priceUnit: 'so‘m / oy',
     equipment: ['Vitrina', 'Konditsioner', 'Yong‘in signalizatsiyasi'],
-    polygon: P(0.406, 0.06, 0.173, 0.36),
+    polygon: [[0.4218, 0.6241], [0.6263, 0.6241], [0.6263, 0.9863], [0.4218, 0.9863]],
   },
   {
     id: 'b-06-104',
@@ -506,7 +499,7 @@ export const UNITS: Unit[] = reactive([
     price: 8870000,
     priceUnit: 'so‘m / oy',
     equipment: ['Vitrina', 'Konditsioner', 'Yong‘in signalizatsiyasi', 'Ombor xonasi'],
-    polygon: P(0.594, 0.06, 0.173, 0.36),
+    polygon: [[0.6263, 0.6241], [0.7346, 0.6241], [0.7346, 0.9863], [0.6263, 0.9863]],
   },
   {
     id: 'b-06-105',
@@ -523,7 +516,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Baraka Group',
     contractCode: 'MKON-2025-0107',
     equipment: ['Vitrina', 'Konditsioner', 'Yong‘in signalizatsiyasi', 'Ombor xonasi'],
-    polygon: P(0.782, 0.06, 0.173, 0.36),
+    polygon: [[0.0128, 0.0137], [0.1749, 0.0137], [0.1749, 0.4705], [0.0128, 0.4705]],
   },
   {
     id: 'b-06-106',
@@ -540,7 +533,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Turon Media',
     contractCode: 'MKON-2025-0159',
     equipment: ['Vitrina', 'Konditsioner', 'Yong‘in signalizatsiyasi', 'Ombor xonasi'],
-    polygon: P(0.03, 0.58, 0.173, 0.36),
+    polygon: [[0.7346, 0.6241], [0.9872, 0.6241], [0.9872, 0.9863], [0.7346, 0.9863]],
   },
   {
     id: 'b-06-107',
@@ -557,7 +550,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Baraka Group',
     contractCode: 'MKON-2025-0119',
     equipment: ['Vitrina', 'Konditsioner'],
-    polygon: P(0.218, 0.58, 0.173, 0.36),
+    polygon: [[0.1749, 0.0137], [0.6042, 0.0137], [0.6042, 0.4705], [0.1749, 0.4705]],
   },
   {
     id: 'b-06-108',
@@ -574,7 +567,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Oltin Vodiy',
     contractCode: 'MKON-2025-0106',
     equipment: ['Vitrina', 'Konditsioner', 'Yong‘in signalizatsiyasi', 'Ombor xonasi'],
-    polygon: P(0.406, 0.58, 0.173, 0.36),
+    polygon: [[0.7774, 0.0137], [0.8632, 0.0137], [0.8632, 0.4705], [0.7774, 0.4705]],
   },
   {
     id: 'b-06-109',
@@ -591,7 +584,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Orient Consulting',
     contractCode: 'MKON-2025-0114',
     equipment: ['Vitrina', 'Konditsioner', 'Yong‘in signalizatsiyasi', 'Ombor xonasi'],
-    polygon: P(0.594, 0.58, 0.173, 0.36),
+    polygon: [[0.8632, 0.0137], [0.9872, 0.0137], [0.9872, 0.4705], [0.8632, 0.4705]],
   },
   {
     id: 'b-06-201',
@@ -606,7 +599,7 @@ export const UNITS: Unit[] = reactive([
     price: 13590000,
     priceUnit: 'so‘m / oy',
     equipment: ['Vitrina', 'Konditsioner'],
-    polygon: P(0.03, 0.06, 0.173, 0.36),
+    polygon: [[0.0076, 0.0137], [0.0805, 0.0137], [0.0805, 0.4777], [0.0076, 0.4777]],
   },
   {
     id: 'b-06-202',
@@ -623,7 +616,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Baraka Group',
     contractCode: 'MKON-2025-0117',
     equipment: ['Vitrina', 'Konditsioner', 'Yong‘in signalizatsiyasi'],
-    polygon: P(0.218, 0.06, 0.173, 0.36),
+    polygon: [[0.0805, 0.0137], [0.3326, 0.0137], [0.3326, 0.4777], [0.0805, 0.4777]],
   },
   {
     id: 'b-06-203',
@@ -638,7 +631,7 @@ export const UNITS: Unit[] = reactive([
     price: 57220000,
     priceUnit: 'so‘m / oy',
     equipment: ['Vitrina', 'Konditsioner'],
-    polygon: P(0.406, 0.06, 0.173, 0.36),
+    polygon: [[0.0076, 0.6312], [0.3371, 0.6312], [0.3371, 0.9863], [0.0076, 0.9863]],
   },
   {
     id: 'b-06-204',
@@ -655,7 +648,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Diyor Farm',
     contractCode: 'MKON-2025-0107',
     equipment: ['Vitrina', 'Konditsioner', 'Yong‘in signalizatsiyasi', 'Ombor xonasi'],
-    polygon: P(0.594, 0.06, 0.173, 0.36),
+    polygon: [[0.3371, 0.6312], [0.6025, 0.6312], [0.6025, 0.9863], [0.3371, 0.9863]],
   },
   {
     id: 'b-06-205',
@@ -670,7 +663,7 @@ export const UNITS: Unit[] = reactive([
     price: 41480000,
     priceUnit: 'so‘m / oy',
     equipment: ['Vitrina', 'Konditsioner'],
-    polygon: P(0.782, 0.06, 0.173, 0.36),
+    polygon: [[0.3326, 0.0137], [0.5848, 0.0137], [0.5848, 0.4777], [0.3326, 0.4777]],
   },
   {
     id: 'b-06-206',
@@ -687,7 +680,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Baraka Group',
     contractCode: 'MKON-2025-0113',
     equipment: ['Vitrina', 'Konditsioner', 'Yong‘in signalizatsiyasi', 'Ombor xonasi'],
-    polygon: P(0.03, 0.58, 0.173, 0.36),
+    polygon: [[0.757, 0.0137], [0.8747, 0.0137], [0.8747, 0.4777], [0.757, 0.4777]],
   },
   {
     id: 'b-06-207',
@@ -704,7 +697,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Bunyod Qurilish',
     contractCode: 'MKON-2025-0102',
     equipment: ['Vitrina', 'Konditsioner', 'Yong‘in signalizatsiyasi', 'Ombor xonasi'],
-    polygon: P(0.218, 0.58, 0.173, 0.36),
+    polygon: [[0.6025, 0.6312], [0.727, 0.6312], [0.727, 0.9863], [0.6025, 0.9863]],
   },
   {
     id: 'b-06-208',
@@ -719,7 +712,7 @@ export const UNITS: Unit[] = reactive([
     price: 27950000,
     priceUnit: 'so‘m / oy',
     equipment: ['Vitrina', 'Konditsioner'],
-    polygon: P(0.406, 0.58, 0.173, 0.36),
+    polygon: [[0.727, 0.6312], [0.9924, 0.6312], [0.9924, 0.9863], [0.727, 0.9863]],
   },
   {
     id: 'b-06-209',
@@ -736,7 +729,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Sharq Elektronika',
     contractCode: 'MKON-2025-0122',
     equipment: ['Vitrina', 'Konditsioner'],
-    polygon: P(0.594, 0.58, 0.173, 0.36),
+    polygon: [[0.8747, 0.0137], [0.9924, 0.0137], [0.9924, 0.4777], [0.8747, 0.4777]],
   },
   {
     id: 'b-06-401',
@@ -753,7 +746,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Milliy Savdo MCHJ',
     contractCode: 'MKON-2025-0149',
     equipment: ['Vitrina', 'Konditsioner'],
-    polygon: P(0.03, 0.06, 0.173, 0.36),
+    polygon: [[0.0109, 0.605], [0.1378, 0.605], [0.1378, 0.9863], [0.0109, 0.9863]],
   },
   {
     id: 'b-06-402',
@@ -768,7 +761,7 @@ export const UNITS: Unit[] = reactive([
     price: 25180000,
     priceUnit: 'so‘m / oy',
     equipment: ['Vitrina', 'Konditsioner', 'Yong‘in signalizatsiyasi', 'Ombor xonasi'],
-    polygon: P(0.218, 0.06, 0.173, 0.36),
+    polygon: [[0.0109, 0.0137], [0.2446, 0.0137], [0.2446, 0.4514], [0.0109, 0.4514]],
   },
   {
     id: 'b-06-403',
@@ -783,7 +776,7 @@ export const UNITS: Unit[] = reactive([
     price: 18600000,
     priceUnit: 'so‘m / oy',
     equipment: ['Vitrina', 'Konditsioner'],
-    polygon: P(0.406, 0.06, 0.173, 0.36),
+    polygon: [[0.1378, 0.605], [0.3036, 0.605], [0.3036, 0.9863], [0.1378, 0.9863]],
   },
   {
     id: 'b-06-404',
@@ -800,7 +793,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Navro‘z Textile',
     contractCode: 'MKON-2025-0122',
     equipment: ['Vitrina', 'Konditsioner', 'Yong‘in signalizatsiyasi'],
-    polygon: P(0.594, 0.06, 0.173, 0.36),
+    polygon: [[0.3036, 0.605], [0.5085, 0.605], [0.5085, 0.9863], [0.3036, 0.9863]],
   },
   {
     id: 'b-06-405',
@@ -815,7 +808,7 @@ export const UNITS: Unit[] = reactive([
     price: 38170000,
     priceUnit: 'so‘m / oy',
     equipment: ['Vitrina', 'Konditsioner', 'Yong‘in signalizatsiyasi', 'Ombor xonasi'],
-    polygon: P(0.782, 0.06, 0.173, 0.36),
+    polygon: [[0.2446, 0.0137], [0.5527, 0.0137], [0.5527, 0.4514], [0.2446, 0.4514]],
   },
   {
     id: 'b-06-406',
@@ -830,7 +823,7 @@ export const UNITS: Unit[] = reactive([
     price: 13860000,
     priceUnit: 'so‘m / oy',
     equipment: ['Vitrina', 'Konditsioner', 'Yong‘in signalizatsiyasi', 'Ombor xonasi'],
-    polygon: P(0.03, 0.58, 0.173, 0.36),
+    polygon: [[0.7341, 0.0137], [0.8446, 0.0137], [0.8446, 0.4514], [0.7341, 0.4514]],
   },
   {
     id: 'b-06-407',
@@ -847,7 +840,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Yangi Avlod Ta’lim',
     contractCode: 'MKON-2025-0140',
     equipment: ['Vitrina', 'Konditsioner', 'Yong‘in signalizatsiyasi', 'Ombor xonasi'],
-    polygon: P(0.218, 0.58, 0.173, 0.36),
+    polygon: [[0.8446, 0.0137], [0.9891, 0.0137], [0.9891, 0.4514], [0.8446, 0.4514]],
   },
   {
     id: 'b-06-408',
@@ -864,7 +857,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Orient Consulting',
     contractCode: 'MKON-2025-0115',
     equipment: ['Vitrina', 'Konditsioner'],
-    polygon: P(0.406, 0.58, 0.173, 0.36),
+    polygon: [[0.5085, 0.605], [0.8622, 0.605], [0.8622, 0.9863], [0.5085, 0.9863]],
   },
   {
     id: 'b-06-409',
@@ -881,7 +874,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Oltin Vodiy',
     contractCode: 'MKON-2025-0159',
     equipment: ['Vitrina', 'Konditsioner'],
-    polygon: P(0.594, 0.58, 0.173, 0.36),
+    polygon: [[0.8622, 0.605], [0.9891, 0.605], [0.9891, 0.9863], [0.8622, 0.9863]],
   },
 
   // --- Yunusobod Tower ---
@@ -900,7 +893,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Milliy Savdo MCHJ',
     contractCode: 'MKON-2025-0140',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.03, 0.06, 0.22, 0.36),
+    polygon: [[0.0073, 0.6049], [0.276, 0.6049], [0.276, 0.9822], [0.0073, 0.9822]],
   },
   {
     id: 'b-07-202',
@@ -917,7 +910,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Orient Consulting',
     contractCode: 'MKON-2025-0109',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.265, 0.06, 0.22, 0.36),
+    polygon: [[0.276, 0.6049], [0.4832, 0.6049], [0.4832, 0.9822], [0.276, 0.9822]],
   },
   {
     id: 'b-07-203',
@@ -932,7 +925,7 @@ export const UNITS: Unit[] = reactive([
     price: 18710000,
     priceUnit: 'so‘m / oy',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.5, 0.06, 0.22, 0.36),
+    polygon: [[0.4832, 0.6049], [0.752, 0.6049], [0.752, 0.9822], [0.4832, 0.9822]],
   },
   {
     id: 'b-07-204',
@@ -949,7 +942,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Baraka Group',
     contractCode: 'MKON-2025-0112',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi', 'Videokuzatuv'],
-    polygon: P(0.735, 0.06, 0.22, 0.36),
+    polygon: [[0.0073, 0.0178], [0.1984, 0.0178], [0.1984, 0.4932], [0.0073, 0.4932]],
   },
   {
     id: 'b-07-205',
@@ -964,7 +957,7 @@ export const UNITS: Unit[] = reactive([
     price: 14400000,
     priceUnit: 'so‘m / oy',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi', 'Videokuzatuv'],
-    polygon: P(0.03, 0.58, 0.22, 0.36),
+    polygon: [[0.752, 0.6049], [0.9927, 0.6049], [0.9927, 0.9822], [0.752, 0.9822]],
   },
   {
     id: 'b-07-206',
@@ -981,7 +974,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Baraka Group',
     contractCode: 'MKON-2025-0147',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi', 'Videokuzatuv'],
-    polygon: P(0.265, 0.58, 0.22, 0.36),
+    polygon: [[0.1984, 0.0178], [0.4605, 0.0178], [0.4605, 0.4932], [0.1984, 0.4932]],
   },
   {
     id: 'b-07-207',
@@ -998,7 +991,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Yangi Avlod Ta’lim',
     contractCode: 'MKON-2025-0156',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.5, 0.58, 0.22, 0.36),
+    polygon: [[0.6639, 0.0178], [0.855, 0.0178], [0.855, 0.4932], [0.6639, 0.4932]],
   },
   {
     id: 'b-07-208',
@@ -1015,7 +1008,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Milliy Savdo MCHJ',
     contractCode: 'MKON-2025-0130',
     equipment: ['Konditsioner', 'Yong‘in datchigi'],
-    polygon: P(0.735, 0.58, 0.22, 0.36),
+    polygon: [[0.855, 0.0178], [0.9927, 0.0178], [0.9927, 0.4932], [0.855, 0.4932]],
   },
   {
     id: 'b-07-901',
@@ -1032,7 +1025,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Orient Consulting',
     contractCode: 'MKON-2025-0157',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi', 'Videokuzatuv'],
-    polygon: P(0.03, 0.06, 0.22, 0.36),
+    polygon: [[0.0077, 0.6106], [0.2298, 0.6106], [0.2298, 0.9822], [0.0077, 0.9822]],
   },
   {
     id: 'b-07-902',
@@ -1049,7 +1042,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Navro‘z Textile',
     contractCode: 'MKON-2025-0156',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi', 'Videokuzatuv'],
-    polygon: P(0.265, 0.06, 0.22, 0.36),
+    polygon: [[0.2298, 0.6106], [0.518, 0.6106], [0.518, 0.9822], [0.2298, 0.9822]],
   },
   {
     id: 'b-07-903',
@@ -1066,7 +1059,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Tashkent Digital',
     contractCode: 'MKON-2025-0148',
     equipment: ['Konditsioner', 'Yong‘in datchigi'],
-    polygon: P(0.5, 0.06, 0.22, 0.36),
+    polygon: [[0.518, 0.6106], [0.8062, 0.6106], [0.8062, 0.9822], [0.518, 0.9822]],
   },
   {
     id: 'b-07-904',
@@ -1083,7 +1076,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Tashkent Digital',
     contractCode: 'MKON-2025-0113',
     equipment: ['Konditsioner', 'Yong‘in datchigi'],
-    polygon: P(0.735, 0.06, 0.22, 0.36),
+    polygon: [[0.0077, 0.0178], [0.1515, 0.0178], [0.1515, 0.4989], [0.0077, 0.4989]],
   },
   {
     id: 'b-07-905',
@@ -1098,7 +1091,7 @@ export const UNITS: Unit[] = reactive([
     price: 18490000,
     priceUnit: 'so‘m / oy',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi', 'Videokuzatuv'],
-    polygon: P(0.03, 0.58, 0.22, 0.36),
+    polygon: [[0.1515, 0.0178], [0.4251, 0.0178], [0.4251, 0.4989], [0.1515, 0.4989]],
   },
   {
     id: 'b-07-906',
@@ -1115,7 +1108,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Baraka Group',
     contractCode: 'MKON-2025-0109',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.265, 0.58, 0.22, 0.36),
+    polygon: [[0.8062, 0.6106], [0.9923, 0.6106], [0.9923, 0.9822], [0.8062, 0.9822]],
   },
   {
     id: 'b-07-907',
@@ -1132,7 +1125,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Turon Media',
     contractCode: 'MKON-2025-0157',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.5, 0.58, 0.22, 0.36),
+    polygon: [[0.6259, 0.0178], [0.8485, 0.0178], [0.8485, 0.4989], [0.6259, 0.4989]],
   },
   {
     id: 'b-07-908',
@@ -1149,7 +1142,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Oq Yo‘l Servis',
     contractCode: 'MKON-2025-0123',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.735, 0.58, 0.22, 0.36),
+    polygon: [[0.8485, 0.0178], [0.9923, 0.0178], [0.9923, 0.4989], [0.8485, 0.4989]],
   },
   {
     id: 'b-07-1701',
@@ -1166,7 +1159,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Zamin Invest',
     contractCode: 'MKON-2025-0111',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi', 'Videokuzatuv'],
-    polygon: P(0.03, 0.06, 0.22, 0.36),
+    polygon: [[0.0083, 0.0178], [0.1288, 0.0178], [0.1288, 0.4994], [0.0083, 0.4994]],
   },
   {
     id: 'b-07-1702',
@@ -1183,7 +1176,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Oltin Vodiy',
     contractCode: 'MKON-2025-0116',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi', 'Videokuzatuv'],
-    polygon: P(0.265, 0.06, 0.22, 0.36),
+    polygon: [[0.1288, 0.0178], [0.4852, 0.0178], [0.4852, 0.4994], [0.1288, 0.4994]],
   },
   {
     id: 'b-07-1703',
@@ -1200,7 +1193,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Navro‘z Textile',
     contractCode: 'MKON-2025-0144',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi', 'Videokuzatuv'],
-    polygon: P(0.5, 0.06, 0.22, 0.36),
+    polygon: [[0.0083, 0.611], [0.2493, 0.611], [0.2493, 0.9822], [0.0083, 0.9822]],
   },
   {
     id: 'b-07-1704',
@@ -1217,7 +1210,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Karvon Logistik',
     contractCode: 'MKON-2025-0125',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi', 'Videokuzatuv'],
-    polygon: P(0.735, 0.06, 0.22, 0.36),
+    polygon: [[0.2493, 0.611], [0.4056, 0.611], [0.4056, 0.9822], [0.2493, 0.9822]],
   },
   {
     id: 'b-07-1705',
@@ -1234,7 +1227,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Oltin Vodiy',
     contractCode: 'MKON-2025-0105',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.03, 0.58, 0.22, 0.36),
+    polygon: [[0.6855, 0.0178], [0.806, 0.0178], [0.806, 0.4994], [0.6855, 0.4994]],
   },
   {
     id: 'b-07-1706',
@@ -1249,7 +1242,7 @@ export const UNITS: Unit[] = reactive([
     price: 22470000,
     priceUnit: 'so‘m / oy',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.265, 0.58, 0.22, 0.36),
+    polygon: [[0.4056, 0.611], [0.7898, 0.611], [0.7898, 0.9822], [0.4056, 0.9822]],
   },
   {
     id: 'b-07-1707',
@@ -1266,7 +1259,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Oq Yo‘l Servis',
     contractCode: 'MKON-2025-0115',
     equipment: ['Konditsioner', 'Yong‘in datchigi'],
-    polygon: P(0.5, 0.58, 0.22, 0.36),
+    polygon: [[0.806, 0.0178], [0.9917, 0.0178], [0.9917, 0.4994], [0.806, 0.4994]],
   },
   {
     id: 'b-07-1708',
@@ -1283,7 +1276,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Tashkent Digital',
     contractCode: 'MKON-2025-0139',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.735, 0.58, 0.22, 0.36),
+    polygon: [[0.7898, 0.611], [0.9917, 0.611], [0.9917, 0.9822], [0.7898, 0.9822]],
   },
 
   // --- Salar Logistika Markazi ---
@@ -1302,7 +1295,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Oltin Vodiy',
     contractCode: 'MKON-2025-0140',
     equipment: ['Yuk eshigi', 'Rampa', 'Yong‘in gidranti'],
-    polygon: P(0.03, 0.06, 0.298, 0.36),
+    polygon: [[0.0039, 0.6029], [0.2341, 0.6029], [0.2341, 0.989], [0.0039, 0.989]],
   },
   {
     id: 'b-08-102',
@@ -1319,7 +1312,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Milliy Savdo MCHJ',
     contractCode: 'MKON-2025-0137',
     equipment: ['Yuk eshigi', 'Rampa'],
-    polygon: P(0.343, 0.06, 0.298, 0.36),
+    polygon: [[0.0039, 0.011], [0.1838, 0.011], [0.1838, 0.5051], [0.0039, 0.5051]],
   },
   {
     id: 'b-08-103',
@@ -1336,7 +1329,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Turon Media',
     contractCode: 'MKON-2025-0119',
     equipment: ['Yuk eshigi', 'Rampa', 'Yong‘in gidranti'],
-    polygon: P(0.657, 0.06, 0.298, 0.36),
+    polygon: [[0.1838, 0.011], [0.5479, 0.011], [0.5479, 0.5051], [0.1838, 0.5051]],
   },
   {
     id: 'b-08-104',
@@ -1353,7 +1346,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Alfa Trade MCHJ',
     contractCode: 'MKON-2025-0127',
     equipment: ['Yuk eshigi', 'Rampa', 'Yong‘in gidranti'],
-    polygon: P(0.03, 0.58, 0.298, 0.36),
+    polygon: [[0.2341, 0.6029], [0.7001, 0.6029], [0.7001, 0.989], [0.2341, 0.989]],
   },
   {
     id: 'b-08-105',
@@ -1370,7 +1363,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Oq Yo‘l Servis',
     contractCode: 'MKON-2025-0100',
     equipment: ['Yuk eshigi', 'Rampa'],
-    polygon: P(0.343, 0.58, 0.298, 0.36),
+    polygon: [[0.7001, 0.6029], [0.9961, 0.6029], [0.9961, 0.989], [0.7001, 0.989]],
   },
   {
     id: 'b-08-106',
@@ -1385,7 +1378,7 @@ export const UNITS: Unit[] = reactive([
     price: 43300000,
     priceUnit: 'so‘m / oy',
     equipment: ['Yuk eshigi', 'Rampa', 'Yong‘in gidranti'],
-    polygon: P(0.657, 0.58, 0.298, 0.36),
+    polygon: [[0.632, 0.011], [0.9961, 0.011], [0.9961, 0.5051], [0.632, 0.5051]],
   },
   {
     id: 'b-08-201',
@@ -1400,7 +1393,7 @@ export const UNITS: Unit[] = reactive([
     price: 45490000,
     priceUnit: 'so‘m / oy',
     equipment: ['Yuk eshigi', 'Rampa', 'Yong‘in gidranti'],
-    polygon: P(0.03, 0.06, 0.298, 0.36),
+    polygon: [[0.0044, 0.011], [0.3511, 0.011], [0.3511, 0.4793], [0.0044, 0.4793]],
   },
   {
     id: 'b-08-202',
@@ -1417,7 +1410,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Navro‘z Textile',
     contractCode: 'MKON-2025-0108',
     equipment: ['Yuk eshigi', 'Rampa', 'Yong‘in gidranti'],
-    polygon: P(0.343, 0.06, 0.298, 0.36),
+    polygon: [[0.3511, 0.011], [0.7845, 0.011], [0.7845, 0.4793], [0.3511, 0.4793]],
   },
   {
     id: 'b-08-203',
@@ -1432,7 +1425,7 @@ export const UNITS: Unit[] = reactive([
     price: 11890000,
     priceUnit: 'so‘m / oy',
     equipment: ['Yuk eshigi', 'Rampa'],
-    polygon: P(0.657, 0.06, 0.298, 0.36),
+    polygon: [[0.8732, 0.011], [0.9956, 0.011], [0.9956, 0.4793], [0.8732, 0.4793]],
   },
   {
     id: 'b-08-204',
@@ -1447,7 +1440,7 @@ export const UNITS: Unit[] = reactive([
     price: 20340000,
     priceUnit: 'so‘m / oy',
     equipment: ['Yuk eshigi', 'Rampa'],
-    polygon: P(0.03, 0.58, 0.298, 0.36),
+    polygon: [[0.0044, 0.5771], [0.1899, 0.5771], [0.1899, 0.989], [0.0044, 0.989]],
   },
   {
     id: 'b-08-205',
@@ -1462,7 +1455,7 @@ export const UNITS: Unit[] = reactive([
     price: 34780000,
     priceUnit: 'so‘m / oy',
     equipment: ['Yuk eshigi', 'Rampa', 'Yong‘in gidranti'],
-    polygon: P(0.343, 0.58, 0.298, 0.36),
+    polygon: [[0.1899, 0.5771], [0.5029, 0.5771], [0.5029, 0.989], [0.1899, 0.989]],
   },
   {
     id: 'b-08-206',
@@ -1479,7 +1472,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Oq Yo‘l Servis',
     contractCode: 'MKON-2025-0118',
     equipment: ['Yuk eshigi', 'Rampa'],
-    polygon: P(0.657, 0.58, 0.298, 0.36),
+    polygon: [[0.5029, 0.5771], [0.9956, 0.5771], [0.9956, 0.989], [0.5029, 0.989]],
   },
 
   // --- Chilonzor Plaza ---
@@ -1498,7 +1491,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Alfa Trade MCHJ',
     contractCode: 'MKON-2025-0109',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.03, 0.06, 0.22, 0.36),
+    polygon: [[0.0093, 0.6145], [0.1631, 0.6145], [0.1631, 0.9822], [0.0093, 0.9822]],
   },
   {
     id: 'b-09-202',
@@ -1513,7 +1506,7 @@ export const UNITS: Unit[] = reactive([
     price: 10310000,
     priceUnit: 'so‘m / oy',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.265, 0.06, 0.22, 0.36),
+    polygon: [[0.0093, 0.0178], [0.1925, 0.0178], [0.1925, 0.5028], [0.0093, 0.5028]],
   },
   {
     id: 'b-09-203',
@@ -1530,7 +1523,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Bunyod Qurilish',
     contractCode: 'MKON-2025-0155',
     equipment: ['Konditsioner', 'Yong‘in datchigi'],
-    polygon: P(0.5, 0.06, 0.22, 0.36),
+    polygon: [[0.1631, 0.6145], [0.3169, 0.6145], [0.3169, 0.9822], [0.1631, 0.9822]],
   },
   {
     id: 'b-09-204',
@@ -1545,7 +1538,7 @@ export const UNITS: Unit[] = reactive([
     price: 8240000,
     priceUnit: 'so‘m / oy',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.735, 0.06, 0.22, 0.36),
+    polygon: [[0.1925, 0.0178], [0.3758, 0.0178], [0.3758, 0.5028], [0.1925, 0.5028]],
   },
   {
     id: 'b-09-205',
@@ -1562,7 +1555,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Karvon Logistik',
     contractCode: 'MKON-2025-0150',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.03, 0.58, 0.22, 0.36),
+    polygon: [[0.5743, 0.0178], [0.6909, 0.0178], [0.6909, 0.5028], [0.5743, 0.5028]],
   },
   {
     id: 'b-09-206',
@@ -1579,7 +1572,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Diyor Farm',
     contractCode: 'MKON-2025-0129',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.265, 0.58, 0.22, 0.36),
+    polygon: [[0.3169, 0.6145], [0.6538, 0.6145], [0.6538, 0.9822], [0.3169, 0.9822]],
   },
   {
     id: 'b-09-207',
@@ -1594,7 +1587,7 @@ export const UNITS: Unit[] = reactive([
     price: 12720000,
     priceUnit: 'so‘m / oy',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.5, 0.58, 0.22, 0.36),
+    polygon: [[0.6909, 0.0178], [0.9907, 0.0178], [0.9907, 0.5028], [0.6909, 0.5028]],
   },
   {
     id: 'b-09-208',
@@ -1611,7 +1604,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Yangi Avlod Ta’lim',
     contractCode: 'MKON-2025-0121',
     equipment: ['Konditsioner', 'Yong‘in datchigi'],
-    polygon: P(0.735, 0.58, 0.22, 0.36),
+    polygon: [[0.6538, 0.6145], [0.9907, 0.6145], [0.9907, 0.9822], [0.6538, 0.9822]],
   },
   {
     id: 'b-09-501',
@@ -1626,7 +1619,7 @@ export const UNITS: Unit[] = reactive([
     price: 5740000,
     priceUnit: 'so‘m / oy',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.03, 0.06, 0.22, 0.36),
+    polygon: [[0.0095, 0.0178], [0.1308, 0.0178], [0.1308, 0.496], [0.0095, 0.496]],
   },
   {
     id: 'b-09-502',
@@ -1641,7 +1634,7 @@ export const UNITS: Unit[] = reactive([
     price: 4730000,
     priceUnit: 'so‘m / oy',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.265, 0.06, 0.22, 0.36),
+    polygon: [[0.0095, 0.6077], [0.1644, 0.6077], [0.1644, 0.9822], [0.0095, 0.9822]],
   },
   {
     id: 'b-09-503',
@@ -1658,7 +1651,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Milliy Savdo MCHJ',
     contractCode: 'MKON-2025-0119',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.5, 0.06, 0.22, 0.36),
+    polygon: [[0.1308, 0.0178], [0.4427, 0.0178], [0.4427, 0.496], [0.1308, 0.496]],
   },
   {
     id: 'b-09-504',
@@ -1675,7 +1668,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Silk Road Logistics',
     contractCode: 'MKON-2025-0148',
     equipment: ['Konditsioner', 'Yong‘in datchigi'],
-    polygon: P(0.735, 0.06, 0.22, 0.36),
+    polygon: [[0.1644, 0.6077], [0.4521, 0.6077], [0.4521, 0.9822], [0.1644, 0.9822]],
   },
   {
     id: 'b-09-505',
@@ -1692,7 +1685,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Bunyod Qurilish',
     contractCode: 'MKON-2025-0150',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.03, 0.58, 0.22, 0.36),
+    polygon: [[0.6439, 0.0178], [0.7652, 0.0178], [0.7652, 0.496], [0.6439, 0.496]],
   },
   {
     id: 'b-09-506',
@@ -1709,7 +1702,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Orient Consulting',
     contractCode: 'MKON-2025-0133',
     equipment: ['Konditsioner', 'Yong‘in datchigi'],
-    polygon: P(0.265, 0.58, 0.22, 0.36),
+    polygon: [[0.4521, 0.6077], [0.7913, 0.6077], [0.7913, 0.9822], [0.4521, 0.9822]],
   },
   {
     id: 'b-09-507',
@@ -1726,7 +1719,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Navro‘z Textile',
     contractCode: 'MKON-2025-0142',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.5, 0.58, 0.22, 0.36),
+    polygon: [[0.7913, 0.6077], [0.9905, 0.6077], [0.9905, 0.9822], [0.7913, 0.9822]],
   },
   {
     id: 'b-09-508',
@@ -1743,7 +1736,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Baraka Group',
     contractCode: 'MKON-2025-0149',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.735, 0.58, 0.22, 0.36),
+    polygon: [[0.7652, 0.0178], [0.9905, 0.0178], [0.9905, 0.496], [0.7652, 0.496]],
   },
   {
     id: 'b-09-801',
@@ -1760,7 +1753,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Silk Road Logistics',
     contractCode: 'MKON-2025-0116',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.03, 0.06, 0.22, 0.36),
+    polygon: [[0.0079, 0.0178], [0.11, 0.0178], [0.11, 0.4863], [0.0079, 0.4863]],
   },
   {
     id: 'b-09-802',
@@ -1775,7 +1768,7 @@ export const UNITS: Unit[] = reactive([
     price: 13240000,
     priceUnit: 'so‘m / oy',
     equipment: ['Konditsioner', 'Yong‘in datchigi'],
-    polygon: P(0.265, 0.06, 0.22, 0.36),
+    polygon: [[0.11, 0.0178], [0.3337, 0.0178], [0.3337, 0.4863], [0.11, 0.4863]],
   },
   {
     id: 'b-09-803',
@@ -1790,7 +1783,7 @@ export const UNITS: Unit[] = reactive([
     price: 8790000,
     priceUnit: 'so‘m / oy',
     equipment: ['Konditsioner', 'Yong‘in datchigi'],
-    polygon: P(0.5, 0.06, 0.22, 0.36),
+    polygon: [[0.0079, 0.5979], [0.2035, 0.5979], [0.2035, 0.9822], [0.0079, 0.9822]],
   },
   {
     id: 'b-09-804',
@@ -1805,7 +1798,7 @@ export const UNITS: Unit[] = reactive([
     price: 13840000,
     priceUnit: 'so‘m / oy',
     equipment: ['Konditsioner', 'Yong‘in datchigi'],
-    polygon: P(0.735, 0.06, 0.22, 0.36),
+    polygon: [[0.2035, 0.5979], [0.4763, 0.5979], [0.4763, 0.9822], [0.2035, 0.9822]],
   },
   {
     id: 'b-09-805',
@@ -1822,7 +1815,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Orient Consulting',
     contractCode: 'MKON-2025-0114',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.03, 0.58, 0.22, 0.36),
+    polygon: [[0.5398, 0.0178], [0.7295, 0.0178], [0.7295, 0.4863], [0.5398, 0.4863]],
   },
   {
     id: 'b-09-806',
@@ -1839,7 +1832,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Yangi Avlod Ta’lim',
     contractCode: 'MKON-2025-0153',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.265, 0.58, 0.22, 0.36),
+    polygon: [[0.7295, 0.0178], [0.9921, 0.0178], [0.9921, 0.4863], [0.7295, 0.4863]],
   },
   {
     id: 'b-09-807',
@@ -1856,7 +1849,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Bunyod Qurilish',
     contractCode: 'MKON-2025-0104',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.5, 0.58, 0.22, 0.36),
+    polygon: [[0.4763, 0.5979], [0.672, 0.5979], [0.672, 0.9822], [0.4763, 0.9822]],
   },
   {
     id: 'b-09-808',
@@ -1871,7 +1864,7 @@ export const UNITS: Unit[] = reactive([
     price: 13190000,
     priceUnit: 'so‘m / oy',
     equipment: ['Konditsioner', 'Yong‘in datchigi'],
-    polygon: P(0.735, 0.58, 0.22, 0.36),
+    polygon: [[0.672, 0.5979], [0.9921, 0.5979], [0.9921, 0.9822], [0.672, 0.9822]],
   },
 
   // --- Nurafshon Residence ---
@@ -1889,7 +1882,7 @@ export const UNITS: Unit[] = reactive([
     priceUnit: 'so‘m / m²',
     tenant: 'Navro‘z Textile',
     equipment: ['Balkon', 'Konditsioner'],
-    polygon: P(0.03, 0.06, 0.22, 0.36),
+    polygon: [[0.0071, 0.6068], [0.3119, 0.6068], [0.3119, 0.9793], [0.0071, 0.9793]],
   },
   {
     id: 'b-10-202',
@@ -1905,7 +1898,7 @@ export const UNITS: Unit[] = reactive([
     priceUnit: 'so‘m / m²',
     tenant: 'Silk Road Logistics',
     equipment: ['Balkon', 'Konditsioner', 'Kirish domofoni'],
-    polygon: P(0.265, 0.06, 0.22, 0.36),
+    polygon: [[0.3119, 0.6068], [0.4352, 0.6068], [0.4352, 0.9793], [0.3119, 0.9793]],
   },
   {
     id: 'b-10-203',
@@ -1921,7 +1914,7 @@ export const UNITS: Unit[] = reactive([
     priceUnit: 'so‘m / m²',
     tenant: 'Karvon Logistik',
     equipment: ['Balkon', 'Konditsioner', 'Kirish domofoni'],
-    polygon: P(0.5, 0.06, 0.22, 0.36),
+    polygon: [[0.0071, 0.0207], [0.2036, 0.0207], [0.2036, 0.5003], [0.0071, 0.5003]],
   },
   {
     id: 'b-10-204',
@@ -1937,7 +1930,7 @@ export const UNITS: Unit[] = reactive([
     priceUnit: 'so‘m / m²',
     tenant: 'Oq Yo‘l Servis',
     equipment: ['Balkon', 'Konditsioner', 'Kirish domofoni'],
-    polygon: P(0.735, 0.06, 0.22, 0.36),
+    polygon: [[0.2036, 0.0207], [0.3648, 0.0207], [0.3648, 0.5003], [0.2036, 0.5003]],
   },
   {
     id: 'b-10-205',
@@ -1953,7 +1946,7 @@ export const UNITS: Unit[] = reactive([
     priceUnit: 'so‘m / m²',
     tenant: 'Bunyod Qurilish',
     equipment: ['Balkon', 'Konditsioner'],
-    polygon: P(0.03, 0.58, 0.22, 0.36),
+    polygon: [[0.4352, 0.6068], [0.6881, 0.6068], [0.6881, 0.9793], [0.4352, 0.9793]],
   },
   {
     id: 'b-10-206',
@@ -1969,7 +1962,7 @@ export const UNITS: Unit[] = reactive([
     priceUnit: 'so‘m / m²',
     tenant: 'Yangi Avlod Ta’lim',
     equipment: ['Balkon', 'Konditsioner'],
-    polygon: P(0.265, 0.58, 0.22, 0.36),
+    polygon: [[0.5798, 0.0207], [0.7108, 0.0207], [0.7108, 0.5003], [0.5798, 0.5003]],
   },
   {
     id: 'b-10-207',
@@ -1985,7 +1978,7 @@ export const UNITS: Unit[] = reactive([
     priceUnit: 'so‘m / m²',
     tenant: 'Orient Consulting',
     equipment: ['Balkon', 'Konditsioner'],
-    polygon: P(0.5, 0.58, 0.22, 0.36),
+    polygon: [[0.6881, 0.6068], [0.9929, 0.6068], [0.9929, 0.9793], [0.6881, 0.9793]],
   },
   {
     id: 'b-10-208',
@@ -2001,7 +1994,7 @@ export const UNITS: Unit[] = reactive([
     priceUnit: 'so‘m / m²',
     tenant: 'Zamin Invest',
     equipment: ['Balkon', 'Konditsioner'],
-    polygon: P(0.735, 0.58, 0.22, 0.36),
+    polygon: [[0.7108, 0.0207], [0.9929, 0.0207], [0.9929, 0.5003], [0.7108, 0.5003]],
   },
   {
     id: 'b-10-701',
@@ -2017,7 +2010,7 @@ export const UNITS: Unit[] = reactive([
     priceUnit: 'so‘m / m²',
     tenant: 'Tashkent Digital',
     equipment: ['Balkon', 'Konditsioner', 'Kirish domofoni'],
-    polygon: P(0.03, 0.06, 0.22, 0.36),
+    polygon: [[0.0071, 0.0207], [0.2773, 0.0207], [0.2773, 0.5148], [0.0071, 0.5148]],
   },
   {
     id: 'b-10-702',
@@ -2032,7 +2025,7 @@ export const UNITS: Unit[] = reactive([
     price: 14600000,
     priceUnit: 'so‘m / m²',
     equipment: ['Balkon', 'Konditsioner'],
-    polygon: P(0.265, 0.06, 0.22, 0.36),
+    polygon: [[0.0071, 0.6213], [0.1803, 0.6213], [0.1803, 0.9793], [0.0071, 0.9793]],
   },
   {
     id: 'b-10-703',
@@ -2048,7 +2041,7 @@ export const UNITS: Unit[] = reactive([
     priceUnit: 'so‘m / m²',
     tenant: 'Oltin Vodiy',
     equipment: ['Balkon', 'Konditsioner'],
-    polygon: P(0.5, 0.06, 0.22, 0.36),
+    polygon: [[0.2773, 0.0207], [0.4656, 0.0207], [0.4656, 0.5148], [0.2773, 0.5148]],
   },
   {
     id: 'b-10-704',
@@ -2064,7 +2057,7 @@ export const UNITS: Unit[] = reactive([
     priceUnit: 'so‘m / m²',
     tenant: 'Diyor Farm',
     equipment: ['Balkon', 'Konditsioner'],
-    polygon: P(0.735, 0.06, 0.22, 0.36),
+    polygon: [[0.6744, 0.0207], [0.9012, 0.0207], [0.9012, 0.5148], [0.6744, 0.5148]],
   },
   {
     id: 'b-10-705',
@@ -2080,7 +2073,7 @@ export const UNITS: Unit[] = reactive([
     priceUnit: 'so‘m / m²',
     tenant: 'Zamin Invest',
     equipment: ['Balkon', 'Konditsioner'],
-    polygon: P(0.03, 0.58, 0.22, 0.36),
+    polygon: [[0.1803, 0.6213], [0.3068, 0.6213], [0.3068, 0.9793], [0.1803, 0.9793]],
   },
   {
     id: 'b-10-706',
@@ -2096,7 +2089,7 @@ export const UNITS: Unit[] = reactive([
     priceUnit: 'so‘m / m²',
     tenant: 'Milliy Savdo MCHJ',
     equipment: ['Balkon', 'Konditsioner'],
-    polygon: P(0.265, 0.58, 0.22, 0.36),
+    polygon: [[0.9012, 0.0207], [0.9929, 0.0207], [0.9929, 0.5148], [0.9012, 0.5148]],
   },
   {
     id: 'b-10-707',
@@ -2111,7 +2104,7 @@ export const UNITS: Unit[] = reactive([
     price: 12900000,
     priceUnit: 'so‘m / m²',
     equipment: ['Balkon', 'Konditsioner'],
-    polygon: P(0.5, 0.58, 0.22, 0.36),
+    polygon: [[0.3068, 0.6213], [0.6199, 0.6213], [0.6199, 0.9793], [0.3068, 0.9793]],
   },
   {
     id: 'b-10-708',
@@ -2127,7 +2120,7 @@ export const UNITS: Unit[] = reactive([
     priceUnit: 'so‘m / m²',
     tenant: 'Orient Consulting',
     equipment: ['Balkon', 'Konditsioner', 'Kirish domofoni'],
-    polygon: P(0.735, 0.58, 0.22, 0.36),
+    polygon: [[0.6199, 0.6213], [0.9929, 0.6213], [0.9929, 0.9793], [0.6199, 0.9793]],
   },
   {
     id: 'b-10-1301',
@@ -2143,7 +2136,7 @@ export const UNITS: Unit[] = reactive([
     priceUnit: 'so‘m / m²',
     tenant: 'Sharq Elektronika',
     equipment: ['Balkon', 'Konditsioner', 'Kirish domofoni'],
-    polygon: P(0.03, 0.06, 0.22, 0.36),
+    polygon: [[0.0079, 0.611], [0.2901, 0.611], [0.2901, 0.9793], [0.0079, 0.9793]],
   },
   {
     id: 'b-10-1302',
@@ -2159,7 +2152,7 @@ export const UNITS: Unit[] = reactive([
     priceUnit: 'so‘m / m²',
     tenant: 'Zamin Invest',
     equipment: ['Balkon', 'Konditsioner'],
-    polygon: P(0.265, 0.06, 0.22, 0.36),
+    polygon: [[0.2901, 0.611], [0.5724, 0.611], [0.5724, 0.9793], [0.2901, 0.9793]],
   },
   {
     id: 'b-10-1303',
@@ -2175,7 +2168,7 @@ export const UNITS: Unit[] = reactive([
     priceUnit: 'so‘m / m²',
     tenant: 'Karvon Logistik',
     equipment: ['Balkon', 'Konditsioner'],
-    polygon: P(0.5, 0.06, 0.22, 0.36),
+    polygon: [[0.0079, 0.0207], [0.1511, 0.0207], [0.1511, 0.5045], [0.0079, 0.5045]],
   },
   {
     id: 'b-10-1304',
@@ -2191,7 +2184,7 @@ export const UNITS: Unit[] = reactive([
     priceUnit: 'so‘m / m²',
     tenant: 'Karvon Logistik',
     equipment: ['Balkon', 'Konditsioner', 'Kirish domofoni'],
-    polygon: P(0.735, 0.06, 0.22, 0.36),
+    polygon: [[0.1511, 0.0207], [0.4597, 0.0207], [0.4597, 0.5045], [0.1511, 0.5045]],
   },
   {
     id: 'b-10-1305',
@@ -2206,7 +2199,7 @@ export const UNITS: Unit[] = reactive([
     price: 14800000,
     priceUnit: 'so‘m / m²',
     equipment: ['Balkon', 'Konditsioner'],
-    polygon: P(0.03, 0.58, 0.22, 0.36),
+    polygon: [[0.6726, 0.0207], [0.8874, 0.0207], [0.8874, 0.5045], [0.6726, 0.5045]],
   },
   {
     id: 'b-10-1306',
@@ -2222,7 +2215,7 @@ export const UNITS: Unit[] = reactive([
     priceUnit: 'so‘m / m²',
     tenant: 'Yangi Avlod Ta’lim',
     equipment: ['Balkon', 'Konditsioner', 'Kirish domofoni'],
-    polygon: P(0.265, 0.58, 0.22, 0.36),
+    polygon: [[0.5724, 0.611], [0.8546, 0.611], [0.8546, 0.9793], [0.5724, 0.9793]],
   },
   {
     id: 'b-10-1307',
@@ -2238,7 +2231,7 @@ export const UNITS: Unit[] = reactive([
     priceUnit: 'so‘m / m²',
     tenant: 'Alfa Trade MCHJ',
     equipment: ['Balkon', 'Konditsioner'],
-    polygon: P(0.5, 0.58, 0.22, 0.36),
+    polygon: [[0.8546, 0.611], [0.9921, 0.611], [0.9921, 0.9793], [0.8546, 0.9793]],
   },
   {
     id: 'b-10-1308',
@@ -2253,7 +2246,7 @@ export const UNITS: Unit[] = reactive([
     price: 14100000,
     priceUnit: 'so‘m / m²',
     equipment: ['Balkon', 'Konditsioner'],
-    polygon: P(0.735, 0.58, 0.22, 0.36),
+    polygon: [[0.8874, 0.0207], [0.9921, 0.0207], [0.9921, 0.5045], [0.8874, 0.5045]],
   },
 
   // --- Sergeli Logistik Terminal ---
@@ -2272,7 +2265,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Alfa Trade MCHJ',
     contractCode: 'MKON-2025-0119',
     equipment: ['Yuk eshigi', 'Rampa'],
-    polygon: P(0.03, 0.06, 0.298, 0.36),
+    polygon: [[0.0076, 0.011], [0.2186, 0.011], [0.2186, 0.4804], [0.0076, 0.4804]],
   },
   {
     id: 'b-11-102',
@@ -2289,7 +2282,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Zamin Invest',
     contractCode: 'MKON-2025-0115',
     equipment: ['Yuk eshigi', 'Rampa', 'Yong‘in gidranti'],
-    polygon: P(0.343, 0.06, 0.298, 0.36),
+    polygon: [[0.0076, 0.5782], [0.2488, 0.5782], [0.2488, 0.989], [0.0076, 0.989]],
   },
   {
     id: 'b-11-103',
@@ -2306,7 +2299,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Diyor Farm',
     contractCode: 'MKON-2025-0142',
     equipment: ['Yuk eshigi', 'Rampa', 'Yong‘in gidranti'],
-    polygon: P(0.657, 0.06, 0.298, 0.36),
+    polygon: [[0.2488, 0.5782], [0.6708, 0.5782], [0.6708, 0.989], [0.2488, 0.989]],
   },
   {
     id: 'b-11-104',
@@ -2323,7 +2316,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Diyor Farm',
     contractCode: 'MKON-2025-0150',
     equipment: ['Yuk eshigi', 'Rampa'],
-    polygon: P(0.03, 0.58, 0.298, 0.36),
+    polygon: [[0.6708, 0.5782], [0.9924, 0.5782], [0.9924, 0.989], [0.6708, 0.989]],
   },
   {
     id: 'b-11-105',
@@ -2338,7 +2331,7 @@ export const UNITS: Unit[] = reactive([
     price: 16230000,
     priceUnit: 'so‘m / oy',
     equipment: ['Yuk eshigi', 'Rampa'],
-    polygon: P(0.343, 0.58, 0.298, 0.36),
+    polygon: [[0.2186, 0.011], [0.4297, 0.011], [0.4297, 0.4804], [0.2186, 0.4804]],
   },
   {
     id: 'b-11-106',
@@ -2355,7 +2348,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Silk Road Logistics',
     contractCode: 'MKON-2025-0110',
     equipment: ['Yuk eshigi', 'Rampa', 'Yong‘in gidranti', 'Kran yo‘nalishi'],
-    polygon: P(0.657, 0.58, 0.298, 0.36),
+    polygon: [[0.5176, 0.011], [0.9924, 0.011], [0.9924, 0.4804], [0.5176, 0.4804]],
   },
   {
     id: 'b-11-201',
@@ -2372,7 +2365,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Karvon Logistik',
     contractCode: 'MKON-2025-0144',
     equipment: ['Yuk eshigi', 'Rampa', 'Yong‘in gidranti'],
-    polygon: P(0.03, 0.06, 0.298, 0.36),
+    polygon: [[0.0053, 0.011], [0.1533, 0.011], [0.1533, 0.4779], [0.0053, 0.4779]],
   },
   {
     id: 'b-11-202',
@@ -2389,7 +2382,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Turon Media',
     contractCode: 'MKON-2025-0150',
     equipment: ['Yuk eshigi', 'Rampa'],
-    polygon: P(0.343, 0.06, 0.298, 0.36),
+    polygon: [[0.1533, 0.011], [0.5728, 0.011], [0.5728, 0.4779], [0.1533, 0.4779]],
   },
   {
     id: 'b-11-203',
@@ -2406,7 +2399,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Baraka Group',
     contractCode: 'MKON-2025-0147',
     equipment: ['Yuk eshigi', 'Rampa'],
-    polygon: P(0.657, 0.06, 0.298, 0.36),
+    polygon: [[0.0053, 0.5757], [0.2979, 0.5757], [0.2979, 0.989], [0.0053, 0.989]],
   },
   {
     id: 'b-11-204',
@@ -2423,7 +2416,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Oq Yo‘l Servis',
     contractCode: 'MKON-2025-0143',
     equipment: ['Yuk eshigi', 'Rampa', 'Yong‘in gidranti', 'Kran yo‘nalishi'],
-    polygon: P(0.03, 0.58, 0.298, 0.36),
+    polygon: [[0.6616, 0.011], [0.9947, 0.011], [0.9947, 0.4779], [0.6616, 0.4779]],
   },
   {
     id: 'b-11-205',
@@ -2440,7 +2433,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Sharq Elektronika',
     contractCode: 'MKON-2025-0147',
     equipment: ['Yuk eshigi', 'Rampa'],
-    polygon: P(0.343, 0.58, 0.298, 0.36),
+    polygon: [[0.2979, 0.5757], [0.5209, 0.5757], [0.5209, 0.989], [0.2979, 0.989]],
   },
   {
     id: 'b-11-206',
@@ -2457,7 +2450,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Yangi Avlod Ta’lim',
     contractCode: 'MKON-2025-0110',
     equipment: ['Yuk eshigi', 'Rampa', 'Yong‘in gidranti', 'Kran yo‘nalishi'],
-    polygon: P(0.657, 0.58, 0.298, 0.36),
+    polygon: [[0.5209, 0.5757], [0.9947, 0.5757], [0.9947, 0.989], [0.5209, 0.989]],
   },
 
   // --- Olmazor Business Hub ---
@@ -2476,7 +2469,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Bunyod Qurilish',
     contractCode: 'MKON-2025-0158',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.03, 0.06, 0.22, 0.36),
+    polygon: [[0.0082, 0.6182], [0.1645, 0.6182], [0.1645, 0.9822], [0.0082, 0.9822]],
   },
   {
     id: 'b-12-202',
@@ -2493,7 +2486,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Navro‘z Textile',
     contractCode: 'MKON-2025-0150',
     equipment: ['Konditsioner', 'Yong‘in datchigi'],
-    polygon: P(0.265, 0.06, 0.22, 0.36),
+    polygon: [[0.0082, 0.0178], [0.2411, 0.0178], [0.2411, 0.5065], [0.0082, 0.5065]],
   },
   {
     id: 'b-12-203',
@@ -2508,7 +2501,7 @@ export const UNITS: Unit[] = reactive([
     price: 6870000,
     priceUnit: 'so‘m / oy',
     equipment: ['Konditsioner', 'Yong‘in datchigi'],
-    polygon: P(0.5, 0.06, 0.22, 0.36),
+    polygon: [[0.2411, 0.0178], [0.3576, 0.0178], [0.3576, 0.5065], [0.2411, 0.5065]],
   },
   {
     id: 'b-12-204',
@@ -2523,7 +2516,7 @@ export const UNITS: Unit[] = reactive([
     price: 11690000,
     priceUnit: 'so‘m / oy',
     equipment: ['Konditsioner', 'Yong‘in datchigi'],
-    polygon: P(0.735, 0.06, 0.22, 0.36),
+    polygon: [[0.1645, 0.6182], [0.3665, 0.6182], [0.3665, 0.9822], [0.1645, 0.9822]],
   },
   {
     id: 'b-12-205',
@@ -2540,7 +2533,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Bunyod Qurilish',
     contractCode: 'MKON-2025-0132',
     equipment: ['Konditsioner', 'Yong‘in datchigi'],
-    polygon: P(0.03, 0.58, 0.22, 0.36),
+    polygon: [[0.3665, 0.6182], [0.6075, 0.6182], [0.6075, 0.9822], [0.3665, 0.9822]],
   },
   {
     id: 'b-12-206',
@@ -2557,7 +2550,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Oq Yo‘l Servis',
     contractCode: 'MKON-2025-0132',
     equipment: ['Konditsioner', 'Yong‘in datchigi'],
-    polygon: P(0.265, 0.58, 0.22, 0.36),
+    polygon: [[0.5551, 0.0178], [0.8414, 0.0178], [0.8414, 0.5065], [0.5551, 0.5065]],
   },
   {
     id: 'b-12-207',
@@ -2572,7 +2565,7 @@ export const UNITS: Unit[] = reactive([
     price: 18780000,
     priceUnit: 'so‘m / oy',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.5, 0.58, 0.22, 0.36),
+    polygon: [[0.6075, 0.6182], [0.9918, 0.6182], [0.9918, 0.9822], [0.6075, 0.9822]],
   },
   {
     id: 'b-12-208',
@@ -2587,7 +2580,7 @@ export const UNITS: Unit[] = reactive([
     price: 8890000,
     priceUnit: 'so‘m / oy',
     equipment: ['Konditsioner', 'Yong‘in datchigi'],
-    polygon: P(0.735, 0.58, 0.22, 0.36),
+    polygon: [[0.8414, 0.0178], [0.9918, 0.0178], [0.9918, 0.5065], [0.8414, 0.5065]],
   },
   {
     id: 'b-12-501',
@@ -2602,7 +2595,7 @@ export const UNITS: Unit[] = reactive([
     price: 12300000,
     priceUnit: 'so‘m / oy',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.03, 0.06, 0.22, 0.36),
+    polygon: [[0.007, 0.5987], [0.2031, 0.5987], [0.2031, 0.9822], [0.007, 0.9822]],
   },
   {
     id: 'b-12-502',
@@ -2619,7 +2612,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Bunyod Qurilish',
     contractCode: 'MKON-2025-0104',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi', 'Videokuzatuv'],
-    polygon: P(0.265, 0.06, 0.22, 0.36),
+    polygon: [[0.007, 0.0178], [0.111, 0.0178], [0.111, 0.487], [0.007, 0.487]],
   },
   {
     id: 'b-12-503',
@@ -2636,7 +2629,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Tashkent Digital',
     contractCode: 'MKON-2025-0110',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.5, 0.06, 0.22, 0.36),
+    polygon: [[0.111, 0.0178], [0.2713, 0.0178], [0.2713, 0.487], [0.111, 0.487]],
   },
   {
     id: 'b-12-504',
@@ -2653,7 +2646,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Yangi Avlod Ta’lim',
     contractCode: 'MKON-2025-0138',
     equipment: ['Konditsioner', 'Yong‘in datchigi'],
-    polygon: P(0.735, 0.06, 0.22, 0.36),
+    polygon: [[0.4774, 0.0178], [0.6854, 0.0178], [0.6854, 0.487], [0.4774, 0.487]],
   },
   {
     id: 'b-12-505',
@@ -2668,7 +2661,7 @@ export const UNITS: Unit[] = reactive([
     price: 18920000,
     priceUnit: 'so‘m / oy',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi', 'Videokuzatuv'],
-    polygon: P(0.03, 0.58, 0.22, 0.36),
+    polygon: [[0.2031, 0.5987], [0.5159, 0.5987], [0.5159, 0.9822], [0.2031, 0.9822]],
   },
   {
     id: 'b-12-506',
@@ -2685,7 +2678,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Sharq Elektronika',
     contractCode: 'MKON-2025-0122',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi', 'Videokuzatuv'],
-    polygon: P(0.265, 0.58, 0.22, 0.36),
+    polygon: [[0.5159, 0.5987], [0.8287, 0.5987], [0.8287, 0.9822], [0.5159, 0.9822]],
   },
   {
     id: 'b-12-507',
@@ -2700,7 +2693,7 @@ export const UNITS: Unit[] = reactive([
     price: 26490000,
     priceUnit: 'so‘m / oy',
     equipment: ['Konditsioner', 'Yong‘in datchigi'],
-    polygon: P(0.5, 0.58, 0.22, 0.36),
+    polygon: [[0.6854, 0.0178], [0.993, 0.0178], [0.993, 0.487], [0.6854, 0.487]],
   },
   {
     id: 'b-12-508',
@@ -2715,7 +2708,7 @@ export const UNITS: Unit[] = reactive([
     price: 10100000,
     priceUnit: 'so‘m / oy',
     equipment: ['Konditsioner', 'Yong‘in datchigi'],
-    polygon: P(0.735, 0.58, 0.22, 0.36),
+    polygon: [[0.8287, 0.5987], [0.993, 0.5987], [0.993, 0.9822], [0.8287, 0.9822]],
   },
   {
     id: 'b-12-901',
@@ -2732,7 +2725,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Tashkent Digital',
     contractCode: 'MKON-2025-0100',
     equipment: ['Konditsioner', 'Yong‘in datchigi'],
-    polygon: P(0.03, 0.06, 0.22, 0.36),
+    polygon: [[0.0069, 0.5927], [0.1969, 0.5927], [0.1969, 0.9822], [0.0069, 0.9822]],
   },
   {
     id: 'b-12-902',
@@ -2749,7 +2742,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Zamin Invest',
     contractCode: 'MKON-2025-0107',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.265, 0.06, 0.22, 0.36),
+    polygon: [[0.1969, 0.5927], [0.5, 0.5927], [0.5, 0.9822], [0.1969, 0.9822]],
   },
   {
     id: 'b-12-903',
@@ -2764,7 +2757,7 @@ export const UNITS: Unit[] = reactive([
     price: 12720000,
     priceUnit: 'so‘m / oy',
     equipment: ['Konditsioner', 'Yong‘in datchigi'],
-    polygon: P(0.5, 0.06, 0.22, 0.36),
+    polygon: [[0.0069, 0.0178], [0.1667, 0.0178], [0.1667, 0.481], [0.0069, 0.481]],
   },
   {
     id: 'b-12-904',
@@ -2781,7 +2774,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Navro‘z Textile',
     contractCode: 'MKON-2025-0115',
     equipment: ['Konditsioner', 'Yong‘in datchigi'],
-    polygon: P(0.735, 0.06, 0.22, 0.36),
+    polygon: [[0.5, 0.5927], [0.8031, 0.5927], [0.8031, 0.9822], [0.5, 0.9822]],
   },
   {
     id: 'b-12-905',
@@ -2796,7 +2789,7 @@ export const UNITS: Unit[] = reactive([
     price: 13450000,
     priceUnit: 'so‘m / oy',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi', 'Videokuzatuv'],
-    polygon: P(0.03, 0.58, 0.22, 0.36),
+    polygon: [[0.8031, 0.5927], [0.9931, 0.5927], [0.9931, 0.9822], [0.8031, 0.9822]],
   },
   {
     id: 'b-12-906',
@@ -2813,7 +2806,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Karvon Logistik',
     contractCode: 'MKON-2025-0154',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi', 'Videokuzatuv'],
-    polygon: P(0.265, 0.58, 0.22, 0.36),
+    polygon: [[0.1667, 0.0178], [0.4733, 0.0178], [0.4733, 0.481], [0.1667, 0.481]],
   },
   {
     id: 'b-12-907',
@@ -2830,7 +2823,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Sharq Elektronika',
     contractCode: 'MKON-2025-0147',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi', 'Videokuzatuv'],
-    polygon: P(0.5, 0.58, 0.22, 0.36),
+    polygon: [[0.6822, 0.0178], [0.8895, 0.0178], [0.8895, 0.481], [0.6822, 0.481]],
   },
   {
     id: 'b-12-908',
@@ -2847,7 +2840,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Milliy Savdo MCHJ',
     contractCode: 'MKON-2025-0118',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi', 'Videokuzatuv'],
-    polygon: P(0.735, 0.58, 0.22, 0.36),
+    polygon: [[0.8895, 0.0178], [0.9931, 0.0178], [0.9931, 0.481], [0.8895, 0.481]],
   },
 
   // --- Uchtepa Savdo Markazi ---
@@ -2864,7 +2857,7 @@ export const UNITS: Unit[] = reactive([
     price: 21530000,
     priceUnit: 'so‘m / oy',
     equipment: ['Vitrina', 'Konditsioner', 'Yong‘in signalizatsiyasi'],
-    polygon: P(0.03, 0.06, 0.173, 0.36),
+    polygon: [[0.0102, 0.6143], [0.2076, 0.6143], [0.2076, 0.9863], [0.0102, 0.9863]],
   },
   {
     id: 'b-13-102',
@@ -2879,7 +2872,7 @@ export const UNITS: Unit[] = reactive([
     price: 23710000,
     priceUnit: 'so‘m / oy',
     equipment: ['Vitrina', 'Konditsioner'],
-    polygon: P(0.218, 0.06, 0.173, 0.36),
+    polygon: [[0.2076, 0.6143], [0.4049, 0.6143], [0.4049, 0.9863], [0.2076, 0.9863]],
   },
   {
     id: 'b-13-103',
@@ -2894,7 +2887,7 @@ export const UNITS: Unit[] = reactive([
     price: 13680000,
     priceUnit: 'so‘m / oy',
     equipment: ['Vitrina', 'Konditsioner', 'Yong‘in signalizatsiyasi'],
-    polygon: P(0.406, 0.06, 0.173, 0.36),
+    polygon: [[0.0102, 0.0137], [0.1119, 0.0137], [0.1119, 0.4607], [0.0102, 0.4607]],
   },
   {
     id: 'b-13-104',
@@ -2911,7 +2904,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Baraka Group',
     contractCode: 'MKON-2025-0147',
     equipment: ['Vitrina', 'Konditsioner'],
-    polygon: P(0.594, 0.06, 0.173, 0.36),
+    polygon: [[0.1119, 0.0137], [0.2449, 0.0137], [0.2449, 0.4607], [0.1119, 0.4607]],
   },
   {
     id: 'b-13-105',
@@ -2928,7 +2921,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Sharq Elektronika',
     contractCode: 'MKON-2025-0143',
     equipment: ['Vitrina', 'Konditsioner', 'Yong‘in signalizatsiyasi', 'Ombor xonasi'],
-    polygon: P(0.782, 0.06, 0.173, 0.36),
+    polygon: [[0.4227, 0.0137], [0.7062, 0.0137], [0.7062, 0.4607], [0.4227, 0.4607]],
   },
   {
     id: 'b-13-106',
@@ -2943,7 +2936,7 @@ export const UNITS: Unit[] = reactive([
     price: 35810000,
     priceUnit: 'so‘m / oy',
     equipment: ['Vitrina', 'Konditsioner', 'Yong‘in signalizatsiyasi'],
-    polygon: P(0.03, 0.58, 0.173, 0.36),
+    polygon: [[0.4049, 0.6143], [0.7455, 0.6143], [0.7455, 0.9863], [0.4049, 0.9863]],
   },
   {
     id: 'b-13-107',
@@ -2960,7 +2953,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Milliy Savdo MCHJ',
     contractCode: 'MKON-2025-0157',
     equipment: ['Vitrina', 'Konditsioner'],
-    polygon: P(0.218, 0.58, 0.173, 0.36),
+    polygon: [[0.7062, 0.0137], [0.9898, 0.0137], [0.9898, 0.4607], [0.7062, 0.4607]],
   },
   {
     id: 'b-13-108',
@@ -2975,7 +2968,7 @@ export const UNITS: Unit[] = reactive([
     price: 17460000,
     priceUnit: 'so‘m / oy',
     equipment: ['Vitrina', 'Konditsioner', 'Yong‘in signalizatsiyasi'],
-    polygon: P(0.406, 0.58, 0.173, 0.36),
+    polygon: [[0.7455, 0.6143], [0.9052, 0.6143], [0.9052, 0.9863], [0.7455, 0.9863]],
   },
   {
     id: 'b-13-109',
@@ -2992,7 +2985,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Tashkent Digital',
     contractCode: 'MKON-2025-0116',
     equipment: ['Vitrina', 'Konditsioner', 'Yong‘in signalizatsiyasi', 'Ombor xonasi'],
-    polygon: P(0.594, 0.58, 0.173, 0.36),
+    polygon: [[0.9052, 0.6143], [0.9898, 0.6143], [0.9898, 0.9863], [0.9052, 0.9863]],
   },
   {
     id: 'b-13-201',
@@ -3009,7 +3002,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Oq Yo‘l Servis',
     contractCode: 'MKON-2025-0116',
     equipment: ['Vitrina', 'Konditsioner', 'Yong‘in signalizatsiyasi', 'Ombor xonasi'],
-    polygon: P(0.03, 0.06, 0.173, 0.36),
+    polygon: [[0.0082, 0.6206], [0.0772, 0.6206], [0.0772, 0.9863], [0.0082, 0.9863]],
   },
   {
     id: 'b-13-202',
@@ -3024,7 +3017,7 @@ export const UNITS: Unit[] = reactive([
     price: 33530000,
     priceUnit: 'so‘m / oy',
     equipment: ['Vitrina', 'Konditsioner', 'Yong‘in signalizatsiyasi'],
-    polygon: P(0.218, 0.06, 0.173, 0.36),
+    polygon: [[0.0082, 0.0137], [0.2325, 0.0137], [0.2325, 0.467], [0.0082, 0.467]],
   },
   {
     id: 'b-13-203',
@@ -3041,7 +3034,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Diyor Farm',
     contractCode: 'MKON-2025-0126',
     equipment: ['Vitrina', 'Konditsioner'],
-    polygon: P(0.406, 0.06, 0.173, 0.36),
+    polygon: [[0.0772, 0.6206], [0.2383, 0.6206], [0.2383, 0.9863], [0.0772, 0.9863]],
   },
   {
     id: 'b-13-204',
@@ -3058,7 +3051,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Milliy Savdo MCHJ',
     contractCode: 'MKON-2025-0117',
     equipment: ['Vitrina', 'Konditsioner'],
-    polygon: P(0.594, 0.06, 0.173, 0.36),
+    polygon: [[0.2383, 0.6206], [0.5163, 0.6206], [0.5163, 0.9863], [0.2383, 0.9863]],
   },
   {
     id: 'b-13-205',
@@ -3075,7 +3068,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Silk Road Logistics',
     contractCode: 'MKON-2025-0128',
     equipment: ['Vitrina', 'Konditsioner'],
-    polygon: P(0.782, 0.06, 0.173, 0.36),
+    polygon: [[0.5163, 0.6206], [0.6467, 0.6206], [0.6467, 0.9863], [0.5163, 0.9863]],
   },
   {
     id: 'b-13-206',
@@ -3090,7 +3083,7 @@ export const UNITS: Unit[] = reactive([
     price: 56130000,
     priceUnit: 'so‘m / oy',
     equipment: ['Vitrina', 'Konditsioner', 'Yong‘in signalizatsiyasi'],
-    polygon: P(0.03, 0.58, 0.173, 0.36),
+    polygon: [[0.2325, 0.0137], [0.5109, 0.0137], [0.5109, 0.467], [0.2325, 0.467]],
   },
   {
     id: 'b-13-207',
@@ -3107,7 +3100,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Karvon Logistik',
     contractCode: 'MKON-2025-0105',
     equipment: ['Vitrina', 'Konditsioner', 'Yong‘in signalizatsiyasi', 'Ombor xonasi'],
-    polygon: P(0.218, 0.58, 0.173, 0.36),
+    polygon: [[0.6871, 0.0137], [0.9113, 0.0137], [0.9113, 0.467], [0.6871, 0.467]],
   },
   {
     id: 'b-13-208',
@@ -3124,7 +3117,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Alfa Trade MCHJ',
     contractCode: 'MKON-2025-0131',
     equipment: ['Vitrina', 'Konditsioner', 'Yong‘in signalizatsiyasi', 'Ombor xonasi'],
-    polygon: P(0.406, 0.58, 0.173, 0.36),
+    polygon: [[0.9113, 0.0137], [0.9918, 0.0137], [0.9918, 0.467], [0.9113, 0.467]],
   },
   {
     id: 'b-13-209',
@@ -3141,7 +3134,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Silk Road Logistics',
     contractCode: 'MKON-2025-0132',
     equipment: ['Vitrina', 'Konditsioner'],
-    polygon: P(0.594, 0.58, 0.173, 0.36),
+    polygon: [[0.6467, 0.6206], [0.9918, 0.6206], [0.9918, 0.9863], [0.6467, 0.9863]],
   },
   {
     id: 'b-13-301',
@@ -3156,7 +3149,7 @@ export const UNITS: Unit[] = reactive([
     price: 44100000,
     priceUnit: 'so‘m / oy',
     equipment: ['Vitrina', 'Konditsioner', 'Yong‘in signalizatsiyasi', 'Ombor xonasi'],
-    polygon: P(0.03, 0.06, 0.173, 0.36),
+    polygon: [[0.0088, 0.0137], [0.317, 0.0137], [0.317, 0.4538], [0.0088, 0.4538]],
   },
   {
     id: 'b-13-302',
@@ -3173,7 +3166,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Turon Media',
     contractCode: 'MKON-2025-0100',
     equipment: ['Vitrina', 'Konditsioner', 'Yong‘in signalizatsiyasi'],
-    polygon: P(0.218, 0.06, 0.173, 0.36),
+    polygon: [[0.0088, 0.6074], [0.1759, 0.6074], [0.1759, 0.9863], [0.0088, 0.9863]],
   },
   {
     id: 'b-13-303',
@@ -3188,7 +3181,7 @@ export const UNITS: Unit[] = reactive([
     price: 30370000,
     priceUnit: 'so‘m / oy',
     equipment: ['Vitrina', 'Konditsioner', 'Yong‘in signalizatsiyasi', 'Ombor xonasi'],
-    polygon: P(0.406, 0.06, 0.173, 0.36),
+    polygon: [[0.317, 0.0137], [0.5053, 0.0137], [0.5053, 0.4538], [0.317, 0.4538]],
   },
   {
     id: 'b-13-304',
@@ -3205,7 +3198,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Zamin Invest',
     contractCode: 'MKON-2025-0156',
     equipment: ['Vitrina', 'Konditsioner'],
-    polygon: P(0.594, 0.06, 0.173, 0.36),
+    polygon: [[0.1759, 0.6074], [0.5338, 0.6074], [0.5338, 0.9863], [0.1759, 0.9863]],
   },
   {
     id: 'b-13-305',
@@ -3220,7 +3213,7 @@ export const UNITS: Unit[] = reactive([
     price: 17130000,
     priceUnit: 'so‘m / oy',
     equipment: ['Vitrina', 'Konditsioner'],
-    polygon: P(0.782, 0.06, 0.173, 0.36),
+    polygon: [[0.5338, 0.6074], [0.669, 0.6074], [0.669, 0.9863], [0.5338, 0.9863]],
   },
   {
     id: 'b-13-306',
@@ -3235,7 +3228,7 @@ export const UNITS: Unit[] = reactive([
     price: 14610000,
     priceUnit: 'so‘m / oy',
     equipment: ['Vitrina', 'Konditsioner'],
-    polygon: P(0.03, 0.58, 0.173, 0.36),
+    polygon: [[0.6864, 0.0137], [0.8029, 0.0137], [0.8029, 0.4538], [0.6864, 0.4538]],
   },
   {
     id: 'b-13-307',
@@ -3252,7 +3245,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Turon Media',
     contractCode: 'MKON-2025-0107',
     equipment: ['Vitrina', 'Konditsioner'],
-    polygon: P(0.218, 0.58, 0.173, 0.36),
+    polygon: [[0.669, 0.6074], [0.8878, 0.6074], [0.8878, 0.9863], [0.669, 0.9863]],
   },
   {
     id: 'b-13-308',
@@ -3269,7 +3262,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Navro‘z Textile',
     contractCode: 'MKON-2025-0131',
     equipment: ['Vitrina', 'Konditsioner'],
-    polygon: P(0.406, 0.58, 0.173, 0.36),
+    polygon: [[0.8878, 0.6074], [0.9912, 0.6074], [0.9912, 0.9863], [0.8878, 0.9863]],
   },
   {
     id: 'b-13-309',
@@ -3286,7 +3279,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Alfa Trade MCHJ',
     contractCode: 'MKON-2025-0124',
     equipment: ['Vitrina', 'Konditsioner'],
-    polygon: P(0.594, 0.58, 0.173, 0.36),
+    polygon: [[0.8029, 0.0137], [0.9912, 0.0137], [0.9912, 0.4538], [0.8029, 0.4538]],
   },
 
   // --- Bektemir Sanoat Ombori ---
@@ -3303,7 +3296,7 @@ export const UNITS: Unit[] = reactive([
     price: 41330000,
     priceUnit: 'so‘m / oy',
     equipment: ['Yuk eshigi', 'Rampa', 'Yong‘in gidranti', 'Kran yo‘nalishi'],
-    polygon: P(0.03, 0.06, 0.298, 0.36),
+    polygon: [[0.0037, 0.011], [0.3742, 0.011], [0.3742, 0.4721], [0.0037, 0.4721]],
   },
   {
     id: 'b-14-102',
@@ -3318,7 +3311,7 @@ export const UNITS: Unit[] = reactive([
     price: 44400000,
     priceUnit: 'so‘m / oy',
     equipment: ['Yuk eshigi', 'Rampa'],
-    polygon: P(0.343, 0.06, 0.298, 0.36),
+    polygon: [[0.3742, 0.011], [0.6707, 0.011], [0.6707, 0.4721], [0.3742, 0.4721]],
   },
   {
     id: 'b-14-103',
@@ -3335,7 +3328,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Zamin Invest',
     contractCode: 'MKON-2025-0130',
     equipment: ['Yuk eshigi', 'Rampa'],
-    polygon: P(0.657, 0.06, 0.298, 0.36),
+    polygon: [[0.7609, 0.011], [0.9963, 0.011], [0.9963, 0.4721], [0.7609, 0.4721]],
   },
   {
     id: 'b-14-104',
@@ -3350,7 +3343,7 @@ export const UNITS: Unit[] = reactive([
     price: 36600000,
     priceUnit: 'so‘m / oy',
     equipment: ['Yuk eshigi', 'Rampa'],
-    polygon: P(0.03, 0.58, 0.298, 0.36),
+    polygon: [[0.0037, 0.5699], [0.2626, 0.5699], [0.2626, 0.989], [0.0037, 0.989]],
   },
   {
     id: 'b-14-105',
@@ -3365,7 +3358,7 @@ export const UNITS: Unit[] = reactive([
     price: 40530000,
     priceUnit: 'so‘m / oy',
     equipment: ['Yuk eshigi', 'Rampa', 'Yong‘in gidranti', 'Kran yo‘nalishi'],
-    polygon: P(0.343, 0.58, 0.298, 0.36),
+    polygon: [[0.2626, 0.5699], [0.6702, 0.5699], [0.6702, 0.989], [0.2626, 0.989]],
   },
   {
     id: 'b-14-106',
@@ -3382,7 +3375,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Milliy Savdo MCHJ',
     contractCode: 'MKON-2025-0115',
     equipment: ['Yuk eshigi', 'Rampa', 'Yong‘in gidranti', 'Kran yo‘nalishi'],
-    polygon: P(0.657, 0.58, 0.298, 0.36),
+    polygon: [[0.6702, 0.5699], [0.9963, 0.5699], [0.9963, 0.989], [0.6702, 0.989]],
   },
 
   // --- Mirobod Office Park ---
@@ -3401,7 +3394,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Turon Media',
     contractCode: 'MKON-2025-0139',
     equipment: ['Konditsioner', 'Yong‘in datchigi'],
-    polygon: P(0.03, 0.06, 0.22, 0.36),
+    polygon: [[0.0089, 0.0178], [0.1578, 0.0178], [0.1578, 0.4879], [0.0089, 0.4879]],
   },
   {
     id: 'b-15-202',
@@ -3418,7 +3411,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Alfa Trade MCHJ',
     contractCode: 'MKON-2025-0137',
     equipment: ['Konditsioner', 'Yong‘in datchigi'],
-    polygon: P(0.265, 0.06, 0.22, 0.36),
+    polygon: [[0.0089, 0.5996], [0.3205, 0.5996], [0.3205, 0.9822], [0.0089, 0.9822]],
   },
   {
     id: 'b-15-203',
@@ -3435,7 +3428,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Navro‘z Textile',
     contractCode: 'MKON-2025-0112',
     equipment: ['Konditsioner', 'Yong‘in datchigi'],
-    polygon: P(0.5, 0.06, 0.22, 0.36),
+    polygon: [[0.1578, 0.0178], [0.2735, 0.0178], [0.2735, 0.4879], [0.1578, 0.4879]],
   },
   {
     id: 'b-15-204',
@@ -3452,7 +3445,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Tashkent Digital',
     contractCode: 'MKON-2025-0127',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.735, 0.06, 0.22, 0.36),
+    polygon: [[0.3205, 0.5996], [0.544, 0.5996], [0.544, 0.9822], [0.3205, 0.9822]],
   },
   {
     id: 'b-15-205',
@@ -3467,7 +3460,7 @@ export const UNITS: Unit[] = reactive([
     price: 12080000,
     priceUnit: 'so‘m / oy',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.03, 0.58, 0.22, 0.36),
+    polygon: [[0.544, 0.5996], [0.8082, 0.5996], [0.8082, 0.9822], [0.544, 0.9822]],
   },
   {
     id: 'b-15-206',
@@ -3484,7 +3477,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Navro‘z Textile',
     contractCode: 'MKON-2025-0154',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.265, 0.58, 0.22, 0.36),
+    polygon: [[0.4784, 0.0178], [0.7761, 0.0178], [0.7761, 0.4879], [0.4784, 0.4879]],
   },
   {
     id: 'b-15-207',
@@ -3499,7 +3492,7 @@ export const UNITS: Unit[] = reactive([
     price: 11080000,
     priceUnit: 'so‘m / oy',
     equipment: ['Konditsioner', 'Yong‘in datchigi'],
-    polygon: P(0.5, 0.58, 0.22, 0.36),
+    polygon: [[0.7761, 0.0178], [0.9911, 0.0178], [0.9911, 0.4879], [0.7761, 0.4879]],
   },
   {
     id: 'b-15-208',
@@ -3516,7 +3509,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Bunyod Qurilish',
     contractCode: 'MKON-2025-0124',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.735, 0.58, 0.22, 0.36),
+    polygon: [[0.8082, 0.5996], [0.9911, 0.5996], [0.9911, 0.9822], [0.8082, 0.9822]],
   },
   {
     id: 'b-15-601',
@@ -3533,7 +3526,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Bunyod Qurilish',
     contractCode: 'MKON-2025-0144',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.03, 0.06, 0.22, 0.36),
+    polygon: [[0.0091, 0.0178], [0.3077, 0.0178], [0.3077, 0.4946], [0.0091, 0.4946]],
   },
   {
     id: 'b-15-602',
@@ -3550,7 +3543,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Diyor Farm',
     contractCode: 'MKON-2025-0119',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.265, 0.06, 0.22, 0.36),
+    polygon: [[0.0091, 0.6062], [0.1984, 0.6062], [0.1984, 0.9822], [0.0091, 0.9822]],
   },
   {
     id: 'b-15-603',
@@ -3567,7 +3560,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Oltin Vodiy',
     contractCode: 'MKON-2025-0112',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.5, 0.06, 0.22, 0.36),
+    polygon: [[0.1984, 0.6062], [0.3457, 0.6062], [0.3457, 0.9822], [0.1984, 0.9822]],
   },
   {
     id: 'b-15-604',
@@ -3584,7 +3577,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Diyor Farm',
     contractCode: 'MKON-2025-0128',
     equipment: ['Konditsioner', 'Yong‘in datchigi'],
-    polygon: P(0.735, 0.06, 0.22, 0.36),
+    polygon: [[0.3077, 0.0178], [0.4239, 0.0178], [0.4239, 0.4946], [0.3077, 0.4946]],
   },
   {
     id: 'b-15-605',
@@ -3599,7 +3592,7 @@ export const UNITS: Unit[] = reactive([
     price: 12120000,
     priceUnit: 'so‘m / oy',
     equipment: ['Konditsioner', 'Yong‘in datchigi'],
-    polygon: P(0.03, 0.58, 0.22, 0.36),
+    polygon: [[0.3457, 0.6062], [0.6683, 0.6062], [0.6683, 0.9822], [0.3457, 0.9822]],
   },
   {
     id: 'b-15-606',
@@ -3616,7 +3609,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Tashkent Digital',
     contractCode: 'MKON-2025-0159',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.265, 0.58, 0.22, 0.36),
+    polygon: [[0.6683, 0.6062], [0.9909, 0.6062], [0.9909, 0.9822], [0.6683, 0.9822]],
   },
   {
     id: 'b-15-607',
@@ -3633,7 +3626,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Alfa Trade MCHJ',
     contractCode: 'MKON-2025-0107',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.5, 0.58, 0.22, 0.36),
+    polygon: [[0.6259, 0.0178], [0.8084, 0.0178], [0.8084, 0.4946], [0.6259, 0.4946]],
   },
   {
     id: 'b-15-608',
@@ -3650,7 +3643,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Tashkent Digital',
     contractCode: 'MKON-2025-0118',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.735, 0.58, 0.22, 0.36),
+    polygon: [[0.8084, 0.0178], [0.9909, 0.0178], [0.9909, 0.4946], [0.8084, 0.4946]],
   },
   {
     id: 'b-15-1001',
@@ -3667,7 +3660,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Navro‘z Textile',
     contractCode: 'MKON-2025-0131',
     equipment: ['Konditsioner', 'Yong‘in datchigi'],
-    polygon: P(0.03, 0.06, 0.22, 0.36),
+    polygon: [[0.0085, 0.0178], [0.285, 0.0178], [0.285, 0.5008], [0.0085, 0.5008]],
   },
   {
     id: 'b-15-1002',
@@ -3684,7 +3677,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Turon Media',
     contractCode: 'MKON-2025-0144',
     equipment: ['Konditsioner', 'Yong‘in datchigi'],
-    polygon: P(0.265, 0.06, 0.22, 0.36),
+    polygon: [[0.285, 0.0178], [0.4846, 0.0178], [0.4846, 0.5008], [0.285, 0.5008]],
   },
   {
     id: 'b-15-1003',
@@ -3699,7 +3692,7 @@ export const UNITS: Unit[] = reactive([
     price: 8070000,
     priceUnit: 'so‘m / oy',
     equipment: ['Konditsioner', 'Yong‘in datchigi'],
-    polygon: P(0.5, 0.06, 0.22, 0.36),
+    polygon: [[0.6843, 0.0178], [0.8225, 0.0178], [0.8225, 0.5008], [0.6843, 0.5008]],
   },
   {
     id: 'b-15-1004',
@@ -3716,7 +3709,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Navro‘z Textile',
     contractCode: 'MKON-2025-0114',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.735, 0.06, 0.22, 0.36),
+    polygon: [[0.8225, 0.0178], [0.9915, 0.0178], [0.9915, 0.5008], [0.8225, 0.5008]],
   },
   {
     id: 'b-15-1005',
@@ -3733,7 +3726,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Baraka Group',
     contractCode: 'MKON-2025-0132',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.03, 0.58, 0.22, 0.36),
+    polygon: [[0.0085, 0.6124], [0.1489, 0.6124], [0.1489, 0.9822], [0.0085, 0.9822]],
   },
   {
     id: 'b-15-1006',
@@ -3750,7 +3743,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Silk Road Logistics',
     contractCode: 'MKON-2025-0147',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.265, 0.58, 0.22, 0.36),
+    polygon: [[0.1489, 0.6124], [0.3696, 0.6124], [0.3696, 0.9822], [0.1489, 0.9822]],
   },
   {
     id: 'b-15-1007',
@@ -3767,7 +3760,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Sharq Elektronika',
     contractCode: 'MKON-2025-0113',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.5, 0.58, 0.22, 0.36),
+    polygon: [[0.3696, 0.6124], [0.7307, 0.6124], [0.7307, 0.9822], [0.3696, 0.9822]],
   },
   {
     id: 'b-15-1008',
@@ -3782,7 +3775,7 @@ export const UNITS: Unit[] = reactive([
     price: 10380000,
     priceUnit: 'so‘m / oy',
     equipment: ['Konditsioner', 'Yong‘in datchigi'],
-    polygon: P(0.735, 0.58, 0.22, 0.36),
+    polygon: [[0.7307, 0.6124], [0.9915, 0.6124], [0.9915, 0.9822], [0.7307, 0.9822]],
   },
 
   // --- Yakkasaroy Atrium ---
@@ -3801,7 +3794,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Silk Road Logistics',
     contractCode: 'MKON-2025-0157',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.03, 0.06, 0.22, 0.36),
+    polygon: [[0.0073, 0.0178], [0.2664, 0.0178], [0.2664, 0.5029], [0.0073, 0.5029]],
   },
   {
     id: 'b-16-202',
@@ -3818,7 +3811,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Turon Media',
     contractCode: 'MKON-2025-0111',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.265, 0.06, 0.22, 0.36),
+    polygon: [[0.0073, 0.6146], [0.3493, 0.6146], [0.3493, 0.9822], [0.0073, 0.9822]],
   },
   {
     id: 'b-16-203',
@@ -3835,7 +3828,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Diyor Farm',
     contractCode: 'MKON-2025-0119',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.5, 0.06, 0.22, 0.36),
+    polygon: [[0.3493, 0.6146], [0.529, 0.6146], [0.529, 0.9822], [0.3493, 0.9822]],
   },
   {
     id: 'b-16-204',
@@ -3852,7 +3845,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Karvon Logistik',
     contractCode: 'MKON-2025-0133',
     equipment: ['Konditsioner', 'Yong‘in datchigi'],
-    polygon: P(0.735, 0.06, 0.22, 0.36),
+    polygon: [[0.529, 0.6146], [0.7782, 0.6146], [0.7782, 0.9822], [0.529, 0.9822]],
   },
   {
     id: 'b-16-205',
@@ -3867,7 +3860,7 @@ export const UNITS: Unit[] = reactive([
     price: 17570000,
     priceUnit: 'so‘m / oy',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi', 'Videokuzatuv'],
-    polygon: P(0.03, 0.58, 0.22, 0.36),
+    polygon: [[0.2664, 0.0178], [0.5255, 0.0178], [0.5255, 0.5029], [0.2664, 0.5029]],
   },
   {
     id: 'b-16-206',
@@ -3884,7 +3877,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Oq Yo‘l Servis',
     contractCode: 'MKON-2025-0144',
     equipment: ['Konditsioner', 'Yong‘in datchigi'],
-    polygon: P(0.265, 0.58, 0.22, 0.36),
+    polygon: [[0.7248, 0.0178], [0.8302, 0.0178], [0.8302, 0.5029], [0.7248, 0.5029]],
   },
   {
     id: 'b-16-207',
@@ -3901,7 +3894,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Bunyod Qurilish',
     contractCode: 'MKON-2025-0114',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi', 'Videokuzatuv'],
-    polygon: P(0.5, 0.58, 0.22, 0.36),
+    polygon: [[0.7782, 0.6146], [0.9927, 0.6146], [0.9927, 0.9822], [0.7782, 0.9822]],
   },
   {
     id: 'b-16-208',
@@ -3918,7 +3911,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Yangi Avlod Ta’lim',
     contractCode: 'MKON-2025-0133',
     equipment: ['Konditsioner', 'Yong‘in datchigi'],
-    polygon: P(0.735, 0.58, 0.22, 0.36),
+    polygon: [[0.8302, 0.0178], [0.9927, 0.0178], [0.9927, 0.5029], [0.8302, 0.5029]],
   },
   {
     id: 'b-16-701',
@@ -3935,7 +3928,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Alfa Trade MCHJ',
     contractCode: 'MKON-2025-0148',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi', 'Videokuzatuv'],
-    polygon: P(0.03, 0.06, 0.22, 0.36),
+    polygon: [[0.006, 0.6145], [0.1518, 0.6145], [0.1518, 0.9822], [0.006, 0.9822]],
   },
   {
     id: 'b-16-702',
@@ -3952,7 +3945,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Oq Yo‘l Servis',
     contractCode: 'MKON-2025-0102',
     equipment: ['Konditsioner', 'Yong‘in datchigi'],
-    polygon: P(0.265, 0.06, 0.22, 0.36),
+    polygon: [[0.006, 0.0178], [0.2592, 0.0178], [0.2592, 0.5028], [0.006, 0.5028]],
   },
   {
     id: 'b-16-703',
@@ -3969,7 +3962,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Alfa Trade MCHJ',
     contractCode: 'MKON-2025-0110',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.5, 0.06, 0.22, 0.36),
+    polygon: [[0.2592, 0.0178], [0.4304, 0.0178], [0.4304, 0.5028], [0.2592, 0.5028]],
   },
   {
     id: 'b-16-704',
@@ -3986,7 +3979,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Alfa Trade MCHJ',
     contractCode: 'MKON-2025-0112',
     equipment: ['Konditsioner', 'Yong‘in datchigi'],
-    polygon: P(0.735, 0.06, 0.22, 0.36),
+    polygon: [[0.1518, 0.6145], [0.4859, 0.6145], [0.4859, 0.9822], [0.1518, 0.9822]],
   },
   {
     id: 'b-16-705',
@@ -4003,7 +3996,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Yangi Avlod Ta’lim',
     contractCode: 'MKON-2025-0144',
     equipment: ['Konditsioner', 'Yong‘in datchigi'],
-    polygon: P(0.03, 0.58, 0.22, 0.36),
+    polygon: [[0.6302, 0.0178], [0.8835, 0.0178], [0.8835, 0.5028], [0.6302, 0.5028]],
   },
   {
     id: 'b-16-706',
@@ -4020,7 +4013,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Alfa Trade MCHJ',
     contractCode: 'MKON-2025-0153',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi', 'Videokuzatuv'],
-    polygon: P(0.265, 0.58, 0.22, 0.36),
+    polygon: [[0.8835, 0.0178], [0.994, 0.0178], [0.994, 0.5028], [0.8835, 0.5028]],
   },
   {
     id: 'b-16-707',
@@ -4037,7 +4030,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Orient Consulting',
     contractCode: 'MKON-2025-0152',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.5, 0.58, 0.22, 0.36),
+    polygon: [[0.4859, 0.6145], [0.66, 0.6145], [0.66, 0.9822], [0.4859, 0.9822]],
   },
   {
     id: 'b-16-708',
@@ -4054,7 +4047,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Zamin Invest',
     contractCode: 'MKON-2025-0135',
     equipment: ['Konditsioner', 'Yong‘in datchigi'],
-    polygon: P(0.735, 0.58, 0.22, 0.36),
+    polygon: [[0.66, 0.6145], [0.994, 0.6145], [0.994, 0.9822], [0.66, 0.9822]],
   },
   {
     id: 'b-16-1201',
@@ -4071,7 +4064,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Yangi Avlod Ta’lim',
     contractCode: 'MKON-2025-0147',
     equipment: ['Konditsioner', 'Yong‘in datchigi'],
-    polygon: P(0.03, 0.06, 0.22, 0.36),
+    polygon: [[0.0097, 0.6107], [0.291, 0.6107], [0.291, 0.9822], [0.0097, 0.9822]],
   },
   {
     id: 'b-16-1202',
@@ -4088,7 +4081,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Diyor Farm',
     contractCode: 'MKON-2025-0101',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi', 'Videokuzatuv'],
-    polygon: P(0.265, 0.06, 0.22, 0.36),
+    polygon: [[0.291, 0.6107], [0.5266, 0.6107], [0.5266, 0.9822], [0.291, 0.9822]],
   },
   {
     id: 'b-16-1203',
@@ -4105,7 +4098,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Sharq Elektronika',
     contractCode: 'MKON-2025-0126',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.5, 0.06, 0.22, 0.36),
+    polygon: [[0.5266, 0.6107], [0.8078, 0.6107], [0.8078, 0.9822], [0.5266, 0.9822]],
   },
   {
     id: 'b-16-1204',
@@ -4122,7 +4115,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Silk Road Logistics',
     contractCode: 'MKON-2025-0151',
     equipment: ['Konditsioner', 'Yong‘in datchigi'],
-    polygon: P(0.735, 0.06, 0.22, 0.36),
+    polygon: [[0.0097, 0.0178], [0.1506, 0.0178], [0.1506, 0.499], [0.0097, 0.499]],
   },
   {
     id: 'b-16-1205',
@@ -4139,7 +4132,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Oq Yo‘l Servis',
     contractCode: 'MKON-2025-0105',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.03, 0.58, 0.22, 0.36),
+    polygon: [[0.8078, 0.6107], [0.9903, 0.6107], [0.9903, 0.9822], [0.8078, 0.9822]],
   },
   {
     id: 'b-16-1206',
@@ -4154,7 +4147,7 @@ export const UNITS: Unit[] = reactive([
     price: 9730000,
     priceUnit: 'so‘m / oy',
     equipment: ['Konditsioner', 'Yong‘in datchigi'],
-    polygon: P(0.265, 0.58, 0.22, 0.36),
+    polygon: [[0.1506, 0.0178], [0.2915, 0.0178], [0.2915, 0.499], [0.1506, 0.499]],
   },
   {
     id: 'b-16-1207',
@@ -4171,7 +4164,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Baraka Group',
     contractCode: 'MKON-2025-0118',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.5, 0.58, 0.22, 0.36),
+    polygon: [[0.4914, 0.0178], [0.7085, 0.0178], [0.7085, 0.499], [0.4914, 0.499]],
   },
   {
     id: 'b-16-1208',
@@ -4188,7 +4181,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Alfa Trade MCHJ',
     contractCode: 'MKON-2025-0144',
     equipment: ['Konditsioner', 'Yong‘in datchigi'],
-    polygon: P(0.735, 0.58, 0.22, 0.36),
+    polygon: [[0.7085, 0.0178], [0.9903, 0.0178], [0.9903, 0.499], [0.7085, 0.499]],
   },
 
   // --- Zangiota Logistics Park ---
@@ -4207,7 +4200,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Turon Media',
     contractCode: 'MKON-2025-0122',
     equipment: ['Yuk eshigi', 'Rampa', 'Yong‘in gidranti', 'Kran yo‘nalishi'],
-    polygon: P(0.03, 0.06, 0.298, 0.36),
+    polygon: [[0.0049, 0.5549], [0.4257, 0.5549], [0.4257, 0.989], [0.0049, 0.989]],
   },
   {
     id: 'b-17-102',
@@ -4222,7 +4215,7 @@ export const UNITS: Unit[] = reactive([
     price: 15380000,
     priceUnit: 'so‘m / oy',
     equipment: ['Yuk eshigi', 'Rampa'],
-    polygon: P(0.343, 0.06, 0.298, 0.36),
+    polygon: [[0.0049, 0.011], [0.1976, 0.011], [0.1976, 0.4571], [0.0049, 0.4571]],
   },
   {
     id: 'b-17-103',
@@ -4239,7 +4232,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Zamin Invest',
     contractCode: 'MKON-2025-0114',
     equipment: ['Yuk eshigi', 'Rampa', 'Yong‘in gidranti'],
-    polygon: P(0.657, 0.06, 0.298, 0.36),
+    polygon: [[0.4257, 0.5549], [0.5743, 0.5549], [0.5743, 0.989], [0.4257, 0.989]],
   },
   {
     id: 'b-17-104',
@@ -4256,7 +4249,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Oq Yo‘l Servis',
     contractCode: 'MKON-2025-0153',
     equipment: ['Yuk eshigi', 'Rampa'],
-    polygon: P(0.03, 0.58, 0.298, 0.36),
+    polygon: [[0.1976, 0.011], [0.3903, 0.011], [0.3903, 0.4571], [0.1976, 0.4571]],
   },
   {
     id: 'b-17-105',
@@ -4271,7 +4264,7 @@ export const UNITS: Unit[] = reactive([
     price: 37720000,
     priceUnit: 'so‘m / oy',
     equipment: ['Yuk eshigi', 'Rampa', 'Yong‘in gidranti', 'Kran yo‘nalishi'],
-    polygon: P(0.343, 0.58, 0.298, 0.36),
+    polygon: [[0.5743, 0.5549], [0.9951, 0.5549], [0.9951, 0.989], [0.5743, 0.989]],
   },
   {
     id: 'b-17-106',
@@ -4288,7 +4281,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Zamin Invest',
     contractCode: 'MKON-2025-0116',
     equipment: ['Yuk eshigi', 'Rampa', 'Yong‘in gidranti', 'Kran yo‘nalishi'],
-    polygon: P(0.657, 0.58, 0.298, 0.36),
+    polygon: [[0.4833, 0.011], [0.9951, 0.011], [0.9951, 0.4571], [0.4833, 0.4571]],
   },
   {
     id: 'b-17-201',
@@ -4305,7 +4298,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Yangi Avlod Ta’lim',
     contractCode: 'MKON-2025-0147',
     equipment: ['Yuk eshigi', 'Rampa', 'Yong‘in gidranti', 'Kran yo‘nalishi'],
-    polygon: P(0.03, 0.06, 0.298, 0.36),
+    polygon: [[0.0056, 0.5821], [0.184, 0.5821], [0.184, 0.989], [0.0056, 0.989]],
   },
   {
     id: 'b-17-202',
@@ -4320,7 +4313,7 @@ export const UNITS: Unit[] = reactive([
     price: 37240000,
     priceUnit: 'so‘m / oy',
     equipment: ['Yuk eshigi', 'Rampa', 'Yong‘in gidranti'],
-    polygon: P(0.343, 0.06, 0.298, 0.36),
+    polygon: [[0.0056, 0.011], [0.5489, 0.011], [0.5489, 0.4843], [0.0056, 0.4843]],
   },
   {
     id: 'b-17-203',
@@ -4335,7 +4328,7 @@ export const UNITS: Unit[] = reactive([
     price: 12860000,
     priceUnit: 'so‘m / oy',
     equipment: ['Yuk eshigi', 'Rampa'],
-    polygon: P(0.657, 0.06, 0.298, 0.36),
+    polygon: [[0.184, 0.5821], [0.3625, 0.5821], [0.3625, 0.989], [0.184, 0.989]],
   },
   {
     id: 'b-17-204',
@@ -4352,7 +4345,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Zamin Invest',
     contractCode: 'MKON-2025-0129',
     equipment: ['Yuk eshigi', 'Rampa'],
-    polygon: P(0.03, 0.58, 0.298, 0.36),
+    polygon: [[0.5489, 0.011], [0.7534, 0.011], [0.7534, 0.4843], [0.5489, 0.4843]],
   },
   {
     id: 'b-17-205',
@@ -4367,7 +4360,7 @@ export const UNITS: Unit[] = reactive([
     price: 41500000,
     priceUnit: 'so‘m / oy',
     equipment: ['Yuk eshigi', 'Rampa'],
-    polygon: P(0.343, 0.58, 0.298, 0.36),
+    polygon: [[0.3625, 0.5821], [0.9944, 0.5821], [0.9944, 0.989], [0.3625, 0.989]],
   },
   {
     id: 'b-17-206',
@@ -4384,7 +4377,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Alfa Trade MCHJ',
     contractCode: 'MKON-2025-0145',
     equipment: ['Yuk eshigi', 'Rampa', 'Yong‘in gidranti', 'Kran yo‘nalishi'],
-    polygon: P(0.657, 0.58, 0.298, 0.36),
+    polygon: [[0.841, 0.011], [0.9944, 0.011], [0.9944, 0.4843], [0.841, 0.4843]],
   },
 
   // --- Qibray Business Park ---
@@ -4403,7 +4396,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Sharq Elektronika',
     contractCode: 'MKON-2025-0145',
     equipment: ['Konditsioner', 'Yong‘in datchigi'],
-    polygon: P(0.03, 0.06, 0.22, 0.36),
+    polygon: [[0.0088, 0.0178], [0.2947, 0.0178], [0.2947, 0.5024], [0.0088, 0.5024]],
   },
   {
     id: 'b-18-102',
@@ -4420,7 +4413,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Turon Media',
     contractCode: 'MKON-2025-0122',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.265, 0.06, 0.22, 0.36),
+    polygon: [[0.0088, 0.614], [0.1969, 0.614], [0.1969, 0.9822], [0.0088, 0.9822]],
   },
   {
     id: 'b-18-103',
@@ -4437,7 +4430,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Milliy Savdo MCHJ',
     contractCode: 'MKON-2025-0151',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.5, 0.06, 0.22, 0.36),
+    polygon: [[0.1969, 0.614], [0.5732, 0.614], [0.5732, 0.9822], [0.1969, 0.9822]],
   },
   {
     id: 'b-18-104',
@@ -4454,7 +4447,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Orient Consulting',
     contractCode: 'MKON-2025-0135',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.735, 0.06, 0.22, 0.36),
+    polygon: [[0.2947, 0.0178], [0.5382, 0.0178], [0.5382, 0.5024], [0.2947, 0.5024]],
   },
   {
     id: 'b-18-105',
@@ -4471,7 +4464,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Yangi Avlod Ta’lim',
     contractCode: 'MKON-2025-0141',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.03, 0.58, 0.22, 0.36),
+    polygon: [[0.5732, 0.614], [0.7195, 0.614], [0.7195, 0.9822], [0.5732, 0.9822]],
   },
   {
     id: 'b-18-106',
@@ -4488,7 +4481,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Orient Consulting',
     contractCode: 'MKON-2025-0113',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.265, 0.58, 0.22, 0.36),
+    polygon: [[0.7371, 0.0178], [0.8482, 0.0178], [0.8482, 0.5024], [0.7371, 0.5024]],
   },
   {
     id: 'b-18-107',
@@ -4505,7 +4498,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Orient Consulting',
     contractCode: 'MKON-2025-0102',
     equipment: ['Konditsioner', 'Yong‘in datchigi'],
-    polygon: P(0.5, 0.58, 0.22, 0.36),
+    polygon: [[0.8482, 0.0178], [0.9912, 0.0178], [0.9912, 0.5024], [0.8482, 0.5024]],
   },
   {
     id: 'b-18-108',
@@ -4522,7 +4515,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Sharq Elektronika',
     contractCode: 'MKON-2025-0136',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.735, 0.58, 0.22, 0.36),
+    polygon: [[0.7195, 0.614], [0.9912, 0.614], [0.9912, 0.9822], [0.7195, 0.9822]],
   },
   {
     id: 'b-18-201',
@@ -4539,7 +4532,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Alfa Trade MCHJ',
     contractCode: 'MKON-2025-0159',
     equipment: ['Konditsioner', 'Yong‘in datchigi'],
-    polygon: P(0.03, 0.06, 0.22, 0.36),
+    polygon: [[0.0098, 0.5976], [0.2549, 0.5976], [0.2549, 0.9822], [0.0098, 0.9822]],
   },
   {
     id: 'b-18-202',
@@ -4554,7 +4547,7 @@ export const UNITS: Unit[] = reactive([
     price: 9640000,
     priceUnit: 'so‘m / oy',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.265, 0.06, 0.22, 0.36),
+    polygon: [[0.0098, 0.0178], [0.2112, 0.0178], [0.2112, 0.4859], [0.0098, 0.4859]],
   },
   {
     id: 'b-18-203',
@@ -4569,7 +4562,7 @@ export const UNITS: Unit[] = reactive([
     price: 6850000,
     priceUnit: 'so‘m / oy',
     equipment: ['Konditsioner', 'Yong‘in datchigi'],
-    polygon: P(0.5, 0.06, 0.22, 0.36),
+    polygon: [[0.2112, 0.0178], [0.3759, 0.0178], [0.3759, 0.4859], [0.2112, 0.4859]],
   },
   {
     id: 'b-18-204',
@@ -4584,7 +4577,7 @@ export const UNITS: Unit[] = reactive([
     price: 11260000,
     priceUnit: 'so‘m / oy',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.735, 0.06, 0.22, 0.36),
+    polygon: [[0.5814, 0.0178], [0.862, 0.0178], [0.862, 0.4859], [0.5814, 0.4859]],
   },
   {
     id: 'b-18-205',
@@ -4599,7 +4592,7 @@ export const UNITS: Unit[] = reactive([
     price: 12070000,
     priceUnit: 'so‘m / oy',
     equipment: ['Konditsioner', 'Yong‘in datchigi'],
-    polygon: P(0.03, 0.58, 0.22, 0.36),
+    polygon: [[0.2549, 0.5976], [0.5446, 0.5976], [0.5446, 0.9822], [0.2549, 0.9822]],
   },
   {
     id: 'b-18-206',
@@ -4616,7 +4609,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Karvon Logistik',
     contractCode: 'MKON-2025-0153',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.265, 0.58, 0.22, 0.36),
+    polygon: [[0.5446, 0.5976], [0.7896, 0.5976], [0.7896, 0.9822], [0.5446, 0.9822]],
   },
   {
     id: 'b-18-207',
@@ -4633,7 +4626,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Orient Consulting',
     contractCode: 'MKON-2025-0152',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.5, 0.58, 0.22, 0.36),
+    polygon: [[0.862, 0.0178], [0.9902, 0.0178], [0.9902, 0.4859], [0.862, 0.4859]],
   },
   {
     id: 'b-18-208',
@@ -4648,7 +4641,7 @@ export const UNITS: Unit[] = reactive([
     price: 6750000,
     priceUnit: 'so‘m / oy',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.735, 0.58, 0.22, 0.36),
+    polygon: [[0.7896, 0.5976], [0.9902, 0.5976], [0.9902, 0.9822], [0.7896, 0.9822]],
   },
   {
     id: 'b-18-601',
@@ -4665,7 +4658,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Yangi Avlod Ta’lim',
     contractCode: 'MKON-2025-0151',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.03, 0.06, 0.22, 0.36),
+    polygon: [[0.009, 0.0178], [0.2195, 0.0178], [0.2195, 0.5012], [0.009, 0.5012]],
   },
   {
     id: 'b-18-602',
@@ -4682,7 +4675,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Tashkent Digital',
     contractCode: 'MKON-2025-0136',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.265, 0.06, 0.22, 0.36),
+    polygon: [[0.009, 0.6129], [0.2845, 0.6129], [0.2845, 0.9822], [0.009, 0.9822]],
   },
   {
     id: 'b-18-603',
@@ -4699,7 +4692,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Alfa Trade MCHJ',
     contractCode: 'MKON-2025-0149',
     equipment: ['Konditsioner', 'Yong‘in datchigi'],
-    polygon: P(0.5, 0.06, 0.22, 0.36),
+    polygon: [[0.2845, 0.6129], [0.4329, 0.6129], [0.4329, 0.9822], [0.2845, 0.9822]],
   },
   {
     id: 'b-18-604',
@@ -4714,7 +4707,7 @@ export const UNITS: Unit[] = reactive([
     price: 8300000,
     priceUnit: 'so‘m / oy',
     equipment: ['Konditsioner', 'Yong‘in datchigi'],
-    polygon: P(0.735, 0.06, 0.22, 0.36),
+    polygon: [[0.4329, 0.6129], [0.666, 0.6129], [0.666, 0.9822], [0.4329, 0.9822]],
   },
   {
     id: 'b-18-605',
@@ -4731,7 +4724,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Sharq Elektronika',
     contractCode: 'MKON-2025-0148',
     equipment: ['Konditsioner', 'Yong‘in datchigi'],
-    polygon: P(0.03, 0.58, 0.22, 0.36),
+    polygon: [[0.2195, 0.0178], [0.4678, 0.0178], [0.4678, 0.5012], [0.2195, 0.5012]],
   },
   {
     id: 'b-18-606',
@@ -4746,7 +4739,7 @@ export const UNITS: Unit[] = reactive([
     price: 11920000,
     priceUnit: 'so‘m / oy',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.265, 0.58, 0.22, 0.36),
+    polygon: [[0.666, 0.6129], [0.991, 0.6129], [0.991, 0.9822], [0.666, 0.9822]],
   },
   {
     id: 'b-18-607',
@@ -4761,7 +4754,7 @@ export const UNITS: Unit[] = reactive([
     price: 4750000,
     priceUnit: 'so‘m / oy',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.5, 0.58, 0.22, 0.36),
+    polygon: [[0.6671, 0.0178], [0.7805, 0.0178], [0.7805, 0.5012], [0.6671, 0.5012]],
   },
   {
     id: 'b-18-608',
@@ -4776,7 +4769,7 @@ export const UNITS: Unit[] = reactive([
     price: 10400000,
     priceUnit: 'so‘m / oy',
     equipment: ['Konditsioner', 'Yong‘in datchigi'],
-    polygon: P(0.735, 0.58, 0.22, 0.36),
+    polygon: [[0.7805, 0.0178], [0.991, 0.0178], [0.991, 0.5012], [0.7805, 0.5012]],
   },
 
   // --- Yashnobod Residence ---
@@ -4794,7 +4787,7 @@ export const UNITS: Unit[] = reactive([
     priceUnit: 'so‘m / m²',
     tenant: 'Silk Road Logistics',
     equipment: ['Balkon', 'Konditsioner', 'Kirish domofoni'],
-    polygon: P(0.03, 0.06, 0.22, 0.36),
+    polygon: [[0.0084, 0.0207], [0.1611, 0.0207], [0.1611, 0.5019], [0.0084, 0.5019]],
   },
   {
     id: 'b-19-202',
@@ -4809,7 +4802,7 @@ export const UNITS: Unit[] = reactive([
     price: 15500000,
     priceUnit: 'so‘m / m²',
     equipment: ['Balkon', 'Konditsioner', 'Kirish domofoni'],
-    polygon: P(0.265, 0.06, 0.22, 0.36),
+    polygon: [[0.1611, 0.0207], [0.349, 0.0207], [0.349, 0.5019], [0.1611, 0.5019]],
   },
   {
     id: 'b-19-203',
@@ -4824,7 +4817,7 @@ export const UNITS: Unit[] = reactive([
     price: 15300000,
     priceUnit: 'so‘m / m²',
     equipment: ['Balkon', 'Konditsioner'],
-    polygon: P(0.5, 0.06, 0.22, 0.36),
+    polygon: [[0.0084, 0.6084], [0.3056, 0.6084], [0.3056, 0.9793], [0.0084, 0.9793]],
   },
   {
     id: 'b-19-204',
@@ -4839,7 +4832,7 @@ export const UNITS: Unit[] = reactive([
     price: 12800000,
     priceUnit: 'so‘m / m²',
     equipment: ['Balkon', 'Konditsioner'],
-    polygon: P(0.735, 0.06, 0.22, 0.36),
+    polygon: [[0.3056, 0.6084], [0.4505, 0.6084], [0.4505, 0.9793], [0.3056, 0.9793]],
   },
   {
     id: 'b-19-205',
@@ -4855,7 +4848,7 @@ export const UNITS: Unit[] = reactive([
     priceUnit: 'so‘m / m²',
     tenant: 'Silk Road Logistics',
     equipment: ['Balkon', 'Konditsioner'],
-    polygon: P(0.03, 0.58, 0.22, 0.36),
+    polygon: [[0.5629, 0.0207], [0.7156, 0.0207], [0.7156, 0.5019], [0.5629, 0.5019]],
   },
   {
     id: 'b-19-206',
@@ -4871,7 +4864,7 @@ export const UNITS: Unit[] = reactive([
     priceUnit: 'so‘m / m²',
     tenant: 'Zamin Invest',
     equipment: ['Balkon', 'Konditsioner'],
-    polygon: P(0.265, 0.58, 0.22, 0.36),
+    polygon: [[0.4505, 0.6084], [0.7477, 0.6084], [0.7477, 0.9793], [0.4505, 0.9793]],
   },
   {
     id: 'b-19-207',
@@ -4887,7 +4880,7 @@ export const UNITS: Unit[] = reactive([
     priceUnit: 'so‘m / m²',
     tenant: 'Turon Media',
     equipment: ['Balkon', 'Konditsioner'],
-    polygon: P(0.5, 0.58, 0.22, 0.36),
+    polygon: [[0.7156, 0.0207], [0.9916, 0.0207], [0.9916, 0.5019], [0.7156, 0.5019]],
   },
   {
     id: 'b-19-208',
@@ -4903,7 +4896,7 @@ export const UNITS: Unit[] = reactive([
     priceUnit: 'so‘m / m²',
     tenant: 'Alfa Trade MCHJ',
     equipment: ['Balkon', 'Konditsioner', 'Kirish domofoni'],
-    polygon: P(0.735, 0.58, 0.22, 0.36),
+    polygon: [[0.7477, 0.6084], [0.9916, 0.6084], [0.9916, 0.9793], [0.7477, 0.9793]],
   },
   {
     id: 'b-19-601',
@@ -4919,7 +4912,7 @@ export const UNITS: Unit[] = reactive([
     priceUnit: 'so‘m / m²',
     tenant: 'Tashkent Digital',
     equipment: ['Balkon', 'Konditsioner'],
-    polygon: P(0.03, 0.06, 0.22, 0.36),
+    polygon: [[0.0089, 0.0207], [0.1675, 0.0207], [0.1675, 0.516], [0.0089, 0.516]],
   },
   {
     id: 'b-19-602',
@@ -4935,7 +4928,7 @@ export const UNITS: Unit[] = reactive([
     priceUnit: 'so‘m / m²',
     tenant: 'Zamin Invest',
     equipment: ['Balkon', 'Konditsioner', 'Kirish domofoni'],
-    polygon: P(0.265, 0.06, 0.22, 0.36),
+    polygon: [[0.0089, 0.6225], [0.2799, 0.6225], [0.2799, 0.9793], [0.0089, 0.9793]],
   },
   {
     id: 'b-19-603',
@@ -4951,7 +4944,7 @@ export const UNITS: Unit[] = reactive([
     priceUnit: 'so‘m / m²',
     tenant: 'Turon Media',
     equipment: ['Balkon', 'Konditsioner'],
-    polygon: P(0.5, 0.06, 0.22, 0.36),
+    polygon: [[0.2799, 0.6225], [0.4407, 0.6225], [0.4407, 0.9793], [0.2799, 0.9793]],
   },
   {
     id: 'b-19-604',
@@ -4966,7 +4959,7 @@ export const UNITS: Unit[] = reactive([
     price: 14600000,
     priceUnit: 'so‘m / m²',
     equipment: ['Balkon', 'Konditsioner', 'Kirish domofoni'],
-    polygon: P(0.735, 0.06, 0.22, 0.36),
+    polygon: [[0.4407, 0.6225], [0.7709, 0.6225], [0.7709, 0.9793], [0.4407, 0.9793]],
   },
   {
     id: 'b-19-605',
@@ -4981,7 +4974,7 @@ export const UNITS: Unit[] = reactive([
     price: 12600000,
     priceUnit: 'so‘m / m²',
     equipment: ['Balkon', 'Konditsioner'],
-    polygon: P(0.03, 0.58, 0.22, 0.36),
+    polygon: [[0.1675, 0.0207], [0.5091, 0.0207], [0.5091, 0.516], [0.1675, 0.516]],
   },
   {
     id: 'b-19-606',
@@ -4997,7 +4990,7 @@ export const UNITS: Unit[] = reactive([
     priceUnit: 'so‘m / m²',
     tenant: 'Oltin Vodiy',
     equipment: ['Balkon', 'Konditsioner'],
-    polygon: P(0.265, 0.58, 0.22, 0.36),
+    polygon: [[0.7709, 0.6225], [0.9911, 0.6225], [0.9911, 0.9793], [0.7709, 0.9793]],
   },
   {
     id: 'b-19-607',
@@ -5012,7 +5005,7 @@ export const UNITS: Unit[] = reactive([
     price: 14600000,
     priceUnit: 'so‘m / m²',
     equipment: ['Balkon', 'Konditsioner', 'Kirish domofoni'],
-    polygon: P(0.5, 0.58, 0.22, 0.36),
+    polygon: [[0.7166, 0.0207], [0.8752, 0.0207], [0.8752, 0.516], [0.7166, 0.516]],
   },
   {
     id: 'b-19-608',
@@ -5028,7 +5021,7 @@ export const UNITS: Unit[] = reactive([
     priceUnit: 'so‘m / m²',
     tenant: 'Alfa Trade MCHJ',
     equipment: ['Balkon', 'Konditsioner', 'Kirish domofoni'],
-    polygon: P(0.735, 0.58, 0.22, 0.36),
+    polygon: [[0.8752, 0.0207], [0.9911, 0.0207], [0.9911, 0.516], [0.8752, 0.516]],
   },
   {
     id: 'b-19-1101',
@@ -5044,7 +5037,7 @@ export const UNITS: Unit[] = reactive([
     priceUnit: 'so‘m / m²',
     tenant: 'Silk Road Logistics',
     equipment: ['Balkon', 'Konditsioner', 'Kirish domofoni'],
-    polygon: P(0.03, 0.06, 0.22, 0.36),
+    polygon: [[0.008, 0.6069], [0.2395, 0.6069], [0.2395, 0.9793], [0.008, 0.9793]],
   },
   {
     id: 'b-19-1102',
@@ -5059,7 +5052,7 @@ export const UNITS: Unit[] = reactive([
     price: 12800000,
     priceUnit: 'so‘m / m²',
     equipment: ['Balkon', 'Konditsioner'],
-    polygon: P(0.265, 0.06, 0.22, 0.36),
+    polygon: [[0.2395, 0.6069], [0.4276, 0.6069], [0.4276, 0.9793], [0.2395, 0.9793]],
   },
   {
     id: 'b-19-1103',
@@ -5075,7 +5068,7 @@ export const UNITS: Unit[] = reactive([
     priceUnit: 'so‘m / m²',
     tenant: 'Alfa Trade MCHJ',
     equipment: ['Balkon', 'Konditsioner', 'Kirish domofoni'],
-    polygon: P(0.5, 0.06, 0.22, 0.36),
+    polygon: [[0.4276, 0.6069], [0.7098, 0.6069], [0.7098, 0.9793], [0.4276, 0.9793]],
   },
   {
     id: 'b-19-1104',
@@ -5090,7 +5083,7 @@ export const UNITS: Unit[] = reactive([
     price: 13400000,
     priceUnit: 'so‘m / m²',
     equipment: ['Balkon', 'Konditsioner'],
-    polygon: P(0.735, 0.06, 0.22, 0.36),
+    polygon: [[0.008, 0.0207], [0.1147, 0.0207], [0.1147, 0.5004], [0.008, 0.5004]],
   },
   {
     id: 'b-19-1105',
@@ -5106,7 +5099,7 @@ export const UNITS: Unit[] = reactive([
     priceUnit: 'so‘m / m²',
     tenant: 'Alfa Trade MCHJ',
     equipment: ['Balkon', 'Konditsioner'],
-    polygon: P(0.03, 0.58, 0.22, 0.36),
+    polygon: [[0.1147, 0.0207], [0.3786, 0.0207], [0.3786, 0.5004], [0.1147, 0.5004]],
   },
   {
     id: 'b-19-1106',
@@ -5122,7 +5115,7 @@ export const UNITS: Unit[] = reactive([
     priceUnit: 'so‘m / m²',
     tenant: 'Zamin Invest',
     equipment: ['Balkon', 'Konditsioner', 'Kirish domofoni'],
-    polygon: P(0.265, 0.58, 0.22, 0.36),
+    polygon: [[0.5933, 0.0207], [0.773, 0.0207], [0.773, 0.5004], [0.5933, 0.5004]],
   },
   {
     id: 'b-19-1107',
@@ -5138,7 +5131,7 @@ export const UNITS: Unit[] = reactive([
     priceUnit: 'so‘m / m²',
     tenant: 'Navro‘z Textile',
     equipment: ['Balkon', 'Konditsioner', 'Kirish domofoni'],
-    polygon: P(0.5, 0.58, 0.22, 0.36),
+    polygon: [[0.7098, 0.6069], [0.992, 0.6069], [0.992, 0.9793], [0.7098, 0.9793]],
   },
   {
     id: 'b-19-1108',
@@ -5154,7 +5147,7 @@ export const UNITS: Unit[] = reactive([
     priceUnit: 'so‘m / m²',
     tenant: 'Turon Media',
     equipment: ['Balkon', 'Konditsioner', 'Kirish domofoni'],
-    polygon: P(0.735, 0.58, 0.22, 0.36),
+    polygon: [[0.773, 0.0207], [0.992, 0.0207], [0.992, 0.5004], [0.773, 0.5004]],
   },
 
   // --- Shayxontohur Ofis Markazi ---
@@ -5171,7 +5164,7 @@ export const UNITS: Unit[] = reactive([
     price: 8690000,
     priceUnit: 'so‘m / oy',
     equipment: ['Konditsioner', 'Yong‘in datchigi'],
-    polygon: P(0.03, 0.06, 0.22, 0.36),
+    polygon: [[0.0092, 0.6252], [0.2546, 0.6252], [0.2546, 0.9822], [0.0092, 0.9822]],
   },
   {
     id: 'b-20-102',
@@ -5188,7 +5181,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Oltin Vodiy',
     contractCode: 'MKON-2025-0103',
     equipment: ['Konditsioner', 'Yong‘in datchigi'],
-    polygon: P(0.265, 0.06, 0.22, 0.36),
+    polygon: [[0.2546, 0.6252], [0.5446, 0.6252], [0.5446, 0.9822], [0.2546, 0.9822]],
   },
   {
     id: 'b-20-103',
@@ -5205,7 +5198,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Navro‘z Textile',
     contractCode: 'MKON-2025-0111',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.5, 0.06, 0.22, 0.36),
+    polygon: [[0.0092, 0.0178], [0.1859, 0.0178], [0.1859, 0.5135], [0.0092, 0.5135]],
   },
   {
     id: 'b-20-104',
@@ -5222,7 +5215,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Yangi Avlod Ta’lim',
     contractCode: 'MKON-2025-0152',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.735, 0.06, 0.22, 0.36),
+    polygon: [[0.5446, 0.6252], [0.7454, 0.6252], [0.7454, 0.9822], [0.5446, 0.9822]],
   },
   {
     id: 'b-20-105',
@@ -5239,7 +5232,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Karvon Logistik',
     contractCode: 'MKON-2025-0137',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.03, 0.58, 0.22, 0.36),
+    polygon: [[0.1859, 0.0178], [0.4752, 0.0178], [0.4752, 0.5135], [0.1859, 0.5135]],
   },
   {
     id: 'b-20-106',
@@ -5256,7 +5249,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Milliy Savdo MCHJ',
     contractCode: 'MKON-2025-0158',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.265, 0.58, 0.22, 0.36),
+    polygon: [[0.7454, 0.6252], [0.9908, 0.6252], [0.9908, 0.9822], [0.7454, 0.9822]],
   },
   {
     id: 'b-20-107',
@@ -5273,7 +5266,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Silk Road Logistics',
     contractCode: 'MKON-2025-0120',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.5, 0.58, 0.22, 0.36),
+    polygon: [[0.6695, 0.0178], [0.8141, 0.0178], [0.8141, 0.5135], [0.6695, 0.5135]],
   },
   {
     id: 'b-20-108',
@@ -5290,7 +5283,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Karvon Logistik',
     contractCode: 'MKON-2025-0111',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.735, 0.58, 0.22, 0.36),
+    polygon: [[0.8141, 0.0178], [0.9908, 0.0178], [0.9908, 0.5135], [0.8141, 0.5135]],
   },
   {
     id: 'b-20-201',
@@ -5307,7 +5300,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Oltin Vodiy',
     contractCode: 'MKON-2025-0153',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.03, 0.06, 0.22, 0.36),
+    polygon: [[0.0096, 0.0178], [0.1656, 0.0178], [0.1656, 0.4975], [0.0096, 0.4975]],
   },
   {
     id: 'b-20-202',
@@ -5324,7 +5317,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Oq Yo‘l Servis',
     contractCode: 'MKON-2025-0107',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.265, 0.06, 0.22, 0.36),
+    polygon: [[0.0096, 0.6091], [0.2548, 0.6091], [0.2548, 0.9822], [0.0096, 0.9822]],
   },
   {
     id: 'b-20-203',
@@ -5339,7 +5332,7 @@ export const UNITS: Unit[] = reactive([
     price: 5170000,
     priceUnit: 'so‘m / oy',
     equipment: ['Konditsioner', 'Yong‘in datchigi'],
-    polygon: P(0.5, 0.06, 0.22, 0.36),
+    polygon: [[0.1656, 0.0178], [0.287, 0.0178], [0.287, 0.4975], [0.1656, 0.4975]],
   },
   {
     id: 'b-20-204',
@@ -5356,7 +5349,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Diyor Farm',
     contractCode: 'MKON-2025-0126',
     equipment: ['Konditsioner', 'Yong‘in datchigi'],
-    polygon: P(0.735, 0.06, 0.22, 0.36),
+    polygon: [[0.4876, 0.0178], [0.7997, 0.0178], [0.7997, 0.4975], [0.4876, 0.4975]],
   },
   {
     id: 'b-20-205',
@@ -5371,7 +5364,7 @@ export const UNITS: Unit[] = reactive([
     price: 7830000,
     priceUnit: 'so‘m / oy',
     equipment: ['Konditsioner', 'Yong‘in datchigi'],
-    polygon: P(0.03, 0.58, 0.22, 0.36),
+    polygon: [[0.2548, 0.6091], [0.4554, 0.6091], [0.4554, 0.9822], [0.2548, 0.9822]],
   },
   {
     id: 'b-20-206',
@@ -5388,7 +5381,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Oltin Vodiy',
     contractCode: 'MKON-2025-0103',
     equipment: ['Konditsioner', 'Yong‘in datchigi'],
-    polygon: P(0.265, 0.58, 0.22, 0.36),
+    polygon: [[0.7997, 0.0178], [0.9904, 0.0178], [0.9904, 0.4975], [0.7997, 0.4975]],
   },
   {
     id: 'b-20-207',
@@ -5403,7 +5396,7 @@ export const UNITS: Unit[] = reactive([
     price: 12020000,
     priceUnit: 'so‘m / oy',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.5, 0.58, 0.22, 0.36),
+    polygon: [[0.4554, 0.6091], [0.7452, 0.6091], [0.7452, 0.9822], [0.4554, 0.9822]],
   },
   {
     id: 'b-20-208',
@@ -5418,7 +5411,7 @@ export const UNITS: Unit[] = reactive([
     price: 10690000,
     priceUnit: 'so‘m / oy',
     equipment: ['Konditsioner', 'Yong‘in datchigi'],
-    polygon: P(0.735, 0.58, 0.22, 0.36),
+    polygon: [[0.7452, 0.6091], [0.9904, 0.6091], [0.9904, 0.9822], [0.7452, 0.9822]],
   },
   {
     id: 'b-20-701',
@@ -5435,7 +5428,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Orient Consulting',
     contractCode: 'MKON-2025-0114',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.03, 0.06, 0.22, 0.36),
+    polygon: [[0.008, 0.0178], [0.2279, 0.0178], [0.2279, 0.5002], [0.008, 0.5002]],
   },
   {
     id: 'b-20-702',
@@ -5450,7 +5443,7 @@ export const UNITS: Unit[] = reactive([
     price: 7360000,
     priceUnit: 'so‘m / oy',
     equipment: ['Konditsioner', 'Yong‘in datchigi'],
-    polygon: P(0.265, 0.06, 0.22, 0.36),
+    polygon: [[0.008, 0.6119], [0.2135, 0.6119], [0.2135, 0.9822], [0.008, 0.9822]],
   },
   {
     id: 'b-20-703',
@@ -5465,7 +5458,7 @@ export const UNITS: Unit[] = reactive([
     price: 8450000,
     priceUnit: 'so‘m / oy',
     equipment: ['Konditsioner', 'Yong‘in datchigi'],
-    polygon: P(0.5, 0.06, 0.22, 0.36),
+    polygon: [[0.2135, 0.6119], [0.419, 0.6119], [0.419, 0.9822], [0.2135, 0.9822]],
   },
   {
     id: 'b-20-704',
@@ -5482,7 +5475,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Yangi Avlod Ta’lim',
     contractCode: 'MKON-2025-0158',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.735, 0.06, 0.22, 0.36),
+    polygon: [[0.2279, 0.0178], [0.4143, 0.0178], [0.4143, 0.5002], [0.2279, 0.5002]],
   },
   {
     id: 'b-20-705',
@@ -5499,7 +5492,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Yangi Avlod Ta’lim',
     contractCode: 'MKON-2025-0127',
     equipment: ['Konditsioner', 'Yong‘in datchigi'],
-    polygon: P(0.03, 0.58, 0.22, 0.36),
+    polygon: [[0.419, 0.6119], [0.7055, 0.6119], [0.7055, 0.9822], [0.419, 0.9822]],
   },
   {
     id: 'b-20-706',
@@ -5516,7 +5509,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Orient Consulting',
     contractCode: 'MKON-2025-0118',
     equipment: ['Konditsioner', 'Yong‘in datchigi'],
-    polygon: P(0.265, 0.58, 0.22, 0.36),
+    polygon: [[0.6144, 0.0178], [0.7721, 0.0178], [0.7721, 0.5002], [0.6144, 0.5002]],
   },
   {
     id: 'b-20-707',
@@ -5533,7 +5526,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Karvon Logistik',
     contractCode: 'MKON-2025-0152',
     equipment: ['Konditsioner', 'Yong‘in datchigi'],
-    polygon: P(0.5, 0.58, 0.22, 0.36),
+    polygon: [[0.7721, 0.0178], [0.992, 0.0178], [0.992, 0.5002], [0.7721, 0.5002]],
   },
   {
     id: 'b-20-708',
@@ -5548,7 +5541,7 @@ export const UNITS: Unit[] = reactive([
     price: 13590000,
     priceUnit: 'so‘m / oy',
     equipment: ['Konditsioner', 'Yong‘in datchigi', 'Internet chiqishi'],
-    polygon: P(0.735, 0.58, 0.22, 0.36),
+    polygon: [[0.7055, 0.6119], [0.992, 0.6119], [0.992, 0.9822], [0.7055, 0.9822]],
   },
 
   // --- Sergeli City Mall ---
@@ -5565,7 +5558,7 @@ export const UNITS: Unit[] = reactive([
     price: 42820000,
     priceUnit: 'so‘m / oy',
     equipment: ['Vitrina', 'Konditsioner', 'Yong‘in signalizatsiyasi', 'Ombor xonasi'],
-    polygon: P(0.03, 0.06, 0.173, 0.36),
+    polygon: [[0.0085, 0.0137], [0.291, 0.0137], [0.291, 0.4745], [0.0085, 0.4745]],
   },
   {
     id: 'b-21-102',
@@ -5582,7 +5575,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Bunyod Qurilish',
     contractCode: 'MKON-2025-0156',
     equipment: ['Vitrina', 'Konditsioner', 'Yong‘in signalizatsiyasi'],
-    polygon: P(0.218, 0.06, 0.173, 0.36),
+    polygon: [[0.291, 0.0137], [0.3475, 0.0137], [0.3475, 0.4745], [0.291, 0.4745]],
   },
   {
     id: 'b-21-103',
@@ -5599,7 +5592,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Diyor Farm',
     contractCode: 'MKON-2025-0124',
     equipment: ['Vitrina', 'Konditsioner', 'Yong‘in signalizatsiyasi', 'Ombor xonasi'],
-    polygon: P(0.406, 0.06, 0.173, 0.36),
+    polygon: [[0.3475, 0.0137], [0.404, 0.0137], [0.404, 0.4745], [0.3475, 0.4745]],
   },
   {
     id: 'b-21-104',
@@ -5614,7 +5607,7 @@ export const UNITS: Unit[] = reactive([
     price: 21780000,
     priceUnit: 'so‘m / oy',
     equipment: ['Vitrina', 'Konditsioner', 'Yong‘in signalizatsiyasi'],
-    polygon: P(0.594, 0.06, 0.173, 0.36),
+    polygon: [[0.5772, 0.0137], [0.709, 0.0137], [0.709, 0.4745], [0.5772, 0.4745]],
   },
   {
     id: 'b-21-105',
@@ -5629,7 +5622,7 @@ export const UNITS: Unit[] = reactive([
     price: 34930000,
     priceUnit: 'so‘m / oy',
     equipment: ['Vitrina', 'Konditsioner', 'Yong‘in signalizatsiyasi', 'Ombor xonasi'],
-    polygon: P(0.782, 0.06, 0.173, 0.36),
+    polygon: [[0.0085, 0.628], [0.3012, 0.628], [0.3012, 0.9863], [0.0085, 0.9863]],
   },
   {
     id: 'b-21-106',
@@ -5646,7 +5639,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Yangi Avlod Ta’lim',
     contractCode: 'MKON-2025-0141',
     equipment: ['Vitrina', 'Konditsioner'],
-    polygon: P(0.03, 0.58, 0.173, 0.36),
+    polygon: [[0.3012, 0.628], [0.6645, 0.628], [0.6645, 0.9863], [0.3012, 0.9863]],
   },
   {
     id: 'b-21-107',
@@ -5661,7 +5654,7 @@ export const UNITS: Unit[] = reactive([
     price: 10140000,
     priceUnit: 'so‘m / oy',
     equipment: ['Vitrina', 'Konditsioner', 'Yong‘in signalizatsiyasi'],
-    polygon: P(0.218, 0.58, 0.173, 0.36),
+    polygon: [[0.6645, 0.628], [0.7695, 0.628], [0.7695, 0.9863], [0.6645, 0.9863]],
   },
   {
     id: 'b-21-108',
@@ -5678,7 +5671,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Tashkent Digital',
     contractCode: 'MKON-2025-0143',
     equipment: ['Vitrina', 'Konditsioner'],
-    polygon: P(0.406, 0.58, 0.173, 0.36),
+    polygon: [[0.709, 0.0137], [0.9915, 0.0137], [0.9915, 0.4745], [0.709, 0.4745]],
   },
   {
     id: 'b-21-109',
@@ -5693,7 +5686,7 @@ export const UNITS: Unit[] = reactive([
     price: 32740000,
     priceUnit: 'so‘m / oy',
     equipment: ['Vitrina', 'Konditsioner', 'Yong‘in signalizatsiyasi'],
-    polygon: P(0.594, 0.58, 0.173, 0.36),
+    polygon: [[0.7695, 0.628], [0.9915, 0.628], [0.9915, 0.9863], [0.7695, 0.9863]],
   },
   {
     id: 'b-21-201',
@@ -5710,7 +5703,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Tashkent Digital',
     contractCode: 'MKON-2025-0141',
     equipment: ['Vitrina', 'Konditsioner', 'Yong‘in signalizatsiyasi', 'Ombor xonasi'],
-    polygon: P(0.03, 0.06, 0.173, 0.36),
+    polygon: [[0.0083, 0.6362], [0.3029, 0.6362], [0.3029, 0.9863], [0.0083, 0.9863]],
   },
   {
     id: 'b-21-202',
@@ -5727,7 +5720,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Sharq Elektronika',
     contractCode: 'MKON-2025-0144',
     equipment: ['Vitrina', 'Konditsioner', 'Yong‘in signalizatsiyasi', 'Ombor xonasi'],
-    polygon: P(0.218, 0.06, 0.173, 0.36),
+    polygon: [[0.0083, 0.0137], [0.1358, 0.0137], [0.1358, 0.4826], [0.0083, 0.4826]],
   },
   {
     id: 'b-21-203',
@@ -5744,7 +5737,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Milliy Savdo MCHJ',
     contractCode: 'MKON-2025-0139',
     equipment: ['Vitrina', 'Konditsioner', 'Yong‘in signalizatsiyasi', 'Ombor xonasi'],
-    polygon: P(0.406, 0.06, 0.173, 0.36),
+    polygon: [[0.1358, 0.0137], [0.3026, 0.0137], [0.3026, 0.4826], [0.1358, 0.4826]],
   },
   {
     id: 'b-21-204',
@@ -5761,7 +5754,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Oltin Vodiy',
     contractCode: 'MKON-2025-0120',
     equipment: ['Vitrina', 'Konditsioner', 'Yong‘in signalizatsiyasi', 'Ombor xonasi'],
-    polygon: P(0.594, 0.06, 0.173, 0.36),
+    polygon: [[0.3026, 0.0137], [0.4695, 0.0137], [0.4695, 0.4826], [0.3026, 0.4826]],
   },
   {
     id: 'b-21-205',
@@ -5776,7 +5769,7 @@ export const UNITS: Unit[] = reactive([
     price: 34720000,
     priceUnit: 'so‘m / oy',
     equipment: ['Vitrina', 'Konditsioner', 'Yong‘in signalizatsiyasi'],
-    polygon: P(0.782, 0.06, 0.173, 0.36),
+    polygon: [[0.6397, 0.0137], [0.9128, 0.0137], [0.9128, 0.4826], [0.6397, 0.4826]],
   },
   {
     id: 'b-21-206',
@@ -5793,7 +5786,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Alfa Trade MCHJ',
     contractCode: 'MKON-2025-0135',
     equipment: ['Vitrina', 'Konditsioner', 'Yong‘in signalizatsiyasi', 'Ombor xonasi'],
-    polygon: P(0.03, 0.58, 0.173, 0.36),
+    polygon: [[0.3029, 0.6362], [0.5975, 0.6362], [0.5975, 0.9863], [0.3029, 0.9863]],
   },
   {
     id: 'b-21-207',
@@ -5810,7 +5803,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Karvon Logistik',
     contractCode: 'MKON-2025-0131',
     equipment: ['Vitrina', 'Konditsioner', 'Yong‘in signalizatsiyasi', 'Ombor xonasi'],
-    polygon: P(0.218, 0.58, 0.173, 0.36),
+    polygon: [[0.5975, 0.6362], [0.821, 0.6362], [0.821, 0.9863], [0.5975, 0.9863]],
   },
   {
     id: 'b-21-208',
@@ -5825,7 +5818,7 @@ export const UNITS: Unit[] = reactive([
     price: 18460000,
     priceUnit: 'so‘m / oy',
     equipment: ['Vitrina', 'Konditsioner', 'Yong‘in signalizatsiyasi'],
-    polygon: P(0.406, 0.58, 0.173, 0.36),
+    polygon: [[0.821, 0.6362], [0.9917, 0.6362], [0.9917, 0.9863], [0.821, 0.9863]],
   },
   {
     id: 'b-21-209',
@@ -5840,7 +5833,7 @@ export const UNITS: Unit[] = reactive([
     price: 14430000,
     priceUnit: 'so‘m / oy',
     equipment: ['Vitrina', 'Konditsioner', 'Yong‘in signalizatsiyasi', 'Ombor xonasi'],
-    polygon: P(0.594, 0.58, 0.173, 0.36),
+    polygon: [[0.9128, 0.0137], [0.9917, 0.0137], [0.9917, 0.4826], [0.9128, 0.4826]],
   },
   {
     id: 'b-21-401',
@@ -5857,7 +5850,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Milliy Savdo MCHJ',
     contractCode: 'MKON-2025-0114',
     equipment: ['Vitrina', 'Konditsioner'],
-    polygon: P(0.03, 0.06, 0.173, 0.36),
+    polygon: [[0.0086, 0.617], [0.1114, 0.617], [0.1114, 0.9863], [0.0086, 0.9863]],
   },
   {
     id: 'b-21-402',
@@ -5874,7 +5867,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Zamin Invest',
     contractCode: 'MKON-2025-0101',
     equipment: ['Vitrina', 'Konditsioner'],
-    polygon: P(0.218, 0.06, 0.173, 0.36),
+    polygon: [[0.1114, 0.617], [0.1826, 0.617], [0.1826, 0.9863], [0.1114, 0.9863]],
   },
   {
     id: 'b-21-403',
@@ -5889,7 +5882,7 @@ export const UNITS: Unit[] = reactive([
     price: 51080000,
     priceUnit: 'so‘m / oy',
     equipment: ['Vitrina', 'Konditsioner', 'Yong‘in signalizatsiyasi', 'Ombor xonasi'],
-    polygon: P(0.406, 0.06, 0.173, 0.36),
+    polygon: [[0.0086, 0.0137], [0.3009, 0.0137], [0.3009, 0.4634], [0.0086, 0.4634]],
   },
   {
     id: 'b-21-404',
@@ -5904,7 +5897,7 @@ export const UNITS: Unit[] = reactive([
     price: 50170000,
     priceUnit: 'so‘m / oy',
     equipment: ['Vitrina', 'Konditsioner', 'Yong‘in signalizatsiyasi', 'Ombor xonasi'],
-    polygon: P(0.594, 0.06, 0.173, 0.36),
+    polygon: [[0.1826, 0.617], [0.5386, 0.617], [0.5386, 0.9863], [0.1826, 0.9863]],
   },
   {
     id: 'b-21-405',
@@ -5919,7 +5912,7 @@ export const UNITS: Unit[] = reactive([
     price: 16040000,
     priceUnit: 'so‘m / oy',
     equipment: ['Vitrina', 'Konditsioner'],
-    polygon: P(0.782, 0.06, 0.173, 0.36),
+    polygon: [[0.5386, 0.617], [0.7047, 0.617], [0.7047, 0.9863], [0.5386, 0.9863]],
   },
   {
     id: 'b-21-406',
@@ -5936,7 +5929,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Turon Media',
     contractCode: 'MKON-2025-0146',
     equipment: ['Vitrina', 'Konditsioner', 'Yong‘in signalizatsiyasi'],
-    polygon: P(0.03, 0.58, 0.173, 0.36),
+    polygon: [[0.3009, 0.0137], [0.4373, 0.0137], [0.4373, 0.4634], [0.3009, 0.4634]],
   },
   {
     id: 'b-21-407',
@@ -5953,7 +5946,7 @@ export const UNITS: Unit[] = reactive([
     tenant: 'Yangi Avlod Ta’lim',
     contractCode: 'MKON-2025-0117',
     equipment: ['Vitrina', 'Konditsioner', 'Yong‘in signalizatsiyasi', 'Ombor xonasi'],
-    polygon: P(0.218, 0.58, 0.173, 0.36),
+    polygon: [[0.6147, 0.0137], [0.907, 0.0137], [0.907, 0.4634], [0.6147, 0.4634]],
   },
   {
     id: 'b-21-408',
@@ -5968,7 +5961,7 @@ export const UNITS: Unit[] = reactive([
     price: 13370000,
     priceUnit: 'so‘m / oy',
     equipment: ['Vitrina', 'Konditsioner'],
-    polygon: P(0.406, 0.58, 0.173, 0.36),
+    polygon: [[0.907, 0.0137], [0.9914, 0.0137], [0.9914, 0.4634], [0.907, 0.4634]],
   },
   {
     id: 'b-21-409',
@@ -5983,7 +5976,7 @@ export const UNITS: Unit[] = reactive([
     price: 34930000,
     priceUnit: 'so‘m / oy',
     equipment: ['Vitrina', 'Konditsioner'],
-    polygon: P(0.594, 0.58, 0.173, 0.36),
+    polygon: [[0.7047, 0.617], [0.9914, 0.617], [0.9914, 0.9863], [0.7047, 0.9863]],
   },
 
   // --- Bog‘ishamol Residence ---
@@ -6000,7 +5993,7 @@ export const UNITS: Unit[] = reactive([
     price: 14000000,
     priceUnit: 'so‘m / m²',
     equipment: ['Balkon', 'Konditsioner', 'Kirish domofoni'],
-    polygon: P(0.03, 0.06, 0.22, 0.36),
+    polygon: [[0.008, 0.618], [0.1507, 0.618], [0.1507, 0.9793], [0.008, 0.9793]],
   },
   {
     id: 'b-22-202',
@@ -6016,7 +6009,7 @@ export const UNITS: Unit[] = reactive([
     priceUnit: 'so‘m / m²',
     tenant: 'Diyor Farm',
     equipment: ['Balkon', 'Konditsioner'],
-    polygon: P(0.265, 0.06, 0.22, 0.36),
+    polygon: [[0.1507, 0.618], [0.5038, 0.618], [0.5038, 0.9793], [0.1507, 0.9793]],
   },
   {
     id: 'b-22-203',
@@ -6032,7 +6025,7 @@ export const UNITS: Unit[] = reactive([
     priceUnit: 'so‘m / m²',
     tenant: 'Tashkent Digital',
     equipment: ['Balkon', 'Konditsioner'],
-    polygon: P(0.5, 0.06, 0.22, 0.36),
+    polygon: [[0.5038, 0.618], [0.699, 0.618], [0.699, 0.9793], [0.5038, 0.9793]],
   },
   {
     id: 'b-22-204',
@@ -6047,7 +6040,7 @@ export const UNITS: Unit[] = reactive([
     price: 12300000,
     priceUnit: 'so‘m / m²',
     equipment: ['Balkon', 'Konditsioner', 'Kirish domofoni'],
-    polygon: P(0.735, 0.06, 0.22, 0.36),
+    polygon: [[0.008, 0.0207], [0.3177, 0.0207], [0.3177, 0.5115], [0.008, 0.5115]],
   },
   {
     id: 'b-22-205',
@@ -6063,7 +6056,7 @@ export const UNITS: Unit[] = reactive([
     priceUnit: 'so‘m / m²',
     tenant: 'Orient Consulting',
     equipment: ['Balkon', 'Konditsioner'],
-    polygon: P(0.03, 0.58, 0.22, 0.36),
+    polygon: [[0.699, 0.618], [0.992, 0.618], [0.992, 0.9793], [0.699, 0.9793]],
   },
   {
     id: 'b-22-206',
@@ -6079,7 +6072,7 @@ export const UNITS: Unit[] = reactive([
     priceUnit: 'so‘m / m²',
     tenant: 'Silk Road Logistics',
     equipment: ['Balkon', 'Konditsioner'],
-    polygon: P(0.265, 0.58, 0.22, 0.36),
+    polygon: [[0.3177, 0.0207], [0.4615, 0.0207], [0.4615, 0.5115], [0.3177, 0.5115]],
   },
   {
     id: 'b-22-207',
@@ -6094,7 +6087,7 @@ export const UNITS: Unit[] = reactive([
     price: 12900000,
     priceUnit: 'so‘m / m²',
     equipment: ['Balkon', 'Konditsioner'],
-    polygon: P(0.5, 0.58, 0.22, 0.36),
+    polygon: [[0.6713, 0.0207], [0.8869, 0.0207], [0.8869, 0.5115], [0.6713, 0.5115]],
   },
   {
     id: 'b-22-208',
@@ -6110,7 +6103,7 @@ export const UNITS: Unit[] = reactive([
     priceUnit: 'so‘m / m²',
     tenant: 'Yangi Avlod Ta’lim',
     equipment: ['Balkon', 'Konditsioner'],
-    polygon: P(0.735, 0.58, 0.22, 0.36),
+    polygon: [[0.8869, 0.0207], [0.992, 0.0207], [0.992, 0.5115], [0.8869, 0.5115]],
   },
   {
     id: 'b-22-901',
@@ -6126,7 +6119,7 @@ export const UNITS: Unit[] = reactive([
     priceUnit: 'so‘m / m²',
     tenant: 'Diyor Farm',
     equipment: ['Balkon', 'Konditsioner'],
-    polygon: P(0.03, 0.06, 0.22, 0.36),
+    polygon: [[0.0098, 0.8142], [0.5456, 0.8142], [0.5456, 0.9877], [0.0098, 0.9877]],
   },
   {
     id: 'b-22-902',
@@ -6141,7 +6134,7 @@ export const UNITS: Unit[] = reactive([
     price: 12700000,
     priceUnit: 'so‘m / m²',
     equipment: ['Balkon', 'Konditsioner', 'Kirish domofoni'],
-    polygon: P(0.265, 0.06, 0.22, 0.36),
+    polygon: [[0.7431, 0.1898], [0.9902, 0.1898], [0.9902, 0.502], [0.7431, 0.502]],
   },
   {
     id: 'b-22-903',
@@ -6157,7 +6150,7 @@ export const UNITS: Unit[] = reactive([
     priceUnit: 'so‘m / m²',
     tenant: 'Bunyod Qurilish',
     equipment: ['Balkon', 'Konditsioner'],
-    polygon: P(0.5, 0.06, 0.22, 0.36),
+    polygon: [[0.7431, 0.502], [0.9902, 0.502], [0.9902, 0.8142], [0.7431, 0.8142]],
   },
   {
     id: 'b-22-904',
@@ -6173,7 +6166,7 @@ export const UNITS: Unit[] = reactive([
     priceUnit: 'so‘m / m²',
     tenant: 'Bunyod Qurilish',
     equipment: ['Balkon', 'Konditsioner'],
-    polygon: P(0.735, 0.06, 0.22, 0.36),
+    polygon: [[0.0098, 0.1898], [0.2601, 0.1898], [0.2601, 0.4427], [0.0098, 0.4427]],
   },
   {
     id: 'b-22-905',
@@ -6188,7 +6181,7 @@ export const UNITS: Unit[] = reactive([
     price: 14700000,
     priceUnit: 'so‘m / m²',
     equipment: ['Balkon', 'Konditsioner', 'Kirish domofoni'],
-    polygon: P(0.03, 0.58, 0.22, 0.36),
+    polygon: [[0.0098, 0.0123], [0.3663, 0.0123], [0.3663, 0.1898], [0.0098, 0.1898]],
   },
   {
     id: 'b-22-906',
@@ -6204,7 +6197,7 @@ export const UNITS: Unit[] = reactive([
     priceUnit: 'so‘m / m²',
     tenant: 'Bunyod Qurilish',
     equipment: ['Balkon', 'Konditsioner'],
-    polygon: P(0.265, 0.58, 0.22, 0.36),
+    polygon: [[0.5456, 0.8142], [0.9902, 0.8142], [0.9902, 0.9877], [0.5456, 0.9877]],
   },
   {
     id: 'b-22-907',
@@ -6219,7 +6212,7 @@ export const UNITS: Unit[] = reactive([
     price: 12100000,
     priceUnit: 'so‘m / m²',
     equipment: ['Balkon', 'Konditsioner', 'Kirish domofoni'],
-    polygon: P(0.5, 0.58, 0.22, 0.36),
+    polygon: [[0.0098, 0.4427], [0.2601, 0.4427], [0.2601, 0.8142], [0.0098, 0.8142]],
   },
   {
     id: 'b-22-908',
@@ -6235,7 +6228,7 @@ export const UNITS: Unit[] = reactive([
     priceUnit: 'so‘m / m²',
     tenant: 'Zamin Invest',
     equipment: ['Balkon', 'Konditsioner'],
-    polygon: P(0.735, 0.58, 0.22, 0.36),
+    polygon: [[0.3663, 0.0123], [0.9902, 0.0123], [0.9902, 0.1898], [0.3663, 0.1898]],
   },
   {
     id: 'b-22-1601',
@@ -6251,7 +6244,7 @@ export const UNITS: Unit[] = reactive([
     priceUnit: 'so‘m / m²',
     tenant: 'Oq Yo‘l Servis',
     equipment: ['Balkon', 'Konditsioner', 'Kirish domofoni'],
-    polygon: P(0.03, 0.06, 0.22, 0.36),
+    polygon: [[0.0072, 0.5994], [0.2584, 0.5994], [0.2584, 0.9793], [0.0072, 0.9793]],
   },
   {
     id: 'b-22-1602',
@@ -6267,7 +6260,7 @@ export const UNITS: Unit[] = reactive([
     priceUnit: 'so‘m / m²',
     tenant: 'Tashkent Digital',
     equipment: ['Balkon', 'Konditsioner', 'Kirish domofoni'],
-    polygon: P(0.265, 0.06, 0.22, 0.36),
+    polygon: [[0.0072, 0.0207], [0.2508, 0.0207], [0.2508, 0.4929], [0.0072, 0.4929]],
   },
   {
     id: 'b-22-1603',
@@ -6283,7 +6276,7 @@ export const UNITS: Unit[] = reactive([
     priceUnit: 'so‘m / m²',
     tenant: 'Karvon Logistik',
     equipment: ['Balkon', 'Konditsioner'],
-    polygon: P(0.5, 0.06, 0.22, 0.36),
+    polygon: [[0.2508, 0.0207], [0.5411, 0.0207], [0.5411, 0.4929], [0.2508, 0.4929]],
   },
   {
     id: 'b-22-1604',
@@ -6298,7 +6291,7 @@ export const UNITS: Unit[] = reactive([
     price: 13900000,
     priceUnit: 'so‘m / m²',
     equipment: ['Balkon', 'Konditsioner', 'Kirish domofoni'],
-    polygon: P(0.735, 0.06, 0.22, 0.36),
+    polygon: [[0.7595, 0.0207], [0.8943, 0.0207], [0.8943, 0.4929], [0.7595, 0.4929]],
   },
   {
     id: 'b-22-1605',
@@ -6313,7 +6306,7 @@ export const UNITS: Unit[] = reactive([
     price: 14400000,
     priceUnit: 'so‘m / m²',
     equipment: ['Balkon', 'Konditsioner', 'Kirish domofoni'],
-    polygon: P(0.03, 0.58, 0.22, 0.36),
+    polygon: [[0.2584, 0.5994], [0.6192, 0.5994], [0.6192, 0.9793], [0.2584, 0.9793]],
   },
   {
     id: 'b-22-1606',
@@ -6329,7 +6322,7 @@ export const UNITS: Unit[] = reactive([
     priceUnit: 'so‘m / m²',
     tenant: 'Baraka Group',
     equipment: ['Balkon', 'Konditsioner', 'Kirish domofoni'],
-    polygon: P(0.265, 0.58, 0.22, 0.36),
+    polygon: [[0.6192, 0.5994], [0.7866, 0.5994], [0.7866, 0.9793], [0.6192, 0.9793]],
   },
   {
     id: 'b-22-1607',
@@ -6345,7 +6338,7 @@ export const UNITS: Unit[] = reactive([
     priceUnit: 'so‘m / m²',
     tenant: 'Oltin Vodiy',
     equipment: ['Balkon', 'Konditsioner'],
-    polygon: P(0.5, 0.58, 0.22, 0.36),
+    polygon: [[0.8943, 0.0207], [0.9928, 0.0207], [0.9928, 0.4929], [0.8943, 0.4929]],
   },
   {
     id: 'b-22-1608',
@@ -6360,7 +6353,7 @@ export const UNITS: Unit[] = reactive([
     price: 11800000,
     priceUnit: 'so‘m / m²',
     equipment: ['Balkon', 'Konditsioner', 'Kirish domofoni'],
-    polygon: P(0.735, 0.58, 0.22, 0.36),
+    polygon: [[0.7866, 0.5994], [0.9928, 0.5994], [0.9928, 0.9793], [0.7866, 0.9793]],
   },
 ])
 

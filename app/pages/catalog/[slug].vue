@@ -3,6 +3,7 @@ import { useStorage } from '@vueuse/core'
 import { buildingBySlug } from '~/data/buildings'
 import { unitsOfBuilding, type Unit } from '~/data/units'
 import { UNIT_STATUS, UNIT_STATUS_COLOR } from '~/constants/statuses'
+import { buildFloorPlan } from '~/utils/floorPlan'
 import { num, sum, area } from '~/utils/format'
 
 definePageMeta({ layout: 'public' })
@@ -96,18 +97,39 @@ function stepFloor(dir: number) {
   if (next !== undefined) pickFloor(next)
 }
 
+/**
+ * Reja obyekt kartochkasidagi bilan bir xil nisbatda chizilishi kerak,
+ * shuning uchun koordinatalar kvadratga emas, qavatning haqiqiy o‘lchamiga
+ * (metrga) o‘tkaziladi.
+ */
+const plan = computed(() =>
+  buildFloorPlan({
+    units: floorUnits.value.map((u) => ({ id: u.id, code: u.code, area: u.area })),
+    buildingType: building.value?.type ?? 'Biznes markaz',
+    floor: activeFloor.value,
+    underground: activeFloor.value === 0,
+  }),
+)
+
+const planBox = computed(() => `0 0 ${plan.value.width.toFixed(2)} ${plan.value.height.toFixed(2)}`)
+
+/** Chiziq va shrift o‘lchami qavat kattaligiga moslashadi */
+const planScale = computed(() => Math.max(plan.value.width, plan.value.height) / 100)
+
 function points(u: Unit) {
+  const p = plan.value
   return u.polygon
-    .map(([x, y]) => `${((x ?? 0) * 100).toFixed(2)},${((y ?? 0) * 100).toFixed(2)}`)
+    .map(([x, y]) => `${((x ?? 0) * p.width).toFixed(2)},${((y ?? 0) * p.height).toFixed(2)}`)
     .join(' ')
 }
 
 function centre(u: Unit) {
-  const xs = u.polygon.map((p) => p[0] ?? 0)
-  const ys = u.polygon.map((p) => p[1] ?? 0)
+  const p = plan.value
+  const xs = u.polygon.map((q) => q[0] ?? 0)
+  const ys = u.polygon.map((q) => q[1] ?? 0)
   return {
-    x: ((Math.min(...xs) + Math.max(...xs)) / 2) * 100,
-    y: ((Math.min(...ys) + Math.max(...ys)) / 2) * 100,
+    x: ((Math.min(...xs) + Math.max(...xs)) / 2) * p.width,
+    y: ((Math.min(...ys) + Math.max(...ys)) / 2) * p.height,
   }
 }
 
@@ -519,20 +541,39 @@ function goToOffer() {
                 <div class="min-w-0">
                   <div class="rounded-card bg-surface-sunken p-3 ring-1 ring-inset ring-ink-200">
                     <svg
-                      viewBox="0 0 100 100"
+                      :viewBox="planBox"
                       class="block w-full"
                       role="group"
                       :aria-label="`${activeFloor}-qavat rejasi, unitni tanlang`"
                     >
                       <rect
-                        x="2"
-                        y="2"
-                        width="96"
-                        height="96"
-                        rx="2"
+                        x="0"
+                        y="0"
+                        :width="plan.width"
+                        :height="plan.height"
                         fill="#FFFFFF"
-                        stroke="#CBD4E3"
-                        stroke-width="0.8"
+                        stroke="#354152"
+                        :stroke-width="plan.wallOuter"
+                      />
+                      <rect
+                        v-for="(c, i) in plan.corridors"
+                        :key="`c-${i}`"
+                        :x="c.x"
+                        :y="c.y"
+                        :width="c.w"
+                        :height="c.h"
+                        fill="#F1F5FB"
+                      />
+                      <rect
+                        v-for="(c, i) in plan.core"
+                        :key="`k-${i}`"
+                        :x="c.rect.x"
+                        :y="c.rect.y"
+                        :width="c.rect.w"
+                        :height="c.rect.h"
+                        fill="#E3E9F2"
+                        stroke="#8494AC"
+                        :stroke-width="plan.wallInner"
                       />
                       <g
                         v-for="u in floorUnits"
@@ -551,14 +592,14 @@ function goToOffer() {
                           :fill="STATUS_COLOR[u.status] ?? '#94A2B8'"
                           :fill-opacity="selectedId === u.id ? 0.4 : 0.16"
                           :stroke="STATUS_COLOR[u.status] ?? '#94A2B8'"
-                          :stroke-width="selectedId === u.id ? 1.4 : 0.7"
+                          :stroke-width="selectedId === u.id ? plan.wallInner * 3 : plan.wallInner * 1.6"
                           stroke-linejoin="round"
                         />
                         <text
                           :x="centre(u).x"
-                          :y="centre(u).y - 0.4"
+                          :y="centre(u).y - planScale * 0.4"
                           text-anchor="middle"
-                          font-size="4.4"
+                          :font-size="planScale * 4.4"
                           font-weight="700"
                           fill="#131C2B"
                         >
@@ -566,9 +607,9 @@ function goToOffer() {
                         </text>
                         <text
                           :x="centre(u).x"
-                          :y="centre(u).y + 4.6"
+                          :y="centre(u).y + planScale * 4.6"
                           text-anchor="middle"
-                          font-size="3.2"
+                          :font-size="planScale * 3.2"
                           :fill="STATUS_COLOR[u.status] ?? '#64748B'"
                         >
                           {{ UNIT_STATUS[u.status]?.label ?? u.status }}

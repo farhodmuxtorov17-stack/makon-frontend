@@ -3,6 +3,7 @@ import { buildingById } from '~/data/buildings'
 import { unitsOfFloor, type Unit } from '~/data/units'
 import { UNIT_STATUS } from '~/constants/statuses'
 import { area, num, percent } from '~/utils/format'
+import { buildFloorPlan } from '~/utils/floorPlan'
 
 const route = useRoute()
 const auth = useAuthStore()
@@ -99,24 +100,75 @@ const floorsWithPlan = computed(() => {
     .filter((f) => f.count > 0)
 })
 
-const shapes = computed(() =>
-  units.value.map((u) => {
+/**
+ * Qavatning arxitektura qatlami: tashqi devor, koridor, xizmat yadrosi,
+ * eshiklar va fasad derazalari. Geometriya unitlarning haqiqiy maydonidan
+ * hisoblanadi, shuning uchun reja metrda va masshtabda bo‘ladi.
+ */
+const plan = computed(() =>
+  buildFloorPlan({
+    units: units.value.map((u) => ({ id: u.id, code: u.code, area: u.area })),
+    buildingType: building.value?.type ?? 'Biznes markaz',
+    floor: floorNo.value,
+    underground: floorNo.value === 0,
+  }),
+)
+
+/** Eshik burilishi: yoy va eshik qanoti */
+function doorPath(d: (typeof plan.value.units)[number]['door']) {
+  const w = d.width
+  const sign = d.facing === 'down' || d.facing === 'right' ? 1 : -1
+  if (d.facing === 'down' || d.facing === 'up') {
+    const x2 = d.x + w * d.hinge
+    return {
+      leaf: `M ${d.x} ${d.y} L ${d.x} ${d.y + w * sign}`,
+      arc: `M ${d.x} ${d.y + w * sign} A ${w} ${w} 0 0 ${d.hinge * sign > 0 ? 0 : 1} ${x2} ${d.y}`,
+      gap: `M ${d.x} ${d.y} L ${x2} ${d.y}`,
+    }
+  }
+  const y2 = d.y + w * d.hinge
+  return {
+    leaf: `M ${d.x} ${d.y} L ${d.x + w * sign} ${d.y}`,
+    arc: `M ${d.x + w * sign} ${d.y} A ${w} ${w} 0 0 ${d.hinge * sign > 0 ? 1 : 0} ${d.x} ${y2}`,
+    gap: `M ${d.x} ${d.y} L ${d.x} ${y2}`,
+  }
+}
+
+const shapes = computed(() => {
+  const p = plan.value
+  const doors = new Map(p.units.map((u) => [u.id, u.door]))
+  return units.value.map((u) => {
+    // Saqlangan shakl 0–1 da, reja esa metrda: kontent operatori chizgan
+    // o‘zgarish ham shu yerda ko‘rinadi
     const points = u.polygon.map((point) => {
       const [x, y] = pointOf(point)
-      return [x * 100, y * 100] as [number, number]
+      return [x * p.width, y * p.height] as [number, number]
     })
+    const door = doors.get(u.id)
     return {
       id: u.id,
       code: u.code,
       status: u.status,
       areaLabel: area(u.area),
       fill: STATUS_FILL[u.status] ?? '#CBD4E3',
-      points: points.map((p) => `${p[0].toFixed(2)},${p[1].toFixed(2)}`).join(' '),
-      cx: points.reduce((s, p) => s + p[0], 0) / points.length,
-      cy: points.reduce((s, p) => s + p[1], 0) / points.length,
+      points: points.map((q) => `${q[0].toFixed(2)},${q[1].toFixed(2)}`).join(' '),
+      cx: points.reduce((s, q) => s + q[0], 0) / points.length,
+      cy: points.reduce((s, q) => s + q[1], 0) / points.length,
+      door: door ? doorPath(door) : null,
     }
-  }),
-)
+  })
+})
+
+/** Reja ostidagi o‘lcham zanjiri: qavatning tashqi eni va bo‘yi */
+const planLabel = computed(() => {
+  const p = plan.value
+  return {
+    width: `${p.width.toFixed(1)} m`,
+    height: `${p.height.toFixed(1)} m`,
+    gross: `${num(Math.round(p.grossArea))} m²`,
+    efficiency: `${Math.round(p.efficiency * 100)}%`,
+  }
+})
 
 /** Tanlangan unitning reja shakli, modal ichidagi belgini joylash uchun */
 const selectedShape = computed(() => {
@@ -125,26 +177,39 @@ const selectedShape = computed(() => {
   return shapes.value.find((s) => s.id === unit.id) ?? null
 })
 
+/** Faqat unitlar ko‘rinadigan chegara, metrda */
 const bounds = computed(() => {
+  const p = plan.value
   const points = units.value.flatMap((u) => u.polygon)
-  if (!points.length) return { x: 0, y: 0, w: 100, h: 100 }
-  const xs = points.map((p) => p[0]! * 100)
-  const ys = points.map((p) => p[1]! * 100)
-  const minX = Math.min(...xs) - 4
-  const maxX = Math.max(...xs) + 4
-  const minY = Math.min(...ys) - 4
-  const maxY = Math.max(...ys) + 4
+  if (!points.length) return { x: 0, y: 0, w: p.width, h: p.height }
+  const xs = points.map((q) => q[0]! * p.width)
+  const ys = points.map((q) => q[1]! * p.height)
+  const pad = Math.max(p.width, p.height) * 0.04
+  const minX = Math.min(...xs) - pad
+  const maxX = Math.max(...xs) + pad
+  const minY = Math.min(...ys) - pad
+  const maxY = Math.max(...ys) + pad
   return { x: minX, y: minY, w: maxX - minX, h: maxY - minY }
 })
 
+/** O‘lcham chizig‘i va shimol ko‘rsatkichi uchun reja atrofida joy qoldiriladi */
+const margin = computed(() => Math.max(plan.value.width, plan.value.height) * 0.09)
+
 const viewBox = computed(() => {
-  const base = fitMode.value ? bounds.value : { x: 0, y: 0, w: 100, h: 100 }
+  const p = plan.value
+  const m = margin.value
+  const base = fitMode.value
+    ? bounds.value
+    : { x: -m, y: -m, w: p.width + m * 2, h: p.height + m * 2 }
   const w = base.w / zoom.value
   const h = base.h / zoom.value
   const cx = base.x + base.w / 2
   const cy = base.y + base.h / 2
   return `${(cx - w / 2).toFixed(2)} ${(cy - h / 2).toFixed(2)} ${w.toFixed(2)} ${h.toFixed(2)}`
 })
+
+/** Chiziq qalinligi va shrift kattaligi qavat o‘lchamiga moslashadi */
+const scale = computed(() => Math.max(plan.value.width, plan.value.height) / 100)
 
 const stats = computed(() => {
   const total = units.value.reduce((s, u) => s + u.area, 0)
@@ -363,18 +428,94 @@ function goApply() {
                   :viewBox="viewBox"
                   class="h-[440px] w-full"
                   role="img"
-                  :aria-label="`${floorTitle} sketch-rejasi`"
+                  :aria-label="`${floorTitle} rejasi, ${planLabel.width} × ${planLabel.height}`"
                 >
+                  <defs>
+                    <pattern
+                      id="core-hatch"
+                      :width="scale * 1.6"
+                      :height="scale * 1.6"
+                      patternUnits="userSpaceOnUse"
+                      patternTransform="rotate(45)"
+                    >
+                      <line
+                        x1="0"
+                        y1="0"
+                        x2="0"
+                        :y2="scale * 1.6"
+                        stroke="#8494AC"
+                        :stroke-width="scale * 0.3"
+                      />
+                    </pattern>
+                  </defs>
+
+                  <!-- Qavat plitasi va tashqi devor: qalinlik haqiqiy o‘lchamda -->
                   <rect
-                    x="1.5"
-                    y="3"
-                    width="97"
-                    height="94"
-                    rx="1.2"
+                    x="0"
+                    y="0"
+                    :width="plan.width"
+                    :height="plan.height"
                     fill="#FFFFFF"
-                    stroke="#354152"
-                    stroke-width="0.7"
+                    stroke="#131C2B"
+                    :stroke-width="plan.wallOuter"
                   />
+
+                  <!-- Fasaddagi deraza yo‘laklari -->
+                  <line
+                    v-for="(w, i) in plan.windows"
+                    :key="`wg-${i}`"
+                    :x1="w.x1"
+                    :y1="w.y1"
+                    :x2="w.x2"
+                    :y2="w.y2"
+                    stroke="#FFFFFF"
+                    :stroke-width="plan.wallOuter * 1.1"
+                  />
+                  <line
+                    v-for="(w, i) in plan.windows"
+                    :key="`wl-${i}`"
+                    :x1="w.x1"
+                    :y1="w.y1"
+                    :x2="w.x2"
+                    :y2="w.y2"
+                    stroke="#54617A"
+                    :stroke-width="scale * 0.22"
+                  />
+
+                  <!-- Koridor -->
+                  <rect
+                    v-for="(c, i) in plan.corridors"
+                    :key="`c-${i}`"
+                    :x="c.x"
+                    :y="c.y"
+                    :width="c.w"
+                    :height="c.h"
+                    fill="#F1F5FB"
+                  />
+
+                  <!-- Xizmat yadrosi: lift, zinapoya, sanitar tugun -->
+                  <g v-for="(c, i) in plan.core" :key="`k-${i}`">
+                    <rect
+                      :x="c.rect.x"
+                      :y="c.rect.y"
+                      :width="c.rect.w"
+                      :height="c.rect.h"
+                      fill="url(#core-hatch)"
+                      fill-opacity="0.5"
+                      stroke="#54617A"
+                      :stroke-width="plan.wallInner * 1.6"
+                    />
+                    <text
+                      :x="c.rect.x + c.rect.w / 2"
+                      :y="c.rect.y + c.rect.h / 2 + scale * 0.5"
+                      text-anchor="middle"
+                      :font-size="scale * 1.7"
+                      fill="#354152"
+                      font-weight="600"
+                    >
+                      {{ c.label }}
+                    </text>
+                  </g>
 
                   <g
                     v-for="s in shapes"
@@ -387,15 +528,32 @@ function goApply() {
                     <polygon
                       :points="s.points"
                       :fill="s.fill"
-                      :fill-opacity="selected?.id === s.id ? 0.42 : 0.24"
-                      :stroke="selected?.id === s.id ? '#0256F7' : s.fill"
-                      :stroke-width="selected?.id === s.id ? 1.4 : 0.7"
+                      :fill-opacity="selected?.id === s.id ? 0.34 : 0.16"
+                      :stroke="selected?.id === s.id ? '#0256F7' : '#354152'"
+                      :stroke-width="
+                        selected?.id === s.id ? plan.wallInner * 3 : plan.wallInner * 1.6
+                      "
+                      stroke-linejoin="miter"
                     />
+
+                    <!-- Eshik: devordagi tirqish, qanot va burilish yoyi -->
+                    <template v-if="s.door">
+                      <path :d="s.door.gap" stroke="#FFFFFF" :stroke-width="plan.wallInner * 2.4" />
+                      <path
+                        :d="s.door.arc"
+                        fill="none"
+                        stroke="#8494AC"
+                        :stroke-width="scale * 0.16"
+                        stroke-dasharray="0.4 0.35"
+                      />
+                      <path :d="s.door.leaf" stroke="#354152" :stroke-width="scale * 0.24" />
+                    </template>
+
                     <text
                       :x="s.cx"
                       :y="s.cy"
                       text-anchor="middle"
-                      font-size="3.6"
+                      :font-size="scale * 2.4"
                       font-weight="700"
                       fill="#131C2B"
                     >
@@ -403,12 +561,97 @@ function goApply() {
                     </text>
                     <text
                       :x="s.cx"
-                      :y="s.cy + 4.4"
+                      :y="s.cy + scale * 3"
                       text-anchor="middle"
-                      font-size="2.5"
-                      fill="#64748B"
+                      :font-size="scale * 1.7"
+                      fill="#54617A"
                     >
                       {{ s.areaLabel }}
+                    </text>
+                  </g>
+
+                  <!-- O‘lcham zanjiri: qavatning tashqi eni va bo‘yi -->
+                  <g stroke="#8494AC" :stroke-width="scale * 0.16" fill="none">
+                    <line
+                      x1="0"
+                      :y1="plan.height + margin * 0.45"
+                      :x2="plan.width"
+                      :y2="plan.height + margin * 0.45"
+                    />
+                    <line
+                      x1="0"
+                      :y1="plan.height + margin * 0.3"
+                      x2="0"
+                      :y2="plan.height + margin * 0.6"
+                    />
+                    <line
+                      :x1="plan.width"
+                      :y1="plan.height + margin * 0.3"
+                      :x2="plan.width"
+                      :y2="plan.height + margin * 0.6"
+                    />
+                    <line
+                      :x1="plan.width + margin * 0.45"
+                      y1="0"
+                      :x2="plan.width + margin * 0.45"
+                      :y2="plan.height"
+                    />
+                    <line
+                      :x1="plan.width + margin * 0.3"
+                      y1="0"
+                      :x2="plan.width + margin * 0.6"
+                      y2="0"
+                    />
+                    <line
+                      :x1="plan.width + margin * 0.3"
+                      :y1="plan.height"
+                      :x2="plan.width + margin * 0.6"
+                      :y2="plan.height"
+                    />
+                  </g>
+                  <text
+                    :x="plan.width / 2"
+                    :y="plan.height + margin * 0.8"
+                    text-anchor="middle"
+                    :font-size="scale * 2"
+                    fill="#54617A"
+                  >
+                    {{ planLabel.width }}
+                  </text>
+                  <text
+                    :x="plan.width + margin * 0.75"
+                    :y="plan.height / 2"
+                    text-anchor="middle"
+                    :font-size="scale * 2"
+                    fill="#54617A"
+                    :transform="`rotate(-90 ${plan.width + margin * 0.75} ${plan.height / 2})`"
+                  >
+                    {{ planLabel.height }}
+                  </text>
+
+                  <!-- Shimol ko‘rsatkichi -->
+                  <g :transform="`translate(${-margin * 0.55} ${margin * 0.2})`">
+                    <circle
+                      cx="0"
+                      cy="0"
+                      :r="scale * 2.6"
+                      fill="none"
+                      stroke="#8494AC"
+                      :stroke-width="scale * 0.16"
+                    />
+                    <path
+                      :d="`M 0 ${-scale * 2.6} L ${scale * 0.9} ${scale * 0.7} L 0 ${scale * 0.2} L ${-scale * 0.9} ${scale * 0.7} Z`"
+                      fill="#354152"
+                    />
+                    <text
+                      x="0"
+                      :y="scale * 4.6"
+                      text-anchor="middle"
+                      :font-size="scale * 1.8"
+                      fill="#54617A"
+                      font-weight="700"
+                    >
+                      SH
                     </text>
                   </g>
                 </svg>

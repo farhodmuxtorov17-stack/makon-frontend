@@ -21,6 +21,7 @@ defineProps<{
   types: CatalogTypeOption[]
   sortOptions: Array<{ value: string; label: string }>
   distanceOptions: Array<{ value: string; label: string }>
+  usageOptions: Array<{ value: string; label: string }>
   activeCount: number
 }>()
 
@@ -35,6 +36,8 @@ const selected = defineModel<string[]>('selected', { required: true })
 const areaMin = defineModel<string | number>('areaMin', { required: true })
 const areaMax = defineModel<string | number>('areaMax', { required: true })
 const distance = defineModel<string>('distance', { required: true })
+// Maqsad mulk turidan alohida: biznes markazda ham ombor xonasi bo‘lishi mumkin
+const usage = defineModel<string>('usage', { required: true })
 
 function toggleType(value: string) {
   selected.value = selected.value.includes(value)
@@ -164,6 +167,17 @@ function toggleType(value: string) {
           />
         </label>
       </div>
+    </section>
+
+    <section>
+      <p class="text-[11px] font-bold uppercase tracking-wide text-ink-500">Maydon maqsadi</p>
+      <UiSelect
+        v-model="usage"
+        :options="usageOptions"
+        size="sm"
+        class="mt-2"
+        aria-label="Maydon qanday maqsadda ishlatiladi"
+      />
     </section>
 
     <section>
