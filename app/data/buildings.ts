@@ -1,4 +1,8 @@
-import { reactive } from 'vue'
+import { computed, reactive } from 'vue'
+import { INVOICES, settledInvoices } from './business'
+import { SERVICE_REQUESTS } from './operations'
+import { UNITS } from './units'
+import { todayIso } from '~/utils/format'
 
 export interface Building {
   id: string
@@ -13,17 +17,23 @@ export interface Building {
   buildingClass: string
   floors: number
   undergroundFloors: number
+  /** UNITS reyestridagi shu obyekt unitlari soni */
   units: number
+  /** Band unitlar: shartnoma bo‘yicha ijaradagi yoki sotilgan */
   occupiedUnits: number
+  /** Bo‘sh unitlar: ijaraga taklif qilinayotganlari */
   vacantUnits: number
-  /** Ijaraga beriladigan umumiy maydon, m² */
+  /** Ijaraga beriladigan umumiy maydon, m²: unit reja maydonlari yig‘indisi */
   gla: number
+  /** Bo‘sh unitlar maydoni, m² */
   vacantArea: number
+  /** Bandlik, %: maydon bo‘yicha (GLA dan bo‘sh maydon chegirilgani) */
   occupancy: number
   monthlyRevenue: number
+  /** Qarzdorlik: to‘lanmagan hisob-faktura qoldiqlari, INVOICES reyestridan */
   debt: number
   sla: number
-  /** Joriy davrdagi servis arizalari soni */
+  /** SERVICE_REQUESTS reyestridagi shu obyektga tegishli arizalar soni */
   serviceRequests: number
   /** Xaritadagi haqiqiy joylashuv */
   lat: number
@@ -39,7 +49,129 @@ export interface Building {
   equipment: string[]
 }
 
-export const BUILDINGS: Building[] = reactive([
+/**
+ * Reyestrdan hisoblanadigan maydonlar. Bino yozuvida qo‘lda saqlanmaydi:
+ * yagona manba unit reyestri (units.ts), hisob-faktura reyestri (business.ts)
+ * va servis arizalari reyestri (operations.ts) bo‘ladi. Shuning uchun bino
+ * pasporti, qavat rejasi, 3D ko‘rinish va hujjatlardagi raqamlar bir xil.
+ */
+export type DerivedBuildingKey =
+  | 'units'
+  | 'occupiedUnits'
+  | 'vacantUnits'
+  | 'gla'
+  | 'vacantArea'
+  | 'occupancy'
+  | 'debt'
+  | 'serviceRequests'
+
+/** Bino pasportining qo‘lda yuritiladigan qismi */
+export type BuildingSeed = Omit<Building, DerivedBuildingKey>
+
+export interface BuildingUnitStats {
+  units: number
+  occupiedUnits: number
+  vacantUnits: number
+  gla: number
+  vacantArea: number
+  occupancy: number
+}
+
+/** Kasr maydonlar yig‘indisidagi suzuvchi nuqta shovqinini olib tashlaydi */
+function round2(value: number): number {
+  return Math.round(value * 100) / 100
+}
+
+/**
+ * Bino bo‘yicha unit reyestri kesimi, bitta o‘tishda hisoblanadi. Bandlik
+ * maydon bo‘yicha o‘lchanadi: qavat rejasi va 3D ko‘rinish ham aynan shu
+ * formuladan foydalanadi, shuning uchun uch ekranda bir xil foiz chiqadi.
+ */
+export function unitStatsOf(buildingId: string): BuildingUnitStats {
+  let units = 0
+  let occupiedUnits = 0
+  let vacantUnits = 0
+  let gla = 0
+  let vacantArea = 0
+
+  for (const unit of UNITS) {
+    if (unit.buildingId !== buildingId) continue
+    units += 1
+    gla += unit.area
+    if (unit.status === 'RENTED' || unit.status === 'SOLD') occupiedUnits += 1
+    if (unit.status === 'VACANT') {
+      vacantUnits += 1
+      vacantArea += unit.area
+    }
+  }
+
+  gla = round2(gla)
+  vacantArea = round2(vacantArea)
+
+  return {
+    units,
+    occupiedUnits,
+    vacantUnits,
+    gla,
+    vacantArea,
+    occupancy: gla ? Math.round(((gla - vacantArea) / gla) * 100) : 0,
+  }
+}
+
+/**
+ * Qarzdorlikning yagona ta’rifi: to‘lanmagan hisob-faktura qoldiqlari.
+ * Billing jamlari, qarzdorlar ro‘yxati va bino kartochkasi shu manbadan
+ * o‘qiydi, shuning uchun uchala ekranda bir xil summa turadi.
+ */
+export function invoiceDebtOf(buildingName: string): number {
+  return settledInvoices(INVOICES)
+    .filter((invoice) => invoice.buildingName === buildingName)
+    .reduce((sum, invoice) => sum + Math.max(0, invoice.total - invoice.paid), 0)
+}
+
+/** Servis arizalari reyestridagi shu obyektga tegishli yozuvlar soni */
+export function serviceRequestCountOf(buildingName: string): number {
+  return SERVICE_REQUESTS.filter((request) => request.buildingName === buildingName).length
+}
+
+/**
+ * Yozuvga reyestrdan o‘qiydigan maydonlarni ulaydi. Qiymatlar `computed`
+ * orqali keshlanadi: reyestr o‘zgarmaguncha qayta hisoblanmaydi, o‘zgarganda
+ * esa barcha sahifada darhol yangilanadi. Hisoblash faqat maydon o‘qilganda
+ * ishga tushadi, modul yuklanayotganda emas.
+ *
+ * Setter ataylab bo‘sh qoldirilgan: shartnoma faollashtirilganda bino
+ * statistikasini qo‘lda oshirmoqchi bo‘lgan eski kod xato bermaydi, qiymat
+ * esa baribir reyestrdan olinadi.
+ */
+function withRegistryStats(seed: BuildingSeed): Building {
+  const record = reactive({ ...seed }) as Building
+  const stats = computed(() => unitStatsOf(record.id))
+  const debt = computed(() => invoiceDebtOf(record.name))
+  const requests = computed(() => serviceRequestCountOf(record.name))
+
+  const derive = (key: DerivedBuildingKey, read: () => number) => {
+    Object.defineProperty(record, key, {
+      enumerable: true,
+      configurable: true,
+      get: read,
+      set: () => {},
+    })
+  }
+
+  derive('units', () => stats.value.units)
+  derive('occupiedUnits', () => stats.value.occupiedUnits)
+  derive('vacantUnits', () => stats.value.vacantUnits)
+  derive('gla', () => stats.value.gla)
+  derive('vacantArea', () => stats.value.vacantArea)
+  derive('occupancy', () => stats.value.occupancy)
+  derive('debt', () => debt.value)
+  derive('serviceRequests', () => requests.value)
+
+  return record
+}
+
+const BUILDING_SEEDS: BuildingSeed[] = [
   {
     id: 'b-01',
     code: 'BIN-0001',
@@ -53,16 +185,8 @@ export const BUILDINGS: Building[] = reactive([
     buildingClass: 'A klass',
     floors: 12,
     undergroundFloors: 2,
-    units: 192,
-    occupiedUnits: 177,
-    vacantUnits: 15,
-    gla: 120000,
-    vacantArea: 9600,
-    occupancy: 92,
     monthlyRevenue: 3420000000,
-    debt: 18200000,
     sla: 97,
-    serviceRequests: 42,
     lat: 41.3167,
     lon: 69.2833,
     photo: 'green-business-center',
@@ -92,16 +216,8 @@ export const BUILDINGS: Building[] = reactive([
     buildingClass: 'A klass',
     floors: 6,
     undergroundFloors: 1,
-    units: 148,
-    occupiedUnits: 130,
-    vacantUnits: 18,
-    gla: 98500,
-    vacantArea: 11820,
-    occupancy: 88,
     monthlyRevenue: 2810000000,
-    debt: 22500000,
     sla: 95,
-    serviceRequests: 36,
     lat: 41.2756,
     lon: 69.2036,
     photo: 'mega-mall',
@@ -131,16 +247,8 @@ export const BUILDINGS: Building[] = reactive([
     buildingClass: 'B klass',
     floors: 3,
     undergroundFloors: 0,
-    units: 64,
-    occupiedUnits: 54,
-    vacantUnits: 10,
-    gla: 75000,
-    vacantArea: 12000,
-    occupancy: 84,
     monthlyRevenue: 1920000000,
-    debt: 27400000,
     sla: 96,
-    serviceRequests: 24,
     lat: 41.26,
     lon: 69.59,
     photo: 'industrial-park-2',
@@ -170,16 +278,8 @@ export const BUILDINGS: Building[] = reactive([
     buildingClass: 'A klass',
     floors: 16,
     undergroundFloors: 2,
-    units: 128,
-    occupiedUnits: 106,
-    vacantUnits: 22,
-    gla: 80000,
-    vacantArea: 13600,
-    occupancy: 83,
     monthlyRevenue: 2280000000,
-    debt: 31600000,
     sla: 94,
-    serviceRequests: 30,
     lat: 41.2831,
     lon: 69.25,
     photo: 'harmony-residence',
@@ -209,16 +309,8 @@ export const BUILDINGS: Building[] = reactive([
     buildingClass: 'B+ klass',
     floors: 8,
     undergroundFloors: 1,
-    units: 96,
-    occupiedUnits: 77,
-    vacantUnits: 19,
-    gla: 51900,
-    vacantArea: 10380,
-    occupancy: 80,
     monthlyRevenue: 2110000000,
-    debt: 25700000,
     sla: 95,
-    serviceRequests: 24,
     lat: 41.345,
     lon: 69.287,
     photo: 'urban-office',
@@ -248,16 +340,8 @@ export const BUILDINGS: Building[] = reactive([
     buildingClass: 'B+ klass',
     floors: 4,
     undergroundFloors: 1,
-    units: 112,
-    occupiedUnits: 97,
-    vacantUnits: 15,
-    gla: 54000,
-    vacantArea: 7020,
-    occupancy: 87,
     monthlyRevenue: 1350000000,
-    debt: 16400000,
     sla: 94,
-    serviceRequests: 28,
     lat: 41.3268,
     lon: 69.2354,
     photo: 'mega-mall-2',
@@ -287,16 +371,8 @@ export const BUILDINGS: Building[] = reactive([
     buildingClass: 'A klass',
     floors: 18,
     undergroundFloors: 2,
-    units: 156,
-    occupiedUnits: 142,
-    vacantUnits: 14,
-    gla: 96000,
-    vacantArea: 8640,
-    occupancy: 91,
     monthlyRevenue: 2784000000,
-    debt: 14900000,
     sla: 97,
-    serviceRequests: 38,
     lat: 41.3379,
     lon: 69.2846,
     photo: 'green-business-center-2',
@@ -326,16 +402,8 @@ export const BUILDINGS: Building[] = reactive([
     buildingClass: 'B klass',
     floors: 2,
     undergroundFloors: 0,
-    units: 48,
-    occupiedUnits: 41,
-    vacantUnits: 7,
-    gla: 62000,
-    vacantArea: 9300,
-    occupancy: 85,
     monthlyRevenue: 1178000000,
-    debt: 19800000,
     sla: 95,
-    serviceRequests: 18,
     lat: 41.2794,
     lon: 69.3418,
     photo: 'industrial-park-2-2',
@@ -365,16 +433,8 @@ export const BUILDINGS: Building[] = reactive([
     buildingClass: 'B+ klass',
     floors: 9,
     undergroundFloors: 1,
-    units: 104,
-    occupiedUnits: 88,
-    vacantUnits: 16,
-    gla: 46800,
-    vacantArea: 7020,
-    occupancy: 85,
     monthlyRevenue: 1264000000,
-    debt: 21300000,
     sla: 94,
-    serviceRequests: 26,
     lat: 41.2831,
     lon: 69.2043,
     photo: 'urban-office-2',
@@ -404,16 +464,8 @@ export const BUILDINGS: Building[] = reactive([
     buildingClass: 'A klass',
     floors: 14,
     undergroundFloors: 2,
-    units: 144,
-    occupiedUnits: 122,
-    vacantUnits: 22,
-    gla: 72000,
-    vacantArea: 10800,
-    occupancy: 85,
     monthlyRevenue: 2016000000,
-    debt: 28900000,
     sla: 95,
-    serviceRequests: 34,
     lat: 41.3305,
     lon: 69.3358,
     photo: 'harmony-residence',
@@ -443,16 +495,8 @@ export const BUILDINGS: Building[] = reactive([
     buildingClass: 'B+ klass',
     floors: 2,
     undergroundFloors: 0,
-    units: 56,
-    occupiedUnits: 49,
-    vacantUnits: 7,
-    gla: 68000,
-    vacantArea: 8160,
-    occupancy: 88,
     monthlyRevenue: 1360000000,
-    debt: 17600000,
     sla: 96,
-    serviceRequests: 20,
     lat: 41.2208,
     lon: 69.2276,
     photo: 'industrial-park-2-3',
@@ -482,16 +526,8 @@ export const BUILDINGS: Building[] = reactive([
     buildingClass: 'B+ klass',
     floors: 10,
     undergroundFloors: 1,
-    units: 132,
-    occupiedUnits: 111,
-    vacantUnits: 21,
-    gla: 58500,
-    vacantArea: 9360,
-    occupancy: 84,
     monthlyRevenue: 1521000000,
-    debt: 23400000,
     sla: 93,
-    serviceRequests: 30,
     lat: 41.3487,
     lon: 69.2168,
     photo: 'green-business-center-3',
@@ -521,16 +557,8 @@ export const BUILDINGS: Building[] = reactive([
     buildingClass: 'B klass',
     floors: 3,
     undergroundFloors: 0,
-    units: 86,
-    occupiedUnits: 71,
-    vacantUnits: 15,
-    gla: 38400,
-    vacantArea: 6528,
-    occupancy: 83,
     monthlyRevenue: 883000000,
-    debt: 14700000,
     sla: 93,
-    serviceRequests: 22,
     lat: 41.2925,
     lon: 69.1706,
     photo: 'mega-mall-3',
@@ -560,16 +588,8 @@ export const BUILDINGS: Building[] = reactive([
     buildingClass: 'C klass',
     floors: 1,
     undergroundFloors: 0,
-    units: 32,
-    occupiedUnits: 25,
-    vacantUnits: 7,
-    gla: 41000,
-    vacantArea: 9020,
-    occupancy: 78,
     monthlyRevenue: 615000000,
-    debt: 12800000,
     sla: 92,
-    serviceRequests: 12,
     lat: 41.2087,
     lon: 69.3402,
     photo: 'industrial-park-2-4',
@@ -599,16 +619,8 @@ export const BUILDINGS: Building[] = reactive([
     buildingClass: 'A klass',
     floors: 11,
     undergroundFloors: 2,
-    units: 118,
-    occupiedUnits: 106,
-    vacantUnits: 12,
-    gla: 52800,
-    vacantArea: 5280,
-    occupancy: 90,
     monthlyRevenue: 1584000000,
-    debt: 11200000,
     sla: 97,
-    serviceRequests: 28,
     lat: 41.2947,
     lon: 69.2718,
     photo: 'urban-office-3',
@@ -638,16 +650,8 @@ export const BUILDINGS: Building[] = reactive([
     buildingClass: 'A klass',
     floors: 13,
     undergroundFloors: 2,
-    units: 124,
-    occupiedUnits: 110,
-    vacantUnits: 14,
-    gla: 64500,
-    vacantArea: 7095,
-    occupancy: 89,
     monthlyRevenue: 1871000000,
-    debt: 18600000,
     sla: 96,
-    serviceRequests: 32,
     lat: 41.2762,
     lon: 69.2437,
     photo: 'green-business-center',
@@ -677,16 +681,8 @@ export const BUILDINGS: Building[] = reactive([
     buildingClass: 'B+ klass',
     floors: 2,
     undergroundFloors: 0,
-    units: 72,
-    occupiedUnits: 65,
-    vacantUnits: 7,
-    gla: 84000,
-    vacantArea: 8400,
-    occupancy: 90,
     monthlyRevenue: 1680000000,
-    debt: 15300000,
     sla: 96,
-    serviceRequests: 22,
     lat: 41.2296,
     lon: 69.1042,
     photo: 'industrial-park-2',
@@ -716,16 +712,8 @@ export const BUILDINGS: Building[] = reactive([
     buildingClass: 'B klass',
     floors: 6,
     undergroundFloors: 0,
-    units: 74,
-    occupiedUnits: 59,
-    vacantUnits: 15,
-    gla: 31500,
-    vacantArea: 6300,
-    occupancy: 80,
     monthlyRevenue: 725000000,
-    debt: 16900000,
     sla: 93,
-    serviceRequests: 18,
     lat: 41.3892,
     lon: 69.5187,
     photo: 'urban-office-4',
@@ -755,16 +743,8 @@ export const BUILDINGS: Building[] = reactive([
     buildingClass: 'B+ klass',
     floors: 12,
     undergroundFloors: 1,
-    units: 116,
-    occupiedUnits: 95,
-    vacantUnits: 21,
-    gla: 58000,
-    vacantArea: 10440,
-    occupancy: 82,
     monthlyRevenue: 1392000000,
-    debt: 26700000,
     sla: 94,
-    serviceRequests: 28,
     lat: 41.2958,
     lon: 69.3216,
     photo: 'harmony-residence',
@@ -794,16 +774,8 @@ export const BUILDINGS: Building[] = reactive([
     buildingClass: 'B klass',
     floors: 7,
     undergroundFloors: 1,
-    units: 82,
-    occupiedUnits: 66,
-    vacantUnits: 16,
-    gla: 34200,
-    vacantArea: 6840,
-    occupancy: 80,
     monthlyRevenue: 787000000,
-    debt: 20400000,
     sla: 93,
-    serviceRequests: 20,
     lat: 41.3162,
     lon: 69.2287,
     photo: 'urban-office',
@@ -833,16 +805,8 @@ export const BUILDINGS: Building[] = reactive([
     buildingClass: 'A klass',
     floors: 4,
     undergroundFloors: 1,
-    units: 128,
-    occupiedUnits: 116,
-    vacantUnits: 12,
-    gla: 71000,
-    vacantArea: 6390,
-    occupancy: 91,
     monthlyRevenue: 2130000000,
-    debt: 13700000,
     sla: 97,
-    serviceRequests: 34,
     lat: 41.2334,
     lon: 69.2451,
     photo: 'mega-mall-4',
@@ -872,16 +836,8 @@ export const BUILDINGS: Building[] = reactive([
     buildingClass: 'A klass',
     floors: 17,
     undergroundFloors: 2,
-    units: 136,
-    occupiedUnits: 119,
-    vacantUnits: 17,
-    gla: 68000,
-    vacantArea: 8160,
-    occupancy: 88,
     monthlyRevenue: 1904000000,
-    debt: 22100000,
     sla: 96,
-    serviceRequests: 32,
     lat: 41.3634,
     lon: 69.3021,
     photo: 'harmony-residence',
@@ -898,7 +854,13 @@ export const BUILDINGS: Building[] = reactive([
     ],
     equipment: ['Lift (4)', 'Generator', 'Yong‘in signalizatsiyasi', 'Suv nasosi', 'CCTV'],
   },
-])
+]
+
+/**
+ * Bino reyestri: pasport ma’lumoti seed ro‘yxatidan, jamlar esa unit va
+ * hisob-faktura reyestrlaridan keladi.
+ */
+export const BUILDINGS: Building[] = reactive(BUILDING_SEEDS.map(withRegistryStats))
 
 const sumBy = (pick: (b: Building) => number) => BUILDINGS.reduce((s, b) => s + pick(b), 0)
 
@@ -1009,8 +971,17 @@ const TREND_MONTHS = [
   'Dekabr',
 ]
 
-/** Reyestrdagi ko‘rsatkichlar shu oy holatiga tegishli */
-export const REPORT_PERIOD = { year: 2025, month: 4 }
+/**
+ * Hisobot davri tizim sanasidan olinadi, qo‘lda qotirilmaydi: grafik oynasi
+ * doim joriy oyda tugaydi. `month` — noldan boshlanadigan indeks,
+ * `TREND_MONTHS` bilan bir xil.
+ */
+export const REPORT_PERIOD = currentReportPeriod()
+
+function currentReportPeriod(): { year: number; month: number } {
+  const [year, month] = todayIso().split('-')
+  return { year: Number(year), month: Number(month) - 1 }
+}
 
 /** Grafik oynasi: har bir variant joriy hisobot oyida tugaydi */
 export const TREND_SPANS = [
@@ -1038,15 +1009,17 @@ export const TREND_INDEX = {
 
 export type TrendKey = keyof typeof TREND_INDEX
 
-/** Oyna oxiri joriy hisobot oyi bo‘ladigan oy nomlari */
+/**
+ * Oyna oxiri joriy hisobot oyi bo‘ladigan oy nomlari. Yil har bir yorliqda
+ * ko‘rsatiladi: aks holda oyna yil chegarasidan o‘tganda qaysi yil chizilgani
+ * noaniq qoladi.
+ */
 export function trendLabels(span: number): string[] {
   return Array.from({ length: span }, (_, i) => {
     const shifted = REPORT_PERIOD.month - (span - 1 - i)
     const year = REPORT_PERIOD.year + Math.floor(shifted / 12)
     const month = ((shifted % 12) + 12) % 12
-    return year === REPORT_PERIOD.year
-      ? TREND_MONTHS[month]!
-      : `${TREND_MONTHS[month]} ${String(year).slice(2)}`
+    return `${TREND_MONTHS[month]} ${String(year).slice(2)}`
   })
 }
 

@@ -1,8 +1,10 @@
 import { defineStore } from 'pinia'
 import { BUILDINGS, buildingById } from '~/data/buildings'
 import { UNITS, unitById } from '~/data/units'
-import { CONTRACTS, INVOICES } from '~/data/business'
-import { num } from '~/utils/format'
+import { agingKeyOf, statusOf, CONTRACTS, INVOICES, type Invoice } from '~/data/business'
+import { formatStir, organizationByStir, stirDigits, LANDLORD_STIR } from '~/data/organizations'
+import { UNIT_STATUS } from '~/constants/statuses'
+import { num, todayIso } from '~/utils/format'
 import { docxBlob, type DocxLine } from '~/utils/docx'
 
 /**
@@ -93,6 +95,8 @@ export interface SchedulePeriod {
   service: number
   total: number
   status: 'PLANNED' | 'ISSUED' | 'PAID'
+  /** Davr uchun chiqarilgan hisob-faktura raqami, chiqarilmagan davrda bo‘sh */
+  invoiceCode?: string
 }
 
 export interface ContractParty {
@@ -103,6 +107,12 @@ export interface ContractParty {
   phone: string
   email: string
   address: string
+  /** Bank nomi va filiali, tashkilotlar reyestridan olinadi */
+  bank: string
+  /** Hisob raqami */
+  account: string
+  /** Bank kodi; reyestrda topilmasa bo‘sh qoladi */
+  mfo: string
 }
 
 export interface ContractDoc {
@@ -264,17 +274,86 @@ function money(value: number) {
 }
 
 // ---------------------------------------------------------------------------
-// Ijaraga beruvchi tomon rekvizitlari
+// Hujjat kodlari: prefiks, joriy yil va reyestr bo‘yicha yagona ketma-ketlik
 
-const LANDLORD: ContractParty = {
-  role: 'Ijaraga beruvchi',
-  name: 'Makon Property Group MCHJ',
-  tin: '305 412 876',
-  director: 'Azizbek Karimov',
-  phone: '+998 78 150 00 00',
-  email: 'info@makon.uz',
-  address: 'Toshkent shahri, Mirobod tumani, Amir Temur ko‘chasi 88',
+/**
+ * Kod generatori bitta joyda turadi: reyestrdagi eng katta raqamdan davom
+ * etadi va yilni tizim sanasidan oladi. Shu sababli ijara oqimi va shartnoma
+ * reyestri bir xil yilni va bir-birini bosmaydigan raqamlarni beradi.
+ */
+function nextCode(prefix: string, used: Array<string | undefined>): string {
+  let max = 0
+  for (const code of used) {
+    const m = /(\d+)$/.exec(String(code ?? ''))
+    if (m) max = Math.max(max, Number(m[1]))
+  }
+  return `${prefix}-${todayIso().slice(0, 4)}-${String(max + 1).padStart(4, '0')}`
 }
+
+/** Reyestrdagi va hali faollashmagan qoralamalardagi kodlardan keyingi raqam */
+export function nextContractCode(extra: Array<string | undefined> = []): string {
+  return nextCode('MKON', [...CONTRACTS.map((c) => c.code), ...extra])
+}
+
+/** Hisob-faktura raqami: billing reyestridagi eng katta raqamdan keyingisi */
+export function nextInvoiceCode(extra: Array<string | undefined> = []): string {
+  return nextCode('INV', [...INVOICES.map((i) => i.code), ...extra])
+}
+
+// ---------------------------------------------------------------------------
+// Tomonlar rekvizitlari
+
+/**
+ * Bank kodlari (MFO) namunaviy ma’lumotnomasi: tashkilotlar reyestrida bank
+ * nomi va hisob raqami bor, kod esa yo‘q. Reyestrda bo‘lmagan bank uchun kod
+ * bo‘sh qoladi va shartnomada «tomon tomonidan to‘ldiriladi» deb ko‘rsatiladi.
+ */
+const BANK_MFO: Record<string, string> = {
+  'Agrobank ATB, Yashnobod filiali': '00987',
+  'Aloqabank ATB, Mirobod filiali': '00401',
+  'Asakabank ATB, Toshkent viloyat filiali': '00419',
+  'Davr Bank ATB, Yunusobod filiali': '01088',
+  'Hamkorbank ATB, Mirobod filiali': '00083',
+  'Hamkorbank ATB, Sergeli filiali': '00085',
+  'InFinBank ATB, Mirobod filiali': '00434',
+  'Ipoteka Bank ATIB, Mirobod filiali': '00443',
+  'Ipoteka Bank ATIB, Toshkent shahar filiali': '00445',
+  'Kapitalbank ATB, Chilonzor filiali': '00974',
+  'Kapitalbank ATB, Olmazor filiali': '00976',
+  'Trastbank ATB, Uchtepa filiali': '00491',
+  'Turonbank ATB, Zangiota filiali': '00358',
+  'Universal Bank ATB, Mirzo Ulug‘bek filiali': '01041',
+  'Xalq banki ATB, Shayxontohur filiali': '00279',
+}
+
+/** Shartnoma tomoni: bank rekvizitlari tashkilotlar reyestridan qo‘shiladi */
+function partyOf(role: string, org: LeaseOrg): ContractParty {
+  const record = organizationByStir(stirDigits(org.tin))
+  const bank = record?.bank ?? ''
+  return {
+    role,
+    name: org.name,
+    tin: org.tin,
+    director: org.director,
+    phone: org.phone,
+    email: org.email,
+    address: org.address,
+    bank,
+    account: record?.account ?? '',
+    mfo: bank ? (BANK_MFO[bank] ?? '') : '',
+  }
+}
+
+const LANDLORD_ORG = organizationByStir(LANDLORD_STIR)
+
+const LANDLORD: ContractParty = partyOf('Ijaraga beruvchi', {
+  name: LANDLORD_ORG?.name ?? 'Makon Property Group MCHJ',
+  tin: formatStir(LANDLORD_STIR),
+  director: LANDLORD_ORG?.director ?? 'Azizbek Karimov',
+  phone: LANDLORD_ORG?.phone ?? '+998 78 150 00 00',
+  email: LANDLORD_ORG?.email ?? 'info@makon.uz',
+  address: LANDLORD_ORG?.address ?? 'Toshkent shahri, Mirobod tumani, Amir Temur ko‘chasi 88',
+})
 
 /** Aktivlashtirish natijasi ish vaqtida bir marta qo‘llanadi (qayta yuklashda ham) */
 const appliedWorld = new Set<string>()
@@ -382,10 +461,21 @@ function contractLines(doc: ContractDoc): DocxLine[] {
   })
 
   lines.push({ text: '6. TOMONLARNING REKVIZITLARI VA IMZOLARI', style: 'heading' })
-  lines.push({ text: `${doc.landlord.role}: ${doc.landlord.name}` })
-  lines.push({ text: `${doc.landlord.director} _______________________`, style: 'small' })
-  lines.push({ text: `${doc.tenant.role}: ${doc.tenant.name}` })
-  lines.push({ text: `${doc.tenant.director} _______________________`, style: 'small' })
+  for (const p of [doc.landlord, doc.tenant]) {
+    lines.push({ text: `${p.role}: ${p.name}` })
+    lines.push({ text: `STIR: ${p.tin}`, style: 'small' })
+    lines.push({ text: `Yuridik manzil: ${p.address}`, style: 'small' })
+    lines.push({
+      text: p.bank ? `Bank: ${p.bank}` : 'Bank: shartnoma imzolashda tomon tomonidan to‘ldiriladi',
+      style: 'small',
+    })
+    lines.push({
+      text: `Hisob raqami (h/r): ${p.account || 'to‘ldiriladi'} · MFO: ${p.mfo || 'to‘ldiriladi'}`,
+      style: 'small',
+    })
+    lines.push({ text: `Telefon: ${p.phone} · E-pochta: ${p.email}`, style: 'small' })
+    lines.push({ text: `${p.director}  _______________________  M.O‘.`, style: 'small' })
+  }
 
   return lines
 }
@@ -665,8 +755,11 @@ export const useLeaseStore = defineStore('lease', {
     cases: [] as LeaseCase[],
     seeded: false,
     caseSequence: 156,
-    contractSequence: 161,
-    invoiceSequence: 700,
+    /*
+     * Shartnoma va hisob-faktura raqamlari reyestrdagi eng katta raqamdan
+     * hisoblanadi (`nextContractCode`, `nextInvoiceCode`), shuning uchun bu
+     * yerda alohida hisoblagich saqlanmaydi. Didox raqami tashqi xizmatniki.
+     */
     didoxSequence: 48210,
   }),
 
@@ -722,12 +815,20 @@ export const useLeaseStore = defineStore('lease', {
       const building = buildingById(unit.buildingId)
       if (!building) return null
 
-      this.caseSequence += 1
+      /*
+       * So‘rov turi unitning taklif turidan aniqlanadi: faqat sotuvga
+       * qo‘yilgan maydon bo‘yicha ijara arizasi ochilmaydi, aks holda sotuv
+       * so‘rovi oxirida ijara shartnomasi tuzilib qolar edi.
+       */
+      const type: LeaseRequest['type'] =
+        input.type === 'Sotib olish' || unit.offer === 'Sotuv' ? 'Sotib olish' : 'Ijaraga olish'
+
+      const code = nextCode('ARZ', this.cases.map((c) => c.code))
       const stamp = now()
 
       const item: LeaseCase = {
-        id: `a-0${this.caseSequence}`,
-        code: `ARZ-2026-0${this.caseSequence}`,
+        id: `a-${code.slice(-4)}`,
+        code,
         status: 'YANGI',
         unitId: unit.id,
         unitCode: unit.code,
@@ -739,7 +840,7 @@ export const useLeaseStore = defineStore('lease', {
         buildingAddress: `${building.city}, ${building.district}, ${building.street}`,
         org: { ...input.org },
         request: {
-          type: input.type ?? 'Ijaraga olish',
+          type,
           offerPrice: input.offerPrice,
           startDate: input.startDate,
           term: input.term,
@@ -760,11 +861,16 @@ export const useLeaseStore = defineStore('lease', {
         activation: null,
       }
 
+      const terms =
+        type === 'Sotib olish'
+          ? `sotib olish taklifi ${money(input.offerPrice)}`
+          : `${input.term} oy · ${money(input.offerPrice)}`
+
       this.log(item, {
         actor: item.contactName,
         roleLabel: item.guest ? 'Mijoz, hisobsiz' : 'Ijarachi',
-        action: 'Ariza yuborildi',
-        detail: `${building.name} · Unit ${unit.code} · ${input.term} oy · ${money(input.offerPrice)}${
+        action: type === 'Sotib olish' ? 'Sotib olish so‘rovi yuborildi' : 'Ariza yuborildi',
+        detail: `${building.name} · Unit ${unit.code} · ${terms}${
           item.guest ? ' · telefon raqami tasdiqlangan' : ''
         }`,
       })
@@ -822,24 +928,31 @@ export const useLeaseStore = defineStore('lease', {
       item.schedule = buildSchedule(item.offer, item.request, item.area)
     },
 
-    approveOperation(id: string, actor: string, offer: LeaseOffer) {
+    approveOperation(id: string, actor: string, roleLabel: string, offer: LeaseOffer) {
       const item = this.byId(id)
       if (!item || item.status !== 'YANGI') return
+      /* Ijara oqimi faqat ijara so‘rovi uchun: sotuv alohida rasmiylashtiriladi */
+      if (item.request.type !== 'Ijaraga olish') return
       this.saveOffer(id, offer)
       item.status = 'OPERATSIYA_TASDIQLADI'
       const totals = scheduleTotals(item.schedule)
       this.log(item, {
         actor,
-        roleLabel: 'Bino rahbari',
+        roleLabel,
         action: 'Operatsiya tasdiqladi',
         detail: `Oylik ijara ${money(offer.monthlyRent)}, depozit ${money(offer.deposit)}, ${totals.periods} ta to‘lov davri`,
       })
     },
 
-    /** Buxgalter moliyaviy shartlarni tasdiqlaydi, qoralama darhol tuziladi */
-    approveFinance(id: string, actor: string, offer: LeaseOffer) {
+    /**
+     * Buxgalter moliyaviy shartlarni tasdiqlaydi, qoralama darhol tuziladi.
+     * MOLIYA_TASDIQLADI holati ham qabul qilinadi: qoralama tuzilmay qolgan
+     * yozuv shu amal bilan oldinga siljiydi va oqim uzilmaydi.
+     */
+    approveFinance(id: string, actor: string, roleLabel: string, offer: LeaseOffer) {
       const item = this.byId(id)
-      if (!item || item.status !== 'OPERATSIYA_TASDIQLADI') return
+      if (!item) return
+      if (item.status !== 'OPERATSIYA_TASDIQLADI' && item.status !== 'MOLIYA_TASDIQLADI') return
 
       const before = item.offer
       const changed =
@@ -855,7 +968,7 @@ export const useLeaseStore = defineStore('lease', {
       const totals = scheduleTotals(item.schedule)
       this.log(item, {
         actor,
-        roleLabel: 'Buxgalter',
+        roleLabel,
         action: 'Moliya tasdiqladi',
         detail:
           changed && offer.adjustmentReason
@@ -870,9 +983,14 @@ export const useLeaseStore = defineStore('lease', {
     composeContract(id: string) {
       const item = this.byId(id)
       if (!item || !item.offer) return
+      if (item.request.type !== 'Ijaraga olish') return
 
-      this.contractSequence += 1
-      const code = `MKON-2026-0${this.contractSequence}`
+      /*
+       * Qayta ishlashdan keyin qoralama qayta tuzilsa, avvalgi kod saqlanadi:
+       * bitta ariza bo‘yicha reyestrda ikkita raqam paydo bo‘lmaydi.
+       */
+      const code =
+        item.contract?.code ?? nextContractCode(this.cases.map((c) => c.contract?.code))
       const startsAt = item.request.startDate
       const endsAt = addDays(addMonths(startsAt, item.request.term), -1)
       const service = serviceTotalOf(item.offer, item.area)
@@ -884,15 +1002,7 @@ export const useLeaseStore = defineStore('lease', {
         startsAt,
         endsAt,
         landlord: LANDLORD,
-        tenant: {
-          role: 'Ijarachi',
-          name: item.org.name,
-          tin: item.org.tin,
-          director: item.org.director,
-          phone: item.org.phone,
-          email: item.org.email,
-          address: item.org.address,
-        },
+        tenant: partyOf('Ijarachi', item.org),
         object: [
           { label: 'Obyekt', value: item.buildingName },
           { label: 'Manzil', value: item.buildingAddress },
@@ -940,7 +1050,11 @@ export const useLeaseStore = defineStore('lease', {
             text: 'Shartnoma Didox platformasi orqali imzolanadi. Imzolangan nusxa MAKON tizimiga yuklanadi va uning SHA-256 nazorat yig‘indisi hujjat butunligini tasdiqlaydi.',
           },
         ],
-        schedule: item.schedule.map((r) => ({ ...r })),
+        /*
+         * Grafik nusxa emas, asosiy grafikning o‘zi: davr holati o‘zgarganda
+         * shartnoma hujjatidagi jadval ham o‘sha zahoti yangilanadi.
+         */
+        schedule: item.schedule,
       }
 
       item.contract = doc
@@ -954,7 +1068,7 @@ export const useLeaseStore = defineStore('lease', {
     },
 
     /** 6-bosqich: hujjat Didox’ga yuboriladi */
-    sendToDidox(id: string, actor: string) {
+    sendToDidox(id: string, actor: string, roleLabel: string) {
       const item = this.byId(id)
       if (!item || !item.contract || item.status !== 'QORALAMA_TAYYOR') return
 
@@ -962,7 +1076,7 @@ export const useLeaseStore = defineStore('lease', {
       const stamp = now()
 
       item.didox = {
-        docNumber: `DX-2026-${this.didoxSequence}`,
+        docNumber: `DX-${todayIso().slice(0, 4)}-${this.didoxSequence}`,
         sentAt: stamp,
         sentBy: actor,
         recipient: item.org.name,

@@ -1,9 +1,24 @@
 <script setup lang="ts">
-import { SERVICE_REQUESTS, WORK_CHECKLIST, WORK_MATERIALS, type ServiceRequest } from '~/data/operations'
+import {
+  MATERIAL_REQUESTS,
+  SERVICE_REQUESTS,
+  checklistFor,
+  materialsFor,
+  materialsTotal,
+  type MaterialRequest,
+  type ServiceRequest,
+  type WorkMaterialLine,
+} from '~/data/operations'
 import type { Capability } from '~/types/rbac'
-import { dateShort, sum } from '~/utils/format'
+import { dateShort, sum, todayIso } from '~/utils/format'
 
 type ServiceStatus = ServiceRequest['status']
+
+/** Material so‘rovi reyestrdagi yozuvga asos va haqiqiy pozitsiyalarni qo‘shadi */
+interface MaterialRequestEntry extends MaterialRequest {
+  reason?: string
+  lines?: WorkMaterialLine[]
+}
 
 interface FlowAction {
   key: string
@@ -16,11 +31,15 @@ interface FlowAction {
   question: string
   /** Amalni bajarish uchun yetarli bo‘lgan huquqlar */
   capabilities: Capability[]
+  /** Murojaatchi o‘z arizasini shu bosqichda o‘zi tasdiqlashi mumkin */
+  byRequester?: boolean
 }
 
 /** Biriktirish bosqichi rahbarga ham, ijrochiga ham ochiq */
 const ASSIGN_OR_EXECUTE: Capability[] = ['workorder.assign', 'workorder.execute']
 const EXECUTE_ONLY: Capability[] = ['workorder.execute']
+/** Bajarilgan ishni ijrochining o‘zi yopmaydi: tasdiq murojaatchi tomonidan beriladi */
+const CONFIRM_ONLY: Capability[] = ['workorder.assign']
 
 const route = useRoute()
 const auth = useAuthStore()
@@ -31,16 +50,75 @@ const requests = useState<ServiceRequest[]>('service-requests', () =>
 
 const request = computed(() => requests.value.find((r) => r.id === String(route.params.id)))
 
-const checklist = ref(WORK_CHECKLIST.map((c) => ({ ...c })))
+/**
+ * Chek-list holati ariza id si bo‘yicha saqlanadi va ish topshiriqlari
+ * sahifalari bilan bitta manbani bo‘lishadi, bandlar esa ariza
+ * kategoriyasidan quriladi: santexnika ishida elektr bandi chiqmaydi.
+ */
+const checks = useState<Record<string, boolean[]>>('work-order-checks', () =>
+  Object.fromEntries(SERVICE_REQUESTS.map((r) => [r.id, checklistFor(r).map((c) => c.done)])),
+)
+
+const checklist = computed(() => {
+  const r = request.value
+  if (!r) return []
+  const items = checklistFor(r)
+  const saved = checks.value[r.id]
+  const fits = !!saved && saved.length === items.length
+  return items.map((c, i) => ({ label: c.label, done: fits ? saved![i] === true : c.done }))
+})
+
 const doneCount = computed(() => checklist.value.filter((c) => c.done).length)
 
 function toggleCheck(index: number) {
-  if (!canExecute.value) return
-  const item = checklist.value[index]
-  if (item) item.done = !item.done
+  const r = request.value
+  if (!canExecute.value || !r) return
+  const items = checklistFor(r)
+  const saved = checks.value[r.id]
+  const list =
+    saved && saved.length === items.length ? [...saved] : items.map((c) => c.done)
+  list[index] = !list[index]
+  checks.value[r.id] = list
 }
 
-const materialsTotal = WORK_MATERIALS.reduce((s, m) => s + m.qty * m.price, 0)
+/** Materiallar ariza kodiga bog‘langan: har bir arizada o‘z pozitsiyalari */
+const materials = computed(() => (request.value ? materialsFor(request.value.code) : []))
+const materialsSum = computed(() => (request.value ? materialsTotal(request.value.code) : 0))
+
+/** Material so‘rovlari reyestri: material sahifasi va ombor bilan umumiy */
+const materialRequests = useState<MaterialRequestEntry[]>('material-requests', () =>
+  MATERIAL_REQUESTS.map((r) => ({ ...r })),
+)
+
+const materialRequest = computed(() =>
+  materialRequests.value.find((m) => m.workOrder === request.value?.code),
+)
+
+/** «Material so‘rash» amalida reyestrga haqiqiy so‘rov yoziladi */
+function ensureMaterialRequest(r: ServiceRequest) {
+  const open = materialRequests.value.find(
+    (m) => m.workOrder === r.code && (m.status === 'SUBMITTED' || m.status === 'APPROVED'),
+  )
+  if (open) return
+  const lines = materialsFor(r.code)
+  if (!lines.length) return
+  const seq =
+    materialRequests.value.reduce((m, x) => Math.max(m, Number(x.code.slice(-4)) || 0), 0) + 1
+  const numbered = String(seq).padStart(4, '0')
+  materialRequests.value.unshift({
+    id: `mr-${numbered}`,
+    code: `MT-${new Date().getFullYear()}-${numbered}`,
+    workOrder: r.code,
+    requester: auth.user?.fullName ?? 'Ijrochi',
+    items: lines.length,
+    amount: lines.reduce((s, l) => s + l.qty * l.price, 0),
+    status: 'SUBMITTED',
+    createdAt: todayIso(),
+    buildingName: r.buildingName,
+    reason: `${r.code} «${r.title}» ishi bo‘yicha material talab qilinadi`,
+    lines,
+  })
+}
 
 const history = ref<Array<{ label: string; status: ServiceStatus; at: string }>>([])
 
@@ -136,14 +214,15 @@ const FLOW: Record<string, FlowAction[]> = {
   TENANT_CONFIRMATION: [
     {
       key: 'close',
-      label: 'Arizani yopish',
+      label: 'Ishni tasdiqlab yopish',
       next: 'CLOSED',
       variant: 'success',
       icon: 'check',
       progress: 100,
-      note: 'Ariza yopildi',
-      question: 'Ariza yopilsinmi?',
-      capabilities: EXECUTE_ONLY,
+      note: 'Murojaatchi ishni tasdiqladi, ariza yopildi',
+      question: 'Bajarilgan ish murojaatchi tomonidan tasdiqlandi va ariza yopilsinmi?',
+      capabilities: CONFIRM_ONLY,
+      byRequester: true,
     },
   ],
   CLOSED: [],
@@ -151,15 +230,28 @@ const FLOW: Record<string, FlowAction[]> = {
 
 const canExecute = computed(() => auth.can('workorder.execute'))
 
+/** Amal huquqi: rol huquqi yoki murojaatchining o‘z tasdig‘i */
+function allowedAction(action: FlowAction) {
+  if (action.capabilities.some((c) => auth.can(c))) return true
+  return action.byRequester === true && auth.user?.fullName === request.value?.requester
+}
+
 /** Rolga tegishli bo‘lmagan bosqich tugmasi umuman ko‘rsatilmaydi */
 const actions = computed(() =>
-  request.value
-    ? (FLOW[request.value.status] ?? []).filter((a) => a.capabilities.some((c) => auth.can(c)))
-    : [],
+  request.value ? (FLOW[request.value.status] ?? []).filter(allowedAction) : [],
 )
 
 const isClosed = computed(() => request.value?.status === 'CLOSED')
 const stageActions = computed(() => (request.value ? (FLOW[request.value.status] ?? []) : []))
+
+/** Amal huquqi yo‘q rolga bosqichni kim yopishini aytadigan matn */
+const waitingText = computed(() => {
+  const r = request.value
+  if (!r) return ''
+  if (r.status === 'TENANT_CONFIRMATION')
+    return `Bajarilgan ish murojaatchi (${r.requester}) tasdig‘ini kutmoqda: arizani ijrochi o‘zi yopmaydi.`
+  return 'Bu bosqichdagi amallarni ijrochi bajaradi. Sizning rolingizda ariza faqat kuzatiladi.'
+})
 
 const pending = ref<FlowAction | null>(null)
 const confirmOpen = computed({
@@ -172,11 +264,12 @@ const confirmOpen = computed({
 function applyAction() {
   const action = pending.value
   const r = request.value
-  if (action && r && action.capabilities.some((c) => auth.can(c))) {
+  if (action && r && allowedAction(action)) {
     r.status = action.next
     r.progress = Math.max(r.progress, action.progress)
     if (!r.assignee && canExecute.value) r.assignee = auth.user?.fullName ?? 'Ijrochi'
-    if (action.next === 'CLOSED' || action.next === 'COMPLETED') r.slaBreached = false
+    // SLA buzilgani tarixiy fakt: ish yakunlansa ham belgisi olib tashlanmaydi
+    if (action.key === 'material') ensureMaterialRequest(r)
     history.value.unshift({ label: action.note, status: action.next, at: 'Hozir' })
   }
   pending.value = null
@@ -345,7 +438,12 @@ const info = computed(() => {
             </div>
           </UiCard>
 
-          <UiCard title="Ishda ishlatilgan materiallar" :subtitle="`${WORK_MATERIALS.length} ta pozitsiya`" flush :padded="false">
+          <UiCard
+            title="Ishda ishlatilgan materiallar"
+            :subtitle="`${materials.length} ta pozitsiya`"
+            flush
+            :padded="false"
+          >
             <template #actions>
               <UiButton variant="ghost" size="sm" to="/facility/materials">
                 Material so‘rovlari
@@ -361,7 +459,8 @@ const info = computed(() => {
                 { key: 'price', label: 'Narxi', align: 'right', numeric: true },
                 { key: 'total', label: 'Summa', align: 'right', numeric: true },
               ]"
-              :rows="WORK_MATERIALS.map((m) => ({ ...m, id: m.name, total: m.qty * m.price }))"
+              :rows="materials.map((m) => ({ ...m, id: m.code, total: m.qty * m.price }))"
+              empty="Bu ariza bo‘yicha material talab qilinmagan"
             >
               <template #cell-price="{ row }">{{ sum(row.price) }}</template>
               <template #cell-total="{ row }">
@@ -371,7 +470,19 @@ const info = computed(() => {
 
             <div class="flex items-center justify-between border-t border-ink-200 bg-surface-sunken px-4 py-3.5">
               <span class="text-[13px] font-semibold text-ink-700">Jami</span>
-              <span class="tabular text-[15px] font-bold text-ink-900">{{ sum(materialsTotal) }}</span>
+              <span class="tabular text-[15px] font-bold text-ink-900">{{ sum(materialsSum) }}</span>
+            </div>
+
+            <div
+              v-if="materialRequest"
+              class="flex flex-wrap items-center justify-between gap-2 border-t border-ink-100 px-4 py-3"
+            >
+              <span class="text-[12.5px] text-ink-600">
+                Ombor so‘rovi
+                <b class="tabular text-ink-900">{{ materialRequest.code }}</b>
+                · {{ dateShort(materialRequest.createdAt) }}
+              </span>
+              <UiStatus kind="material" :value="materialRequest.status" size="sm" />
             </div>
           </UiCard>
         </div>
@@ -448,7 +559,7 @@ const info = computed(() => {
               v-else-if="stageActions.length"
               class="rounded-field bg-surface-sunken px-4 py-3 text-[13px] leading-relaxed text-ink-600"
             >
-              Bu bosqichdagi amallarni ijrochi bajaradi. Sizning rolingizda ariza faqat kuzatiladi.
+              {{ waitingText }}
             </p>
             <p v-else class="rounded-field bg-surface-sunken px-4 py-3 text-[13px] text-ink-600">
               Joriy bosqichda amal talab etilmaydi.

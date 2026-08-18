@@ -2,20 +2,20 @@
 import { BUILDINGS } from '~/data/buildings'
 import { SERVICE_STATUS } from '~/constants/statuses'
 import {
-  SERVICE_KPI,
   SERVICE_REQUESTS,
   UTILITY_SUMMARY,
+  buildServiceKpi,
   type ServiceRequest,
 } from '~/data/operations'
+import type { Capability } from '~/types/rbac'
 import { fileSize } from '~/utils/docx'
-import { dateShort, num } from '~/utils/format'
+import { dateShort, num, todayIso } from '~/utils/format'
 
 type ServiceStatus = ServiceRequest['status']
 
 interface BoardColumn {
   key: string
   label: string
-  drop: ServiceStatus
   statuses: ServiceStatus[]
   dot: string
 }
@@ -31,6 +31,12 @@ const allRequests = useState<ServiceRequest[]>('service-requests', () =>
 )
 
 const requests = computed(() => allRequests.value.filter((r) => scopedNames.value.has(r.buildingName)))
+
+/**
+ * KPI va diagramma ekrandagi ro‘yxatdan hisoblanadi: karta bosilganda
+ * jadvalda aynan o‘sha sondagi qator qoladi va rol doirasi buzilmaydi.
+ */
+const kpi = computed(() => buildServiceKpi(requests.value))
 
 const view = ref('table')
 const viewTabs = [
@@ -59,19 +65,19 @@ const statusOptions = computed(() => [
 ])
 
 const priorityOptions = [
-  { value: 'all', label: 'Barcha ustuvorlik' },
+  { value: 'all', label: 'Barcha ustuvorliklar' },
   { value: 'Yuqori', label: 'Yuqori' },
   { value: 'O‘rtacha', label: 'O‘rtacha' },
   { value: 'Past', label: 'Past' },
 ]
 
 const categoryOptions = computed(() => [
-  { value: 'all', label: 'Barcha kategoriya' },
+  { value: 'all', label: 'Barcha kategoriyalar' },
   ...[...new Set(requests.value.map((r) => r.category))].map((c) => ({ value: c, label: c })),
 ])
 
 const assigneeOptions = computed(() => [
-  { value: 'all', label: 'Barcha ijrochi' },
+  { value: 'all', label: 'Barcha ijrochilar' },
   { value: 'none', label: 'Biriktirilmagan' },
   ...[...new Set(requests.value.map((r) => r.assignee).filter((a): a is string => !!a))].map(
     (a) => ({ value: a, label: a }),
@@ -79,7 +85,7 @@ const assigneeOptions = computed(() => [
 ])
 
 const slaOptions = [
-  { value: 'all', label: 'SLA: barchasi' },
+  { value: 'all', label: 'Barcha SLA holatlari' },
   { value: 'breached', label: 'SLA buzilgan' },
   { value: 'ok', label: 'Muddatida' },
 ]
@@ -149,30 +155,117 @@ const PRIORITY_STYLE: Record<string, { text: string; shape: string }> = {
 }
 
 const KANBAN: BoardColumn[] = [
-  { key: 'new', label: 'Yangi', drop: 'NEW', statuses: ['NEW', 'TRIAGE'], dot: 'bg-brand-500' },
+  { key: 'new', label: 'Yangi', statuses: ['NEW', 'TRIAGE'], dot: 'bg-brand-500' },
   {
     key: 'progress',
     label: 'Jarayonda',
-    drop: 'IN_PROGRESS',
     statuses: ['ASSIGNED', 'INSPECTION', 'IN_PROGRESS', 'RETURNED'],
     dot: 'bg-warn-500',
   },
   {
     key: 'material',
     label: 'Material kutilmoqda',
-    drop: 'MATERIAL_PENDING',
     statuses: ['MATERIAL_PENDING'],
     dot: 'bg-warn-600',
   },
   {
     key: 'confirm',
     label: 'Tasdiqlashda',
-    drop: 'TENANT_CONFIRMATION',
     statuses: ['COMPLETED', 'TENANT_CONFIRMATION'],
     dot: 'bg-info-500',
   },
-  { key: 'closed', label: 'Yopilgan', drop: 'CLOSED', statuses: ['CLOSED'], dot: 'bg-ink-400' },
+  { key: 'closed', label: 'Yopilgan', statuses: ['CLOSED'], dot: 'bg-ink-400' },
 ]
+
+/** Biriktirish bosqichi rahbarga ham, ijrochiga ham ochiq */
+const ASSIGN_OR_EXECUTE: Capability[] = ['workorder.assign', 'workorder.execute']
+const EXECUTE_ONLY: Capability[] = ['workorder.execute']
+/** Bajarilgan ishni ijrochining o‘zi yopmaydi: tasdiq murojaatchi tomonidan beriladi */
+const CONFIRM_ONLY: Capability[] = ['workorder.assign']
+
+interface StageMove {
+  next: ServiceStatus
+  label: string
+  progress: number
+  /** Amalni bajarish uchun yetarli bo‘lgan huquqlar */
+  capabilities: Capability[]
+  /** Murojaatchi o‘z arizasini shu bosqichda o‘zi tasdiqlashi mumkin */
+  byRequester?: boolean
+}
+
+/**
+ * Bosqich o‘tishlari jadvali. Ariza kartasidagi amallar bilan bir xil:
+ * kanbanda kartani sudrash ham shu tartibga va shu huquqlarga bo‘ysunadi,
+ * shuning uchun bitta jarayon ikki xil qoida bilan ishlamaydi.
+ */
+const FLOW: Record<ServiceStatus, StageMove[]> = {
+  NEW: [{ next: 'ASSIGNED', label: 'Qabul qilish', progress: 10, capabilities: ASSIGN_OR_EXECUTE }],
+  TRIAGE: [
+    { next: 'ASSIGNED', label: 'Qabul qilish', progress: 10, capabilities: ASSIGN_OR_EXECUTE },
+  ],
+  ASSIGNED: [
+    { next: 'IN_PROGRESS', label: 'Ishni boshlash', progress: 35, capabilities: EXECUTE_ONLY },
+  ],
+  INSPECTION: [
+    { next: 'IN_PROGRESS', label: 'Ishni boshlash', progress: 35, capabilities: EXECUTE_ONLY },
+  ],
+  RETURNED: [
+    { next: 'IN_PROGRESS', label: 'Ishni boshlash', progress: 35, capabilities: EXECUTE_ONLY },
+  ],
+  IN_PROGRESS: [
+    {
+      next: 'MATERIAL_PENDING',
+      label: 'Material so‘rash',
+      progress: 50,
+      capabilities: EXECUTE_ONLY,
+    },
+    { next: 'COMPLETED', label: 'Yakunlash', progress: 100, capabilities: EXECUTE_ONLY },
+  ],
+  MATERIAL_PENDING: [
+    { next: 'IN_PROGRESS', label: 'Ishni davom ettirish', progress: 60, capabilities: EXECUTE_ONLY },
+  ],
+  COMPLETED: [
+    {
+      next: 'TENANT_CONFIRMATION',
+      label: 'Tasdiqlashga yuborish',
+      progress: 100,
+      capabilities: EXECUTE_ONLY,
+    },
+  ],
+  TENANT_CONFIRMATION: [
+    {
+      next: 'CLOSED',
+      label: 'Arizani yopish',
+      progress: 100,
+      capabilities: CONFIRM_ONLY,
+      byRequester: true,
+    },
+  ],
+  CLOSED: [],
+}
+
+function statusLabel(status: ServiceStatus): string {
+  return SERVICE_STATUS[status]?.label ?? status
+}
+
+function movesOf(r: ServiceRequest): StageMove[] {
+  return FLOW[r.status] ?? []
+}
+
+/** Amal shu foydalanuvchiga ochiqmi: huquq yoki murojaatchining o‘z tasdig‘i */
+function allowedMove(r: ServiceRequest, move: StageMove): boolean {
+  if (move.capabilities.some((c) => auth.can(c))) return true
+  return move.byRequester === true && auth.user?.fullName === r.requester
+}
+
+/** Kamida bitta ruxsat etilgan keyingi bosqich bo‘lmasa, karta sudralmaydi */
+function canDrag(r: ServiceRequest): boolean {
+  return movesOf(r).some((m) => allowedMove(r, m))
+}
+
+function moveInto(r: ServiceRequest, column: BoardColumn): StageMove | undefined {
+  return movesOf(r).find((m) => column.statuses.includes(m.next))
+}
 
 const board = computed(() =>
   KANBAN.map((c) => ({ ...c, items: filtered.value.filter((r) => c.statuses.includes(r.status)) })),
@@ -180,30 +273,79 @@ const board = computed(() =>
 
 const dragId = ref('')
 const dragOver = ref('')
+/** Rad etilgan ko‘chirishning sababi: foydalanuvchi nima uchun bo‘lmasligini ko‘radi */
+const dropError = ref('')
+
+function startDrag(r: ServiceRequest) {
+  dragId.value = r.id
+  dropError.value = ''
+}
 
 function dropTo(column: BoardColumn) {
   const target = requests.value.find((r) => r.id === dragId.value)
-  if (target && target.status !== column.drop) {
-    target.status = column.drop
-    if (column.drop === 'CLOSED') target.progress = 100
-    if (column.drop === 'IN_PROGRESS' && target.progress < 20) target.progress = 20
-  }
   dragId.value = ''
   dragOver.value = ''
+  if (!target) return
+  if (column.statuses.includes(target.status)) return
+
+  const move = moveInto(target, column)
+  if (!move) {
+    dropError.value = `${target.code}: «${statusLabel(target.status)}» bosqichidan «${column.label}» ustuniga o‘tib bo‘lmaydi, oraliq bosqichlar chetlab o‘tiladi.`
+    return
+  }
+  if (!allowedMove(target, move)) {
+    dropError.value = `${target.code}: «${move.label}» amali sizning rolingizda mavjud emas.`
+    return
+  }
+
+  target.status = move.next
+  target.progress = Math.max(target.progress, move.progress)
+  if (!target.assignee && auth.can('workorder.execute'))
+    target.assignee = auth.user?.fullName ?? 'Ijrochi'
+  dropError.value = ''
 }
 
-const donutSlices = SERVICE_KPI.breakdown.map((b) => ({
-  label: b.label,
-  value: b.count,
-  tone: b.tone,
-}))
-const donutTotal = SERVICE_KPI.breakdown.reduce((s, b) => s + b.count, 0)
+const donutSlices = computed(() =>
+  kpi.value.breakdown.map((b) => ({ label: b.label, value: b.count, tone: b.tone })),
+)
+const donutTotal = computed(() => kpi.value.breakdown.reduce((s, b) => s + b.count, 0))
 
-const dynamicsLabels = ['19-may', '20-may', '21-may', '22-may', '23-may', '24-may', '25-may']
-const dynamicsSeries = [
-  { label: 'Yangi', tone: 'brand' as const, values: [12, 19, 14, 23, 27, 21, 31], fill: true },
-  { label: 'Bajarilgan', tone: 'ok' as const, values: [9, 15, 16, 18, 24, 22, 28] },
-]
+/** Dinamika oynasi: ro‘yxatdagi eng so‘nggi harakat kunidan orqaga sanaladi */
+const DYNAMICS_DAYS = 7
+
+const lastActivityDay = computed(() => {
+  const last = requests.value.reduce((m, r) => {
+    const day = (r.completedAt ?? r.createdAt).slice(0, 10)
+    return day > m ? day : m
+  }, '')
+  return last || todayIso()
+})
+
+const dynamicsDays = computed(() =>
+  Array.from({ length: DYNAMICS_DAYS }, (_, i) =>
+    addDays(lastActivityDay.value, i - (DYNAMICS_DAYS - 1)),
+  ),
+)
+
+const dynamicsLabels = computed(() => dynamicsDays.value.map((d) => `${d.slice(8)}.${d.slice(5, 7)}`))
+
+const dynamicsSeries = computed(() => [
+  {
+    label: 'Kelib tushgan',
+    tone: 'brand' as const,
+    values: dynamicsDays.value.map(
+      (d) => requests.value.filter((r) => r.createdAt.slice(0, 10) === d).length,
+    ),
+    fill: true,
+  },
+  {
+    label: 'Bajarilgan',
+    tone: 'ok' as const,
+    values: dynamicsDays.value.map(
+      (d) => requests.value.filter((r) => (r.completedAt ?? '').slice(0, 10) === d).length,
+    ),
+  },
+])
 
 const UTILITY_TONE = ['brand', 'brand', 'warn', 'danger'] as const
 
@@ -324,46 +466,34 @@ function submitRequest() {
     <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <UiKpi
         label="Yangi arizalar"
-        :value="num(SERVICE_KPI.newCount)"
-        :delta="9"
+        :value="num(kpi.newCount)"
         icon="clipboard"
         tone="brand"
-        :spark="[7, 9, 8, 11, 12]"
         class="cursor-pointer"
         @click="focusStatus('NEW')"
       />
       <UiKpi
         label="Jarayonda"
-        :value="num(SERVICE_KPI.inProgress)"
-        :delta="-4"
-        invert
+        :value="num(kpi.inProgress)"
         icon="wrench"
         tone="warn"
-        :spark="[22, 21, 20, 19, 18]"
         class="cursor-pointer"
         @click="focusStatus('IN_PROGRESS')"
       />
       <UiKpi
-        label="Bajarilgan (bugun)"
-        :value="num(SERVICE_KPI.completedToday)"
-        :delta="12"
+        label="Bajarilgan"
+        :value="num(kpi.completedToday)"
         icon="check"
         tone="ok"
-        :spark="[15, 18, 19, 22, 24]"
         class="cursor-pointer"
         @click="focusStatus('COMPLETED')"
       />
       <UiKpi
         label="O‘rtacha bajarish vaqti"
-        :value="String(SERVICE_KPI.avgHours)"
+        :value="String(kpi.avgHours)"
         unit="soat"
-        :delta="-8"
-        invert
         icon="clock"
         tone="violet"
-        :spark="[7.1, 6.8, 6.4, 5.9, 5.6]"
-        class="cursor-pointer"
-        @click="((fStatus = 'all'), (fSla = 'breached'))"
       />
     </section>
 
@@ -378,7 +508,11 @@ function submitRequest() {
       </template>
 
       <div class="grid gap-3 border-t border-ink-100 bg-surface-sunken px-5 py-4 lg:grid-cols-2 xl:grid-cols-4">
-        <UiInput v-model="query" placeholder="Raqam, sarlavha yoki murojaatchi" class="xl:col-span-2">
+        <UiInput
+          v-model="query"
+          placeholder="Raqam, sarlavha yoki murojaatchi bo‘yicha qidirish"
+          class="xl:col-span-2"
+        >
           <template #prefix>
             <UiIcon name="search" :size="18" />
           </template>
@@ -497,8 +631,16 @@ function submitRequest() {
 
       <div v-else class="space-y-3 p-5">
         <p class="text-[12.5px] text-ink-500">
-          Kartani ushlab, boshqa ustunga ko‘chirsangiz ariza statusi o‘zgaradi. Karta ustiga bosilsa
-          ariza tafsiloti ochiladi.
+          Kartani faqat keyingi bosqich ustuniga va faqat shu amal huquqi bo‘lsa ko‘chirish mumkin.
+          Karta ustiga bosilsa ariza tafsiloti ochiladi.
+        </p>
+
+        <p
+          v-if="dropError"
+          class="rounded-field bg-danger-50 px-4 py-2.5 text-[12.5px] font-medium text-danger-700 ring-1 ring-inset ring-danger-100"
+          role="status"
+        >
+          {{ dropError }}
         </p>
 
         <div class="scroll-slim grid gap-4 overflow-x-auto xl:grid-cols-[repeat(5,minmax(248px,1fr))]">
@@ -525,10 +667,14 @@ function submitRequest() {
                 :key="r.id"
                 role="button"
                 tabindex="0"
-                draggable="true"
-                class="cursor-grab rounded-field bg-surface p-3 shadow-card ring-1 ring-ink-200/70 transition-shadow hover:shadow-panel active:cursor-grabbing"
-                :class="dragId === r.id ? 'opacity-50' : ''"
-                @dragstart="dragId = r.id"
+                :draggable="canDrag(r)"
+                :title="canDrag(r) ? undefined : 'Bu bosqichda sizning rolingizda amal yo‘q'"
+                class="rounded-field bg-surface p-3 shadow-card ring-1 ring-ink-200/70 transition-shadow hover:shadow-panel"
+                :class="[
+                  canDrag(r) ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer',
+                  dragId === r.id ? 'opacity-50' : '',
+                ]"
+                @dragstart="startDrag(r)"
                 @dragend="((dragId = ''), (dragOver = ''))"
                 @click="navigateTo(`/service-requests/${r.id}`)"
                 @keydown.enter="navigateTo(`/service-requests/${r.id}`)"

@@ -1,13 +1,17 @@
 <script setup lang="ts">
 import AppTopbar from '~/components/layout/AppTopbar.vue'
 import { BUILDINGS } from '~/data/buildings'
-import { INVOICES, agingOf, settledInvoices } from '~/data/business'
+import { INVOICES, agingKeyOf, agingLabel, agingOf, settledInvoices } from '~/data/business'
 import { dateShort, num, percent, sum, sumShort, todayIso } from '~/utils/format'
 import { csvBlob, docxBlob, fileSlug, saveBlob } from '~/utils/docx'
 
+const { field, moduleCaption, moduleTitle, sectionLabel } = useAppLabels()
+
 /**
  * Qarzdorlar ro‘yxati umumiy hisob-faktura reyestridan hisoblanadi: to‘lov
- * qabul qilinishi bilan qator shu yerdan ham yo‘qoladi.
+ * qabul qilinishi bilan qator shu yerdan ham yo‘qoladi. Muddat guruhi
+ * yozuvdagi qiymatdan emas, `agingKeyOf()` dan olinadi: shunda qator KPI
+ * kartochkalari bilan bir xil guruhga tushadi.
  */
 const debtors = computed(() =>
   settledInvoices(INVOICES)
@@ -20,7 +24,7 @@ const debtors = computed(() =>
       code: i.code,
       dueAt: i.dueAt,
       balance: i.total - i.paid,
-      agingBucket: i.agingBucket ?? '0-30',
+      agingBucket: agingKeyOf(i) ?? '0-30',
       status: i.status,
     })),
 )
@@ -57,15 +61,15 @@ const filtered = computed(() =>
   }),
 )
 
-const columns = [
-  { key: 'tenant', label: 'Tashkilot' },
+const columns = computed(() => [
+  { key: 'tenant', label: field('organization', 'Tashkilot') },
   { key: 'place', label: 'Obyekt / Unit' },
-  { key: 'code', label: 'Hujjat' },
+  { key: 'code', label: field('document', 'Hujjat') },
   { key: 'dueAt', label: 'Muddati' },
-  { key: 'balance', label: 'Qoldiq', align: 'right' as const, numeric: true },
+  { key: 'balance', label: field('balance', 'Qoldiq'), align: 'right' as const, numeric: true },
   { key: 'aging', label: 'Muddat guruhi' },
-  { key: 'status', label: 'Status' },
-]
+  { key: 'status', label: field('status', 'Holat') },
+])
 
 const rows = computed(() =>
   filtered.value.map((d) => ({
@@ -115,7 +119,8 @@ const exportOpen = ref(false)
  */
 function runExport(format: 'DOCX' | 'CSV') {
   const scope = building.value === 'all' ? 'Barcha obyektlar' : building.value
-  const period = bucket.value === 'all' ? 'Barcha muddatlar' : bucket.value
+  /** Faylga ichki kalit («0-30») emas, ekrandagi yorliq («0–30 kun») yoziladi */
+  const period = bucket.value === 'all' ? 'Barcha muddatlar' : bucketMeta(bucket.value).bucket
   const title = 'Qarzdorlik reyestri'
   const name = `${fileSlug(title)}-${todayIso()}.${format.toLowerCase()}`
 
@@ -126,7 +131,7 @@ function runExport(format: 'DOCX' | 'CSV') {
         { text: `${scope} · ${period} · ${dateShort(todayIso())}`, style: 'subtitle' },
         { text: `Jami: ${num(filtered.value.length)} ta yozuv, ${sum(filteredTotal.value)}`, style: 'heading' },
         ...filtered.value.map((d) => ({
-          text: `${d.tenant} · ${d.buildingName}, ${d.unitCode} · ${d.code} · to‘lov muddati ${dateShort(d.dueAt)} · ${sum(d.balance)} · ${d.agingBucket} kun`,
+          text: `${d.tenant} · ${d.buildingName}, ${d.unitCode} · ${d.code} · to‘lov muddati ${dateShort(d.dueAt)} · ${sum(d.balance)} · ${agingLabel(d.agingBucket)}`,
           style: 'body' as const,
         })),
       ]),
@@ -143,7 +148,7 @@ function runExport(format: 'DOCX' | 'CSV') {
           d.code,
           dateShort(d.dueAt),
           d.balance,
-          d.agingBucket,
+          agingLabel(d.agingBucket),
         ]),
         ['Jami', '', '', '', '', filteredTotal.value, ''],
       ]),
@@ -162,9 +167,12 @@ const agingSlices = computed(() =>
 
 <template>
   <AppTopbar
-    title="Qarzdorlik tahlili"
-    subtitle="Muddati o‘tgan to‘lovlar va muddat guruhlari kesimidagi nazorat"
-    :breadcrumb="[{ label: 'Billing' }, { label: 'Qarzdorlik tahlili' }]"
+    :title="moduleTitle('debts', 'Qarzdorlik tahlili')"
+    :subtitle="moduleCaption('debts', 'Muddati o‘tgan to‘lovlar va qarzdorlik tahlili')"
+    :breadcrumb="[
+      { label: sectionLabel('billing', 'Hisob-kitob'), to: '/billing/invoices' },
+      { label: moduleTitle('debts', 'Qarzdorlik tahlili') },
+    ]"
   >
     <template #actions>
       <UiButton variant="secondary" size="sm" to="/billing/payments">

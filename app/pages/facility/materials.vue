@@ -3,10 +3,18 @@ import {
   MATERIAL_REQUESTS,
   SERVICE_REQUESTS,
   STOCK_ITEMS,
+  materialsFor,
   type MaterialRequest,
   type ServiceRequest,
+  type WorkMaterialLine,
 } from '~/data/operations'
-import { dateShort, num, sum } from '~/utils/format'
+import { dateShort, num, sum, todayIso } from '~/utils/format'
+
+/** Material so‘rovi reyestrdagi yozuvga asos va haqiqiy pozitsiyalarni qo‘shadi */
+interface MaterialRequestEntry extends MaterialRequest {
+  reason?: string
+  lines?: WorkMaterialLine[]
+}
 
 const auth = useAuthStore()
 
@@ -16,11 +24,21 @@ function canOpen(path: string) {
   return auth.role === 'SUPER_HEAD' || auth.canRoute(path)
 }
 
+/** So‘rov bo‘yicha qarorni bino rahbari qabul qiladi, omborchi esa beradi */
+const canDecide = computed(() => auth.can('workorder.assign'))
+
 const requests = useState<ServiceRequest[]>('service-requests', () =>
   SERVICE_REQUESTS.map((r) => ({ ...r })),
 )
 
-const list = ref<MaterialRequest[]>(MATERIAL_REQUESTS.map((r) => ({ ...r })))
+/**
+ * Reyestr umumiy: arizadan yaratilgan so‘rov shu ro‘yxatga tushadi va
+ * ombor sahifasi aynan shu yozuvlarni ko‘radi. Sahifadan chiqilsa ham
+ * yo‘qolmaydi.
+ */
+const list = useState<MaterialRequestEntry[]>('material-requests', () =>
+  MATERIAL_REQUESTS.map((r) => ({ ...r })),
+)
 
 const tab = ref('all')
 const query = ref('')
@@ -60,43 +78,17 @@ const columns = [
   { key: 'createdAt', label: 'Sana' },
 ]
 
-interface RequestLine {
-  id: string
-  name: string
-  unit: string
-  price: number
-  qty: number
-  total: number
+/**
+ * So‘rov pozitsiyalari haqiqiy: yangi so‘rovda foydalanuvchi qo‘shgan
+ * qatorlar, reyestrdagi eski so‘rovda esa shu ish topshirig‘iga biriktirilgan
+ * ombor pozitsiyalari. Shuning uchun qatorlar yig‘indisi doim so‘rov
+ * summasiga teng bo‘ladi.
+ */
+function linesOf(r: MaterialRequestEntry): WorkMaterialLine[] {
+  return r.lines ?? materialsFor(r.workOrder)
 }
 
-const savedLines = ref<Record<string, RequestLine[]>>({})
-
-function linesOf(r: MaterialRequest): RequestLine[] {
-  const saved = savedLines.value[r.id]
-  if (saved) return saved
-  const picks = STOCK_ITEMS.slice(0, Math.max(r.items, 1))
-  const per = r.amount / picks.length
-  let acc = 0
-  return picks.map((item, i) => {
-    const isLast = i === picks.length - 1
-    const qty = isLast
-      ? Math.max(1, Math.round((r.amount - acc) / item.price))
-      : Math.max(1, Math.round(per / item.price))
-    if (!isLast) acc += qty * item.price
-    // oxirgi qator yaxlitlash qoldig‘ini o‘ziga oladi, jami so‘rov summasiga teng bo‘lishi uchun
-    const total = isLast ? r.amount - acc : qty * item.price
-    return {
-      id: item.id,
-      name: item.name,
-      unit: item.unit,
-      price: isLast ? Math.round(total / qty) : item.price,
-      qty,
-      total,
-    }
-  })
-}
-
-const detail = ref<MaterialRequest | null>(null)
+const detail = ref<MaterialRequestEntry | null>(null)
 const detailOpen = computed({
   get: () => detail.value !== null,
   set: (v: boolean) => {
@@ -104,7 +96,11 @@ const detailOpen = computed({
   },
 })
 
-const detailLines = computed(() => (detail.value ? linesOf(detail.value) : []))
+const detailLines = computed(() =>
+  detail.value
+    ? linesOf(detail.value).map((l) => ({ ...l, id: l.code, total: l.qty * l.price }))
+    : [],
+)
 const detailTotal = computed(() => detailLines.value.reduce((s, l) => s + l.total, 0))
 const detailOrder = computed(() =>
   detail.value ? requests.value.find((r) => r.code === detail.value!.workOrder) : undefined,

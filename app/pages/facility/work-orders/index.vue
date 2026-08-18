@@ -3,24 +3,36 @@ import { SERVICE_STATUS } from '~/constants/statuses'
 import {
   MATERIAL_REQUESTS,
   SERVICE_REQUESTS,
-  WORK_CHECKLIST,
-  WORK_MATERIALS,
+  checklistFor,
+  materialsFor,
+  materialsTotal,
+  type MaterialRequest,
   type ServiceRequest,
+  type WorkMaterialLine,
 } from '~/data/operations'
 import { docxBlob, fileSize, saveBlob, type DocxLine } from '~/utils/docx'
 import { dateShort, sum } from '~/utils/format'
+
+/** Material so‘rovi reyestrdagi yozuvga asos va haqiqiy pozitsiyalarni qo‘shadi */
+interface MaterialRequestEntry extends MaterialRequest {
+  reason?: string
+  lines?: WorkMaterialLine[]
+}
 
 const auth = useAuthStore()
 
 /** Ijro amallari faqat ijrochida: rahbar biriktiradi va kuzatadi */
 const canExecute = computed(() => auth.can('workorder.execute'))
 
+/** Sahifa nomi rolga bog‘langan: yon menyudagi yorliq bilan bir xil atama */
+const pageTitle = computed(() => (canExecute.value ? 'Mening ishlarim' : 'Ish topshiriqlari'))
+
 const requests = useState<ServiceRequest[]>('service-requests', () =>
   SERVICE_REQUESTS.map((r) => ({ ...r })),
 )
 
 const checks = useState<Record<string, boolean[]>>('work-order-checks', () =>
-  Object.fromEntries(SERVICE_REQUESTS.map((r) => [r.id, WORK_CHECKLIST.map((c) => c.done)])),
+  Object.fromEntries(SERVICE_REQUESTS.map((r) => [r.id, checklistFor(r).map((c) => c.done)])),
 )
 const evidence = useState<Record<string, number>>('work-order-evidence', () =>
   Object.fromEntries(SERVICE_REQUESTS.map((r) => [r.id, Math.min(4, Math.round(r.progress / 25))])),
@@ -74,25 +86,60 @@ const selected = computed(
   () => visible.value.find((o) => o.id === selectedId.value) ?? visible.value[0] ?? null,
 )
 
-const selectedChecks = computed(() =>
-  selected.value ? (checks.value[selected.value.id] ?? WORK_CHECKLIST.map((c) => c.done)) : [],
-)
+/** Chek-list bandlari topshiriq kategoriyasidan quriladi */
+const checklist = computed(() => (selected.value ? checklistFor(selected.value) : []))
+
+const selectedChecks = computed(() => {
+  const o = selected.value
+  if (!o) return []
+  const items = checklistFor(o)
+  const saved = checks.value[o.id]
+  const fits = !!saved && saved.length === items.length
+  return items.map((c, i) => (fits ? saved![i] === true : c.done))
+})
+
 const doneCount = computed(() => selectedChecks.value.filter(Boolean).length)
 
 function toggleCheck(index: number) {
-  if (!canExecute.value) return
-  const id = selected.value?.id
-  if (!id) return
-  if (!checks.value[id]) checks.value[id] = WORK_CHECKLIST.map((c) => c.done)
-  const list = checks.value[id]!
+  const o = selected.value
+  if (!canExecute.value || !o) return
+  const items = checklistFor(o)
+  const saved = checks.value[o.id]
+  const list = saved && saved.length === items.length ? [...saved] : items.map((c) => c.done)
   list[index] = !list[index]
+  checks.value[o.id] = list
 }
 
-const estimate = WORK_MATERIALS.reduce((s, m) => s + m.qty * m.price, 0)
-const actual = computed(() => {
-  const code = selected.value?.code
-  return MATERIAL_REQUESTS.find((m) => m.workOrder === code)?.amount ?? estimate
-})
+/** Material so‘rovlari reyestri: material sahifasi va ombor bilan umumiy */
+const materialRequests = useState<MaterialRequestEntry[]>('material-requests', () =>
+  MATERIAL_REQUESTS.map((r) => ({ ...r })),
+)
+
+/** Materiallar topshiriq kodiga bog‘langan: santexnika ishida elektr materiali chiqmaydi */
+const materials = computed(() => (selected.value ? materialsFor(selected.value.code) : []))
+
+/** Taxminiy xarajat: topshiriq bo‘yicha rejalashtirilgan material qiymati */
+const estimate = computed(() => (selected.value ? materialsTotal(selected.value.code) : 0))
+
+/** Amaldagi xarajat faqat ombordan berilgan so‘rov bo‘yicha aniqlanadi */
+const issuedRequest = computed(() =>
+  materialRequests.value.find(
+    (m) => m.workOrder === selected.value?.code && m.status === 'ISSUED',
+  ),
+)
+const actual = computed(() => issuedRequest.value?.amount ?? 0)
+
+/** Akt faqat bajarilgan ishga beriladi */
+const ACT_STATUSES: ServiceRequest['status'][] = ['COMPLETED', 'TENANT_CONFIRMATION', 'CLOSED']
+const actReady = computed(() => !!selected.value && ACT_STATUSES.includes(selected.value.status))
+
+/**
+ * Aktning yagona sana manbasi: ish yakunlangan kun. Kartada, modalda va
+ * hujjatda aynan shu sana chiqadi.
+ */
+function actDate(o: ServiceRequest): string {
+  return (o.completedAt ?? o.dueAt).slice(0, 10)
+}
 
 const PRIORITY_STYLE: Record<string, { text: string; shape: string }> = {
   Yuqori: { text: 'text-danger-600', shape: 'dot' },
@@ -208,19 +255,22 @@ function actLines(o: ServiceRequest): DocxLine[] {
   return [
     { text: 'Makon Property Group', style: 'subtitle' },
     { text: 'Bajarilgan ish akti', style: 'title' },
-    { text: `${o.code} · ${dateShort(o.createdAt.slice(0, 10))}`, style: 'subtitle' },
+    { text: `${o.code} · ${dateShort(actDate(o))}`, style: 'subtitle' },
     { text: 'Topshiriq', style: 'heading' },
     { text: `Sarlavha: ${o.title}` },
     { text: `Obyekt: ${o.buildingName} · ${o.unitCode}` },
     { text: `Murojaatchi: ${o.requester}` },
     { text: `Ijrochi: ${o.assignee ?? 'Biriktirilmagan'}` },
     { text: `Kategoriya: ${o.category} · ustuvorlik: ${o.priority}` },
-    { text: `Bajarish muddati: ${dateShort(o.dueAt)}` },
+    { text: `Ish yakunlangan sana: ${dateShort(actDate(o))}` },
     { text: 'Materiallar', style: 'heading' },
-    ...WORK_MATERIALS.map((m) => ({
+    ...materialsFor(o.code).map((m) => ({
       text: `${m.name}: ${m.qty} ${m.unit} · ${sum(m.qty * m.price)}`,
     })),
-    { text: `Jami: ${sum(estimate)}` },
+    {
+      text: `Amaldagi xarajat: ${issuedRequest.value ? sum(actual.value) : 'ombordan berilmagan'}`,
+    },
+    { text: `Taxminiy xarajat: ${sum(estimate.value)}`, style: 'small' },
     { text: 'Imzolar', style: 'heading' },
     { text: `Topshirdi: ${o.assignee ?? 'Biriktirilmagan'}`, style: 'small' },
     { text: `Qabul qildi: ${o.requester}`, style: 'small' },
@@ -229,14 +279,14 @@ function actLines(o: ServiceRequest): DocxLine[] {
 
 function downloadAct() {
   const o = selected.value
-  if (!o) return
+  if (!o || !actReady.value) return
   saveBlob(docxBlob(actLines(o)), `${o.code}-akt.docx`)
 }
 </script>
 
 <template>
   <AppTopbar
-    title="Mening ishlarim"
+    :title="pageTitle"
     subtitle="Biriktirilgan topshiriqlar, dalillar va bajarish nazorati"
   >
     <template #actions>
@@ -254,13 +304,13 @@ function downloadAct() {
   <main class="scroll-slim flex-1 overflow-y-auto p-4 sm:p-6">
     <div class="grid gap-5 xl:grid-cols-4">
       <UiCard
-        title="Mening topshiriqlarim"
+        :title="pageTitle"
         :subtitle="`${visible.length} ta topshiriq`"
         flush
         :padded="false"
       >
         <div class="space-y-3 border-t border-ink-100 px-5 py-4">
-          <UiInput v-model="query" placeholder="Qidirish...">
+          <UiInput v-model="query" placeholder="Raqam, sarlavha yoki obyekt bo‘yicha qidirish">
             <template #prefix>
               <UiIcon name="search" :size="18" />
             </template>
@@ -381,7 +431,7 @@ function downloadAct() {
               </dd>
             </div>
             <div class="min-w-0">
-              <dt class="text-[12px] text-ink-500">Prioritet</dt>
+              <dt class="text-[12px] text-ink-500">Ustuvorlik</dt>
               <dd
                 class="mt-0.5 inline-flex items-center gap-1.5 text-[13.5px] font-semibold"
                 :class="PRIORITY_STYLE[selected.priority]?.text"
@@ -610,12 +660,12 @@ function downloadAct() {
         <UiCard title="Ishda ishlatilgan materiallar">
           <template #actions>
             <span class="tabular text-[13px] font-bold text-ink-700">
-              {{ WORK_MATERIALS.length }} ta
+              {{ materials.length }} ta
             </span>
           </template>
 
-          <ul class="space-y-2.5">
-            <li v-for="m in WORK_MATERIALS" :key="m.name" class="flex items-center gap-3">
+          <ul v-if="materials.length" class="space-y-2.5">
+            <li v-for="m in materials" :key="m.code" class="flex items-center gap-3">
               <span class="grid size-9 shrink-0 place-items-center rounded-[10px] bg-ink-100 text-ink-600">
                 <UiIcon name="cube" :size="17" />
               </span>
@@ -628,6 +678,10 @@ function downloadAct() {
             </li>
           </ul>
 
+          <p v-else class="text-[13px] text-ink-500">
+            Bu topshiriq bo‘yicha material talab qilinmagan.
+          </p>
+
           <UiButton variant="ghost" size="sm" block class="mt-3" to="/facility/materials">
             Material so‘rovlari
             <UiIcon name="chevronRight" :size="15" />
@@ -637,12 +691,12 @@ function downloadAct() {
         <UiCard title="Bajarish nazorati (chek-list)">
           <template #actions>
             <span class="tabular text-[13px] font-bold text-ink-700">
-              {{ doneCount }} / {{ WORK_CHECKLIST.length }}
+              {{ doneCount }} / {{ checklist.length }}
             </span>
           </template>
 
           <ul class="space-y-1">
-            <li v-for="(c, i) in WORK_CHECKLIST" :key="c.label">
+            <li v-for="(c, i) in checklist" :key="c.label">
               <button
                 type="button"
                 class="flex w-full items-center gap-3 rounded-field px-2 py-2 text-left transition-colors"
@@ -691,14 +745,14 @@ function downloadAct() {
             <span
               class="inline-flex items-center gap-1.5 rounded-pill px-2.5 py-1 text-[11.5px] font-semibold ring-1 ring-inset"
               :class="
-                selected.progress >= 90
+                actReady
                   ? 'bg-ok-50 text-ok-700 ring-ok-100'
                   : 'bg-warn-50 text-warn-700 ring-warn-100'
               "
             >
               <svg class="size-3 shrink-0" viewBox="0 0 12 12" fill="none" aria-hidden="true">
                 <path
-                  v-if="selected.progress >= 90"
+                  v-if="actReady"
                   d="M2.6 6.3 5 8.7l4.4-5"
                   stroke="currentColor"
                   stroke-width="1.9"
@@ -710,7 +764,7 @@ function downloadAct() {
                   <path d="M6 3.6V6l1.9 1.2" stroke-linecap="round" />
                 </g>
               </svg>
-              {{ selected.progress >= 90 ? 'Akt tayyor' : 'Akt tayyorlanmoqda' }}
+              {{ actReady ? 'Akt tayyor' : 'Akt tayyorlanmoqda' }}
             </span>
           </template>
 
@@ -722,24 +776,36 @@ function downloadAct() {
             <div class="flex items-baseline justify-between gap-3">
               <dt class="text-[12.5px] text-ink-500">Amaldagi xarajat</dt>
               <dd
+                v-if="issuedRequest"
                 class="tabular text-[13.5px] font-bold"
                 :class="actual > estimate ? 'text-danger-600' : 'text-ok-600'"
               >
                 {{ sum(actual) }}
               </dd>
+              <dd v-else class="text-[13px] text-ink-500">Ombordan berilmagan</dd>
             </div>
             <div class="flex items-baseline justify-between gap-3">
-              <dt class="text-[12.5px] text-ink-500">Akt sanasi</dt>
+              <dt class="text-[12.5px] text-ink-500">Ish yakunlangan sana</dt>
               <dd class="tabular text-[13.5px] font-bold text-ink-900">
-                {{ dateShort(selected.dueAt) }}
+                {{ actReady ? dateShort(actDate(selected)) : '—' }}
               </dd>
             </div>
           </dl>
 
-          <UiButton variant="secondary" block class="mt-4" @click="actOpen = true">
+          <UiButton
+            variant="secondary"
+            block
+            class="mt-4"
+            :disabled="!actReady"
+            @click="actOpen = true"
+          >
             <UiIcon name="doc" :size="17" />
             Aktni ko‘rish
           </UiButton>
+
+          <p v-if="!actReady" class="mt-2 text-[12px] text-ink-500">
+            Akt faqat ish «Bajarilgan» holatiga o‘tgandan keyin beriladi.
+          </p>
         </UiCard>
       </div>
     </div>
@@ -901,12 +967,12 @@ function downloadAct() {
     subtitle="Hujjatning chop etishdan oldingi ko‘rinishi"
     size="lg"
   >
-    <div v-if="selected" class="rounded-field bg-white p-6 ring-1 ring-ink-200">
+    <div v-if="selected && actReady" class="rounded-field bg-white p-6 ring-1 ring-ink-200">
       <div class="flex items-start justify-between gap-4 border-b border-ink-200 pb-4">
         <div>
-          <p class="text-[17px] font-bold text-ink-900">Bajarilgan ish dalolatnomasi</p>
+          <p class="text-[17px] font-bold text-ink-900">Bajarilgan ish akti</p>
           <p class="tabular mt-1 text-[13px] text-ink-500">
-            {{ selected.code }} · {{ dateShort(selected.dueAt) }}
+            {{ selected.code }} · {{ dateShort(actDate(selected)) }}
           </p>
         </div>
         <AppLogo size="sm" />
@@ -946,16 +1012,24 @@ function downloadAct() {
           </tr>
         </thead>
         <tbody>
-          <tr v-for="m in WORK_MATERIALS" :key="m.name" class="border-b border-ink-100">
+          <tr v-for="m in materials" :key="m.code" class="border-b border-ink-100">
             <td class="px-3 py-2.5 text-ink-700">{{ m.name }}</td>
             <td class="tabular px-3 py-2.5 text-right text-ink-700">{{ m.qty }} {{ m.unit }}</td>
             <td class="tabular px-3 py-2.5 text-right font-semibold text-ink-900">
               {{ sum(m.qty * m.price) }}
             </td>
           </tr>
+          <tr class="border-b border-ink-100">
+            <td class="px-3 py-2.5 text-ink-600" colspan="2">Taxminiy xarajat</td>
+            <td class="tabular px-3 py-2.5 text-right text-ink-700">{{ sum(estimate) }}</td>
+          </tr>
           <tr class="bg-surface-sunken">
-            <td class="px-3 py-2.5 font-semibold text-ink-800" colspan="2">Jami</td>
-            <td class="tabular px-3 py-2.5 text-right font-bold text-ink-900">{{ sum(estimate) }}</td>
+            <td class="px-3 py-2.5 font-semibold text-ink-800" colspan="2">
+              Amaldagi xarajat (ombordan berilgan)
+            </td>
+            <td class="tabular px-3 py-2.5 text-right font-bold text-ink-900">
+              {{ issuedRequest ? sum(actual) : 'berilmagan' }}
+            </td>
           </tr>
         </tbody>
       </table>
@@ -978,14 +1052,54 @@ function downloadAct() {
 
     <template #footer>
       <UiButton variant="ghost" @click="actOpen = false">Yopish</UiButton>
-      <UiButton variant="secondary" :disabled="!selected" @click="downloadAct">
+      <UiButton variant="secondary" :disabled="!actReady" @click="downloadAct">
         <UiIcon name="download" :size="16" />
         Yuklab olish
       </UiButton>
-      <UiButton @click="printAct">
+      <UiButton :disabled="!actReady" @click="printAct">
         <UiIcon name="print" :size="16" />
         Chop etish
       </UiButton>
     </template>
   </UiModal>
 </template>
+
+<style>
+/**
+ * Chop etishda faqat ochiq hujjat qog‘ozga tushadi: yon menyu, topbar va
+ * orqadagi jadvallar bosilmaydi. Qoida global, chunki oyna `body` ga
+ * ko‘chiriladi va sahifa qatlamidan tashqarida turadi.
+ */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+
+  [role='dialog'],
+  [role='dialog'] * {
+    visibility: visible;
+  }
+
+  [role='dialog'] {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    max-height: none;
+    overflow: visible;
+    background: #fff;
+    box-shadow: none;
+  }
+
+  /* Hujjat to‘liq chiqishi uchun ichki aylantirish o‘chiriladi */
+  [role='dialog'] > div {
+    overflow: visible !important;
+  }
+
+  /* Oyna sarlavhasi va tugmalari qog‘ozga tushmaydi */
+  [role='dialog'] > header,
+  [role='dialog'] > footer {
+    display: none !important;
+  }
+}
+</style>

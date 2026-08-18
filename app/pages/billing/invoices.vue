@@ -5,9 +5,12 @@ import {
   CONTRACTS,
   INVOICES,
   TARIFF_LINES,
+  agingKeyOf,
+  agingLabel,
   agingOf,
   billingSummaryOf,
   paymentStatusOf,
+  statusOf,
 } from '~/data/business'
 import {
   dateShort,
@@ -22,10 +25,68 @@ import {
 } from '~/utils/format'
 
 const auth = useAuthStore()
+const route = useRoute()
+const { field, moduleCaption, moduleTitle, sectionLabel, statusLabel } = useAppLabels()
 
 /** Reyestrni ko‘rish huquqi hujjat yaratish yoki to‘lov qabul qilishga ruxsat bermaydi */
 const canCreate = computed(() => auth.can('invoice.create'))
 const canConfirm = computed(() => auth.can('payment.confirm'))
+
+/**
+ * To‘lov yozuvlari: usul, sana, hisob raqami va izoh shu ro‘yxatda saqlanadi
+ * va hisob-faktura tarixida ko‘rinadi. To‘lovni tasdiqlash ekrani ham shu
+ * manbaga yozadi, shuning uchun to‘lov qayerda qabul qilinganidan qat’i
+ * nazar hujjat tarixi bitta bo‘ladi.
+ */
+interface PaymentRecord {
+  id: string
+  invoiceId: string
+  invoiceCode: string
+  tenant: string
+  amount: number
+  method: string
+  methodLabel: string
+  account: string
+  purpose: string
+  note: string
+  paidAt: string
+  actor: string
+  kind: 'payment' | 'return'
+}
+
+const payments = useState<PaymentRecord[]>('billing-payments', () => [])
+
+/** Yopilgan hisob davrlari davrlar ekranida belgilanadi */
+const closedKeys = useState<string[]>('billing-closed-periods', () => [])
+
+const MONTHS = [
+  'Yanvar',
+  'Fevral',
+  'Mart',
+  'Aprel',
+  'May',
+  'Iyun',
+  'Iyul',
+  'Avgust',
+  'Sentabr',
+  'Oktabr',
+  'Noyabr',
+  'Dekabr',
+]
+
+const CURRENT_KEY = todayIso().slice(0, 7)
+
+/** «Avgust 2026» → «2026-08»: davrlar shu ko‘rinishda saralanadi */
+function keyOfPeriod(label: string): string {
+  const [month, year] = label.split(' ')
+  const index = MONTHS.indexOf(month ?? '')
+  return index < 0 || !year ? '' : `${year}-${String(index + 1).padStart(2, '0')}`
+}
+
+function isClosedPeriod(label: string): boolean {
+  const key = keyOfPeriod(label)
+  return !key || key < CURRENT_KEY || closedKeys.value.includes(key)
+}
 
 /**
  * Sahifa umumiy reyestrni o‘qiydi va to‘g‘ridan-to‘g‘ri unga yozadi: qabul
@@ -41,28 +102,37 @@ const paidShare = computed(() =>
 const search = ref('')
 const building = ref('all')
 const status = ref('all')
-const period = ref('all')
 const banner = ref('')
+
+/** Davrlar ekranidan «hisob-fakturalarni ko‘rish» bilan kelingan davr */
+const requestedPeriod = String(route.query.period ?? '')
+const period = ref(
+  requestedPeriod && INVOICES.some((i) => i.period === requestedPeriod) ? requestedPeriod : 'all',
+)
 
 const buildingOptions = [
   { value: 'all', label: 'Barcha obyektlar' },
   ...BUILDINGS.map((b) => ({ value: b.name, label: b.name })),
 ]
 
-const statusOptions = [
-  { value: 'all', label: 'Barcha statuslar' },
-  { value: 'PAID', label: 'To‘langan' },
-  { value: 'PARTIALLY_PAID', label: 'Qisman to‘langan' },
-  { value: 'OVERDUE', label: 'Kechikkan' },
-  { value: 'ISSUED', label: 'Tasdiqlangan' },
-]
+/**
+ * Filtr yorlig‘i nishoncha bilan bitta manbadan chiqadi: `statusLabel()`
+ * lug‘atdan o‘qiydi, shuning uchun rus tilida filtr «Оплачен», nishoncha esa
+ * «To‘langan» bo‘lib qolmaydi.
+ */
+const FILTER_STATUSES = ['PAID', 'PARTIALLY_PAID', 'OVERDUE', 'ISSUED', 'DRAFT']
 
+const statusOptions = computed(() => [
+  { value: 'all', label: 'Barcha statuslar' },
+  ...FILTER_STATUSES.map((value) => ({ value, label: statusLabel('invoice', value) })),
+])
+
+/** Davrlar xronologik tartibda, eng yangisi birinchi */
 const periodOptions = computed(() => [
   { value: 'all', label: 'Barcha davrlar' },
-  ...Array.from(new Set(INVOICES.map((i) => i.period))).map((p) => ({
-    value: p,
-    label: p,
-  })),
+  ...Array.from(new Set(INVOICES.map((i) => i.period)))
+    .sort((a, b) => (keyOfPeriod(a) < keyOfPeriod(b) ? 1 : -1))
+    .map((p) => ({ value: p, label: p })),
 ])
 
 const scoped = computed(() =>
@@ -86,23 +156,24 @@ function countOf(value: string) {
 
 const statusTabs = computed(() => [
   { value: 'all', label: 'Barchasi', count: scoped.value.length },
-  { value: 'PAID', label: 'To‘langan', count: countOf('PAID') },
-  { value: 'PARTIALLY_PAID', label: 'Qisman to‘langan', count: countOf('PARTIALLY_PAID') },
-  { value: 'OVERDUE', label: 'Kechikkan', count: countOf('OVERDUE') },
-  { value: 'ISSUED', label: 'Tasdiqlangan', count: countOf('ISSUED') },
+  ...FILTER_STATUSES.map((value) => ({
+    value,
+    label: statusLabel('invoice', value),
+    count: countOf(value),
+  })),
 ])
 
-const columns = [
+const columns = computed(() => [
   { key: 'idx', label: '№', width: '56px', numeric: true, align: 'right' as const },
   { key: 'code', label: 'Hisob-faktura raqami' },
-  { key: 'tenant', label: 'Ijarachi' },
+  { key: 'tenant', label: field('tenant', 'Ijarachi') },
   { key: 'place', label: 'Obyekt / Unit' },
-  { key: 'period', label: 'Davr' },
+  { key: 'period', label: field('period', 'Davr') },
   { key: 'total', label: 'Jami summa', align: 'right' as const, numeric: true },
-  { key: 'paid', label: 'To‘langan', align: 'right' as const, numeric: true },
-  { key: 'balance', label: 'Qoldiq', align: 'right' as const, numeric: true },
-  { key: 'status', label: 'Status' },
-]
+  { key: 'paid', label: field('paid', 'To‘langan'), align: 'right' as const, numeric: true },
+  { key: 'balance', label: field('balance', 'Qoldiq'), align: 'right' as const, numeric: true },
+  { key: 'status', label: field('status', 'Holat') },
+])
 
 const rows = computed(() =>
   filtered.value.map((i, idx) => ({
@@ -155,34 +226,80 @@ function openInvoice(row: Record<string, unknown>) {
 
 const payValue = computed(() => Number(payAmount.value) || 0)
 
-const payValid = computed(() => {
+/** Qoralamaga qaytarilgan yoki bekor qilingan hujjat bo‘yicha to‘lov qabul qilinmaydi */
+const payable = computed(() => {
   const inv = active.value
-  return !!inv && payValue.value > 0 && payValue.value <= inv.total - inv.paid
+  return !!inv && inv.status !== 'DRAFT' && inv.status !== 'CANCELLED' && inv.total - inv.paid > 0
 })
 
+const payValid = computed(() => {
+  const inv = active.value
+  return !!inv && payable.value && payValue.value > 0 && payValue.value <= inv.total - inv.paid
+})
+
+/** Hujjat bo‘yicha qabul qilingan to‘lovlar, eng yangisi birinchi */
+const activePayments = computed(() =>
+  payments.value.filter((p) => p.invoiceId === activeId.value),
+)
+
+/**
+ * To‘lov qabul qilish: qoldiq va holat reyestr yozuviga yoziladi, to‘lov
+ * tafsilotlari esa alohida yozuv bo‘lib hujjat tarixida qoladi. Holat qo‘lda
+ * emas, `statusOf()` bilan aniqlanadi: qisman to‘langan hujjat muddati o‘tgan
+ * bo‘lsa «Kechikkan» bo‘lib qoladi.
+ */
 function acceptPayment() {
   const inv = active.value
   if (!canConfirm.value || !inv || !payValid.value) return
-  inv.paid += payValue.value
-  inv.status = inv.paid >= inv.total ? 'PAID' : 'PARTIALLY_PAID'
-  if (inv.paid >= inv.total) inv.agingBucket = null
-  banner.value = `${inv.code} bo‘yicha ${sum(payValue.value)} to‘lov qabul qilindi.`
+  const amount = payValue.value
+  inv.paid += amount
+  inv.status = statusOf(inv)
+  inv.agingBucket = agingKeyOf(inv)
+
+  payments.value = [
+    {
+      id: `pay-${inv.id}-${payments.value.length + 1}`,
+      invoiceId: inv.id,
+      invoiceCode: inv.code,
+      tenant: inv.tenant,
+      amount,
+      method: payMethod.value,
+      methodLabel: methodOptions.find((m) => m.value === payMethod.value)?.label ?? payMethod.value,
+      account: '',
+      purpose: `IJARA TO‘LOVI, ${inv.code}`,
+      note: payNote.value.trim(),
+      paidAt: payDate.value,
+      actor: auth.user?.fullName ?? '',
+      kind: 'payment',
+    },
+    ...payments.value,
+  ]
+
+  banner.value = `${inv.code} bo‘yicha ${sum(amount)} to‘lov qabul qilindi, qoldiq ${sum(inv.total - inv.paid)}.`
   detailOpen.value = false
 }
 
 const createOpen = ref(false)
 
-/** Joriy oy va undan keyingi ikki oy: hisob davri qo‘lda yozilmaydi */
-const createPeriods = [0, 1, 2].map((offset) => {
-  const label = monthTitle(monthShift(offset))
-  return { value: label, label }
+/**
+ * Hisob davri qo‘lda yozilmaydi: joriy oydan boshlab ochiq davrlar taklif
+ * qilinadi. Yopilgan davr ro‘yxatga tushmaydi, chunki unga yangi hujjat
+ * qo‘shib bo‘lmaydi.
+ */
+const createPeriods = computed(() => {
+  const open = [0, 1, 2, 3, 4, 5]
+    .map((offset) => monthTitle(monthShift(offset)))
+    .filter((label) => !isClosedPeriod(label))
+    .slice(0, 3)
+  const list = open.length ? open : [monthTitle(monthShift(1))]
+  return list.map((label) => ({ value: label, label }))
 })
 
 const form = reactive({
   tenant: '',
   building: BUILDINGS[0]!.name,
   unitCode: '',
-  period: createPeriods[0]!.value,
+  period: createPeriods.value[0]!.value,
   total: '',
   dueAt: isoShift(10),
 })
@@ -194,7 +311,7 @@ function openCreate() {
   form.tenant = ''
   form.building = BUILDINGS[0]!.name
   form.unitCode = ''
-  form.period = createPeriods[0]!.value
+  form.period = createPeriods.value[0]!.value
   form.total = ''
   form.dueAt = isoShift(10)
   createOpen.value = true
@@ -209,12 +326,13 @@ function lastSequence() {
 }
 
 function createInvoice() {
-  if (!canCreate.value || !createValid.value) return
+  if (!canCreate.value || !createValid.value || isClosedPeriod(form.period)) return
   const issuedAt = todayIso()
-  const seq = lastSequence() + 1
-  const code = `INV-${issuedAt.slice(0, 4)}-0${seq}`
-  INVOICES.unshift({
-    id: `i-0${seq}`,
+  const order = String(lastSequence() + 1).padStart(4, '0')
+  const code = `INV-${issuedAt.slice(0, 4)}-${order}`
+  /** Holat va muddat guruhi qo‘lda yozilmaydi: ikkalasi ham sanadan chiqadi */
+  const seed = {
+    id: `i-${order}`,
     code,
     tenant: form.tenant.trim(),
     buildingName: form.building,
@@ -224,9 +342,9 @@ function createInvoice() {
     dueAt: form.dueAt,
     total: Number(form.total),
     paid: 0,
-    status: 'ISSUED',
-    agingBucket: '0-30',
-  })
+    status: 'ISSUED' as const,
+  }
+  INVOICES.unshift({ ...seed, status: statusOf(seed), agingBucket: agingKeyOf(seed) })
   banner.value = `${code} hisob-fakturasi yaratildi va ro‘yxatga qo‘shildi.`
   createOpen.value = false
   status.value = 'all'
@@ -253,9 +371,12 @@ const tariffTotal = TARIFF_LINES.reduce((s, t) => s + t.sum, 0)
 
 <template>
   <AppTopbar
-    title="Hisob-fakturalar"
-    subtitle="Billing, to‘lovlar va qarzdorlik nazorati"
-    :breadcrumb="[{ label: 'Billing' }, { label: 'Hisob-fakturalar' }]"
+    :title="moduleTitle('invoices', 'Hisob-fakturalar')"
+    :subtitle="moduleCaption('invoices', 'Davr bo‘yicha chiqarilgan hisob-fakturalar')"
+    :breadcrumb="[
+      { label: sectionLabel('billing', 'Hisob-kitob'), to: '/billing/invoices' },
+      { label: moduleTitle('invoices', 'Hisob-fakturalar') },
+    ]"
   >
     <template #actions>
       <UiButton variant="secondary" size="sm" to="/billing/debts">
@@ -536,12 +657,42 @@ const tariffTotal = TARIFF_LINES.reduce((s, t) => s + t.sum, 0)
           <div class="flex items-baseline justify-between gap-4">
             <dt class="text-[13px] text-ink-500">Qarzdorlik guruhi</dt>
             <dd class="text-[13.5px] font-semibold text-ink-900">
-              {{ active.agingBucket ? `${active.agingBucket} kun` : 'Qarzdorlik yo‘q' }}
+              {{ agingLabel(active.agingBucket) }}
             </dd>
           </div>
         </dl>
 
-        <div v-if="canConfirm" class="rounded-card bg-surface-sunken p-4 ring-1 ring-ink-200/70">
+        <section v-if="activePayments.length" class="border-t border-ink-100 pt-5">
+          <p class="text-[14px] font-bold text-ink-900">To‘lovlar tarixi</p>
+          <ul class="mt-3 divide-y divide-ink-100 rounded-field bg-surface-sunken px-4">
+            <li v-for="p in activePayments" :key="p.id" class="flex items-start gap-4 py-3">
+              <span
+                class="grid size-9 shrink-0 place-items-center rounded-[10px]"
+                :class="p.kind === 'payment' ? 'bg-ok-50 text-ok-600' : 'bg-danger-50 text-danger-600'"
+              >
+                <UiIcon :name="p.kind === 'payment' ? 'check' : 'refresh'" :size="17" />
+              </span>
+              <span class="min-w-0 flex-1">
+                <span class="block text-[13px] font-semibold text-ink-900">
+                  {{ dateShort(p.paidAt) }} · {{ p.methodLabel }}
+                </span>
+                <span class="block text-[12px] text-ink-500">
+                  {{ p.purpose }}<template v-if="p.account"> · {{ p.account }}</template>
+                  <template v-if="p.actor"> · {{ p.actor }}</template>
+                </span>
+                <span v-if="p.note" class="mt-0.5 block text-[12px] text-ink-600">{{ p.note }}</span>
+              </span>
+              <span
+                class="tabular shrink-0 text-[13.5px] font-bold"
+                :class="p.kind === 'payment' ? 'text-ok-600' : 'text-danger-600'"
+              >
+                {{ p.kind === 'payment' ? sum(p.amount) : 'Qaytarildi' }}
+              </span>
+            </li>
+          </ul>
+        </section>
+
+        <div v-if="canConfirm && payable" class="rounded-card bg-surface-sunken p-4 ring-1 ring-ink-200/70">
           <p class="text-[14px] font-bold text-ink-900">To‘lov qabul qilish</p>
           <div class="mt-4 grid gap-4 sm:grid-cols-2">
             <UiField label="To‘lov summasi" required>
@@ -566,7 +717,7 @@ const tariffTotal = TARIFF_LINES.reduce((s, t) => s + t.sum, 0)
       <template #footer>
         <UiButton variant="ghost" @click="detailOpen = false">Yopish</UiButton>
         <UiButton
-          v-if="canConfirm"
+          v-if="canConfirm && payable"
           variant="success"
           :disabled="!payValid"
           @click="acceptPayment"
