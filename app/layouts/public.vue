@@ -25,6 +25,9 @@ const NAV = [
 
 const favourites = useStorage<string[]>('makon.favourites', [])
 
+/** Pastki blokda eng yirik obyektlar, qolganlari katalog orqali ochiladi */
+const footerBuildings = [...BUILDINGS].sort((a, b) => b.gla - a.gla).slice(0, 6)
+
 const QUICK = [
   { label: 'Bo‘sh joylar katalogi', to: '/catalog' },
   { label: 'Obyektlar xaritasi', to: '/#xarita' },
@@ -446,7 +449,7 @@ onBeforeUnmount(() => {
           <div>
             <h3 class="text-[11.5px] font-bold uppercase tracking-wide text-white">Obyektlar</h3>
             <ul class="mt-4 space-y-2.5">
-              <li v-for="b in BUILDINGS" :key="b.id">
+              <li v-for="b in footerBuildings" :key="b.id">
                 <NuxtLink
                   :to="`/catalog/${b.slug}`"
                   class="group block text-[13.5px] text-ink-400 transition-colors duration-150 hover:text-white"
@@ -455,6 +458,14 @@ onBeforeUnmount(() => {
                   <span class="block text-[12px] text-ink-600 group-hover:text-ink-500">
                     {{ b.district }}
                   </span>
+                </NuxtLink>
+              </li>
+              <li>
+                <NuxtLink
+                  to="/catalog"
+                  class="text-[13.5px] font-semibold text-ink-300 transition-colors duration-150 hover:text-white"
+                >
+                  Yana {{ BUILDINGS.length - footerBuildings.length }} ta obyekt
                 </NuxtLink>
               </li>
             </ul>

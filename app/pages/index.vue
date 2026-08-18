@@ -45,12 +45,10 @@ const featured = computed<Listing[]>(() => {
 const vacantCount = computed(() => listings.value.length)
 const vacantAreaTotal = computed(() => listings.value.reduce((s, l) => s + l.unit.area, 0))
 
-const occupiedUnits = BUILDINGS.reduce((s, b) => s + b.occupiedUnits, 0)
-
 const TRUST = [
   { label: 'Obyektlar', value: num(PORTFOLIO_TOTALS.buildings), unit: 'ta' },
   { label: 'Umumiy ijara maydoni', value: num(PORTFOLIO_TOTALS.gla), unit: 'm²' },
-  { label: 'Ijarachilar', value: num(occupiedUnits), unit: 'ta' },
+  { label: 'Ijarachilar', value: num(PORTFOLIO_TOTALS.occupiedUnits), unit: 'ta' },
   { label: 'Bandlik', value: percent(PORTFOLIO_TOTALS.occupancy), unit: '' },
 ]
 
@@ -192,7 +190,10 @@ const mapStats = computed(() => [
   { label: 'Obyektlar', value: `${num(PORTFOLIO_TOTALS.buildings)} ta` },
   { label: 'Bandlik', value: percent(PORTFOLIO_TOTALS.occupancy) },
   { label: 'Umumiy maydon', value: `${num(Math.round(PORTFOLIO_TOTALS.gla / 1000))} ming m²` },
-  { label: 'Bo‘sh e’lonlar', value: `${num(vacantCount.value)} ta` },
+  {
+    label: 'Bo‘sh maydon',
+    value: `${num(Math.round(PORTFOLIO_TOTALS.vacantArea / 1000))} ming m²`,
+  },
 ])
 
 const mapLegend = [
@@ -201,21 +202,10 @@ const mapLegend = [
   { label: '84% dan past', class: 'bg-warn-500' },
 ]
 
-const objects = computed(() =>
-  BUILDINGS.map((b) => {
-    const own = listings.value.filter((l) => l.building.id === b.id)
-    return {
-      ...b,
-      offers: own.length,
-      vacant: own.reduce((s, l) => s + l.unit.area, 0),
-    }
-  }),
-)
+const objects = computed(() => [...BUILDINGS].sort((a, b) => a.name.localeCompare(b.name)))
 
 /** Kartalar bo‘limi portfelning eng yirik obyektlarini ko‘rsatadi, to‘liq ro‘yxat katalogda */
-const featuredObjects = computed(() =>
-  [...objects.value].sort((a, b) => b.gla - a.gla).slice(0, 8),
-)
+const featuredObjects = computed(() => [...BUILDINGS].sort((a, b) => b.gla - a.gla).slice(0, 8))
 
 const favourites = ref<string[]>([])
 
@@ -311,9 +301,11 @@ const SYSTEM_POINTS = [
 const stats = computed(() => [
   { label: 'Obyektlar', value: num(PORTFOLIO_TOTALS.buildings), unit: 'ta' },
   { label: 'Umumiy ijara maydoni', value: num(PORTFOLIO_TOTALS.gla), unit: 'm²' },
-  { label: 'Katalogdagi bo‘sh maydon', value: num(vacantAreaTotal.value), unit: 'm²' },
   { label: 'Bandlik', value: percent(PORTFOLIO_TOTALS.occupancy), unit: '' },
+  { label: 'Bo‘sh maydon', value: num(PORTFOLIO_TOTALS.vacantArea), unit: 'm²' },
   { label: 'Unitlar', value: num(PORTFOLIO_TOTALS.units), unit: 'ta' },
+  { label: 'Bo‘sh unitlar', value: num(PORTFOLIO_TOTALS.vacantUnits), unit: 'ta' },
+  { label: 'Katalogdagi bo‘sh maydon', value: num(vacantAreaTotal.value), unit: 'm²' },
   { label: 'Katalogdagi bo‘sh unitlar', value: num(vacantCount.value), unit: 'ta' },
 ])
 
@@ -736,18 +728,30 @@ function openArticle(a: (typeof ARTICLES)[number]) {
     <!-- Obyektlar -->
     <section id="obyektlar" class="scroll-mt-24 border-y border-ink-200 bg-surface">
       <div class="mx-auto max-w-[1360px] px-4 py-12 lg:px-8 lg:py-14">
-        <div class="mb-5 max-w-[62ch]">
-          <p class="text-[11.5px] font-bold uppercase tracking-wide text-brand-600">Obyektlar</p>
-          <h2 class="mt-2 text-[22px] font-bold sm:text-[26px]">Platformadagi beshta obyekt</h2>
-          <p class="mt-2 text-[14px] leading-relaxed text-ink-600">
-            Har bir obyekt bo‘yicha qavatlar rejasi, bo‘sh unitlar, jihozlar va qulayliklar ro‘yxati
-            ochiq ko‘rinishda taqdim etilgan.
-          </p>
+        <div class="mb-5 flex flex-wrap items-end justify-between gap-3">
+          <div class="max-w-[62ch]">
+            <p class="text-[11.5px] font-bold uppercase tracking-wide text-brand-600">Obyektlar</p>
+            <h2 class="mt-2 text-[22px] font-bold sm:text-[26px]">
+              Portfeldagi {{ PORTFOLIO_TOTALS.buildings }} ta obyekt
+            </h2>
+            <p class="mt-2 text-[14px] leading-relaxed text-ink-600">
+              Quyida maydoni bo‘yicha eng yirik {{ featuredObjects.length }} ta obyekt keltirilgan.
+              Har bir obyekt bo‘yicha qavatlar rejasi, bo‘sh unitlar, jihozlar va qulayliklar
+              ro‘yxati ochiq ko‘rinishda taqdim etilgan.
+            </p>
+          </div>
+          <NuxtLink
+            to="/catalog"
+            class="inline-flex items-center gap-1.5 text-[13.5px] font-semibold text-brand-600 transition-colors duration-150 hover:text-brand-700"
+          >
+            Barcha obyektlar
+            <UiIcon name="arrowRight" :size="16" />
+          </NuxtLink>
         </div>
 
         <div class="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
           <article
-            v-for="o in objects"
+            v-for="o in featuredObjects"
             :key="o.id"
             class="group flex flex-col overflow-hidden rounded-panel bg-surface shadow-card ring-1 ring-ink-200/70 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-pop"
           >
@@ -809,12 +813,12 @@ function openArticle(a: (typeof ARTICLES)[number]) {
                   <dd class="tabular text-[15px] font-bold text-ink-900">{{ o.floors }}</dd>
                 </div>
                 <div>
-                  <dt class="text-[12px] text-ink-500">E’lon</dt>
-                  <dd class="tabular text-[15px] font-bold text-ink-900">{{ o.offers }}</dd>
+                  <dt class="text-[12px] text-ink-500">Unit</dt>
+                  <dd class="tabular text-[15px] font-bold text-ink-900">{{ o.units }}</dd>
                 </div>
                 <div>
                   <dt class="text-[12px] text-ink-500">Bo‘sh m²</dt>
-                  <dd class="tabular text-[15px] font-bold text-ok-600">{{ num(o.vacant) }}</dd>
+                  <dd class="tabular text-[15px] font-bold text-ok-600">{{ num(o.vacantArea) }}</dd>
                 </div>
               </dl>
 

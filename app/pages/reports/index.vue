@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BUILDINGS } from '~/data/buildings'
+import { BUILDINGS, PORTFOLIO_TOTALS } from '~/data/buildings'
 import { AGING } from '~/data/business'
 import { num, percent, sumShort, dateShort } from '~/utils/format'
 

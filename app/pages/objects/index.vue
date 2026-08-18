@@ -6,12 +6,13 @@ const search = ref('')
 const typeFilter = ref('')
 const statusFilter = ref('')
 const cityFilter = ref('')
+const districtFilter = ref('')
 const classFilter = ref('')
 const occupancyFilter = ref('')
 const sortBy = ref('name')
 const moreOpen = ref(false)
 const page = ref(1)
-const perPage = ref('5')
+const perPage = ref('10')
 const notice = ref('')
 
 const exportOpen = ref(false)
@@ -25,6 +26,9 @@ const uniq = (values: string[]) => Array.from(new Set(values))
 
 const typeOptions = uniq(BUILDINGS.map((b) => b.type)).map((v) => ({ value: v, label: v }))
 const cityOptions = uniq(BUILDINGS.map((b) => b.city)).map((v) => ({ value: v, label: v }))
+const districtOptions = uniq(BUILDINGS.map((b) => b.district))
+  .sort((a, b) => a.localeCompare(b))
+  .map((v) => ({ value: v, label: v }))
 const classOptions = uniq(BUILDINGS.map((b) => b.buildingClass)).map((v) => ({ value: v, label: v }))
 
 const statusOptions = [
@@ -46,9 +50,9 @@ const sortOptions = [
 ]
 
 const perPageOptions = [
-  { value: '5', label: '5' },
   { value: '10', label: '10' },
   { value: '25', label: '25' },
+  { value: '50', label: '50' },
 ]
 
 const exportFormats = [
@@ -82,6 +86,7 @@ const filtered = computed(() => {
     if (typeFilter.value && b.type !== typeFilter.value) return false
     if (statusFilter.value && b.status !== statusFilter.value) return false
     if (cityFilter.value && b.city !== cityFilter.value) return false
+    if (districtFilter.value && b.district !== districtFilter.value) return false
     if (classFilter.value && b.buildingClass !== classFilter.value) return false
     if (occupancyFilter.value === 'high' && b.occupancy < 90) return false
     if (occupancyFilter.value === 'mid' && (b.occupancy < 84 || b.occupancy > 89)) return false
@@ -138,13 +143,23 @@ const activeFilters = computed(
       typeFilter.value,
       statusFilter.value,
       cityFilter.value,
+      districtFilter.value,
       classFilter.value,
       occupancyFilter.value,
     ].filter(Boolean).length,
 )
 
 watch(
-  [search, typeFilter, statusFilter, cityFilter, classFilter, occupancyFilter, perPage],
+  [
+    search,
+    typeFilter,
+    statusFilter,
+    cityFilter,
+    districtFilter,
+    classFilter,
+    occupancyFilter,
+    perPage,
+  ],
   () => {
     page.value = 1
   },
@@ -175,6 +190,7 @@ function resetFilters() {
   typeFilter.value = ''
   statusFilter.value = ''
   cityFilter.value = ''
+  districtFilter.value = ''
   classFilter.value = ''
   occupancyFilter.value = ''
   page.value = 1
@@ -292,6 +308,14 @@ function submitCreate() {
         v-if="moreOpen"
         class="flex flex-wrap items-end gap-3 border-t border-ink-100 bg-surface-sunken px-5 py-4"
       >
+        <UiField label="Tuman" class="w-56">
+          <UiSelect
+            v-model="districtFilter"
+            :options="districtOptions"
+            placeholder="Barchasi"
+            size="sm"
+          />
+        </UiField>
         <UiField label="Bino klassi" class="w-44">
           <UiSelect
             v-model="classFilter"

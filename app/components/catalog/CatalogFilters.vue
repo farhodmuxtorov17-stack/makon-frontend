@@ -123,6 +123,7 @@ function toggleType(value: string) {
               type="checkbox"
               class="size-4 shrink-0 cursor-pointer accent-brand-500"
               :checked="selected.includes(t.value)"
+              :aria-label="`${t.label}, ${t.count} ta variant`"
               @change="toggleType(t.value)"
             />
             <span class="min-w-0 flex-1 truncate text-[13px] font-medium text-ink-700">
