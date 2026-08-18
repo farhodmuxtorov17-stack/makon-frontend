@@ -1,54 +1,36 @@
 <script setup lang="ts">
 import { buildingById } from '~/data/buildings'
 import { UNITS, unitsOfFloor, type Unit } from '~/data/units'
-import { CONTRACTS } from '~/data/business'
+import { CONTRACTS, INVOICES } from '~/data/business'
 import { SERVICE_REQUESTS } from '~/data/operations'
-import { area, dateShort, num, sum } from '~/utils/format'
+import { area, dateShort, monthTitle, num, sum, todayIso } from '~/utils/format'
 
 const auth = useAuthStore()
 const lease = useLeaseStore()
 
 lease.seed()
 
-const organization = computed(() => auth.user?.organization ?? 'Urban Office MCHJ')
+/** Kabinet faqat kirgan foydalanuvchining tashkiloti bilan ishlaydi */
+const organization = computed(() => auth.user?.organization ?? '')
 
-const MY_UNIT_IDS = ['u-501', 'u-502']
-
-/** Faollashtirilgan ijara shartnomalari bo‘yicha qo‘shilgan maydonlar */
-const myCases = computed(() =>
-  lease.activeCases.filter((c) => c.org.name === organization.value),
+/**
+ * Maydonlar reyestrdan, tashkilot nomi bo‘yicha olinadi. Shartnoma
+ * faollashtirilganda unit shu tashkilot nomiga o‘tadi va ro‘yxatga
+ * avtomatik qo‘shiladi.
+ */
+const myUnits = computed<Unit[]>(() =>
+  UNITS.filter((u) => organization.value && u.tenant === organization.value),
 )
 
-const myUnits = computed(() =>
-  [...new Set([...myCases.value.map((c) => c.unitId), ...MY_UNIT_IDS])]
-    .map((id) => UNITS.find((u) => u.id === id))
-    .filter((u): u is Unit => Boolean(u)),
+/** Yagona hisob-faktura reyestri, ijarachi kesimida */
+const MY_INVOICES = computed(() =>
+  INVOICES.filter((i) => organization.value && i.tenant === organization.value),
 )
 
-const BASE_INVOICES = [
-  { code: 'INV-2025-0621', unitCode: '501', period: 'May 2025', total: 12540000, paid: 0, status: 'ISSUED', dueAt: '2025-05-23' },
-  { code: 'INV-2025-0605', unitCode: '501', period: 'May 2025', total: 25900000, paid: 12000000, status: 'PARTIALLY_PAID', dueAt: '2025-05-25' },
-  { code: 'INV-2025-0587', unitCode: '502', period: 'May 2025', total: 12540000, paid: 12540000, status: 'PAID', dueAt: '2025-05-10' },
-]
-
-const MY_INVOICES = computed(() => [
-  ...myCases.value.flatMap((c) => {
-    const first = c.schedule.find((r) => r.kind === 'RENT')
-    if (!first || !c.activation) return []
-    return [
-      {
-        code: c.activation.invoiceCode,
-        unitCode: c.unitCode,
-        period: first.label,
-        total: first.total,
-        paid: 0,
-        status: 'ISSUED',
-        dueAt: first.dueAt,
-      },
-    ]
-  }),
-  ...BASE_INVOICES,
-])
+/** «Unit 501» va «501» yozuvlari bir xil unitga ishora qiladi */
+function unitCodeOf(value: string) {
+  return String(value ?? '').replace(/^\s*Unit\s*/i, '').trim()
+}
 
 const view = ref('cards')
 const viewTabs = [
@@ -56,28 +38,60 @@ const viewTabs = [
   { value: 'table', label: 'Jadval' },
 ]
 
-const selectedId = ref(MY_UNIT_IDS[0]!)
-const selected = computed(
-  () => myUnits.value.find((u) => u.id === selectedId.value) ?? myUnits.value[0]!,
+const selectedId = ref('')
+const selected = computed<Unit | null>(
+  () => myUnits.value.find((u) => u.id === selectedId.value) ?? myUnits.value[0] ?? null,
 )
-const selectedBuilding = computed(() => buildingById(selected.value.buildingId)!)
+const selectedBuilding = computed(() =>
+  selected.value ? (buildingById(selected.value.buildingId) ?? null) : null,
+)
 const selectedFloorUnits = computed(() =>
-  unitsOfFloor(selected.value.buildingId, selected.value.floor),
+  selected.value ? unitsOfFloor(selected.value.buildingId, selected.value.floor) : [],
 )
 const selectedContract = computed(() =>
-  CONTRACTS.find((c) => c.code === selected.value.contractCode),
+  selected.value?.contractCode
+    ? CONTRACTS.find(
+        (c) => c.code === selected.value?.contractCode && c.tenant === organization.value,
+      )
+    : undefined,
 )
-const selectedInvoice = computed(() =>
-  MY_INVOICES.value.find((i) => i.unitCode === selected.value.code),
-)
+
+/** Unit bo‘yicha oxirgi hisob-faktura */
+const selectedInvoice = computed(() => {
+  const u = selected.value
+  if (!u) return undefined
+  return [...MY_INVOICES.value]
+    .filter((i) => unitCodeOf(i.unitCode) === u.code)
+    .sort((a, b) => b.issuedAt.localeCompare(a.issuedAt))[0]
+})
+
 const selectedRequests = computed(() =>
-  SERVICE_REQUESTS.filter(
-    (r) => r.unitCode === selected.value.code && r.buildingName === selectedBuilding.value.name,
-  ),
+  selected.value && selectedBuilding.value
+    ? SERVICE_REQUESTS.filter(
+        (r) =>
+          r.unitCode === selected.value?.code &&
+          r.buildingName === selectedBuilding.value?.name,
+      )
+    : [],
 )
 
 const totalArea = computed(() => myUnits.value.reduce((acc, u) => acc + u.area, 0))
-const monthlyTotal = computed(() => MY_INVOICES.value.reduce((acc, i) => acc + i.total, 0))
+
+/** Joriy davr: hujjat bo‘lgan oxirgi hisob davri */
+const currentPeriod = computed(() => {
+  const thisMonth = monthTitle(todayIso())
+  if (MY_INVOICES.value.some((i) => i.period === thisMonth)) return thisMonth
+  return (
+    [...MY_INVOICES.value].sort((a, b) => b.issuedAt.localeCompare(a.issuedAt))[0]?.period ??
+    thisMonth
+  )
+})
+
+const monthlyTotal = computed(() =>
+  MY_INVOICES.value
+    .filter((i) => i.period === currentPeriod.value)
+    .reduce((acc, i) => acc + i.total, 0),
+)
 
 function select(id: string) {
   selectedId.value = id
@@ -135,7 +149,7 @@ const planOpen = ref(false)
         <UiIcon name="doc" :size="16" />
         Hujjatlar
       </UiButton>
-      <UiButton size="sm" to="/cabinet/applications">
+      <UiButton size="sm" to="/cabinet/apply">
         <UiIcon name="plus" :size="16" />
         Yangi maydon so‘rash
       </UiButton>
@@ -143,11 +157,22 @@ const planOpen = ref(false)
   </AppTopbar>
 
   <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-4 sm:p-6">
+    <UiCard v-if="!myUnits.length" flush>
+      <UiEmpty
+        icon="building"
+        title="Biriktirilgan maydon yo‘q"
+        :description="`${organization || 'Tashkilotingiz'} nomiga rasmiylashtirilgan unit topilmadi. Bo‘sh maydonlar katalogidan tanlab, ijaraga olish arizasini yuboring.`"
+        action-label="Ijaraga olish arizasi"
+        action-to="/cabinet/apply"
+      />
+    </UiCard>
+
+    <template v-else-if="selected && selectedBuilding">
     <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <UiKpi label="Unitlar soni" :value="String(myUnits.length)" unit="ta" icon="building" tone="brand" />
       <UiKpi label="Umumiy maydon" :value="num(totalArea, 2)" unit="m²" icon="layers" tone="ok" />
       <UiKpi
-        label="Oylik to‘lov (joriy davr)"
+        :label="`Hisoblangan to‘lov (${currentPeriod})`"
         :value="num(monthlyTotal)"
         unit="so‘m"
         icon="wallet"
@@ -432,9 +457,11 @@ const planOpen = ref(false)
         </div>
       </div>
     </UiCard>
+    </template>
   </main>
 
   <UiModal
+    v-if="selected && selectedBuilding"
     v-model="planOpen"
     :title="`${selected.floor}-qavat rejasi`"
     :subtitle="`${selectedBuilding.name} · Unit ${selected.code} ajratib ko‘rsatilgan`"

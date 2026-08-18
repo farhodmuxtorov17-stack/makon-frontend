@@ -22,6 +22,10 @@ defineProps<{
   sortOptions: Array<{ value: string; label: string }>
   distanceOptions: Array<{ value: string; label: string }>
   usageOptions: Array<{ value: string; label: string }>
+  /** Ijara narxi so‘m/oy da o‘lchanadi, «Sotuv» tabida bu oraliq ko‘rsatilmaydi */
+  showRentPrice: boolean
+  /** Sotuv narxi so‘m/m² da o‘lchanadi, «Ijaraga» tabida ko‘rsatilmaydi */
+  showSalePrice: boolean
   activeCount: number
 }>()
 
@@ -29,14 +33,18 @@ const emit = defineEmits<{ reset: []; clearChip: [key: string] }>()
 
 const q = defineModel<string>('q', { required: true })
 const sort = defineModel<string>('sort', { required: true })
-// Narx va maydon maydonlari raqamli, shuning uchun bo‘sh bo‘lmaganda son keladi
-const priceMin = defineModel<string | number>('priceMin', { required: true })
-const priceMax = defineModel<string | number>('priceMax', { required: true })
+// Narx va maydon maydonlari raqamli, shuning uchun bo‘sh bo‘lmaganda son keladi.
+// Ijara va sotuv oraliqlari alohida: biri so‘m/oy, ikkinchisi so‘m/m² shkalasida,
+// shuning uchun bitta maydonda solishtirib bo‘lmaydi.
+const rentMin = defineModel<string | number>('rentMin', { required: true })
+const rentMax = defineModel<string | number>('rentMax', { required: true })
+const saleMin = defineModel<string | number>('saleMin', { required: true })
+const saleMax = defineModel<string | number>('saleMax', { required: true })
 const selected = defineModel<string[]>('selected', { required: true })
 const areaMin = defineModel<string | number>('areaMin', { required: true })
 const areaMax = defineModel<string | number>('areaMax', { required: true })
 const distance = defineModel<string>('distance', { required: true })
-// Maqsad mulk turidan alohida: biznes markazda ham ombor xonasi bo‘lishi mumkin
+// Maqsad bino turidan alohida: biznes markazda ham ombor xonasi bo‘lishi mumkin
 const usage = defineModel<string>('usage', { required: true })
 
 function toggleType(value: string) {
@@ -88,36 +96,72 @@ function toggleType(value: string) {
       />
     </section>
 
-    <section>
-      <p class="text-[11px] font-bold uppercase tracking-wide text-ink-500">Narx (so‘m / oy)</p>
+    <section v-if="showRentPrice">
+      <p class="text-[11px] font-bold uppercase tracking-wide text-ink-500">
+        Ijara narxi (so‘m / oy)
+      </p>
       <div class="mt-2 grid grid-cols-2 gap-2">
         <label class="block min-w-0">
           <span class="mb-1 block text-[11px] font-medium text-ink-500">Min</span>
           <UiInput
-            v-model="priceMin"
+            v-model="rentMin"
             type="number"
             inputmode="numeric"
             min="0"
             step="500000"
             placeholder="0"
+            aria-label="Ijara narxi, eng kam qiymat, so‘m / oy"
           />
         </label>
         <label class="block min-w-0">
           <span class="mb-1 block text-[11px] font-medium text-ink-500">Maks</span>
           <UiInput
-            v-model="priceMax"
+            v-model="rentMax"
             type="number"
             inputmode="numeric"
             min="0"
             step="500000"
             placeholder="Cheksiz"
+            aria-label="Ijara narxi, eng katta qiymat, so‘m / oy"
+          />
+        </label>
+      </div>
+    </section>
+
+    <section v-if="showSalePrice">
+      <p class="text-[11px] font-bold uppercase tracking-wide text-ink-500">
+        Sotuv narxi (so‘m / m²)
+      </p>
+      <div class="mt-2 grid grid-cols-2 gap-2">
+        <label class="block min-w-0">
+          <span class="mb-1 block text-[11px] font-medium text-ink-500">Min</span>
+          <UiInput
+            v-model="saleMin"
+            type="number"
+            inputmode="numeric"
+            min="0"
+            step="100000"
+            placeholder="0"
+            aria-label="Sotuv narxi, eng kam qiymat, so‘m / m²"
+          />
+        </label>
+        <label class="block min-w-0">
+          <span class="mb-1 block text-[11px] font-medium text-ink-500">Maks</span>
+          <UiInput
+            v-model="saleMax"
+            type="number"
+            inputmode="numeric"
+            min="0"
+            step="100000"
+            placeholder="Cheksiz"
+            aria-label="Sotuv narxi, eng katta qiymat, so‘m / m²"
           />
         </label>
       </div>
     </section>
 
     <section>
-      <p class="text-[11px] font-bold uppercase tracking-wide text-ink-500">Mulk turi</p>
+      <p class="text-[11px] font-bold uppercase tracking-wide text-ink-500">Bino turi</p>
       <ul class="mt-1.5 -mx-2">
         <li v-for="t in types" :key="t.value">
           <label

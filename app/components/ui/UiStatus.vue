@@ -12,8 +12,15 @@ const props = withDefaults(
     kind: StatusKind
     value: string
     size?: 'sm' | 'md'
+    /**
+     * `badge` nishoncha ko‘rinishi, `plain` esa fon va halqasiz, faqat belgi
+     * va nom. `plain` matn qatoriga (dt/dd, karta ichidagi qator) mo‘ljallangan:
+     * ekran status nomini `UNIT_STATUS[x].label` orqali qo‘lda chiqarmasin,
+     * aks holda o‘sha joy tarjima qilinmay qoladi.
+     */
+    variant?: 'badge' | 'plain'
   }>(),
-  { size: 'md' },
+  { size: 'md', variant: 'badge' },
 )
 
 const { statusLabel } = useAppLabels()
@@ -34,10 +41,18 @@ const def = computed<StatusDef>(() => {
 
 <template>
   <span
-    class="inline-flex items-center gap-1.5 rounded-pill font-semibold ring-1 ring-inset whitespace-nowrap"
+    class="inline-flex items-center gap-1.5 whitespace-nowrap"
     :class="[
-      TONE_BADGE[def.tone],
-      size === 'sm' ? 'px-2 py-0.5 text-[11px]' : 'px-2.5 py-1 text-xs',
+      variant === 'badge'
+        ? ['rounded-pill font-semibold ring-1 ring-inset', TONE_BADGE[def.tone]]
+        : 'font-medium text-ink-700',
+      variant === 'badge'
+        ? size === 'sm'
+          ? 'px-2 py-0.5 text-[11px]'
+          : 'px-2.5 py-1 text-xs'
+        : size === 'sm'
+          ? 'text-[12px]'
+          : 'text-[13px]',
     ]"
   >
     <!-- Shakl belgisi: status faqat rang bilan emas, shakl bilan ham farqlanadi -->

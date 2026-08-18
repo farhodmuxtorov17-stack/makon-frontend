@@ -18,9 +18,15 @@ const unitOptions = computed(() =>
   })),
 )
 
+/**
+ * Kabinetdan faqat ijara arizasi yuboriladi: sotuv oqimi (bir martalik to‘lov,
+ * SOLD holati va sotuv shartnomasi) tizimda hali mavjud emas, shuning uchun
+ * formada ham taklif qilinmaydi.
+ */
+const REQUEST_TYPE = 'Ijaraga olish' as const
+
 const form = reactive({
   unitId: '',
-  type: 'Ijaraga olish' as 'Ijaraga olish' | 'Sotib olish',
   price: '',
   startDate: '',
   term: '24',
@@ -82,11 +88,6 @@ const orgRows = computed(() => [
   { label: 'Yuridik manzil', value: organization.value.address, icon: 'location' },
 ])
 
-const TYPE_OPTIONS = [
-  { value: 'Ijaraga olish', label: 'Ijaraga olish' },
-  { value: 'Sotib olish', label: 'Sotib olish' },
-]
-
 const TERM_OPTIONS = [
   { value: '12', label: '12 oy' },
   { value: '24', label: '24 oy' },
@@ -114,7 +115,7 @@ function submit() {
     startDate: form.startDate,
     term: term.value,
     note: form.note.trim(),
-    type: form.type,
+    type: REQUEST_TYPE,
   })
   pending.value = false
 
@@ -172,15 +173,6 @@ function submit() {
             </div>
 
             <div class="grid gap-4 sm:grid-cols-2">
-              <UiField label="Ariza turi" required>
-                <UiSelect v-model="form.type" :options="TYPE_OPTIONS" />
-              </UiField>
-              <UiField label="Muddat" required>
-                <UiSelect v-model="form.term" :options="TERM_OPTIONS" />
-              </UiField>
-            </div>
-
-            <div class="grid gap-4 sm:grid-cols-2">
               <UiField
                 label="Taklif narxi"
                 required
@@ -197,10 +189,14 @@ function submit() {
                   <template #suffix><span class="text-[12px]">so‘m</span></template>
                 </UiInput>
               </UiField>
-              <UiField label="Boshlanish sanasi" required :error="errors.startDate">
-                <UiInput v-model="form.startDate" type="date" :invalid="!!errors.startDate" />
+              <UiField label="Muddat" required>
+                <UiSelect v-model="form.term" :options="TERM_OPTIONS" />
               </UiField>
             </div>
+
+            <UiField label="Boshlanish sanasi" required :error="errors.startDate">
+              <UiInput v-model="form.startDate" type="date" :invalid="!!errors.startDate" />
+            </UiField>
 
             <UiField label="Qo‘shimcha izoh" hint="Talab, shart yoki so‘rovlaringizni yozing">
               <textarea
@@ -262,6 +258,10 @@ function submit() {
 
         <UiCard v-if="price > 0" title="Dastlabki hisob" subtitle="Yakuniy shartlar ko‘rikdan keyin" icon="chart" tone="brand">
           <dl class="space-y-3">
+            <div class="flex items-baseline justify-between gap-3">
+              <dt class="text-[12.5px] text-ink-500">Ariza turi</dt>
+              <dd class="text-[13.5px] font-bold text-ink-900">{{ REQUEST_TYPE }}</dd>
+            </div>
             <div class="flex items-baseline justify-between gap-3">
               <dt class="text-[12.5px] text-ink-500">Taklif narxi (oylik)</dt>
               <dd class="tabular text-[13.5px] font-bold text-ink-900">{{ sum(price) }}</dd>

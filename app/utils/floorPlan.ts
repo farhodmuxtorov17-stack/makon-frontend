@@ -65,6 +65,12 @@ export interface FloorPlan {
   core: PlanCoreItem[]
   units: PlanUnitShape[]
   windows: PlanWindow[]
+  /** Devor tanasi: chizmada to‘ldirilgan holda chiziladi */
+  walls: PlanRect[]
+  /** Devordagi deraza teshiklari, tashqi devor bo‘ylab */
+  openings: PlanRect[]
+  /** Koordinata o‘qlari: raqamli (vertikal) va harfli (gorizontal) */
+  axes: { xs: number[]; ys: number[] }
   /** Umumiy qurilish maydoni, m² */
   grossArea: number
   /** Ijaraga beriladigan maydon, m² */
@@ -199,6 +205,94 @@ function buildWindows(width: number, height: number, kind: PlanKind): PlanWindow
   return out
 }
 
+
+/**
+ * Chizmadagi devor tanasi. Arxitektura chizmasida devor bitta chiziq emas,
+ * qalinligi bor va to‘ldirib ko‘rsatiladi (poche). Tashqi kontur to‘rtta
+ * lentadan, ichki bo‘linmalar esa unitlar orasidagi ingichka lentalardan
+ * iborat.
+ */
+function buildWalls(
+  width: number,
+  height: number,
+  wallOuter: number,
+  wallInner: number,
+  units: PlanUnitShape[],
+  corridors: PlanRect[],
+): PlanRect[] {
+  const out: PlanRect[] = [
+    rect(0, 0, width, wallOuter),
+    rect(0, height - wallOuter, width, wallOuter),
+    rect(0, wallOuter, wallOuter, height - wallOuter * 2),
+    rect(width - wallOuter, wallOuter, wallOuter, height - wallOuter * 2),
+  ]
+
+  const half = wallInner / 2
+  const seen = new Set<string>()
+  const add = (r: PlanRect) => {
+    const key = [r.x, r.y, r.w, r.h].map((v) => v.toFixed(2)).join(':')
+    if (seen.has(key)) return
+    seen.add(key)
+    out.push(r)
+  }
+
+  for (const u of units) {
+    const xs = u.points.map((p) => p[0])
+    const ys = u.points.map((p) => p[1])
+    const x1 = Math.min(...xs)
+    const x2 = Math.max(...xs)
+    const y1 = Math.min(...ys)
+    const y2 = Math.max(...ys)
+    // Har bir unitning to‘rt tomoni: tashqi konturga tegib turganlari
+    // allaqachon tashqi devor bilan qoplangan
+    if (y1 > wallOuter + 0.01) add(rect(x1 - half, y1 - half, x2 - x1 + wallInner, wallInner))
+    if (y2 < height - wallOuter - 0.01) add(rect(x1 - half, y2 - half, x2 - x1 + wallInner, wallInner))
+    if (x1 > wallOuter + 0.01) add(rect(x1 - half, y1 - half, wallInner, y2 - y1 + wallInner))
+    if (x2 < width - wallOuter - 0.01) add(rect(x2 - half, y1 - half, wallInner, y2 - y1 + wallInner))
+  }
+
+  for (const c of corridors) {
+    add(rect(c.x - half, c.y - half, c.w + wallInner, wallInner))
+    add(rect(c.x - half, c.y + c.h - half, c.w + wallInner, wallInner))
+  }
+
+  return out
+}
+
+/**
+ * Koordinata o‘qlari: chizmada raqamli va harfli o‘qlar unit chegaralaridan
+ * o‘tadi, shuning uchun har bir bo‘linma o‘lchamga bog‘lanadi.
+ */
+function buildAxes(units: PlanUnitShape[], width: number, height: number) {
+  // Pufakchalar diametri qavat o‘lchamiga bog‘liq, shuning uchun eng kichik
+  // masofa ham shunga qarab olinadi: aks holda raqamlar ustma-ust tushadi
+  const gap = Math.max(width, height) * 0.055
+  const uniq = (list: number[], last: number) => {
+    const sorted = [...new Set(list.map((v) => Math.round(v * 100) / 100))].sort((a, b) => a - b)
+    const out: number[] = []
+    for (const v of sorted) {
+      if (!out.length || v - out[out.length - 1]! > gap) out.push(v)
+    }
+    // Oxirgi o‘q chetga juda yaqin bo‘lsa, uning o‘rniga chekka qoladi
+    if (out.length > 1 && last - out[out.length - 1]! < gap) out[out.length - 1] = last
+    else if (out[out.length - 1] !== last) out.push(last)
+    return out
+  }
+  const xs = uniq([0, ...units.flatMap((u) => u.points.map((p) => p[0]))], width)
+  const ys = uniq([0, ...units.flatMap((u) => u.points.map((p) => p[1]))], height)
+  return { xs, ys }
+}
+
+/** Deraza teshigi: devor tanasidagi bo‘shliq */
+function windowOpenings(windows: PlanWindow[], wallOuter: number): PlanRect[] {
+  return windows.map((w) => {
+    const horizontal = Math.abs(w.y2 - w.y1) < 0.001
+    return horizontal
+      ? rect(Math.min(w.x1, w.x2), w.y1 - wallOuter / 2, Math.abs(w.x2 - w.x1), wallOuter)
+      : rect(w.x1 - wallOuter / 2, Math.min(w.y1, w.y2), wallOuter, Math.abs(w.y2 - w.y1))
+  })
+}
+
 /**
  * Halqa reja: unitlar perimetr bo‘ylab to‘rt tomonda joylashadi, o‘rtada
  * aylanma koridor va xizmat yadrosi turadi. Katta qavatlar aynan shunday
@@ -313,6 +407,12 @@ function buildRingPlan(
   const hole = rect(x0 + dLeft, y0 + dTop, innerW - dLeft - dRight, sideH)
   const c = Math.min(spec.corridor, Math.min(hole.w, hole.h) / 3)
   const coreBox = rect(hole.x + c, hole.y + c, hole.w - c * 2, hole.h - c * 2)
+  const ringCorridors = [
+    rect(hole.x, hole.y, hole.w, c),
+    rect(hole.x, hole.y + hole.h - c, hole.w, c),
+    rect(hole.x, hole.y + c, c, hole.h - c * 2),
+    rect(hole.x + hole.w - c, hole.y + c, c, hole.h - c * 2),
+  ]
 
   return {
     kind,
@@ -320,15 +420,13 @@ function buildRingPlan(
     height,
     wallOuter: spec.wallOuter,
     wallInner: spec.wallInner,
-    corridors: [
-      rect(hole.x, hole.y, hole.w, c),
-      rect(hole.x, hole.y + hole.h - c, hole.w, c),
-      rect(hole.x, hole.y + c, c, hole.h - c * 2),
-      rect(hole.x + hole.w - c, hole.y + c, c, hole.h - c * 2),
-    ],
+    corridors: ringCorridors,
     core: buildCore(coreBox, kind),
     units: shapes,
     windows: buildWindows(width, height, kind),
+    walls: buildWalls(width, height, spec.wallOuter, spec.wallInner, shapes, ringCorridors),
+    openings: windowOpenings(buildWindows(width, height, kind), spec.wallOuter),
+    axes: buildAxes(shapes, width, height),
     grossArea: width * height,
     usableArea,
     efficiency: usableArea / (width * height),
@@ -364,6 +462,9 @@ export function buildFloorPlan(input: PlanInput): FloorPlan {
       core: [],
       units: [],
       windows: buildWindows(20, 14, kind),
+      walls: buildWalls(20, 14, spec.wallOuter, spec.wallInner, [], []),
+      openings: windowOpenings(buildWindows(20, 14, kind), spec.wallOuter),
+      axes: { xs: [0, 20], ys: [0, 14] },
       grossArea: 280,
       usableArea: 0,
       efficiency: 0,
@@ -476,6 +577,9 @@ export function buildFloorPlan(input: PlanInput): FloorPlan {
     core: buildCore(coreBox, kind),
     units: shapes,
     windows: buildWindows(width, height, kind),
+    walls: buildWalls(width, height, spec.wallOuter, spec.wallInner, shapes, [corridor]),
+    openings: windowOpenings(buildWindows(width, height, kind), spec.wallOuter),
+    axes: buildAxes(shapes, width, height),
     grossArea: width * height,
     usableArea,
     efficiency: usableArea / (width * height),

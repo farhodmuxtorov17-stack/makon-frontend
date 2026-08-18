@@ -12,36 +12,49 @@ interface Listing {
 }
 
 /**
- * Mulk turlari. Kalitlar bosh sahifadagi qidiruv yuboradigan `type` qiymatlari
- * bilan bir xil, shuning uchun hero qidiruvidan kelgan havola shu yerda ochiladi.
+ * BINO TURI lug‘ati. Yorliq ma’lumotnomadagi BLD_TYPE yozuvi bilan aynan bir
+ * xil, shuning uchun bitta bino landingda bir nom, katalogda boshqa nom bilan
+ * chiqmaydi. Kalitlar bosh sahifa va pastki menyu yuboradigan `type`
+ * qiymatlari, xarita rangi ham shu yerdan olinadi.
  */
-const CATEGORIES: Array<{ value: string; label: string; match: (l: Listing) => boolean }> = [
-  {
-    value: 'biznes',
-    label: 'Ofis',
-    match: (l) => l.building.type === 'Biznes markaz' || l.building.type === 'Ofis binosi',
-  },
-  { value: 'savdo', label: 'Savdo markazi', match: (l) => l.building.type === 'Savdo markaz' },
-  {
-    value: 'ombor',
-    label: 'Ombor / logistika',
-    match: (l) => l.building.type === 'Ombor / logistika',
-  },
-  { value: 'turar', label: 'Turar joy', match: (l) => l.building.type === 'Turar joy' },
+const BUILDING_TYPES: Array<{
+  value: string
+  type: Building['type']
+  tone: 'brand' | 'ok' | 'warn' | 'danger' | 'info'
+  dot: string
+}> = [
+  { value: 'biznes', type: 'Biznes markaz', tone: 'brand', dot: 'bg-brand-500' },
+  { value: 'ofis', type: 'Ofis binosi', tone: 'info', dot: 'bg-info-500' },
+  { value: 'savdo', type: 'Savdo markaz', tone: 'danger', dot: 'bg-danger-500' },
+  { value: 'ombor', type: 'Ombor / logistika', tone: 'warn', dot: 'bg-warn-500' },
+  { value: 'turar', type: 'Turar joy', tone: 'ok', dot: 'bg-ok-500' },
 ]
 
 /**
- * Maqsad — mulk turidan ALOHIDA o‘lchov: biznes markazda ham ombor xonasi,
- * savdo markazida ham ofis bo‘lishi mumkin. Ilgari bosh sahifadagi «Maqsad»
- * tanlovi mulk turiga aylantirib yuborilardi, natijada «Ombor» tanlanganda
- * boshqa binolarning rasmlari chiqardi.
+ * MAYDON MAQSADI bino turidan butunlay boshqa o‘lchov: biznes markazda ham
+ * ombor xonasi, savdo markazida ham ofis bo‘lishi mumkin. Yorliqlarda
+ * «maydoni» so‘zi bor, chunki yon panelda «Ofis binosi» bino turi sifatida
+ * ham turadi va bitta ekranda «Ofis» ikki ma’noni bildirmasligi kerak.
  */
-const USAGE_OPTIONS = ['Ofis', 'Savdo', 'Ombor', 'Turar joy']
+const USAGE_OPTIONS = [
+  { value: 'Ofis', label: 'Ofis maydoni' },
+  { value: 'Savdo', label: 'Savdo maydoni' },
+  { value: 'Ombor', label: 'Ombor maydoni' },
+  { value: 'Turar joy', label: 'Turar joy maydoni' },
+]
 
 const usageSelectOptions = [
   { value: '', label: 'Barcha maqsadlar' },
-  ...USAGE_OPTIONS.map((v) => ({ value: v, label: v })),
+  ...USAGE_OPTIONS.map((o) => ({ value: o.value, label: o.label })),
 ]
+
+/** Unit maqsadining to‘liq yorlig‘i, bino turi bilan chalkashmasligi uchun */
+function usageLabel(value: string) {
+  return USAGE_OPTIONS.find((o) => o.value === value)?.label ?? value
+}
+
+/** Sotuv unitlari so‘m/m² da, ijara unitlari so‘m/oy da narxlanadi */
+const SALE_UNIT = 'so‘m / m²'
 
 /** Bosh sahifa yuboradigan narx oralig‘i kalitlari, so‘m */
 const PRICE_BUCKETS: Record<string, [string, string]> = {
@@ -59,20 +72,12 @@ const AREA_BUCKETS: Record<string, [string, string]> = {
   a4: ['600', ''],
 }
 
-const MAP_TONE: Record<string, 'brand' | 'ok' | 'warn' | 'info'> = {
-  'Biznes markaz': 'brand',
-  'Ofis binosi': 'brand',
-  'Savdo markaz': 'info',
-  'Ombor / logistika': 'warn',
-  'Turar joy': 'ok',
-}
+/** Xarita nuqtasi ham, legenda ham bitta lug‘atdan quriladi */
+const MAP_TONE = Object.fromEntries(
+  BUILDING_TYPES.map((c) => [c.type, c.tone]),
+) as Record<string, 'brand' | 'ok' | 'warn' | 'danger' | 'info'>
 
-const MAP_LEGEND = [
-  { label: 'Ofis', class: 'bg-brand-500' },
-  { label: 'Savdo', class: 'bg-info-500' },
-  { label: 'Ombor / logistika', class: 'bg-warn-500' },
-  { label: 'Turar joy', class: 'bg-ok-500' },
-]
+const MAP_LEGEND = BUILDING_TYPES.map((c) => ({ label: c.type, class: c.dot }))
 
 const SORT_OPTIONS = [
   { value: 'top', label: 'Mashhurlik bo‘yicha' },
@@ -105,39 +110,78 @@ const OFFER_SUMMARY: Record<string, string> = {
 const route = useRoute()
 const router = useRouter()
 
-function initial(key: string) {
-  const v = route.query[key]
-  return typeof v === 'string' ? v : ''
-}
+const CATALOG_PATH = '/catalog'
 
-function initialTypes(): string[] {
-  const out: string[] = []
-  for (const raw of initial('type').split(',')) {
-    const key = raw.trim()
-    if (key && CATEGORIES.some((c) => c.value === key) && !out.includes(key)) out.push(key)
-  }
-  return out
-}
-
-const priceBucket = PRICE_BUCKETS[initial('price')] ?? ['', '']
-const areaBucket = AREA_BUCKETS[initial('size')] ?? ['', '']
-
-const q = ref(initial('q'))
-const selectedTypes = ref<string[]>(initialTypes())
-const place = ref(initial('place'))
+const q = ref('')
+const selectedTypes = ref<string[]>([])
+const place = ref('')
 // Raqamli maydon `<input type="number">` bo‘lgani uchun bo‘sh bo‘lmaganda son
 // qaytaradi, shuning uchun turi matn va sondan iborat
-const priceMin = ref<string | number>(initial('pmin') || priceBucket[0] || '')
-const priceMax = ref<string | number>(initial('pmax') || priceBucket[1] || '')
-const areaMin = ref<string | number>(initial('amin') || areaBucket[0] || '')
-const areaMax = ref<string | number>(initial('amax') || areaBucket[1] || '')
-const distance = ref(DISTANCE_OPTIONS.some((o) => o.value === initial('dist')) ? initial('dist') : '')
-const offer = ref(OFFER_TABS.some((o) => o.value === initial('offer')) ? initial('offer') : 'all')
-const sort = ref(SORT_OPTIONS.some((o) => o.value === initial('sort')) ? initial('sort') : 'top')
-const mode = ref(initial('mode') === 'map' ? 'map' : 'list')
-const usage = ref(USAGE_OPTIONS.includes(initial('usage')) ? initial('usage') : '')
-const onlyFavourites = ref(initial('fav') === '1')
-const objectId = ref(BUILDINGS.some((b) => b.id === initial('obyekt')) ? initial('obyekt') : '')
+const rentMin = ref<string | number>('')
+const rentMax = ref<string | number>('')
+const saleMin = ref<string | number>('')
+const saleMax = ref<string | number>('')
+const areaMin = ref<string | number>('')
+const areaMax = ref<string | number>('')
+const distance = ref('')
+const offer = ref('all')
+const sort = ref('top')
+const mode = ref('list')
+const usage = ref('')
+const onlyFavourites = ref(false)
+const objectId = ref('')
+
+/** Narx oralig‘i qaysi shkalada ko‘rsatilishi taklif turiga bog‘liq */
+const showRentPrice = computed(() => offer.value !== 'buy')
+const showSalePrice = computed(() => offer.value !== 'rent')
+
+/**
+ * URL dagi shartlarni filtr holatiga ko‘chiradi. Katalogning o‘zida turib
+ * havola bosilganda ham (pastki menyudagi tur havolalari, «Sevimli e’lonlar»)
+ * shu funksiya ishlaydi, shuning uchun ro‘yxat boshqa sahifadan kelgandagi
+ * kabi yangilanadi.
+ */
+function applyQuery(query: typeof route.query) {
+  const get = (key: string) => {
+    const v = query[key]
+    return typeof v === 'string' ? v : ''
+  }
+
+  q.value = get('q')
+
+  const types: string[] = []
+  for (const raw of get('type').split(',')) {
+    const key = raw.trim()
+    if (key && BUILDING_TYPES.some((c) => c.value === key) && !types.includes(key)) types.push(key)
+  }
+  selectedTypes.value = types
+
+  place.value = get('place')
+  distance.value = DISTANCE_OPTIONS.some((o) => o.value === get('dist')) ? get('dist') : ''
+  offer.value = OFFER_TABS.some((o) => o.value === get('offer')) ? get('offer') : 'all'
+  sort.value = SORT_OPTIONS.some((o) => o.value === get('sort')) ? get('sort') : 'top'
+  mode.value = get('mode') === 'map' ? 'map' : 'list'
+  usage.value = USAGE_OPTIONS.some((o) => o.value === get('usage')) ? get('usage') : ''
+  onlyFavourites.value = get('fav') === '1'
+  objectId.value = BUILDINGS.some((b) => b.id === get('obyekt')) ? get('obyekt') : ''
+
+  const areaBucket = AREA_BUCKETS[get('size')] ?? ['', '']
+  areaMin.value = get('amin') || areaBucket[0] || ''
+  areaMax.value = get('amax') || areaBucket[1] || ''
+
+  // Bosh sahifadagi narx oralig‘i tanlangan taklif turining shkalasiga
+  // tushadi: «Sotuv» tabida so‘m/m², qolganida so‘m/oy. Ko‘rinmaydigan shkala
+  // tozalanadi, aks holda yashirin shart natijani jimgina qisqartirib turadi.
+  const bucket = PRICE_BUCKETS[get('price')] ?? ['', '']
+  const rentBucket = offer.value === 'buy' ? ['', ''] : bucket
+  const saleBucket = offer.value === 'buy' ? bucket : ['', '']
+  rentMin.value = showRentPrice.value ? get('pmin') || rentBucket[0] || '' : ''
+  rentMax.value = showRentPrice.value ? get('pmax') || rentBucket[1] || '' : ''
+  saleMin.value = showSalePrice.value ? get('smin') || saleBucket[0] || '' : ''
+  saleMax.value = showSalePrice.value ? get('smax') || saleBucket[1] || '' : ''
+}
+
+applyQuery(route.query)
 
 const favourites = useStorage<string[]>('makon.favourites', [])
 
@@ -191,12 +235,30 @@ function matchText(l: Listing) {
     .includes(s)
 }
 
+/**
+ * Ijara so‘m/oy da, sotuv esa so‘m/m² da narxlangan. Har bir unit faqat o‘z
+ * shkalasidagi oraliq bilan solishtiriladi, aks holda 78 m² lik kvartira
+ * (990 mln so‘m) oylik ijara oralig‘iga tushib qolardi.
+ */
 function matchPrice(u: Unit) {
-  const lo = numberOf(priceMin.value)
-  const hi = numberOf(priceMax.value)
+  const sale = u.priceUnit === SALE_UNIT
+  const rentSet = numberOf(rentMin.value) !== null || numberOf(rentMax.value) !== null
+  const saleSet = numberOf(saleMin.value) !== null || numberOf(saleMax.value) !== null
+  if (!rentSet && !saleSet) return true
+  // Narx oralig‘i belgilangan shkaladagi e’lonlargina qoladi: «Ijara narxi»
+  // yozib qo‘yilganda so‘m/m² dagi sotuv e’lonlari ro‘yxatga qo‘shilmaydi.
+  if (sale && !saleSet) return false
+  if (!sale && !rentSet) return false
+  const lo = numberOf(sale ? saleMin.value : rentMin.value)
+  const hi = numberOf(sale ? saleMax.value : rentMax.value)
   if (lo !== null && u.price < lo) return false
   if (hi !== null && u.price > hi) return false
   return true
+}
+
+/** Narx bo‘yicha saralashda ikki shkala aralashmaydi: avval ijara, keyin sotuv */
+function priceRank(l: Listing) {
+  return l.unit.priceUnit === SALE_UNIT ? 1 : 0
 }
 
 function matchArea(u: Unit) {
@@ -234,27 +296,36 @@ const base = computed(() =>
 )
 
 const typeOptions = computed(() =>
-  CATEGORIES.map((c) => ({
+  BUILDING_TYPES.map((c) => ({
     value: c.value,
-    label: c.label,
-    count: base.value.filter((l) => c.match(l)).length,
+    label: c.type,
+    count: base.value.filter((l) => l.building.type === c.type).length,
   })),
+)
+
+/** Tanlangan kalitlarga mos bino turlari */
+const selectedBuildingTypes = computed(
+  () =>
+    new Set(
+      BUILDING_TYPES.filter((c) => selectedTypes.value.includes(c.value)).map((c) => c.type),
+    ),
 )
 
 /** Obyekt tanlovi xarita nuqtalarini yo‘qotmasligi uchun undan oldin hisoblanadi */
 const matched = computed(() =>
   base.value.filter(
     (l) =>
-      selectedTypes.value.length === 0 ||
-      CATEGORIES.some((c) => selectedTypes.value.includes(c.value) && c.match(l)),
+      selectedBuildingTypes.value.size === 0 || selectedBuildingTypes.value.has(l.building.type),
   ),
 )
 
 const results = computed(() => {
   const list = matched.value.filter((l) => !objectId.value || l.building.id === objectId.value)
   const sorted = [...list]
-  if (sort.value === 'price-asc') sorted.sort((a, b) => a.unit.price - b.unit.price)
-  else if (sort.value === 'price-desc') sorted.sort((a, b) => b.unit.price - a.unit.price)
+  if (sort.value === 'price-asc')
+    sorted.sort((a, b) => priceRank(a) - priceRank(b) || a.unit.price - b.unit.price)
+  else if (sort.value === 'price-desc')
+    sorted.sort((a, b) => priceRank(a) - priceRank(b) || b.unit.price - a.unit.price)
   else if (sort.value === 'area-desc') sorted.sort((a, b) => b.unit.area - a.unit.area)
   else if (sort.value === 'new')
     sorted.sort(
@@ -262,7 +333,10 @@ const results = computed(() => {
     )
   else
     sorted.sort(
-      (a, b) => b.building.occupancy - a.building.occupancy || a.unit.price - b.unit.price,
+      (a, b) =>
+        b.building.occupancy - a.building.occupancy ||
+        priceRank(a) - priceRank(b) ||
+        a.unit.price - b.unit.price,
     )
   return sorted
 })
@@ -289,20 +363,33 @@ const mapStats = computed(() => [
 
 const activeObject = computed(() => BUILDINGS.find((b) => b.id === objectId.value))
 
-function categoryLabel(l: Listing) {
-  return CATEGORIES.find((c) => c.match(l))?.label ?? l.building.type
-}
-
 const summary = computed(() => {
-  const names = CATEGORIES.filter((c) => selectedTypes.value.includes(c.value)).map((c) => c.label)
-  const cats = names.length ? names.join(', ') : 'barcha mulk turlari'
+  const names = BUILDING_TYPES.filter((c) => selectedTypes.value.includes(c.value)).map(
+    (c) => c.type,
+  )
+  const cats = names.length ? names.join(', ') : 'barcha bino turlari'
   return `${OFFER_SUMMARY[offer.value] ?? OFFER_SUMMARY.all} · ${cats}`
 })
+
+/** Narx oralig‘ini o‘qiladigan yozuvga aylantiradi: «5 – 15 mln», «15 mln gacha» */
+function rangeLabel(min: string | number, max: string | number) {
+  const lo = numberOf(min)
+  const hi = numberOf(max)
+  const mln = (v: number) => `${num(Math.round((v / 1000000) * 10) / 10)} mln`
+  if (lo !== null && hi !== null) return `${mln(lo)} – ${mln(hi)}`
+  if (lo !== null) return `${mln(lo)} dan yuqori`
+  if (hi !== null) return `${mln(hi)} gacha`
+  return ''
+}
 
 const chips = computed(() => {
   const out: Array<{ key: string; label: string }> = []
   if (place.value) out.push({ key: 'place', label: place.value.replace('|', ', ') })
-  if (usage.value) out.push({ key: 'usage', label: `Maqsad: ${usage.value}` })
+  if (usage.value) out.push({ key: 'usage', label: `Maqsad: ${usageLabel(usage.value)}` })
+  const rent = rangeLabel(rentMin.value, rentMax.value)
+  if (rent) out.push({ key: 'rent-price', label: `Ijara: ${rent} so‘m / oy` })
+  const sale = rangeLabel(saleMin.value, saleMax.value)
+  if (sale) out.push({ key: 'sale-price', label: `Sotuv: ${sale} so‘m / m²` })
   if (onlyFavourites.value) out.push({ key: 'fav', label: 'Faqat sevimlilar' })
   if (activeObject.value) out.push({ key: 'obyekt', label: activeObject.value.name })
   return out
@@ -311,6 +398,14 @@ const chips = computed(() => {
 function clearChip(key: string) {
   if (key === 'place') place.value = ''
   if (key === 'usage') usage.value = ''
+  if (key === 'rent-price') {
+    rentMin.value = ''
+    rentMax.value = ''
+  }
+  if (key === 'sale-price') {
+    saleMin.value = ''
+    saleMax.value = ''
+  }
   if (key === 'fav') onlyFavourites.value = false
   if (key === 'obyekt') objectId.value = ''
 }
@@ -319,7 +414,8 @@ const activeCount = computed(() => {
   let n = 0
   if (q.value.trim()) n++
   if (selectedTypes.value.length) n++
-  if (priceMin.value !== '' || priceMax.value !== '') n++
+  if (rentMin.value !== '' || rentMax.value !== '') n++
+  if (saleMin.value !== '' || saleMax.value !== '') n++
   if (areaMin.value !== '' || areaMax.value !== '') n++
   if (distance.value) n++
   if (place.value) n++
@@ -334,8 +430,10 @@ function resetFilters() {
   q.value = ''
   selectedTypes.value = []
   place.value = ''
-  priceMin.value = ''
-  priceMax.value = ''
+  rentMin.value = ''
+  rentMax.value = ''
+  saleMin.value = ''
+  saleMax.value = ''
   areaMin.value = ''
   areaMax.value = ''
   distance.value = ''
@@ -344,6 +442,18 @@ function resetFilters() {
   onlyFavourites.value = false
   objectId.value = ''
 }
+
+/** Taklif turi almashganda ko‘rinmay qolgan shkaladagi oraliq ham tozalanadi */
+watch(offer, (value) => {
+  if (value === 'buy') {
+    rentMin.value = ''
+    rentMax.value = ''
+  }
+  if (value === 'rent') {
+    saleMin.value = ''
+    saleMax.value = ''
+  }
+})
 
 const hoverId = ref<string | null>(null)
 const listEl = ref<HTMLElement | null>(null)
@@ -376,13 +486,49 @@ onBeforeUnmount(() => {
   document.body.style.overflow = ''
 })
 
+/** Filtr holatidan URL shartlarini yig‘adi */
+function buildQuery() {
+  const query: Record<string, string> = {}
+  if (q.value.trim()) query.q = q.value.trim()
+  if (selectedTypes.value.length) query.type = selectedTypes.value.join(',')
+  if (place.value) query.place = place.value
+  if (rentMin.value !== '') query.pmin = String(rentMin.value)
+  if (rentMax.value !== '') query.pmax = String(rentMax.value)
+  if (saleMin.value !== '') query.smin = String(saleMin.value)
+  if (saleMax.value !== '') query.smax = String(saleMax.value)
+  if (areaMin.value !== '') query.amin = String(areaMin.value)
+  if (areaMax.value !== '') query.amax = String(areaMax.value)
+  if (distance.value) query.dist = distance.value
+  if (usage.value) query.usage = usage.value
+  if (offer.value !== 'all') query.offer = offer.value
+  if (sort.value !== 'top') query.sort = sort.value
+  if (mode.value !== 'list') query.mode = mode.value
+  if (onlyFavourites.value) query.fav = '1'
+  if (objectId.value) query.obyekt = objectId.value
+  return query
+}
+
+/**
+ * Ikki tomonlama bog‘lanishda sikl bo‘lmasligi uchun taqqoslash kaliti:
+ * URL va holat bir xil bo‘lsa, hech biri ikkinchisini qayta yozmaydi.
+ */
+function queryKey(query: Record<string, unknown>) {
+  return Object.keys(query)
+    .filter((k) => query[k] !== undefined && query[k] !== null && query[k] !== '')
+    .sort()
+    .map((k) => `${k}=${String(query[k])}`)
+    .join('&')
+}
+
 watch(
   [
     q,
     selectedTypes,
     place,
-    priceMin,
-    priceMax,
+    rentMin,
+    rentMax,
+    saleMin,
+    saleMax,
     areaMin,
     areaMax,
     distance,
@@ -394,24 +540,27 @@ watch(
     objectId,
   ],
   () => {
-    const query: Record<string, string> = {}
-    if (q.value.trim()) query.q = q.value.trim()
-    if (selectedTypes.value.length) query.type = selectedTypes.value.join(',')
-    if (place.value) query.place = place.value
-    if (priceMin.value !== '') query.pmin = String(priceMin.value)
-    if (priceMax.value !== '') query.pmax = String(priceMax.value)
-    if (areaMin.value !== '') query.amin = String(areaMin.value)
-    if (areaMax.value !== '') query.amax = String(areaMax.value)
-    if (distance.value) query.dist = distance.value
-    if (usage.value) query.usage = usage.value
-    if (offer.value !== 'all') query.offer = offer.value
-    if (sort.value !== 'top') query.sort = sort.value
-    if (mode.value !== 'list') query.mode = mode.value
-    if (onlyFavourites.value) query.fav = '1'
-    if (objectId.value) query.obyekt = objectId.value
-    router.replace({ path: '/catalog', query })
+    // Obyekt sahifasiga o‘tayotganda katalog URL i qayta yozilib ketmasin
+    if (route.path !== CATALOG_PATH) return
+    const query = buildQuery()
+    if (queryKey(query) === queryKey(route.query)) return
+    router.replace({ path: CATALOG_PATH, query })
   },
   { deep: true },
+)
+
+/**
+ * Katalogda turib bosilgan havola (pastki menyudagi bino turlari, «Sevimli
+ * e’lonlar», bosh sahifadagi qidiruv) sahifani qayta yaratmaydi, faqat URL ni
+ * almashtiradi. Shu sababli shartlar URL dan qaytadan o‘qiladi.
+ */
+watch(
+  () => route.query,
+  (query) => {
+    if (route.path !== CATALOG_PATH) return
+    if (queryKey(buildQuery()) === queryKey(query)) return
+    applyQuery(query)
+  },
 )
 </script>
 
@@ -425,8 +574,10 @@ watch(
         <CatalogFilters
           v-model:q="q"
           v-model:sort="sort"
-          v-model:price-min="priceMin"
-          v-model:price-max="priceMax"
+          v-model:rent-min="rentMin"
+          v-model:rent-max="rentMax"
+          v-model:sale-min="saleMin"
+          v-model:sale-max="saleMax"
           v-model:selected="selectedTypes"
           v-model:area-min="areaMin"
           v-model:area-max="areaMax"
@@ -439,6 +590,8 @@ watch(
           :sort-options="SORT_OPTIONS"
           :distance-options="DISTANCE_OPTIONS"
           :usage-options="usageSelectOptions"
+          :show-rent-price="showRentPrice"
+          :show-sale-price="showSalePrice"
           :active-count="activeCount"
           @reset="resetFilters"
           @clear-chip="clearChip"
@@ -591,7 +744,7 @@ watch(
               <span
                 class="absolute bottom-2 left-2 rounded-pill bg-white/92 px-2 py-0.5 text-[10.5px] font-bold text-ink-800 shadow-card"
               >
-                {{ categoryLabel(l) }}
+                {{ l.building.type }}
               </span>
             </UiPhoto>
           </div>
@@ -620,9 +773,9 @@ watch(
                 <UiIcon name="layers" :size="14" class="text-ink-400" />
                 <span class="tabular">{{ area(l.unit.area) }}</span>
               </span>
-              <span class="inline-flex items-center gap-1.5">
+              <span v-if="l.unit.usage" class="inline-flex items-center gap-1.5">
                 <UiIcon name="building" :size="14" class="text-ink-400" />
-                {{ categoryLabel(l) }}
+                {{ usageLabel(l.unit.usage) }}
               </span>
               <span class="inline-flex items-center gap-1.5">
                 <UiIcon name="grid" :size="14" class="text-ink-400" />
@@ -754,20 +907,24 @@ watch(
               <CatalogFilters
                 v-model:q="q"
                 v-model:sort="sort"
-                v-model:price-min="priceMin"
-                v-model:price-max="priceMax"
+                v-model:rent-min="rentMin"
+                v-model:rent-max="rentMax"
+                v-model:sale-min="saleMin"
+                v-model:sale-max="saleMax"
                 v-model:selected="selectedTypes"
                 v-model:area-min="areaMin"
                 v-model:area-max="areaMax"
                 v-model:distance="distance"
-          v-model:usage="usage"
+                v-model:usage="usage"
                 heading="Toshkent shahri"
                 :summary="summary"
                 :chips="chips"
                 :types="typeOptions"
                 :sort-options="SORT_OPTIONS"
                 :distance-options="DISTANCE_OPTIONS"
-          :usage-options="usageSelectOptions"
+                :usage-options="usageSelectOptions"
+                :show-rent-price="showRentPrice"
+                :show-sale-price="showSalePrice"
                 :active-count="activeCount"
                 @reset="resetFilters"
                 @clear-chip="clearChip"

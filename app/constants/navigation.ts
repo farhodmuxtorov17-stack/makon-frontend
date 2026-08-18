@@ -29,7 +29,13 @@ export interface NavItem {
  */
 export const APPLICATION_QUEUE: Partial<Record<Role, LeaseStatus[]>> = {
   BUILDING_MANAGER: ['YANGI', 'QORALAMA_TAYYOR', 'DIDOX_YUBORILDI', 'DIDOX_IMZOLANDI'],
-  ACCOUNTANT: ['OPERATSIYA_TASDIQLADI', 'MOLIYA_TASDIQLADI'],
+  // MOLIYA_TASDIQLADI ataylab kiritilmagan: `approveFinance` shu holatni
+  // qo‘yib, o‘sha zahoti `composeContract` ni chaqiradi va ariza
+  // QORALAMA_TAYYOR ga o‘tadi. Ya’ni bu bosqichda buxgalterda bosadigan
+  // tugma yo‘q, uni nishonchaga qo‘shish bajarib bo‘lmaydigan vazifani
+  // ko‘rsatgan bo‘lar edi. Agar kelajakda shu holatda qoladigan qaror
+  // qo‘shilsa, qiymat shu yerga qaytariladi.
+  ACCOUNTANT: ['OPERATSIYA_TASDIQLADI'],
 }
 
 /** Bo‘sh navbat nishonchasiz ko‘rsatiladi */
@@ -57,9 +63,16 @@ function paymentQueue(): number {
   return INVOICES.filter((i) => i.status === 'ISSUED' || i.status === 'PARTIALLY_PAID').length
 }
 
-/** Ombor javobini kutayotgan material so‘rovlari */
+/**
+ * Ombordan berilishi kutilayotgan material so‘rovlari. Faqat APPROVED
+ * sanaladi: SUBMITTED so‘rov bino rahbarining qaroriga turadi, omborchida
+ * uni siljitadigan amal yo‘q edi, shuning uchun u nishonchadan chiqarildi.
+ * Shu shart ombor sahifasidagi «berish dalolatnomalari» ro‘yxatidagi ochiq
+ * yozuvlar bilan bir xil, ya’ni yon menyudagi son sahifadagi son bilan
+ * mos tushadi.
+ */
 function materialQueue(): number {
-  return MATERIAL_REQUESTS.filter((r) => r.status === 'SUBMITTED' || r.status === 'APPROVED').length
+  return MATERIAL_REQUESTS.filter((r) => r.status === 'APPROVED').length
 }
 
 export interface NavSection {
@@ -89,7 +102,7 @@ export const NAVIGATION: Record<Role, NavSection[]> = {
         { label: 'Boshqaruv paneli', key: 'nav.dashboardExecutive', to: '/dashboard/executive', icon: 'dashboard' },
         { label: 'Obyektlar', key: 'nav.objects', to: '/objects', icon: 'building' },
         { label: 'Shartnomalar', key: 'nav.contracts', to: '/contracts', icon: 'contract' },
-        { label: 'Billing va nazorat', key: 'nav.billing', to: '/billing/invoices', icon: 'wallet' },
+        { label: 'Hisob-kitob va nazorat', key: 'nav.billing', to: '/billing/invoices', icon: 'wallet' },
         { label: 'Servis va monitoring', key: 'nav.serviceMonitoring', to: '/service-requests', icon: 'wrench' },
         { label: 'Hisobotlar', key: 'nav.reports', to: '/reports', icon: 'chart' },
         { label: 'Sozlamalar', key: 'nav.settings', to: '/settings/users', icon: 'gear', children: SETTINGS_CHILDREN },
@@ -168,7 +181,7 @@ export const NAVIGATION: Record<Role, NavSection[]> = {
   WAREHOUSE_OPERATOR: [
     {
       items: [
-        { label: 'Ombor qoldig‘i', key: 'nav.warehouse', to: '/warehouse', icon: 'box' },
+        { label: 'Ombor va jihozlar', key: 'nav.warehouse', to: '/warehouse', icon: 'box' },
         {
           label: 'Material so‘rovlari',
           key: 'nav.materials',
@@ -201,7 +214,7 @@ export const NAVIGATION: Record<Role, NavSection[]> = {
     {
       items: [
         { label: 'Bosh sahifa', key: 'nav.cabinet', to: '/cabinet', icon: 'dashboard' },
-        { label: 'Mening unitim', key: 'nav.myUnits', to: '/cabinet/units', icon: 'building' },
+        { label: 'Mening unitlarim', key: 'nav.myUnits', to: '/cabinet/units', icon: 'building' },
         { label: 'To‘lovlarim', key: 'nav.myInvoices', to: '/cabinet/invoices', icon: 'wallet' },
         { label: 'Arizalarim', key: 'nav.myApplications', to: '/cabinet/applications', icon: 'clipboard' },
         { label: 'Hujjatlarim', key: 'nav.myDocuments', to: '/cabinet/documents', icon: 'doc' },

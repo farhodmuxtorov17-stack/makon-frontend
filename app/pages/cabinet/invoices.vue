@@ -1,191 +1,104 @@
 <script setup lang="ts">
-import { TARIFF_LINES } from '~/data/business'
-import { unitById } from '~/data/units'
-import { docxBlob, saveBlob, type DocxLine } from '~/utils/docx'
-import { dateShort, num, sum } from '~/utils/format'
+import { billingSummaryOf, CONTRACTS, INVOICES, type Invoice } from '~/data/business'
+import { buildingById } from '~/data/buildings'
+import { UNITS, type Unit } from '~/data/units'
+import {
+  formatStir,
+  LANDLORD_STIR,
+  ORGANIZATIONS,
+  organizationByStir,
+} from '~/data/organizations'
+import { docxBlob, fileSlug, saveBlob, type DocxLine } from '~/utils/docx'
+import { dateShort, monthTitle, num, sum, todayIso } from '~/utils/format'
 
 const auth = useAuthStore()
 const lease = useLeaseStore()
 
 lease.seed()
 
-const organization = computed(() => auth.user?.organization ?? 'Urban Office MCHJ')
+/** Kabinet faqat kirgan foydalanuvchining tashkiloti bilan ishlaydi */
+const organization = computed(() => auth.user?.organization ?? '')
 
-type CabinetInvoice = {
-  id: string
-  code: string
-  unitId: string
-  unitCode: string
-  period: string
-  issuedAt: string
-  dueAt: string
-  total: number
-  paid: number
-  status: string
+/**
+ * Yagona hisob-faktura reyestri: buxgalteriya qaysi hujjatlarni ko‘rsa,
+ * ijarachi ham aynan shularni ko‘radi, faqat o‘z tashkiloti kesimida.
+ */
+const MY_INVOICES = computed(() =>
+  INVOICES.filter((i) => organization.value && i.tenant === organization.value),
+)
+
+/** «Unit 501» va «501» yozuvlari bir xil unitga ishora qiladi */
+function unitCodeOf(value: string) {
+  return String(value ?? '').replace(/^\s*Unit\s*/i, '').trim()
 }
 
-const BASE_INVOICES: CabinetInvoice[] = [
-  {
-    id: 'i-0621',
-    code: 'INV-2025-0621',
-    unitId: 'u-501',
-    unitCode: '501',
-    period: 'May 2025',
-    issuedAt: '2025-05-01',
-    dueAt: '2025-05-23',
-    total: 12540000,
-    paid: 0,
-    status: 'ISSUED',
-  },
-  {
-    id: 'i-0605',
-    code: 'INV-2025-0605',
-    unitId: 'u-501',
-    unitCode: '501',
-    period: 'May 2025',
-    issuedAt: '2025-05-01',
-    dueAt: '2025-05-25',
-    total: 25900000,
-    paid: 12000000,
-    status: 'PARTIALLY_PAID',
-  },
-  {
-    id: 'i-0587',
-    code: 'INV-2025-0587',
-    unitId: 'u-502',
-    unitCode: '502',
-    period: 'May 2025',
-    issuedAt: '2025-05-01',
-    dueAt: '2025-05-10',
-    total: 12540000,
-    paid: 12540000,
-    status: 'PAID',
-  },
-  {
-    id: 'i-0512',
-    code: 'INV-2025-0512',
-    unitId: 'u-501',
-    unitCode: '501',
-    period: 'Aprel 2025',
-    issuedAt: '2025-04-01',
-    dueAt: '2025-04-23',
-    total: 12540000,
-    paid: 12540000,
-    status: 'PAID',
-  },
-  {
-    id: 'i-0498',
-    code: 'INV-2025-0498',
-    unitId: 'u-501',
-    unitCode: '501',
-    period: 'Aprel 2025',
-    issuedAt: '2025-04-01',
-    dueAt: '2025-04-25',
-    total: 25900000,
-    paid: 25900000,
-    status: 'PAID',
-  },
-  {
-    id: 'i-0480',
-    code: 'INV-2025-0480',
-    unitId: 'u-502',
-    unitCode: '502',
-    period: 'Aprel 2025',
-    issuedAt: '2025-04-01',
-    dueAt: '2025-04-10',
-    total: 12540000,
-    paid: 12540000,
-    status: 'PAID',
-  },
-  {
-    id: 'i-0403',
-    code: 'INV-2025-0403',
-    unitId: 'u-501',
-    unitCode: '501',
-    period: 'Mart 2025',
-    issuedAt: '2025-03-01',
-    dueAt: '2025-03-23',
-    total: 12540000,
-    paid: 12540000,
-    status: 'PAID',
-  },
-  {
-    id: 'i-0389',
-    code: 'INV-2025-0389',
-    unitId: 'u-501',
-    unitCode: '501',
-    period: 'Mart 2025',
-    issuedAt: '2025-03-01',
-    dueAt: '2025-03-25',
-    total: 25900000,
-    paid: 25900000,
-    status: 'PAID',
-  },
-  {
-    id: 'i-0294',
-    code: 'INV-2025-0294',
-    unitId: 'u-501',
-    unitCode: '501',
-    period: 'Fevral 2025',
-    issuedAt: '2025-02-01',
-    dueAt: '2025-02-23',
-    total: 12540000,
-    paid: 12540000,
-    status: 'PAID',
-  },
-  {
-    id: 'i-0186',
-    code: 'INV-2025-0186',
-    unitId: 'u-501',
-    unitCode: '501',
-    period: 'Yanvar 2025',
-    issuedAt: '2025-01-01',
-    dueAt: '2025-01-23',
-    total: 12540000,
-    paid: 12540000,
-    status: 'PAID',
-  },
-]
+function unitOfInvoice(inv: Invoice): Unit | undefined {
+  const code = unitCodeOf(inv.unitCode)
+  return UNITS.find(
+    (u) => u.code === code && buildingById(u.buildingId)?.name === inv.buildingName,
+  )
+}
 
-/** Faollashtirilgan shartnomalar bo‘yicha shakllantirilgan hisob-fakturalar */
-const MY_INVOICES = computed<CabinetInvoice[]>(() => [
-  ...lease.activeCases
-    .filter((c) => c.org.name === organization.value)
-    .flatMap((c) => {
-      const first = c.schedule.find((r) => r.kind === 'RENT')
-      if (!first || !c.activation) return []
-      return [
-        {
-          id: `i-${c.activation.invoiceCode.slice(-4)}`,
-          code: c.activation.invoiceCode,
-          unitId: c.unitId,
-          unitCode: c.unitCode,
-          period: first.label,
-          issuedAt: c.activation.at.slice(0, 10),
-          dueAt: first.dueAt,
-          total: first.total,
-          paid: 0,
-          status: 'ISSUED',
-        },
-      ]
-    }),
-  ...BASE_INVOICES,
-])
+/** Obyekt nomi unit → bino bog‘lanishidan olinadi, qattiq yozilmaydi */
+function buildingNameOf(inv: Invoice) {
+  const u = unitOfInvoice(inv)
+  return (u ? buildingById(u.buildingId)?.name : undefined) ?? inv.buildingName
+}
 
-const CURRENT_PERIOD = 'May 2025'
+/** Hisob-faktura tegishli shartnoma: unit kodi va ijarachi bo‘yicha */
+function contractOfInvoice(inv: Invoice) {
+  const code = unitCodeOf(inv.unitCode)
+  return CONTRACTS.find(
+    (c) => c.tenant === inv.tenant && unitCodeOf(c.unitCode) === code && c.status === 'ACTIVE',
+  )
+}
 
-const currentTotal = computed(() =>
-  MY_INVOICES.value.filter((i) => i.period === CURRENT_PERIOD).reduce((a, i) => a + i.total, 0),
+/**
+ * Faollashtirilgan ijara siklining to‘lov grafigi. Hisob-faktura qatorlari
+ * aynan shu grafikdan olinadi, shuning uchun hujjatdagi summa shartnomadagi
+ * summadan farq qilmaydi.
+ */
+function scheduleRowOf(inv: Invoice) {
+  const item = lease.cases.find((c) => c.activation?.invoiceCode === inv.code)
+  if (!item) return null
+  return (
+    item.schedule.find((r) => r.kind === 'RENT' && r.label === inv.period) ??
+    item.schedule.find((r) => r.kind === 'RENT') ??
+    null
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Jamlar: formula buxgalteriya ekranlari bilan bir xil (billingSummaryOf)
+
+/** Joriy hisob davri, unda hujjat bo‘lmasa oxirgi berilgan davr */
+const currentPeriod = computed(() => {
+  const thisMonth = monthTitle(todayIso())
+  if (MY_INVOICES.value.some((i) => i.period === thisMonth)) return thisMonth
+  return (
+    [...MY_INVOICES.value].sort((a, b) => b.issuedAt.localeCompare(a.issuedAt))[0]?.period ??
+    thisMonth
+  )
+})
+
+const periodSummary = computed(() =>
+  billingSummaryOf(MY_INVOICES.value.filter((i) => i.period === currentPeriod.value)),
 )
-const currentPaid = computed(() =>
-  MY_INVOICES.value.filter((i) => i.period === CURRENT_PERIOD).reduce((a, i) => a + i.paid, 0),
-)
-const overdueTotal = computed(() =>
-  MY_INVOICES.value.filter((i) => i.status === 'OVERDUE').reduce((a, i) => a + (i.total - i.paid), 0),
-)
+
+/** Qarzdorlik = Σ max(0, jami − to‘langan), reyestrdagi debtTotal bilan bir xil */
+const summary = computed(() => billingSummaryOf(MY_INVOICES.value))
+
+/** Muddati o‘tgan hujjat: qoldig‘i bor va to‘lov sanasi o‘tib ketgan */
+function isOverdue(i: Invoice) {
+  return i.total > i.paid && i.dueAt < todayIso()
+}
+
+const overdueCount = computed(() => MY_INVOICES.value.filter(isOverdue).length)
+
 const nextDue = computed(
   () =>
-    MY_INVOICES.value.filter((i) => i.total > i.paid)
+    MY_INVOICES.value
+      .filter((i) => i.total > i.paid)
       .map((i) => i.dueAt)
       .sort()[0] ?? '-',
 )
@@ -195,7 +108,11 @@ const query = ref('')
 
 const statusTabs = computed(() => [
   { value: 'all', label: 'Barchasi', count: MY_INVOICES.value.length },
-  { value: 'PAID', label: 'To‘langan', count: MY_INVOICES.value.filter((i) => i.status === 'PAID').length },
+  {
+    value: 'PAID',
+    label: 'To‘langan',
+    count: MY_INVOICES.value.filter((i) => i.status === 'PAID').length,
+  },
   {
     value: 'PARTIALLY_PAID',
     label: 'Qisman to‘langan',
@@ -209,25 +126,27 @@ const statusTabs = computed(() => [
   {
     value: 'OVERDUE',
     label: 'Kechikkan',
-    count: MY_INVOICES.value.filter((i) => i.status === 'OVERDUE').length,
+    count: overdueCount.value,
   },
 ])
 
 const filtered = computed(() =>
   MY_INVOICES.value.filter((i) => {
-    const byStatus = status.value === 'all' || i.status === status.value
+    const byStatus =
+      status.value === 'all' ||
+      (status.value === 'OVERDUE' ? isOverdue(i) : i.status === status.value)
     const q = query.value.trim().toLowerCase()
     const byQuery =
       !q ||
       i.code.toLowerCase().includes(q) ||
       i.period.toLowerCase().includes(q) ||
-      i.unitCode.includes(q)
+      i.unitCode.toLowerCase().includes(q)
     return byStatus && byQuery
   }),
 )
 
 const columns = [
-  { key: 'code', label: 'Hisob-faktura №' },
+  { key: 'code', label: 'Hisob-faktura raqami' },
   { key: 'period', label: 'Davr' },
   { key: 'unitCode', label: 'Unit' },
   { key: 'issuedAt', label: 'Berilgan sana' },
@@ -237,38 +156,155 @@ const columns = [
   { key: 'status', label: 'Holat', align: 'right' as const },
 ]
 
+// ---------------------------------------------------------------------------
+// Tomonlar rekvizitlari: rasmiy hujjatning majburiy qismi
+
+interface PartyRequisites {
+  name: string
+  stir: string
+  address: string
+  director: string
+  bank: string
+  account: string
+}
+
+/** Ijaraga beruvchi, tashkilotlar reyestridan */
+const landlord = computed<PartyRequisites>(() => {
+  const o = organizationByStir(LANDLORD_STIR)
+  return {
+    name: o?.name ?? '',
+    stir: formatStir(o?.stir ?? LANDLORD_STIR),
+    address: o?.address ?? '',
+    director: o?.director ?? '',
+    bank: o?.bank ?? '',
+    account: o?.account ?? '',
+  }
+})
+
+/** Xaridor: kirgan foydalanuvchining tashkiloti */
+const buyer = computed<PartyRequisites>(() => {
+  const o =
+    organizationByStir(auth.user?.tin ?? '') ??
+    ORGANIZATIONS.find((x) => x.name === organization.value)
+  return {
+    name: o?.name ?? organization.value,
+    stir: formatStir(o?.stir ?? auth.user?.tin ?? ''),
+    address: o?.address ?? auth.user?.address ?? '',
+    director: o?.director ?? auth.user?.fullName ?? '',
+    bank: o?.bank ?? '',
+    account: o?.account ?? '',
+  }
+})
+
+function partyRows(p: PartyRequisites) {
+  return [
+    { label: 'Nomi', value: p.name },
+    { label: 'STIR', value: p.stir },
+    { label: 'Yuridik manzil', value: p.address },
+    { label: 'Bank', value: p.bank },
+    { label: 'Hisob raqami', value: p.account },
+    { label: 'Rahbar', value: p.director },
+  ].filter((r) => r.value)
+}
+
+function partyLines(title: string, p: PartyRequisites): DocxLine[] {
+  return [
+    { text: title, style: 'heading' },
+    ...partyRows(p).map((r) => ({ text: `${r.label}: ${r.value}` })),
+  ]
+}
+
+// ---------------------------------------------------------------------------
+// Hisob-faktura tarkibi
+
+/** Summaga kiritilgan qo‘shilgan qiymat solig‘i stavkasi, foiz */
+const VAT_RATE = 12
+
+/** QQS summaga kiritilgan, shuning uchun ajratib olinadi (business.ts bilan bir xil) */
+function vatOf(total: number) {
+  return Math.round(total - total / (1 + VAT_RATE / 100))
+}
+
+interface InvoiceLine {
+  service: string
+  unit: string
+  qty: number
+  tariff: number
+  total: number
+}
+
 const detailOpen = ref(false)
 const printOpen = ref(false)
 const savedFile = ref('')
-const selected = ref<CabinetInvoice | null>(null)
+const selected = ref<Invoice | null>(null)
 
-function openInvoice(row: Record<string, unknown>) {
-  selected.value = MY_INVOICES.value.find((i) => i.id === row.id) ?? null
+function openInvoice(inv: Invoice) {
+  selected.value = MY_INVOICES.value.find((i) => i.id === inv.id) ?? null
   savedFile.value = ''
   detailOpen.value = true
 }
 
-const lines = computed(() => {
-  const inv = selected.value
-  if (!inv) return []
-  const unitArea = unitById(inv.unitId)?.area ?? 200
-  const ratio = unitArea / 200
-  const utilities = TARIFF_LINES.map((l) => ({
-    service: l.service,
-    unit: l.unit,
-    tariff: l.tariff,
-    qty: Math.round(l.qty * ratio * 10) / 10,
-    total: Math.round(l.tariff * l.qty * ratio),
-  }))
-  const utilitiesTotal = utilities.reduce((a, l) => a + l.total, 0)
-  const rent = Math.max(inv.total - utilitiesTotal, 0)
-  return [
-    { service: 'Ijara to‘lovi', unit: 'oy', tariff: rent, qty: 1, total: rent },
-    ...utilities,
-  ]
-})
+/**
+ * Xizmat qatorlari shartnoma grafigidan olinadi. Grafik bo‘lmasa, unitning
+ * shartnomaviy oylik ijara narxi ajratiladi va qolgani servis to‘lovi bo‘ladi.
+ * Kommunal qatorlar bu yerda hisoblanmaydi: hisoblagich ko‘rsatkichi
+ * hisob-fakturaga hali bog‘lanmagan.
+ */
+function linesOf(inv: Invoice): InvoiceLine[] {
+  const row = scheduleRowOf(inv)
+  if (row) {
+    const months = Math.max(1, row.months)
+    const out: InvoiceLine[] = [
+      {
+        service: 'Ijara to‘lovi',
+        unit: 'oy',
+        qty: months,
+        tariff: Math.round(row.rent / months),
+        total: row.rent,
+      },
+    ]
+    if (row.service > 0) {
+      out.push({
+        service: 'Servis to‘lovi',
+        unit: 'oy',
+        qty: months,
+        tariff: Math.round(row.service / months),
+        total: row.service,
+      })
+    }
+    return out
+  }
 
+  const u = unitOfInvoice(inv)
+  const monthlyRent = u && u.priceUnit === 'so‘m / oy' ? u.price : 0
+  const rent = Math.min(monthlyRent || inv.total, inv.total)
+  const out: InvoiceLine[] = [
+    { service: 'Ijara to‘lovi', unit: 'oy', qty: 1, tariff: rent, total: rent },
+  ]
+  const rest = inv.total - rent
+  if (rest > 0) {
+    out.push({
+      service: 'Servis va boshqaruv xizmati',
+      unit: 'oy',
+      qty: 1,
+      tariff: rest,
+      total: rest,
+    })
+  }
+  return out
+}
+
+const lines = computed<InvoiceLine[]>(() => (selected.value ? linesOf(selected.value) : []))
 const linesTotal = computed(() => lines.value.reduce((a, l) => a + l.total, 0))
+const linesVat = computed(() => vatOf(linesTotal.value))
+const linesNet = computed(() => linesTotal.value - linesVat.value)
+
+const selectedBuilding = computed(() =>
+  selected.value ? buildingNameOf(selected.value) : '',
+)
+const selectedContract = computed(() =>
+  selected.value ? contractOfInvoice(selected.value) : undefined,
+)
 
 function openPrint() {
   printOpen.value = true
@@ -280,40 +316,64 @@ function printInvoice() {
 }
 
 /** Hisob-faktura matni Word hujjati sifatida yig‘iladi */
-function invoiceLines(inv: CabinetInvoice): DocxLine[] {
-  const rows: DocxLine[] = [
-    { text: 'Makon Property Group', style: 'subtitle' },
+function invoiceLines(inv: Invoice): DocxLine[] {
+  const rows = linesOf(inv)
+  const total = rows.reduce((a, l) => a + l.total, 0)
+  const vat = vatOf(total)
+  const contract = contractOfInvoice(inv)
+
+  const out: DocxLine[] = [
+    { text: landlord.value.name, style: 'subtitle' },
     { text: 'Hisob-faktura', style: 'title' },
-    { text: `${inv.code} · ${inv.period}`, style: 'subtitle' },
-    { text: 'Rekvizitlar', style: 'heading' },
-    { text: `To‘lovchi: ${organization.value}` },
-    { text: `Obyekt: Green Business Center · Unit ${inv.unitCode}` },
+    { text: `${inv.code} · ${dateShort(inv.issuedAt)}`, style: 'subtitle' },
+    ...partyLines('Yetkazib beruvchi (ijaraga beruvchi)', landlord.value),
+    ...partyLines('Xaridor (ijarachi)', buyer.value),
+    { text: 'Hisob ma’lumotlari', style: 'heading' },
+    { text: `Obyekt: ${buildingNameOf(inv)} · Unit ${unitCodeOf(inv.unitCode)}` },
     { text: `Hisob davri: ${inv.period}` },
     { text: `Berilgan sana: ${dateShort(inv.issuedAt)}` },
     { text: `To‘lov muddati: ${dateShort(inv.dueAt)}` },
-    { text: 'Xizmatlar', style: 'heading' },
   ]
 
-  for (const l of lines.value) {
-    rows.push({ text: `${l.service}: ${num(l.qty, 1)} ${l.unit} · ${sum(l.total)}` })
+  if (contract) {
+    out.push(
+      { text: `Shartnoma: ${contract.code} · ${dateShort(contract.startsAt)}` },
+      { text: `To‘lov shakli: ${contract.paymentTerm}` },
+    )
   }
 
-  rows.push(
+  out.push({ text: 'Xizmatlar', style: 'heading' })
+  rows.forEach((l, index) => {
+    out.push({
+      text:
+        `${index + 1}. ${l.service} · ${num(l.qty, 1)} ${l.unit} × ${sum(l.tariff)} · ` +
+        `QQS ${VAT_RATE}%: ${sum(vatOf(l.total))} · jami ${sum(l.total)}`,
+    })
+  })
+
+  out.push(
     { text: 'Yakun', style: 'heading' },
-    { text: `To‘lov uchun jami: ${sum(linesTotal.value)}` },
+    { text: `QQS siz jami: ${sum(total - vat)}` },
+    { text: `QQS (${VAT_RATE}%): ${sum(vat)}` },
+    { text: `Jami to‘lov: ${sum(total)}` },
     { text: `To‘langan: ${sum(inv.paid)}` },
     { text: `Qoldiq: ${sum(Math.max(inv.total - inv.paid, 0))}` },
-    { text: 'Ijaraga beruvchi: imzo va muhr', style: 'small' },
-    { text: 'Ijarachi: imzo va muhr', style: 'small' },
+    { text: `Ijaraga beruvchi: ${landlord.value.director} _______________ M.O‘.`, style: 'small' },
+    { text: `Ijarachi: ${buyer.value.director} _______________ M.O‘.`, style: 'small' },
   )
 
-  return rows
+  return out
+}
+
+/** Fayl nomi hujjat turini ham, raqamini ham o‘z ichiga oladi */
+function invoiceFileName(inv: Invoice) {
+  return `${fileSlug('Hisob-faktura')}-${inv.code}.docx`
 }
 
 function downloadInvoice() {
   const inv = selected.value
   if (!inv) return
-  const fileName = `${inv.code}.docx`
+  const fileName = invoiceFileName(inv)
   saveBlob(docxBlob(invoiceLines(inv)), fileName)
   savedFile.value = fileName
 }
@@ -339,9 +399,27 @@ function downloadInvoice() {
 
   <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-4 sm:p-6">
     <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-      <UiKpi label="Joriy oy to‘lovi" :value="num(currentTotal)" unit="so‘m" icon="wallet" tone="brand" />
-      <UiKpi label="To‘langan (joriy oy)" :value="num(currentPaid)" unit="so‘m" icon="check" tone="ok" />
-      <UiKpi label="Qarzdorlik" :value="num(overdueTotal)" unit="so‘m" icon="warning" tone="danger" />
+      <UiKpi
+        :label="`${currentPeriod} davri hisobi`"
+        :value="num(periodSummary.charged)"
+        unit="so‘m"
+        icon="wallet"
+        tone="brand"
+      />
+      <UiKpi
+        :label="`To‘langan (${currentPeriod})`"
+        :value="num(periodSummary.paidTotal)"
+        unit="so‘m"
+        icon="check"
+        tone="ok"
+      />
+      <UiKpi
+        label="Qarzdorlik"
+        :value="num(summary.debtTotal)"
+        unit="so‘m"
+        icon="warning"
+        :tone="summary.debtTotal > 0 ? 'danger' : 'ok'"
+      />
       <UiKpi
         label="Keyingi to‘lov sanasi"
         :value="nextDue === '-' ? '-' : dateShort(nextDue)"
@@ -357,42 +435,53 @@ function downloadInvoice() {
         </span>
       </template>
 
-      <div class="flex flex-wrap items-center gap-3 px-5 pb-4">
-        <UiTabs v-model="status" :tabs="statusTabs" />
-        <UiInput v-model="query" placeholder="Hisob-faktura yoki davr bo‘yicha qidirish" class="w-full sm:w-72">
-          <template #prefix><UiIcon name="search" :size="16" /></template>
-        </UiInput>
-      </div>
+      <UiEmpty
+        v-if="!MY_INVOICES.length"
+        icon="wallet"
+        title="Hisob-faktura shakllantirilmagan"
+        :description="`${organization || 'Tashkilotingiz'} nomiga hali birorta hisob-faktura berilmagan. Hujjat shakllantirilgach, u shu ro‘yxatda paydo bo‘ladi.`"
+        action-label="Hujjatlarim"
+        action-to="/cabinet/documents"
+      />
 
-      <UiTable
-        :columns="columns"
-        :rows="filtered"
-        empty="Tanlangan filtr bo‘yicha hisob-faktura topilmadi"
-        @row-click="openInvoice"
-      >
-        <template #cell-code="{ row }">
-          <span class="text-[13.5px] font-semibold text-ink-900">{{ row.code }}</span>
-        </template>
-        <template #cell-unitCode="{ value }">Unit {{ value }}</template>
-        <template #cell-issuedAt="{ value }">
-          <span class="tabular">{{ dateShort(String(value)) }}</span>
-        </template>
-        <template #cell-dueAt="{ value }">
-          <span class="tabular">{{ dateShort(String(value)) }}</span>
-        </template>
-        <template #cell-total="{ value }">{{ sum(Number(value)) }}</template>
-        <template #cell-paid="{ value }">{{ sum(Number(value)) }}</template>
-        <template #cell-status="{ row }">
-          <UiStatus kind="invoice" :value="String(row.status)" size="sm" />
-        </template>
-      </UiTable>
+      <template v-else>
+        <div class="flex flex-wrap items-center gap-3 px-5 pb-4">
+          <UiTabs v-model="status" :tabs="statusTabs" />
+          <UiInput v-model="query" placeholder="Hisob-faktura yoki davr bo‘yicha qidirish" class="w-full sm:w-72">
+            <template #prefix><UiIcon name="search" :size="16" /></template>
+          </UiInput>
+        </div>
+
+        <UiTable
+          :columns="columns"
+          :rows="filtered"
+          empty="Tanlangan filtr bo‘yicha hisob-faktura topilmadi"
+          @row-click="openInvoice"
+        >
+          <template #cell-code="{ row }">
+            <span class="text-[13.5px] font-semibold text-ink-900">{{ row.code }}</span>
+          </template>
+          <template #cell-unitCode="{ value }">{{ value }}</template>
+          <template #cell-issuedAt="{ value }">
+            <span class="tabular">{{ dateShort(String(value)) }}</span>
+          </template>
+          <template #cell-dueAt="{ value }">
+            <span class="tabular">{{ dateShort(String(value)) }}</span>
+          </template>
+          <template #cell-total="{ value }">{{ sum(Number(value)) }}</template>
+          <template #cell-paid="{ value }">{{ sum(Number(value)) }}</template>
+          <template #cell-status="{ row }">
+            <UiStatus kind="invoice" :value="isOverdue(row) ? 'OVERDUE' : String(row.status)" size="sm" />
+          </template>
+        </UiTable>
+      </template>
     </UiCard>
   </main>
 
   <UiModal
     v-model="detailOpen"
     :title="selected?.code ?? 'Hisob-faktura'"
-    :subtitle="selected ? `${selected.period} · Unit ${selected.unitCode}` : ''"
+    :subtitle="selected ? `${selected.period} · ${selected.unitCode}` : ''"
     size="lg"
   >
     <div v-if="selected" class="space-y-4">
@@ -414,14 +503,56 @@ function downloadInvoice() {
       </div>
 
       <div class="flex flex-wrap items-center gap-3">
-        <UiStatus kind="invoice" :value="selected.status" />
+        <UiStatus kind="invoice" :value="isOverdue(selected) ? 'OVERDUE' : selected.status" />
         <span class="text-[12.5px] text-ink-500">
           Berilgan: {{ dateShort(selected.issuedAt) }} · Muddati: {{ dateShort(selected.dueAt) }}
         </span>
       </div>
 
-      <div class="overflow-hidden rounded-field ring-1 ring-ink-200">
-        <table class="w-full border-collapse text-sm">
+      <div class="grid gap-3 sm:grid-cols-2">
+        <div class="rounded-field bg-surface-sunken p-4 ring-1 ring-ink-200">
+          <p class="text-[11.5px] font-semibold uppercase tracking-wide text-ink-500">
+            Yetkazib beruvchi
+          </p>
+          <dl class="mt-2 space-y-1">
+            <div v-for="r in partyRows(landlord)" :key="`l-${r.label}`" class="flex gap-2">
+              <dt class="w-28 shrink-0 text-[12px] text-ink-500">{{ r.label }}</dt>
+              <dd class="min-w-0 flex-1 text-[12.5px] font-semibold text-ink-900">{{ r.value }}</dd>
+            </div>
+          </dl>
+        </div>
+        <div class="rounded-field bg-surface-sunken p-4 ring-1 ring-ink-200">
+          <p class="text-[11.5px] font-semibold uppercase tracking-wide text-ink-500">Xaridor</p>
+          <dl class="mt-2 space-y-1">
+            <div v-for="r in partyRows(buyer)" :key="`b-${r.label}`" class="flex gap-2">
+              <dt class="w-28 shrink-0 text-[12px] text-ink-500">{{ r.label }}</dt>
+              <dd class="min-w-0 flex-1 text-[12.5px] font-semibold text-ink-900">{{ r.value }}</dd>
+            </div>
+          </dl>
+        </div>
+      </div>
+
+      <dl class="grid gap-3 rounded-field p-4 ring-1 ring-ink-200 sm:grid-cols-3">
+        <div>
+          <dt class="text-[11.5px] uppercase tracking-wide text-ink-500">Obyekt</dt>
+          <dd class="text-[13px] font-semibold text-ink-900">
+            {{ selectedBuilding }} · {{ selected.unitCode }}
+          </dd>
+        </div>
+        <div>
+          <dt class="text-[11.5px] uppercase tracking-wide text-ink-500">Hisob davri</dt>
+          <dd class="text-[13px] font-semibold text-ink-900">{{ selected.period }}</dd>
+        </div>
+        <div>
+          <dt class="text-[11.5px] uppercase tracking-wide text-ink-500">Shartnoma</dt>
+          <dd class="text-[13px] font-semibold text-ink-900">
+            {{ selectedContract?.code ?? 'Biriktirilmagan' }}
+          </dd>
+        </div>
+      </dl>
+
+      <div class="overflow-x-auto rounded-field ring-1 ring-ink-200">
+        <table class="w-full min-w-max border-collapse text-sm">
           <thead>
             <tr class="border-b border-ink-200 bg-surface-sunken">
               <th class="px-4 py-2.5 text-left text-[12px] font-semibold uppercase tracking-wide text-ink-500">
@@ -437,21 +568,41 @@ function downloadInvoice() {
                 Miqdor
               </th>
               <th class="px-4 py-2.5 text-right text-[12px] font-semibold uppercase tracking-wide text-ink-500">
+                QQS ({{ VAT_RATE }}%)
+              </th>
+              <th class="px-4 py-2.5 text-right text-[12px] font-semibold uppercase tracking-wide text-ink-500">
                 Summa
               </th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="l in lines" :key="l.service" class="border-b border-ink-100 last:border-0">
+            <tr v-for="l in lines" :key="l.service" class="border-b border-ink-100">
               <td class="px-4 py-2.5 font-medium text-ink-900">{{ l.service }}</td>
               <td class="px-4 py-2.5 text-ink-600">{{ l.unit }}</td>
               <td class="tabular px-4 py-2.5 text-right text-ink-700">{{ num(l.tariff) }}</td>
               <td class="tabular px-4 py-2.5 text-right text-ink-700">{{ num(l.qty, 1) }}</td>
+              <td class="tabular px-4 py-2.5 text-right text-ink-700">{{ num(vatOf(l.total)) }}</td>
               <td class="tabular px-4 py-2.5 text-right font-semibold text-ink-900">{{ num(l.total) }}</td>
             </tr>
+            <tr class="border-b border-ink-100">
+              <td colspan="5" class="px-4 py-2 text-right text-[12.5px] text-ink-600">
+                QQS siz jami
+              </td>
+              <td class="tabular px-4 py-2 text-right text-[13px] font-semibold text-ink-800">
+                {{ num(linesNet) }}
+              </td>
+            </tr>
+            <tr class="border-b border-ink-100">
+              <td colspan="5" class="px-4 py-2 text-right text-[12.5px] text-ink-600">
+                QQS ({{ VAT_RATE }}%)
+              </td>
+              <td class="tabular px-4 py-2 text-right text-[13px] font-semibold text-ink-800">
+                {{ num(linesVat) }}
+              </td>
+            </tr>
             <tr class="bg-surface-sunken">
-              <td colspan="4" class="px-4 py-3 text-right text-[13px] font-semibold text-ink-700">
-                Jami
+              <td colspan="5" class="px-4 py-3 text-right text-[13px] font-semibold text-ink-700">
+                Jami to‘lov
               </td>
               <td class="tabular px-4 py-3 text-right text-[15px] font-bold text-ink-900">
                 {{ num(linesTotal) }}
@@ -487,11 +638,11 @@ function downloadInvoice() {
     size="lg"
   >
     <div v-if="selected" class="rounded-field bg-white p-6 ring-1 ring-ink-200">
-      <div class="flex items-start justify-between gap-6 border-b border-ink-200 pb-4">
-        <div>
+      <div class="flex flex-wrap items-start justify-between gap-6 border-b border-ink-200 pb-4">
+        <div class="min-w-0">
           <span class="text-brand-600"><AppLogo size="sm" mono /></span>
-          <p class="mt-2 text-[12px] text-ink-500">Makon Property Group</p>
-          <p class="text-[12px] text-ink-500">Toshkent, Amir Temur ko‘chasi 88</p>
+          <p class="mt-2 text-[12px] text-ink-500">{{ landlord.name }}</p>
+          <p class="text-[12px] text-ink-500">{{ landlord.address }}</p>
         </div>
         <div class="text-right">
           <p class="text-[15px] font-bold text-ink-900">Hisob-faktura</p>
@@ -500,24 +651,41 @@ function downloadInvoice() {
         </div>
       </div>
 
-      <dl class="grid gap-3 border-b border-ink-200 py-4 sm:grid-cols-2">
+      <div class="grid gap-4 border-b border-ink-200 py-4 sm:grid-cols-2">
         <div>
-          <dt class="text-[11.5px] uppercase tracking-wide text-ink-500">To‘lovchi</dt>
-          <dd class="text-[13.5px] font-semibold text-ink-900">{{ organization }}</dd>
+          <p class="text-[11.5px] uppercase tracking-wide text-ink-500">Yetkazib beruvchi</p>
+          <dl class="mt-1.5 space-y-0.5">
+            <div v-for="r in partyRows(landlord)" :key="`pl-${r.label}`" class="flex gap-2">
+              <dt class="w-28 shrink-0 text-[12px] text-ink-500">{{ r.label }}</dt>
+              <dd class="min-w-0 flex-1 text-[12.5px] font-semibold text-ink-900">{{ r.value }}</dd>
+            </div>
+          </dl>
         </div>
         <div>
+          <p class="text-[11.5px] uppercase tracking-wide text-ink-500">Xaridor</p>
+          <dl class="mt-1.5 space-y-0.5">
+            <div v-for="r in partyRows(buyer)" :key="`pb-${r.label}`" class="flex gap-2">
+              <dt class="w-28 shrink-0 text-[12px] text-ink-500">{{ r.label }}</dt>
+              <dd class="min-w-0 flex-1 text-[12.5px] font-semibold text-ink-900">{{ r.value }}</dd>
+            </div>
+          </dl>
+        </div>
+      </div>
+
+      <dl class="grid gap-3 border-b border-ink-200 py-4 sm:grid-cols-3">
+        <div>
           <dt class="text-[11.5px] uppercase tracking-wide text-ink-500">Obyekt</dt>
-          <dd class="text-[13.5px] font-semibold text-ink-900">
-            Green Business Center · Unit {{ selected.unitCode }}
+          <dd class="text-[13px] font-semibold text-ink-900">
+            {{ selectedBuilding }} · {{ selected.unitCode }}
           </dd>
         </div>
         <div>
           <dt class="text-[11.5px] uppercase tracking-wide text-ink-500">Hisob davri</dt>
-          <dd class="text-[13.5px] font-semibold text-ink-900">{{ selected.period }}</dd>
+          <dd class="text-[13px] font-semibold text-ink-900">{{ selected.period }}</dd>
         </div>
         <div>
           <dt class="text-[11.5px] uppercase tracking-wide text-ink-500">To‘lov muddati</dt>
-          <dd class="tabular text-[13.5px] font-semibold text-ink-900">{{ dateShort(selected.dueAt) }}</dd>
+          <dd class="tabular text-[13px] font-semibold text-ink-900">{{ dateShort(selected.dueAt) }}</dd>
         </div>
       </dl>
 
@@ -526,6 +694,7 @@ function downloadInvoice() {
           <tr class="border-b border-ink-200">
             <th class="py-2 text-left font-semibold text-ink-600">Xizmat nomi</th>
             <th class="py-2 text-right font-semibold text-ink-600">Miqdor</th>
+            <th class="py-2 text-right font-semibold text-ink-600">QQS ({{ VAT_RATE }}%)</th>
             <th class="py-2 text-right font-semibold text-ink-600">Summa</th>
           </tr>
         </thead>
@@ -533,24 +702,41 @@ function downloadInvoice() {
           <tr v-for="l in lines" :key="`p-${l.service}`" class="border-b border-ink-100">
             <td class="py-2 text-ink-800">{{ l.service }}</td>
             <td class="tabular py-2 text-right text-ink-700">{{ num(l.qty, 1) }} {{ l.unit }}</td>
+            <td class="tabular py-2 text-right text-ink-700">{{ num(vatOf(l.total)) }}</td>
             <td class="tabular py-2 text-right font-semibold text-ink-900">{{ num(l.total) }}</td>
           </tr>
         </tbody>
       </table>
 
-      <div class="mt-4 flex items-center justify-end gap-6 border-t border-ink-200 pt-4">
-        <span class="text-[13px] font-semibold text-ink-600">To‘lov uchun jami</span>
-        <span class="tabular text-[18px] font-bold text-ink-900">{{ sum(linesTotal) }}</span>
-      </div>
+      <dl class="mt-4 space-y-1.5 border-t border-ink-200 pt-4">
+        <div class="flex items-center justify-end gap-6">
+          <dt class="text-[12.5px] text-ink-600">QQS siz jami</dt>
+          <dd class="tabular w-40 text-right text-[13px] font-semibold text-ink-800">
+            {{ sum(linesNet) }}
+          </dd>
+        </div>
+        <div class="flex items-center justify-end gap-6">
+          <dt class="text-[12.5px] text-ink-600">QQS ({{ VAT_RATE }}%)</dt>
+          <dd class="tabular w-40 text-right text-[13px] font-semibold text-ink-800">
+            {{ sum(linesVat) }}
+          </dd>
+        </div>
+        <div class="flex items-center justify-end gap-6">
+          <dt class="text-[13px] font-semibold text-ink-700">To‘lov uchun jami</dt>
+          <dd class="tabular w-40 text-right text-[18px] font-bold text-ink-900">
+            {{ sum(linesTotal) }}
+          </dd>
+        </div>
+      </dl>
 
       <div class="mt-8 grid grid-cols-2 gap-6 text-[12px] text-ink-500">
         <div>
           <p class="border-b border-ink-300 pb-6">Ijaraga beruvchi</p>
-          <p class="mt-1">Imzo va muhr</p>
+          <p class="mt-1">{{ landlord.director }} · imzo va muhr</p>
         </div>
         <div>
           <p class="border-b border-ink-300 pb-6">Ijarachi</p>
-          <p class="mt-1">Imzo va muhr</p>
+          <p class="mt-1">{{ buyer.director }} · imzo va muhr</p>
         </div>
       </div>
     </div>

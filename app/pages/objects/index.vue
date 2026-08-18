@@ -593,7 +593,7 @@ function submitCreate() {
           v-for="(step, i) in [
             { title: 'Bino', text: 'Obyekt pasporti, qavatlar va umumiy ko‘rsatkichlar', icon: 'building' },
             { title: 'Blok', text: 'Bino ichidagi bloklar va ularning maydonlari', icon: 'layers' },
-            { title: 'Qavat', text: '3D navigator va qavat sketch-rejasi', icon: 'cube' },
+            { title: 'Qavat', text: '3D navigator va qavat rejasi', icon: 'cube' },
             { title: 'Unit', text: 'Unit kartasi, holati, ijarachi va shartnomasi', icon: 'box' },
           ]"
           :key="step.title"

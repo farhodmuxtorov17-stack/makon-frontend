@@ -7,7 +7,12 @@ import { num, area, percent, dateLong } from '~/utils/format'
 
 definePageMeta({ layout: 'public' })
 
-const { t } = useI18n()
+const { t, te } = useI18n()
+
+/** Kalit lug‘atda bo‘lmasa tayyor o‘zbekcha nom qaytadi, ekran bo‘sh qolmaydi */
+function tr(key: string, fallback: string) {
+  return te(key) ? t(key) : fallback
+}
 
 /** «5 ta» ko‘rinishidagi son: rus tilida sanoq so‘zi bo‘lmagani uchun tushib qoladi */
 function counted(value: string | number) {
@@ -19,8 +24,15 @@ interface Listing {
   building: Building
 }
 
+/**
+ * Bino turi klassifikatori ma’lumotnomadagi BLD_TYPE yozuvlari bilan bir xil:
+ * beshta tur, har biriga bitta kalit. Ilgari «Ofis binosi» jimgina «Biznes
+ * markaz» ichiga qo‘shilardi va foydalanuvchi landingda bir nom, obyekt
+ * pasportida boshqa nom ko‘rardi.
+ */
 const CATEGORY_TYPES: Record<string, string[]> = {
-  biznes: ['Biznes markaz', 'Ofis binosi'],
+  biznes: ['Biznes markaz'],
+  ofis: ['Ofis binosi'],
   savdo: ['Savdo markaz'],
   ombor: ['Ombor / logistika'],
   turar: ['Turar joy'],
@@ -69,28 +81,45 @@ const CATEGORY_META = [
   {
     key: 'biznes',
     labelKey: 'public.categoryBiznes',
-    captionKey: 'landing.categoryBiznesCaption',
+    labelText: 'Biznes markazlar',
+    captionKey: 'landing.categoryBiznesOnlyCaption',
+    captionText: 'Ko‘p ijarachili biznes markazlardagi maydonlar',
     photo: 'green-business-center-3',
     icon: 'building',
   },
   {
+    key: 'ofis',
+    labelKey: 'public.categoryOfis',
+    labelText: 'Ofis binolari',
+    captionKey: 'landing.categoryOfisCaption',
+    captionText: 'Alohida ofis binolaridagi maydonlar',
+    photo: 'urban-office-3',
+    icon: 'grid',
+  },
+  {
     key: 'savdo',
     labelKey: 'public.categorySavdo',
+    labelText: 'Savdo markazlar',
     captionKey: 'landing.categorySavdoCaption',
+    captionText: 'Savdo va xizmat ko‘rsatish maydonlari',
     photo: 'mega-mall-3',
     icon: 'box',
   },
   {
     key: 'ombor',
     labelKey: 'public.categoryOmbor',
+    labelText: 'Ombor / logistika',
     captionKey: 'landing.categoryOmborCaption',
+    captionText: 'Ombor va ishlab chiqarish bloklari',
     photo: 'industrial-park-2-3',
     icon: 'cube',
   },
   {
     key: 'turar',
     labelKey: 'public.categoryTurar',
+    labelText: 'Turar joylar',
     captionKey: 'landing.categoryTurarCaption',
+    captionText: 'Turar joy majmualaridagi kvartiralar',
     photo: 'harmony-residence',
     icon: 'layers',
   },
@@ -103,8 +132,8 @@ const categories = computed(() =>
     )
     return {
       ...c,
-      label: t(c.labelKey),
-      caption: t(c.captionKey),
+      label: tr(c.labelKey, c.labelText),
+      caption: tr(c.captionKey, c.captionText),
       count: items.length,
       area: items.reduce((s, l) => s + l.unit.area, 0),
     }
@@ -125,20 +154,26 @@ const fPlace = ref('')
 const fPrice = ref('')
 const fArea = ref('')
 
+/** Yorliqlar katalogdagi «Bino turi» ro‘yxati bilan so‘zma-so‘z bir xil */
 const TYPE_OPTIONS = computed(() => [
   { value: '', label: t('common.all') },
-  { value: 'biznes', label: t('landing.typeBiznes') },
-  { value: 'savdo', label: t('landing.typeSavdo') },
-  { value: 'ombor', label: t('landing.typeOmbor') },
-  { value: 'turar', label: t('landing.typeTurar') },
+  { value: 'biznes', label: tr('landing.typeBiznes', 'Biznes markaz') },
+  { value: 'ofis', label: tr('landing.typeOfis', 'Ofis binosi') },
+  { value: 'savdo', label: tr('landing.typeSavdo', 'Savdo markaz') },
+  { value: 'ombor', label: tr('landing.typeOmbor', 'Ombor / logistika') },
+  { value: 'turar', label: tr('landing.typeTurar', 'Turar joy') },
 ])
 
+/**
+ * Maqsad bino turidan boshqa o‘lchov, shuning uchun yorliqda «maydoni» bor:
+ * «Ofis binosi» bino turi, «Ofis maydoni» esa unitning maqsadi.
+ */
 const USAGE_OPTIONS = computed(() => [
   { value: '', label: t('common.all') },
-  { value: 'Ofis', label: t('landing.usageOffice') },
-  { value: 'Savdo', label: t('landing.usageRetail') },
-  { value: 'Ombor', label: t('landing.usageWarehouse') },
-  { value: 'Turar joy', label: t('landing.usageResidential') },
+  { value: 'Ofis', label: tr('landing.usageOfficeArea', 'Ofis maydoni') },
+  { value: 'Savdo', label: tr('landing.usageRetailArea', 'Savdo maydoni') },
+  { value: 'Ombor', label: tr('landing.usageWarehouseArea', 'Ombor maydoni') },
+  { value: 'Turar joy', label: tr('landing.usageResidentialArea', 'Turar joy maydoni') },
 ])
 
 /** Bir tumanda bir nechta obyekt bo‘lishi mumkin, ro‘yxatda hudud bir marta chiqadi */
@@ -439,7 +474,7 @@ function openArticle(a: (typeof ARTICLES)[number]) {
         </NuxtLink>
       </div>
 
-      <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+      <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         <NuxtLink
           v-for="c in categories"
           :key="c.key"

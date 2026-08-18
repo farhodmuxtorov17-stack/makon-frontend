@@ -172,6 +172,31 @@ const shapes = computed(() => {
   })
 })
 
+
+/** Chizmadagi harfli o‘qlar */
+const AXIS_LETTERS = ['A', 'B', 'V', 'G', 'D', 'E', 'J', 'Z', 'I', 'K', 'L', 'M', 'N', 'O', 'P']
+
+/** Har bir bo‘lim (o‘qlar orasidagi masofa) uchun o‘lcham yozuvi */
+const bayLabels = computed(() => {
+  const p = plan.value
+  const mk = (list: number[]) =>
+    list.slice(1).map((v, i) => ({
+      at: (v + list[i]!) / 2,
+      text: (v - list[i]!).toFixed(1),
+    }))
+  return { x: mk(p.axes.xs), y: mk(p.axes.ys) }
+})
+
+/**
+ * Masshtab chizg‘ichi: qavat kengligiga qarab yumaloq o‘lcham tanlanadi,
+ * shunda chizmadan masofani ko‘z bilan ham baholash mumkin.
+ */
+const scaleBar = computed(() => {
+  const target = plan.value.width / 5
+  const step = [1, 2, 5, 10, 20, 50].find((v) => v >= target) ?? 50
+  return { metres: step, label: `${step} m` }
+})
+
 /** Reja ostidagi o‘lcham zanjiri: qavatning tashqi eni va bo‘yi */
 const planLabel = computed(() => {
   const p = plan.value
@@ -336,7 +361,7 @@ function goApply() {
 
   <template v-else>
     <AppTopbar
-      :title="`${floorTitle} sketch-rejasi`"
+      :title="`${floorTitle} rejasi`"
       :subtitle="`${building.name} · xona va unitlar bo‘yicha chuqur ko‘rish`"
       :breadcrumb="[
         { label: 'Obyektlar', to: '/objects' },
@@ -446,8 +471,8 @@ function goApply() {
                   <defs>
                     <pattern
                       id="core-hatch"
-                      :width="scale * 1.6"
-                      :height="scale * 1.6"
+                      :width="scale * 1.1"
+                      :height="scale * 1.1"
                       patternUnits="userSpaceOnUse"
                       patternTransform="rotate(45)"
                     >
@@ -455,47 +480,17 @@ function goApply() {
                         x1="0"
                         y1="0"
                         x2="0"
-                        :y2="scale * 1.6"
-                        stroke="#8494AC"
-                        :stroke-width="scale * 0.3"
+                        :y2="scale * 1.1"
+                        stroke="#94A2B8"
+                        :stroke-width="scale * 0.22"
                       />
                     </pattern>
                   </defs>
 
-                  <!-- Qavat plitasi va tashqi devor: qalinlik haqiqiy o‘lchamda -->
-                  <rect
-                    x="0"
-                    y="0"
-                    :width="plan.width"
-                    :height="plan.height"
-                    fill="#FFFFFF"
-                    stroke="#131C2B"
-                    :stroke-width="plan.wallOuter"
-                  />
+                  <!-- Qavat plitasi -->
+                  <rect x="0" y="0" :width="plan.width" :height="plan.height" fill="#FFFFFF" />
 
-                  <!-- Fasaddagi deraza yo‘laklari -->
-                  <line
-                    v-for="(w, i) in plan.windows"
-                    :key="`wg-${i}`"
-                    :x1="w.x1"
-                    :y1="w.y1"
-                    :x2="w.x2"
-                    :y2="w.y2"
-                    stroke="#FFFFFF"
-                    :stroke-width="plan.wallOuter * 1.1"
-                  />
-                  <line
-                    v-for="(w, i) in plan.windows"
-                    :key="`wl-${i}`"
-                    :x1="w.x1"
-                    :y1="w.y1"
-                    :x2="w.x2"
-                    :y2="w.y2"
-                    stroke="#54617A"
-                    :stroke-width="scale * 0.22"
-                  />
-
-                  <!-- Koridor -->
+                  <!-- Koridor: chizmada och kulrang tekislik -->
                   <rect
                     v-for="(c, i) in plan.corridors"
                     :key="`c-${i}`"
@@ -503,26 +498,41 @@ function goApply() {
                     :y="c.y"
                     :width="c.w"
                     :height="c.h"
-                    fill="#F1F5FB"
+                    fill="#EDF1F7"
                   />
+                  <text
+                    v-if="plan.corridors[0] && plan.corridors[0].w > scale * 14"
+                    :x="plan.corridors[0].x + plan.corridors[0].w / 2"
+                    :y="plan.corridors[0].y + plan.corridors[0].h / 2 + scale * 0.55"
+                    text-anchor="middle"
+                    :font-size="scale * 1.5"
+                    fill="#8494AC"
+                    letter-spacing="0.3"
+                  >
+                    KORIDOR
+                  </text>
 
-                  <!-- Xizmat yadrosi: lift, zinapoya, sanitar tugun -->
+                  <!-- Xizmat yadrosi shtrixlanadi -->
                   <g v-for="(c, i) in plan.core" :key="`k-${i}`">
                     <rect
                       :x="c.rect.x"
                       :y="c.rect.y"
                       :width="c.rect.w"
                       :height="c.rect.h"
+                      fill="#F4F6FA"
+                    />
+                    <rect
+                      :x="c.rect.x"
+                      :y="c.rect.y"
+                      :width="c.rect.w"
+                      :height="c.rect.h"
                       fill="url(#core-hatch)"
-                      fill-opacity="0.5"
-                      stroke="#54617A"
-                      :stroke-width="plan.wallInner * 1.6"
                     />
                     <text
                       :x="c.rect.x + c.rect.w / 2"
                       :y="c.rect.y + c.rect.h / 2 + scale * 0.5"
                       text-anchor="middle"
-                      :font-size="scale * 1.7"
+                      :font-size="scale * 1.45"
                       fill="#354152"
                       font-weight="600"
                     >
@@ -530,141 +540,293 @@ function goApply() {
                     </text>
                   </g>
 
+                  <!-- Unit maydonlari: holat rangi yengil bo‘yoq sifatida -->
                   <g
                     v-for="s in shapes"
                     :key="s.id"
                     class="cursor-pointer"
-                    :opacity="isDimmed(s.status) ? 0.22 : 1"
+                    :opacity="isDimmed(s.status) ? 0.25 : 1"
                     @click="selectedId = s.id"
                   >
                     <title>{{ s.code }} · {{ s.areaLabel }}</title>
                     <polygon
                       :points="s.points"
                       :fill="s.fill"
-                      :fill-opacity="selected?.id === s.id ? 0.34 : 0.16"
-                      :stroke="selected?.id === s.id ? '#0256F7' : '#354152'"
-                      :stroke-width="
-                        selected?.id === s.id ? plan.wallInner * 3 : plan.wallInner * 1.6
-                      "
-                      stroke-linejoin="miter"
+                      :fill-opacity="selected?.id === s.id ? 0.3 : 0.13"
                     />
+                    <polygon
+                      v-if="selected?.id === s.id"
+                      :points="s.points"
+                      fill="none"
+                      stroke="#0256F7"
+                      :stroke-width="scale * 0.42"
+                    />
+                  </g>
 
-                    <!-- Eshik: devordagi tirqish, qanot va burilish yoyi -->
+                  <!-- Devor tanasi: qalinligi bor va to‘ldirib chiziladi -->
+                  <rect
+                    v-for="(w, i) in plan.walls"
+                    :key="`wall-${i}`"
+                    :x="w.x"
+                    :y="w.y"
+                    :width="w.w"
+                    :height="w.h"
+                    fill="#1F2A3A"
+                  />
+
+                  <!-- Deraza: devordagi bo‘shliq va uch ingichka chiziq -->
+                  <g v-for="(o, i) in plan.openings" :key="`op-${i}`">
+                    <rect :x="o.x" :y="o.y" :width="o.w" :height="o.h" fill="#FFFFFF" />
+                    <template v-if="o.w > o.h">
+                      <line
+                        v-for="k in 3"
+                        :key="k"
+                        :x1="o.x"
+                        :y1="o.y + (o.h * (k - 1)) / 2"
+                        :x2="o.x + o.w"
+                        :y2="o.y + (o.h * (k - 1)) / 2"
+                        stroke="#54617A"
+                        :stroke-width="scale * 0.1"
+                      />
+                    </template>
+                    <template v-else>
+                      <line
+                        v-for="k in 3"
+                        :key="k"
+                        :x1="o.x + (o.w * (k - 1)) / 2"
+                        :y1="o.y"
+                        :x2="o.x + (o.w * (k - 1)) / 2"
+                        :y2="o.y + o.h"
+                        stroke="#54617A"
+                        :stroke-width="scale * 0.1"
+                      />
+                    </template>
+                  </g>
+
+                  <!-- Eshik: devordagi tirqish, qanot va burilish yoyi -->
+                  <g v-for="s in shapes" :key="`d-${s.id}`">
                     <template v-if="s.door">
-                      <path :d="s.door.gap" stroke="#FFFFFF" :stroke-width="plan.wallInner * 2.4" />
+                      <path :d="s.door.gap" stroke="#FFFFFF" :stroke-width="plan.wallInner * 2.6" />
                       <path
                         :d="s.door.arc"
                         fill="none"
                         stroke="#8494AC"
-                        :stroke-width="scale * 0.16"
-                        stroke-dasharray="0.4 0.35"
+                        :stroke-width="scale * 0.12"
                       />
-                      <path :d="s.door.leaf" stroke="#354152" :stroke-width="scale * 0.24" />
+                      <path :d="s.door.leaf" stroke="#354152" :stroke-width="scale * 0.2" />
                     </template>
+                  </g>
 
+                  <!-- Unit raqami va maydoni -->
+                  <g
+                    v-for="s in shapes"
+                    :key="`t-${s.id}`"
+                    class="pointer-events-none"
+                    :opacity="isDimmed(s.status) ? 0.3 : 1"
+                  >
                     <text
                       :x="s.cx"
                       :y="s.cy"
                       text-anchor="middle"
-                      :font-size="scale * 2.4"
+                      :font-size="scale * 2.6"
                       font-weight="700"
                       fill="#131C2B"
                     >
                       {{ s.code }}
                     </text>
+                    <line
+                      :x1="s.cx - scale * 2.2"
+                      :y1="s.cy + scale * 0.9"
+                      :x2="s.cx + scale * 2.2"
+                      :y2="s.cy + scale * 0.9"
+                      stroke="#8494AC"
+                      :stroke-width="scale * 0.08"
+                    />
                     <text
                       :x="s.cx"
-                      :y="s.cy + scale * 3"
+                      :y="s.cy + scale * 2.9"
                       text-anchor="middle"
-                      :font-size="scale * 1.7"
+                      :font-size="scale * 1.75"
                       fill="#54617A"
                     >
                       {{ s.areaLabel }}
                     </text>
                   </g>
 
-                  <!-- O‘lcham zanjiri: qavatning tashqi eni va bo‘yi -->
-                  <g stroke="#8494AC" :stroke-width="scale * 0.16" fill="none">
+                  <!-- Koordinata o‘qlari: raqamli va harfli -->
+                  <g stroke="#C7D0DE" :stroke-width="scale * 0.07" stroke-dasharray="1.2 0.8">
                     <line
-                      x1="0"
-                      :y1="plan.height + margin * 0.45"
-                      :x2="plan.width"
-                      :y2="plan.height + margin * 0.45"
-                    />
-                    <line
-                      x1="0"
-                      :y1="plan.height + margin * 0.3"
-                      x2="0"
-                      :y2="plan.height + margin * 0.6"
-                    />
-                    <line
-                      :x1="plan.width"
-                      :y1="plan.height + margin * 0.3"
-                      :x2="plan.width"
-                      :y2="plan.height + margin * 0.6"
-                    />
-                    <line
-                      :x1="plan.width + margin * 0.45"
-                      y1="0"
-                      :x2="plan.width + margin * 0.45"
+                      v-for="(x, i) in plan.axes.xs"
+                      :key="`ax-${i}`"
+                      :x1="x"
+                      :y1="-margin * 0.42"
+                      :x2="x"
                       :y2="plan.height"
                     />
                     <line
-                      :x1="plan.width + margin * 0.3"
-                      y1="0"
-                      :x2="plan.width + margin * 0.6"
-                      y2="0"
+                      v-for="(y, i) in plan.axes.ys"
+                      :key="`ay-${i}`"
+                      :x1="-margin * 0.42"
+                      :y1="y"
+                      :x2="plan.width"
+                      :y2="y"
+                    />
+                  </g>
+                  <g v-for="(x, i) in plan.axes.xs" :key="`axb-${i}`">
+                    <circle
+                      :cx="x"
+                      :cy="-margin * 0.42"
+                      :r="scale * 1.5"
+                      fill="#FFFFFF"
+                      stroke="#8494AC"
+                      :stroke-width="scale * 0.1"
+                    />
+                    <text
+                      :x="x"
+                      :y="-margin * 0.42 + scale * 0.55"
+                      text-anchor="middle"
+                      :font-size="scale * 1.5"
+                      fill="#354152"
+                      font-weight="600"
+                    >
+                      {{ i + 1 }}
+                    </text>
+                  </g>
+                  <g v-for="(y, i) in plan.axes.ys" :key="`ayb-${i}`">
+                    <circle
+                      :cx="-margin * 0.42"
+                      :cy="y"
+                      :r="scale * 1.5"
+                      fill="#FFFFFF"
+                      stroke="#8494AC"
+                      :stroke-width="scale * 0.1"
+                    />
+                    <text
+                      :x="-margin * 0.42"
+                      :y="y + scale * 0.55"
+                      text-anchor="middle"
+                      :font-size="scale * 1.5"
+                      fill="#354152"
+                      font-weight="600"
+                    >
+                      {{ AXIS_LETTERS[i] ?? i + 1 }}
+                    </text>
+                  </g>
+
+                  <!-- O‘lcham zanjiri: bo‘limlar va umumiy o‘lcham -->
+                  <g stroke="#54617A" :stroke-width="scale * 0.09" fill="none">
+                    <line
+                      :x1="0"
+                      :y1="plan.height + margin * 0.34"
+                      :x2="plan.width"
+                      :y2="plan.height + margin * 0.34"
                     />
                     <line
-                      :x1="plan.width + margin * 0.3"
-                      :y1="plan.height"
-                      :x2="plan.width + margin * 0.6"
+                      v-for="(x, i) in plan.axes.xs"
+                      :key="`tk-${i}`"
+                      :x1="x - scale * 0.5"
+                      :y1="plan.height + margin * 0.34 + scale * 0.5"
+                      :x2="x + scale * 0.5"
+                      :y2="plan.height + margin * 0.34 - scale * 0.5"
+                    />
+                    <line
+                      :x1="plan.width + margin * 0.34"
+                      :y1="0"
+                      :x2="plan.width + margin * 0.34"
                       :y2="plan.height"
+                    />
+                    <line
+                      v-for="(y, i) in plan.axes.ys"
+                      :key="`tky-${i}`"
+                      :x1="plan.width + margin * 0.34 - scale * 0.5"
+                      :y1="y + scale * 0.5"
+                      :x2="plan.width + margin * 0.34 + scale * 0.5"
+                      :y2="y - scale * 0.5"
                     />
                   </g>
                   <text
-                    :x="plan.width / 2"
-                    :y="plan.height + margin * 0.8"
+                    v-for="(seg, i) in bayLabels.x"
+                    :key="`dx-${i}`"
+                    :x="seg.at"
+                    :y="plan.height + margin * 0.34 - scale * 1"
                     text-anchor="middle"
-                    :font-size="scale * 2"
+                    :font-size="scale * 1.35"
                     fill="#54617A"
+                  >
+                    {{ seg.text }}
+                  </text>
+                  <text
+                    :x="plan.width / 2"
+                    :y="plan.height + margin * 0.78"
+                    text-anchor="middle"
+                    :font-size="scale * 1.9"
+                    font-weight="600"
+                    fill="#354152"
                   >
                     {{ planLabel.width }}
                   </text>
                   <text
-                    :x="plan.width + margin * 0.75"
+                    :x="plan.width + margin * 0.72"
                     :y="plan.height / 2"
                     text-anchor="middle"
-                    :font-size="scale * 2"
-                    fill="#54617A"
-                    :transform="`rotate(-90 ${plan.width + margin * 0.75} ${plan.height / 2})`"
+                    :font-size="scale * 1.9"
+                    font-weight="600"
+                    fill="#354152"
+                    :transform="`rotate(-90 ${plan.width + margin * 0.72} ${plan.height / 2})`"
                   >
                     {{ planLabel.height }}
                   </text>
 
-                  <!-- Shimol ko‘rsatkichi -->
-                  <g :transform="`translate(${-margin * 0.55} ${margin * 0.2})`">
+                  <!-- Shimol ko‘rsatkichi va masshtab chizg‘ichi -->
+                  <g :transform="`translate(${plan.width - scale * 4} ${-margin * 0.5})`">
                     <circle
                       cx="0"
                       cy="0"
-                      :r="scale * 2.6"
-                      fill="none"
+                      :r="scale * 2.3"
+                      fill="#FFFFFF"
                       stroke="#8494AC"
-                      :stroke-width="scale * 0.16"
+                      :stroke-width="scale * 0.1"
                     />
                     <path
-                      :d="`M 0 ${-scale * 2.6} L ${scale * 0.9} ${scale * 0.7} L 0 ${scale * 0.2} L ${-scale * 0.9} ${scale * 0.7} Z`"
-                      fill="#354152"
+                      :d="`M 0 ${-scale * 2.3} L ${scale * 0.8} ${scale * 0.6} L 0 ${scale * 0.15} L ${-scale * 0.8} ${scale * 0.6} Z`"
+                      fill="#1F2A3A"
                     />
                     <text
                       x="0"
-                      :y="scale * 4.6"
+                      :y="-scale * 3"
                       text-anchor="middle"
-                      :font-size="scale * 1.8"
+                      :font-size="scale * 1.4"
                       fill="#54617A"
                       font-weight="700"
                     >
                       SH
+                    </text>
+                  </g>
+                  <g :transform="`translate(0 ${plan.height + margin * 0.92})`">
+                    <rect
+                      x="0"
+                      :y="-scale * 0.5"
+                      :width="scaleBar.metres / 2"
+                      :height="scale * 0.5"
+                      fill="#1F2A3A"
+                    />
+                    <rect
+                      :x="scaleBar.metres / 2"
+                      :y="-scale * 0.5"
+                      :width="scaleBar.metres / 2"
+                      :height="scale * 0.5"
+                      fill="#FFFFFF"
+                      stroke="#1F2A3A"
+                      :stroke-width="scale * 0.07"
+                    />
+                    <text
+                      :x="scaleBar.metres"
+                      :y="-scale * 1.2"
+                      text-anchor="end"
+                      :font-size="scale * 1.3"
+                      fill="#54617A"
+                    >
+                      {{ scaleBar.label }}
                     </text>
                   </g>
                 </svg>
@@ -675,7 +837,7 @@ function goApply() {
                   </span>
                   <div>
                     <p class="text-[14px] font-bold text-ink-900">
-                      Ushbu qavat bo‘yicha sketch-reja kiritilmagan
+                      Ushbu qavat bo‘yicha reja kiritilmagan
                     </p>
                     <p class="mt-1 text-[13px] text-ink-500">
                       Rejasi mavjud qavatlardan birini tanlang.

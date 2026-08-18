@@ -4,6 +4,14 @@
  * Har bir status uchun rang bilan birga `shape` beriladi: talab bo‘yicha
  * status faqat rang bilan emas, matn va shakl bilan ham farqlanishi kerak
  * (§8.4, §22.4: rang ko‘rmaydigan foydalanuvchilar uchun).
+ *
+ * Nom qayerdan olinadi. Bu yerdagi `label` faqat zaxira qiymat: ko‘rinadigan
+ * nom `i18n/locales/*.json` dagi `status.<kind>.<VALUE>` kalitidan olinadi va
+ * ikkalasi bir xil bo‘lishi shart. Ekran statusni matn qilib chiqarganda ham
+ * `UiStatus` yoki `useAppLabels().statusLabel()` ishlatsin, aks holda bitta
+ * status ikki manbadan ikki xil nom oladi (filtr «Qoralama», nishoncha
+ * «Loyiha» holati) va til almashtirilganda nishoncha tarjima bo‘lib, filtr
+ * o‘zbekcha qolib ketadi.
  */
 
 export type Tone = 'neutral' | 'brand' | 'ok' | 'warn' | 'danger' | 'violet'
@@ -92,7 +100,7 @@ export const CONTRACT_STATUS: Record<string, StatusDef> = {
 
 export const INVOICE_STATUS: Record<string, StatusDef> = {
   DRAFT: { label: 'Qoralama', tone: 'neutral', shape: 'square' },
-  ISSUED: { label: 'Tasdiqlangan', tone: 'brand', shape: 'dot' },
+  ISSUED: { label: 'Chiqarilgan', tone: 'brand', shape: 'dot' },
   PARTIALLY_PAID: { label: 'Qisman to‘langan', tone: 'warn', shape: 'bar' },
   PAID: { label: 'To‘langan', tone: 'ok', shape: 'check' },
   OVERDUE: { label: 'Kechikkan', tone: 'danger', shape: 'clock' },
@@ -133,6 +141,37 @@ export const STATUS_REGISTRY = {
 } as const
 
 export type StatusKind = keyof typeof STATUS_REGISTRY
+
+/**
+ * Ma’lumot bazasida enum emas, o‘zbekcha qiymat sifatida saqlanadigan
+ * ro‘yxatlar (ustuvorlik, to‘lov davriyligi, Didox holati) uchun tarjima
+ * kaliti jadvali. Qiymatning o‘zi o‘zgarmaydi, faqat ko‘rinadigan nom
+ * tanlangan tilga bog‘lanadi: `useAppLabels().priorityLabel()` va hokazo.
+ */
+export const PRIORITY_KEY: Record<string, string> = {
+  Past: 'priority.low',
+  'O‘rtacha': 'priority.medium',
+  Yuqori: 'priority.high',
+}
+
+/** Ustuvorlik faqat rang bilan emas, shakl bilan ham farqlanadi */
+export const PRIORITY_MARK: Record<string, { tone: Tone; shape: Shape }> = {
+  Past: { tone: 'neutral', shape: 'bar' },
+  'O‘rtacha': { tone: 'warn', shape: 'ring' },
+  Yuqori: { tone: 'danger', shape: 'dot' },
+}
+
+export const PERIODICITY_KEY: Record<string, string> = {
+  Oylik: 'periodicity.monthly',
+  Choraklik: 'periodicity.quarterly',
+  Yillik: 'periodicity.yearly',
+}
+
+export const DIDOX_KEY: Record<string, string> = {
+  Yuborilgan: 'didox.sent',
+  'Ko‘rib chiqilmoqda': 'didox.review',
+  Imzolangan: 'didox.signed',
+}
 
 export const TONE_BADGE: Record<Tone, string> = {
   neutral: 'bg-ink-100 text-ink-700 ring-ink-200',
