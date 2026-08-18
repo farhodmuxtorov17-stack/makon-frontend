@@ -61,7 +61,7 @@ const CHECKS: Array<{ key: string; label: string; ok: (u: Unit) => boolean }> = 
   { key: 'area', label: 'Maydoni', ok: (u) => u.area > 0 },
   { key: 'usage', label: 'Foydalanish turi', ok: (u) => Boolean(u.usage) },
   { key: 'offer', label: 'Taklif turi', ok: (u) => Boolean(u.offer) },
-  { key: 'status', label: 'Holati', ok: (u) => Boolean(u.status) && u.status !== 'DRAFT' },
+  { key: 'status', label: 'Holat', ok: (u) => Boolean(u.status) && u.status !== 'DRAFT' },
   { key: 'equipment', label: 'Jihozlar ro‘yxati', ok: (u) => u.equipment.length > 0 },
   { key: 'polygon', label: '2D poligon', ok: (u) => u.polygon.length >= 3 },
 ]
@@ -206,7 +206,7 @@ const columns = computed(() => {
     { key: 'floorName', label: 'Qavat', width: '140px' },
     { key: 'area', label: 'Maydoni', align: 'right' as const, numeric: true, width: '130px' },
     { key: 'usage', label: 'Foydalanish', width: '140px' },
-    { key: 'status', label: 'Holati', width: '150px' },
+    { key: 'status', label: 'Holat', width: '150px' },
     { key: 'hasPlan', label: 'Poligon', width: '120px' },
     { key: 'pct', label: 'Atribut to‘liqligi', width: '200px' },
   ]
@@ -430,7 +430,7 @@ function toneOf(pct: number) {
       </template>
 
       <div class="flex flex-wrap items-center gap-3 px-4 pb-4 lg:px-5">
-        <UiInput v-model="query" placeholder="Qidiruv (kod, bino, qavat)" class="min-w-[190px] flex-1">
+        <UiInput v-model="query" placeholder="Kod, bino yoki qavat bo‘yicha qidirish" class="min-w-[190px] flex-1">
           <template #prefix>
             <UiIcon name="search" :size="17" />
           </template>

@@ -66,20 +66,31 @@ watch(
   },
 )
 
-const floorTitle = computed(() =>
-  floorNo.value === 0 ? 'Yer osti · texnik qavat' : `${floorNo.value}-qavat`,
-)
+/**
+ * Yer osti qavatlari manfiy raqam bilan belgilanadi (-1, -2). Ilgari 2D da
+ * ular bitta «0» ga yig‘ilardi, 3D da esa -1 va -2 alohida ko‘rinardi va
+ * ikkalasi ham bitta sahifaga olib borardi.
+ */
+function floorName(floor: number) {
+  return floor < 0 ? `${-floor}-yer osti qavati` : `${floor}-qavat`
+}
+
+const floorTitle = computed(() => floorName(floorNo.value))
 
 const floorOptions = computed(() => {
   const b = building.value
   if (!b) return []
   const levels = Array.from({ length: b.floors }, (_, i) => b.floors - i)
-  if (b.undergroundFloors) levels.push(0)
+  for (let k = 1; k <= b.undergroundFloors; k++) levels.push(-k)
 
   return levels.map((floor) => {
     const count = unitsOfFloor(b.id, floor).length
-    const name = floor === 0 ? 'Yer osti · texnik' : `${floor}-qavat`
-    return { value: String(floor), label: count ? `${name} · ${count} unit` : name }
+    const name = floorName(floor)
+    // Reja kiritilmagan qavat yashirilmaydi, lekin ochiq aytiladi
+    return {
+      value: String(floor),
+      label: count ? `${name} · ${count} unit` : `${name} · reja kiritilmagan`,
+    }
   })
 })
 
@@ -93,7 +104,11 @@ const floorValue = computed({
 const floorsWithPlan = computed(() => {
   const b = building.value
   if (!b) return []
-  return Array.from({ length: b.floors + 1 }, (_, i) => i)
+  const levels = [
+    ...Array.from({ length: b.undergroundFloors }, (_, i) => -(i + 1)),
+    ...Array.from({ length: b.floors }, (_, i) => i + 1),
+  ]
+  return levels
     .map((floor) => ({ floor, count: unitsOfFloor(b.id, floor).length }))
     .filter((f) => f.count > 0)
 })

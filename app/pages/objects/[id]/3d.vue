@@ -105,7 +105,7 @@ const floorRows = computed<FloorRow[]>(() => {
 
     return {
       floor,
-      name: `${floor}-qavat`,
+      name: floor < 0 ? `${-floor}-yer osti qavati` : `${floor}-qavat`,
       short: String(floor),
       underground: floor < 0,
       units,
@@ -117,7 +117,7 @@ const floorRows = computed<FloorRow[]>(() => {
       vacantShare: totalArea ? Math.round((vacantArea / totalArea) * 100) : 0,
       label,
       mix,
-      planFloor: floor < 0 ? 0 : floor,
+      planFloor: floor,
     }
   })
 })

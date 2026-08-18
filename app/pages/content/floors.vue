@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { BUILDINGS } from '~/data/buildings'
 import { UNITS, type Unit, type UnitOffer, type UnitUsage } from '~/data/units'
-import { UNIT_STATUS } from '~/constants/statuses'
+import { UNIT_STATUS, UNIT_STATUS_COLOR } from '~/constants/statuses'
 import { area, percent } from '~/utils/format'
 
 const auth = useAuthStore()
@@ -11,15 +11,12 @@ const router = useRouter()
 const canEdit = computed(() => auth.can('unit.editContent'))
 const scoped = computed(() => BUILDINGS.filter((b) => auth.inScope(b.id)))
 
-const STATUS_FILL: Record<string, string> = {
-  VACANT: '#16B99A',
-  RESERVED: '#FAA53F',
-  RENTED: '#0256F7',
-  SOLD: '#916CEC',
-  MAINTENANCE: '#F84448',
-  HIDDEN: '#94A2B8',
-  DRAFT: '#CBD4E3',
-}
+/**
+ * Ranglar yagona registrdan. Ilgari bu ekranda o‘z jadvali bor edi va
+ * qizil rang bu yerda «Ta’mirda», qolgan ekranlarda «Sotilgan» degani
+ * bo‘lardi.
+ */
+const STATUS_FILL = UNIT_STATUS_COLOR
 
 const USAGE_OPTIONS = [
   { value: 'Ofis', label: 'Ofis' },
@@ -65,12 +62,12 @@ function levelsOf(id: string) {
   if (!b) return []
   const list: number[] = []
   for (let f = b.floors; f >= 1; f -= 1) list.push(f)
-  if (b.undergroundFloors > 0) list.push(0)
+  for (let k = 1; k <= b.undergroundFloors; k++) list.push(-k)
   return list
 }
 
 function floorName(value: number) {
-  return value === 0 ? 'Yer osti · texnik qavat' : `${value}-qavat`
+  return value < 0 ? `${-value}-yer osti qavati` : `${value}-qavat`
 }
 
 function attrsReady(u: Unit) {
@@ -303,11 +300,47 @@ function rect(x: number, y: number, w: number, h: number): number[][] {
   ]
 }
 
+/** Ikki to‘rtburchak kesishadimi (0–1 koordinatalarda) */
+function overlaps(a: number[][], b: number[][]) {
+  const box = (p: number[][]) => ({
+    x1: Math.min(...p.map((q) => q[0] ?? 0)),
+    x2: Math.max(...p.map((q) => q[0] ?? 0)),
+    y1: Math.min(...p.map((q) => q[1] ?? 0)),
+    y2: Math.max(...p.map((q) => q[1] ?? 0)),
+  })
+  const p = box(a)
+  const q = box(b)
+  return p.x1 < q.x2 - 0.001 && q.x1 < p.x2 - 0.001 && p.y1 < q.y2 - 0.001 && q.y1 < p.y2 - 0.001
+}
+
+/**
+ * Yangi shakl uchun bo‘sh joy topadi. Ilgari shakl qat‘iy 4×3 to‘rga
+ * qo‘yilardi va uchinchi bosishdayoq mavjud unit ustiga tushardi.
+ */
+function freeSpot(existing: number[][][]) {
+  // Qavat to‘la rejalashtirilgan bo‘lsa kichikroq shakl ham sinab ko‘riladi
+  for (const [w, h, step] of [
+    [0.18, 0.22, 0.04],
+    [0.12, 0.15, 0.03],
+    [0.07, 0.09, 0.02],
+  ] as const) {
+    for (let y = 0.02; y + h <= 0.98; y += step) {
+      for (let x = 0.02; x + w <= 0.98; x += step) {
+        const candidate = rect(Math.round(x * 1000) / 1000, Math.round(y * 1000) / 1000, w, h)
+        if (!existing.some((e) => overlaps(candidate, e))) return candidate
+      }
+    }
+  }
+  return null
+}
+
 function addPolygon() {
   if (!canEdit.value) return
-  const n = floorUnits.value.length
-  const col = n % 4
-  const row = Math.floor(n / 4) % 3
+  const spot = freeSpot(floorUnits.value.map((u) => u.polygon))
+  if (!spot) {
+    notice.value = 'Qavatda bo‘sh joy qolmadi: avval mavjud shakllarni siljiting yoki kichraytiring.'
+    return
+  }
   pushHistory()
   const unit: Unit = {
     id: nextId(),
@@ -322,7 +355,7 @@ function addPolygon() {
     price: 0,
     priceUnit: 'so‘m / oy',
     equipment: [],
-    polygon: rect(0.06 + col * 0.23, 0.08 + row * 0.3, 0.18, 0.22),
+    polygon: spot,
   }
   UNITS.push(unit)
   selectedId.value = unit.id
@@ -432,7 +465,7 @@ const columns = [
   { key: 'code', label: 'Kodi', width: '110px' },
   { key: 'area', label: 'Maydoni', align: 'right' as const, numeric: true, width: '130px' },
   { key: 'usage', label: 'Foydalanish', width: '150px' },
-  { key: 'status', label: 'Holati', width: '150px' },
+  { key: 'status', label: 'Holat', width: '150px' },
   { key: 'plan', label: 'Poligon', width: '130px' },
   { key: 'attrs', label: 'Atributlar', width: '150px' },
 ]

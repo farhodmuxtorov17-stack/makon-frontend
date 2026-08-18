@@ -36,7 +36,7 @@ function attrsReady(u: Unit) {
 }
 
 function floorName(floor: number) {
-  return floor === 0 ? 'Yer osti · texnik qavat' : `${floor}-qavat`
+  return floor < 0 ? `${-floor}-yer osti qavati` : `${floor}-qavat`
 }
 
 // Kiritilgan qavatlar oxirgi tahrir sanasi bo‘yicha tartiblanadi
@@ -288,7 +288,7 @@ function resetFilters() {
       </template>
 
       <div class="flex flex-wrap items-center gap-3 px-4 pb-4 lg:px-5">
-        <UiInput v-model="query" placeholder="Qidiruv (bino, qavat, unit kodi)" class="min-w-[200px] flex-1">
+        <UiInput v-model="query" placeholder="Bino, qavat yoki unit kodi bo‘yicha qidirish" class="min-w-[200px] flex-1">
           <template #prefix>
             <UiIcon name="search" :size="17" />
           </template>

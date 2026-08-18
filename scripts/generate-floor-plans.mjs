@@ -91,7 +91,7 @@ for (const [key, list] of floors) {
     units: list.map((u) => ({ id: u.id, code: u.code, area: u.area })),
     buildingType: type,
     floor,
-    underground: floor === 0,
+    underground: floor < 0,
   })
 
   for (const shape of plan.units) {

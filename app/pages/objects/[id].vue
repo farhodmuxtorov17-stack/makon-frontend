@@ -101,7 +101,7 @@ const floors = computed(() => {
     const floorUnits = unitsOfFloor(b.id, floor)
     return {
       floor,
-      label: floor === 0 ? 'Yer osti · texnik qavat' : `${floor}-qavat`,
+      label: floor < 0 ? `${-floor}-yer osti qavati` : `${floor}-qavat`,
       total: floorUnits.length,
       vacant: floorUnits.filter((u) => u.status === 'VACANT').length,
       area: floorUnits.reduce((s, u) => s + u.area, 0),
@@ -507,7 +507,7 @@ function submitPdf() {
                         : 'bg-ink-100 text-ink-500'
                     "
                   >
-                    {{ f.floor === 0 ? '00' : f.floor }}
+                    {{ f.floor < 0 ? `B${-f.floor}` : f.floor }}
                   </span>
                   <span class="min-w-0 flex-1">
                     <span
