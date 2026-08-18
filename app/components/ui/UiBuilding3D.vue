@@ -1042,6 +1042,14 @@ interface PlanBox {
   tone: string
   /** To‘rt yuzdan qaysi biriga tegishli: kameraga qaragan bo‘lsa chizilmaydi */
   face?: number
+  /**
+   * Chuqurlik tayanchi. Bir tekislikdagi qismlar (masalan bitta tashqi devor
+   * bandlari, ustunlari va oynalari) bir xil chuqurlik oladi, shu sababli
+   * saralashdan keyin yonma-yon turadi va bitta yo‘lga birlashadi.
+   */
+  ax?: number
+  ay?: number
+  az?: number
 }
 
 interface PlanDot {
@@ -1221,13 +1229,17 @@ function buildPerimeter(
     const a0 = horiz ? X0 : Y0
     const fix0 = face === 0 ? Y0 : face === 1 ? X1 - T : face === 2 ? Y1 - T : X0
     const fix1 = fix0 + T
+    // Bitta devorning hamma qismi bir xil chuqurlik tayanchini oladi
+    const ax = horiz ? (X0 + X1) / 2 : fix0 + T / 2
+    const ay = horiz ? fix0 + T / 2 : (Y0 + Y1) / 2
+    const az = wallH / 2
 
     const put = (u0: number, u1: number, z0: number, z1: number, tone: string) => {
       if (u1 - u0 < 0.05) return
       boxes.push(
         horiz
-          ? { x0: u0, y0: fix0, x1: u1, y1: fix1, z0, z1, tone, face }
-          : { x0: fix0, y0: u0, x1: fix1, y1: u1, z0, z1, tone, face },
+          ? { x0: u0, y0: fix0, x1: u1, y1: fix1, z0, z1, tone, face, ax, ay, az }
+          : { x0: fix0, y0: u0, x1: fix1, y1: u1, z0, z1, tone, face, ax, ay, az },
       )
     }
 
@@ -1392,8 +1404,10 @@ const interiorPlan = computed<InteriorPlan>(() => {
     return { level: 1, quads, boxes, dots, texts, parts: quads.length + boxes.length * 3 }
   }
 
-  // --- jihozlar: unit turi va maydoniga qarab
+  // --- jihozlar: unit turi va maydoniga qarab. Umumiy hajm cheklangan,
+  //     unitlar ko‘p bo‘lgan qavatda ham kadr vaqti barqaror qoladi.
   let peopleLeft = 40
+  const canFurnish = () => view.layers.furniture && boxes.length < 560
   for (const room of rooms) {
     const u = room.unit
     const inside = (x: number, y: number) => inPolygon(x, y, room.poly)
@@ -1416,7 +1430,7 @@ const interiorPlan = computed<InteriorPlan>(() => {
     const live = u.status === 'RENTED' || u.status === 'SOLD'
     const seats: Array<[number, number]> = []
 
-    if (L.furniture && u.usage === 'Ofis') {
+    if (canFurnish() && u.usage === 'Ofis') {
       const ws = Math.max(1, Math.min(6, Math.round(u.area / 14)))
       const share = u.area > 60 ? 0.62 : 1
       const bandD = rd * share
@@ -1479,7 +1493,7 @@ const interiorPlan = computed<InteriorPlan>(() => {
           dots.push({ x: sx + 1.5, y: sy, z: 0.76, r: 0.4, tone: IT.crown })
         }
       }
-    } else if (L.furniture && u.usage === 'Savdo') {
+    } else if (canFurnish() && u.usage === 'Savdo') {
       const n = Math.max(2, Math.min(6, Math.round(rw / 2.4)))
       for (let i = 0; i < n; i++) {
         const x = x0 + ((i + 0.5) * rw) / n
@@ -1493,7 +1507,7 @@ const interiorPlan = computed<InteriorPlan>(() => {
         box(ccx, ccy, 2.2, 0.7, 0, 1.05, IT.desk)
         seats.push([ccx, ccy + 0.85])
       }
-    } else if (L.furniture && u.usage === 'Ombor') {
+    } else if (canFurnish() && u.usage === 'Ombor') {
       const n = Math.max(2, Math.min(7, Math.round(rw / 3.4)))
       for (const y of [y0 + rd * 0.22, y1 - rd * 0.22]) {
         for (let i = 0; i < n; i++) {
@@ -1502,7 +1516,7 @@ const interiorPlan = computed<InteriorPlan>(() => {
         }
       }
       seats.push([x0 + rw * 0.5, y0 + rd * 0.5])
-    } else if (L.furniture && u.usage === 'Turar joy') {
+    } else if (canFurnish() && u.usage === 'Turar joy') {
       const bx = x0 + rw * 0.26
       const by = y0 + rd * 0.28
       if (inside(bx, by)) box(bx, by, 1.6, 2.05, 0.1, 0.55, IT.bed)
@@ -1527,7 +1541,7 @@ const interiorPlan = computed<InteriorPlan>(() => {
       const kbx = x1 - 0.5
       const kby = y0 + rd * 0.5
       if (inside(kbx, kby)) box(kbx, kby, 0.65, 2.2, 0, 0.9, IT.block)
-    } else if (u.usage === 'Texnik zona' ? L.tech : L.furniture) {
+    } else if (u.usage === 'Texnik zona' ? L.tech : canFurnish()) {
       const tx = x0 + rw * 0.5
       const ty = y0 + rd * 0.5
       if (inside(tx, ty)) box(tx, ty, 1.6, 1, 0, 1.4, IT.block)
@@ -1676,6 +1690,20 @@ const scene = computed(() => {
     amount: lightOf(nx, ny, 0),
   }))
   const topAmount = lightOf(0, 0, 1)
+  const topFace = Math.max(topAmount + 0.34, 0.1)
+
+  // Kichik hajmlar (jihoz, zina, odam, kabina) bitta tekis bo‘yoq bilan bitta
+  // yo‘lda chiziladi: bu masshtabda yuz farqi sezilmaydi, tugun soni esa uch
+  // barobar kamayadi va bir xil bo‘yoqli qo‘shnilar birlashadi.
+  let sideSum = 0
+  let sideN = 0
+  for (const f of faceState) {
+    if (f.visible) {
+      sideSum += f.amount
+      sideN++
+    }
+  }
+  const flatAmount = (topFace + (sideN ? sideSum / sideN : topAmount)) / 2
 
   // --- kesim tekisligi: kameraga yaqin yarim olib tashlanadi
   const sec = (() => {
@@ -1990,7 +2018,36 @@ const scene = computed(() => {
           [cb[2], cb[3]],
           [cb[0], cb[3]],
         ]
-        const near = q1 * sp - vOf((cb[0] + cb[2]) / 2, (cb[1] + cb[3]) / 2) * cp
+        const anchorZ = bx.az === undefined ? q1 : zf + bx.az
+        const near =
+          anchorZ * sp -
+          vOf(
+            bx.ax === undefined ? (cb[0] + cb[2]) / 2 : bx.ax,
+            bx.ay === undefined ? (cb[1] + cb[3]) / 2 : bx.ay,
+          ) *
+            cp
+        const top = `M${pt(c[0]![0], c[0]![1], q1).replace(',', ' ')}L${pt(c[1]![0], c[1]![1], q1).replace(',', ' ')}L${pt(c[2]![0], c[2]![1], q1).replace(',', ' ')}L${pt(c[3]![0], c[3]![1], q1).replace(',', ' ')}Z`
+
+        const flat =
+          bx.face === undefined &&
+          cb[2] - cb[0] <= 2.6 &&
+          cb[3] - cb[1] <= 2.6 &&
+          bx.tone !== IT.wallInt &&
+          bx.tone !== IT.wallExt &&
+          bx.tone !== IT.glass
+
+        if (flat) {
+          let d = ''
+          for (let f = 0; f < 4; f++) {
+            if (!faceState[f]!.visible) continue
+            const a = c[f]!
+            const n2 = c[(f + 1) % 4]!
+            d += face(a[0], a[1], n2[0], n2[1], q0, q1)
+          }
+          raw.push({ k: 'p', d: d + top, f: shade(bx.tone, flatAmount), o: 1, w: 0, near })
+          continue
+        }
+
         for (let f = 0; f < 4; f++) {
           const fs = faceState[f]!
           if (!fs.visible) continue
@@ -2002,17 +2059,10 @@ const scene = computed(() => {
             f: shade(bx.tone, fs.amount),
             o: 1,
             w: 0,
-            near: near - 0.01,
+            near: near - 0.05,
           })
         }
-        raw.push({
-          k: 'p',
-          d: `M${pt(c[0]![0], c[0]![1], q1).replace(',', ' ')}L${pt(c[1]![0], c[1]![1], q1).replace(',', ' ')}L${pt(c[2]![0], c[2]![1], q1).replace(',', ' ')}L${pt(c[3]![0], c[3]![1], q1).replace(',', ' ')}Z`,
-          f: shade(bx.tone, Math.max(topAmount + 0.34, 0.1)),
-          o: 1,
-          w: 0,
-          near,
-        })
+        raw.push({ k: 'p', d: top, f: shade(bx.tone, topFace), o: 1, w: 0, near: near + 0.05 })
       }
 
       for (const dot of plan.dots) {
