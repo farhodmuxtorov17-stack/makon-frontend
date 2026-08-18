@@ -123,7 +123,7 @@ const sectionNote = computed(() => {
       class="lg:block"
       :class="expanded ? 'block' : 'hidden'"
     >
-      <div class="grid gap-4 p-4 lg:grid-cols-3 lg:gap-5">
+      <div class="grid gap-4 p-4 md:grid-cols-2 lg:gap-5 2xl:grid-cols-3">
         <!-- ============================ KO‘RINISH ============================ -->
         <section class="min-w-0" aria-labelledby="mkn-grp-view">
           <h4

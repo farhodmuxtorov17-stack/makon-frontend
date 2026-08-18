@@ -310,7 +310,7 @@ function inPolygon(x: number, y: number, poly: Array<[number, number]>) {
 
 /** Fasad qadamini uzunlikdan chiqaradi, interyer derazasi ham shu qadamda */
 function bayCount(len: number) {
-  return clamp(Math.round(len / 2.9), 3, 14)
+  return clamp(Math.round(len / 3.4), 3, 26)
 }
 
 const allUnits = computed(() => unitsOfBuilding(props.building.id))
@@ -411,10 +411,18 @@ const dims = computed(() => {
   }
 
   const stack = Math.max(b.floors + b.undergroundFloors, 1)
-  const plate = best.share > 0.04 ? best.area / best.share : Math.max(b.gla / stack, 320)
+  const glaPlate = Math.max(b.gla / stack, 320)
+  const unitPlate = best.share > 0.04 ? best.area / best.share : 0
+  // Reja to‘liq kiritilgan qavatda o‘lcham unitlardan olinadi. Reja qisman
+  // kiritilgan bo‘lsa, ikki-uch unit butun qavat o‘lchamini bermaydi, shu
+  // sababli tayanch kontur GLA bo‘yicha olinadi, unit ko‘pburchaklari esa
+  // `pScale` bilan kichraytiriladi: ularning haqiqiy m² i saqlanadi.
+  const dense = best.count >= 4 && best.share > 0.25
+  const plate = dense ? unitPlate : Math.max(glaPlate, unitPlate)
+  const pScale = unitPlate && plate > unitPlate ? Math.sqrt(unitPlate / plate) : 1
 
   const w = Math.sqrt(plate / ratio)
-  return { h, slab: h, w, d: w * ratio }
+  return { h, slab: h, w, d: w * ratio, pScale }
 })
 
 /* ==========================================================================
@@ -832,7 +840,7 @@ const extras = computed<ExtQuad[][]>(() => {
     if (lg.top) {
       if (fam === 'shed') {
         // Yassi qiyalikdagi ikki nishabli tom, uchi uzun o‘q bo‘ylab
-        const rise = clamp(lg.d * 0.11, 1.2, 3.2)
+        const rise = clamp(lg.d * 0.06, 1.6, 5.5)
         const ex = 0.7
         const ax0 = X0 - ex
         const ax1 = X1 + ex
@@ -999,9 +1007,9 @@ const WALL_INT = 0.16
 
 const IT = {
   wallExt: '#B4C2D6',
-  wallInt: '#D2DCEA',
+  wallInt: '#C6D2E3',
   leaf: '#8FA6C9',
-  glass: '#9BC0E2',
+  glass: '#7FB4DF',
   shaft: '#9AA9BE',
   cab: '#C8D3E1',
   step: '#C4CFDE',
@@ -1279,6 +1287,7 @@ const interiorPlan = computed<InteriorPlan>(() => {
   if (!info || !lg || !info.units.length) return EMPTY_PLAN
 
   const L = view.layers
+  const pk = dims.value.pScale
   const W = lg.w
   const D = lg.d
   const X0 = lg.ox - W / 2
@@ -1292,7 +1301,7 @@ const interiorPlan = computed<InteriorPlan>(() => {
     const poly = u.polygon.map((p) => {
       const nx = typeof p[0] === 'number' ? p[0] : 0
       const ny = typeof p[1] === 'number' ? p[1] : 0
-      return [X0 + nx * W, Y1 - ny * D] as [number, number]
+      return [lg.ox + W * (nx - 0.5) * pk, lg.oy + D * (0.5 - ny) * pk] as [number, number]
     })
     let cx = 0
     let cy = 0
@@ -1631,6 +1640,7 @@ const scene = computed(() => {
   const mode = props.mode
   const plan = interiorPlan.value
   const night = view.night
+  const pk = geo.pScale
   const S = sun.value
 
   const th = (view.rotation * Math.PI) / 180
@@ -1758,7 +1768,8 @@ const scene = computed(() => {
     if (mode === 'occupancy') base = dominant ? dominant.color : EMPTY_COLOR
     else if (mode === 'levels') base = isSel ? '#7FA8F6' : '#B8C6DA'
     else base = isSel ? '#7FA8F6' : '#C3D2E6'
-    if (lg.under) base = shade(base, -0.2)
+    // Yer osti darajasi neytral kul rangda: bandlik ranglari yer ustida qoladi
+    if (lg.under) base = '#BDC8D6'
 
     const X0 = lg.ox - lg.w / 2
     const X1 = lg.ox + lg.w / 2
@@ -1956,8 +1967,8 @@ const scene = computed(() => {
           .map((p) => {
             const nx = typeof p[0] === 'number' ? p[0] : 0
             const ny = typeof p[1] === 'number' ? p[1] : 0
-            const wx = X0 + nx * lg.w
-            const wy = Y1 - ny * lg.d
+            const wx = lg.ox + lg.w * (nx - 0.5) * pk
+            const wy = lg.oy + lg.d * (0.5 - ny) * pk
             if (!keepPt(wx, wy)) skip = true
             sx += px(wx, wy)
             sy += py(wx, wy, zu)
@@ -2048,7 +2059,12 @@ const scene = computed(() => {
           continue
         }
 
-        for (let f = 0; f < 4; f++) {
+        // Tashqi devor va lift shaxtasi kesimda ko‘rinadi: faqat xonaga
+        // qaragan ichki yuza chiziladi. Shu sababli bitta devorning hamma
+        // bandi bir xil bo‘yoq oladi va bitta yo‘lga birlashadi.
+        const first = bx.face === undefined ? 0 : (bx.face + 2) % 4
+        const last = bx.face === undefined ? 3 : first
+        for (let f = first; f <= last; f++) {
           const fs = faceState[f]!
           if (!fs.visible) continue
           const a = c[f]!
@@ -2706,7 +2722,15 @@ function patchView(patch: Partial<ViewState>) {
                 :points="u.points"
                 :fill="u.fill"
                 :fill-opacity="
-                  mode === 'wire' ? 0.08 : u.active ? 0.92 : hoveredUnit === u.id ? 0.86 : 0.72
+                  mode === 'wire'
+                    ? 0.08
+                    : u.active
+                      ? 0.92
+                      : hoveredUnit === u.id
+                        ? 0.86
+                        : slab.interior
+                          ? 0.4
+                          : 0.72
                 "
                 :stroke="u.active ? '#0139B0' : hoveredUnit === u.id ? '#0256F7' : '#FFFFFF'"
                 :stroke-width="u.active ? 2.2 : hoveredUnit === u.id ? 1.8 : 0.9"
@@ -2918,7 +2942,7 @@ function patchView(patch: Partial<ViewState>) {
         <!-- Mobil ko‘rinishda qavat tanlash relsi ko‘rinish ustida turadi -->
         <div
           ref="railRef"
-          class="scroll-slim absolute left-2 top-1/2 flex max-h-[86%] w-11 -translate-y-1/2 flex-col gap-1 overflow-y-auto rounded-field bg-surface/92 p-1 shadow-card ring-1 ring-ink-200/70 backdrop-blur xl:hidden"
+          class="scroll-slim absolute left-2 top-1/2 flex max-h-[86%] w-11 -translate-y-1/2 flex-col gap-1 overflow-y-auto rounded-field bg-surface/92 p-1 shadow-card ring-1 ring-ink-200/70 backdrop-blur 2xl:hidden"
           role="group"
           aria-label="Qavat tanlash relsi"
         >
@@ -2945,7 +2969,7 @@ function patchView(patch: Partial<ViewState>) {
 
         <div
           v-if="controls"
-          class="absolute bottom-2 right-2 flex flex-row gap-1 rounded-field bg-surface/92 p-1.5 shadow-card ring-1 ring-ink-200/70 backdrop-blur xl:bottom-auto xl:left-3 xl:right-auto xl:top-3 xl:flex-col"
+          class="absolute bottom-2 right-2 flex flex-row gap-1 rounded-field bg-surface/92 p-1.5 shadow-card ring-1 ring-ink-200/70 backdrop-blur 2xl:bottom-auto 2xl:left-3 2xl:right-auto 2xl:top-3 2xl:flex-col"
         >
           <button
             type="button"
@@ -2963,7 +2987,7 @@ function patchView(patch: Partial<ViewState>) {
           >
             <UiIcon name="refresh" :size="18" class="-scale-x-100" />
           </button>
-          <span class="my-auto h-6 w-px shrink-0 bg-ink-200 xl:mx-1 xl:my-0 xl:h-px xl:w-auto" />
+          <span class="my-auto h-6 w-px shrink-0 bg-ink-200 2xl:mx-1 2xl:my-0 2xl:h-px 2xl:w-auto" />
           <button
             type="button"
             class="grid size-10 place-items-center rounded-[8px] text-ink-600 transition-colors hover:bg-brand-50 hover:text-brand-600 disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500"
@@ -2982,7 +3006,7 @@ function patchView(patch: Partial<ViewState>) {
           >
             <UiIcon name="minus" :size="18" />
           </button>
-          <span class="my-auto h-6 w-px shrink-0 bg-ink-200 xl:mx-1 xl:my-0 xl:h-px xl:w-auto" />
+          <span class="my-auto h-6 w-px shrink-0 bg-ink-200 2xl:mx-1 2xl:my-0 2xl:h-px 2xl:w-auto" />
           <button
             type="button"
             class="grid size-10 place-items-center rounded-[8px] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500"
@@ -3005,11 +3029,11 @@ function patchView(patch: Partial<ViewState>) {
           >
             <UiIcon name="target" :size="18" />
           </button>
-          <span class="my-auto h-6 w-px shrink-0 bg-ink-200 xl:mx-1 xl:my-0 xl:h-px xl:w-auto" />
+          <span class="my-auto h-6 w-px shrink-0 bg-ink-200 2xl:mx-1 2xl:my-0 2xl:h-px 2xl:w-auto" />
 
           <!-- Kompas: shimol yo‘nalishi burilish burchagi bilan birga aylanadi -->
           <span
-            class="hidden size-10 place-items-center xl:grid"
+            class="hidden size-10 place-items-center 2xl:grid"
             role="img"
             :aria-label="`Shimol yo‘nalishi ${Math.round(view.rotation)} daraja burilgan`"
           >

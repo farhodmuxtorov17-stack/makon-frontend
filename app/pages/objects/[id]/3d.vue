@@ -206,13 +206,13 @@ const applyOpen = ref(false)
 function goApply() {
   const unit = currentUnit.value
   if (!unit || unit.status !== 'VACANT') return
-  const next = `/cabinet/apply?unit=${unit.id}`
-  if (!auth.isAuthenticated) return navigateTo({ path: '/login', query: { next } })
+  // Kirmagan mehmon hisob ochmasdan ariza qoldiradi
+  if (!auth.isAuthenticated) return navigateTo(`/ariza?unit=${unit.id}`)
   if (auth.role !== 'TENANT_OWNER') {
     applyOpen.value = true
     return
   }
-  return navigateTo(next)
+  return navigateTo(`/cabinet/apply?unit=${unit.id}`)
 }
 </script>
 
@@ -324,11 +324,11 @@ function goApply() {
       </UiCard>
 
       <section
-        class="grid gap-5 lg:grid-cols-[minmax(0,1fr)_336px] xl:grid-cols-[196px_minmax(0,1fr)_340px]"
+        class="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px] 2xl:grid-cols-[188px_minmax(0,1fr)_336px]"
       >
         <!-- Qavat ustuni faqat keng ekranda; undan pastda ko‘rinish ustidagi rels ishlaydi -->
         <UiCard
-          class="hidden xl:block"
+          class="hidden 2xl:block"
           title="Qavatni tanlang"
           :subtitle="`${floorsWithPlan.length} qavatda reja bor`"
           flush
