@@ -215,6 +215,17 @@ function markContacted() {
     isAccountant.value ? 'Buxgalter' : 'Bino rahbari',
   )
 }
+
+/** Hisobsiz mijozga kabinet ochish taklif qilinadi */
+function inviteAccount() {
+  if (!item.value) return
+  lease.inviteAccount(
+    item.value.id,
+    actorName.value,
+    isAccountant.value ? 'Buxgalter' : 'Bino rahbari',
+  )
+  notice.value = 'Mijozga kabinet ochish taklif qilindi, u parol o‘rnatib kabinetga kiradi.'
+}
 </script>
 
 <template>
@@ -438,6 +449,43 @@ function markContacted() {
             >
               <UiIcon name="check" :size="15" />
               Bog‘lanildi deb belgilash
+            </UiButton>
+          </div>
+
+          <!-- Hisobsiz yuborilgan ariza -->
+          <div
+            v-if="item.guest"
+            class="mt-4 rounded-field bg-warn-50 p-4 ring-1 ring-inset ring-warn-100"
+          >
+            <p class="flex items-start gap-2 text-[12.5px] font-semibold text-warn-700">
+              <UiIcon name="info" :size="15" class="mt-px shrink-0" />
+              Mijozda hali hisob yo‘q: ariza ochiq forma orqali yuborilgan
+            </p>
+            <p class="mt-1.5 text-[12.5px] leading-relaxed text-ink-600">
+              Ariza yuborgan shaxs: {{ item.contactName }}. Telefon raqami bir martalik kod bilan
+              tasdiqlangan.
+            </p>
+
+            <template v-if="item.accountInvitedAt">
+              <p class="mt-2.5 flex items-center gap-2 text-[12.5px] font-semibold text-ok-700">
+                <UiIcon name="check" :size="15" class="shrink-0" />
+                Kabinet ochish taklif qilindi: {{ dateShort(item.accountInvitedAt) }}
+                {{ timeOf(item.accountInvitedAt) }}
+              </p>
+              <p class="mt-1.5 text-[12px] leading-relaxed text-ink-600">
+                Mijoz ariza sahifasidan parol o‘rnatadi va kabinetga kiradi.
+              </p>
+            </template>
+
+            <UiButton
+              v-else-if="isManager || isAccountant"
+              variant="secondary"
+              size="sm"
+              class="mt-3"
+              @click="inviteAccount"
+            >
+              <UiIcon name="user" :size="15" />
+              Kabinet yaratishni taklif qilish
             </UiButton>
           </div>
         </UiCard>

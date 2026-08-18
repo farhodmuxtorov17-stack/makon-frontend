@@ -170,6 +170,18 @@ export const ORGANIZATIONS: Organization[] = [
     account: '2020 8000 3046 7102 5012',
   },
   {
+    stir: '305412876',
+    name: 'Makon Property Group MCHJ',
+    shortName: 'Makon Property Group',
+    address: 'Toshkent shahri, Mirobod tumani, Amir Temur ko‘chasi 88',
+    director: 'Azizbek Karimov',
+    phone: '+998 78 150 00 00',
+    email: 'info@makon.uz',
+    type: 'Yuridik shaxs',
+    bank: 'Ipoteka Bank ATIB, Mirobod filiali',
+    account: '2020 8000 3054 1287 6015',
+  },
+  {
     stir: '445203917',
     name: 'Yakka tartibdagi tadbirkor Bekzod Rahimov',
     shortName: 'YaTT Bekzod Rahimov',
@@ -220,4 +232,111 @@ export function organizationByStir(stir: string): Organization | undefined {
 export function phoneDigitsOf(phone: string): string {
   const raw = String(phone ?? '').replace(/\D/g, '')
   return raw.startsWith('998') ? raw.slice(3) : raw
+}
+
+/** Ijaraga beruvchi tashkilot: xodim sertifikatlari shu STIR bilan keladi */
+export const LANDLORD_STIR = '305412876'
+
+// ---------------------------------------------------------------------------
+// Kalit sertifikatlari
+
+export type CertificateStatus = 'ACTIVE' | 'EXPIRED'
+
+export interface Certificate {
+  /**
+   * Kalit do‘konidagi yozuvning platforma ichidagi belgisi. Bu tashqi
+   * ro‘yxatdagi raqam emas, tizim sertifikatni shu belgi bilan taniydi.
+   */
+  serial: string
+  holderName: string
+  /** Sertifikat egasining tashkiloti, reyestrdagi STIR bilan bog‘lanadi */
+  organizationStir: string
+  issuedAt: string
+  expiresAt: string
+  status: CertificateStatus
+}
+
+export const CERTIFICATES: Certificate[] = [
+  {
+    serial: 'MKON-KEY-4A17-20C6',
+    holderName: 'Dilshod Ergashev',
+    organizationStir: '307219645',
+    issuedAt: '2025-03-14',
+    expiresAt: '2027-03-13',
+    status: 'ACTIVE',
+  },
+  {
+    serial: 'MKON-KEY-7B32-118D',
+    holderName: 'Sanjar Aliyev',
+    organizationStir: '304552118',
+    issuedAt: '2025-06-02',
+    expiresAt: '2027-06-01',
+    status: 'ACTIVE',
+  },
+  {
+    serial: 'MKON-KEY-2F58-6091',
+    holderName: 'Aziz Nazarov',
+    organizationStir: '302640973',
+    issuedAt: '2024-11-25',
+    expiresAt: '2026-11-24',
+    status: 'ACTIVE',
+  },
+  {
+    serial: 'MKON-KEY-9C04-3745',
+    holderName: 'Kamola Yusupova',
+    organizationStir: '303981264',
+    issuedAt: '2024-05-20',
+    expiresAt: '2026-05-19',
+    status: 'EXPIRED',
+  },
+  {
+    serial: 'MKON-KEY-1D76-8452',
+    holderName: 'Rustam Qodirov',
+    organizationStir: '305903617',
+    issuedAt: '2025-09-08',
+    expiresAt: '2027-09-07',
+    status: 'ACTIVE',
+  },
+  {
+    serial: 'MKON-KEY-6E29-5013',
+    holderName: 'Bekzod Rahimov',
+    organizationStir: '445203917',
+    issuedAt: '2025-12-16',
+    expiresAt: '2027-12-15',
+    status: 'ACTIVE',
+  },
+  {
+    serial: 'MKON-KEY-3A61-9274',
+    holderName: 'Azizbek Karimov',
+    organizationStir: LANDLORD_STIR,
+    issuedAt: '2025-01-30',
+    expiresAt: '2027-01-29',
+    status: 'ACTIVE',
+  },
+  {
+    serial: 'MKON-KEY-8F45-2607',
+    holderName: 'Nilufar Rahimova',
+    organizationStir: LANDLORD_STIR,
+    issuedAt: '2025-02-11',
+    expiresAt: '2027-02-10',
+    status: 'ACTIVE',
+  },
+  {
+    serial: 'MKON-KEY-5B93-4180',
+    holderName: 'Jamshid Norqulov',
+    organizationStir: '303500471',
+    issuedAt: '2025-07-21',
+    expiresAt: '2027-07-20',
+    status: 'ACTIVE',
+  },
+]
+
+export function certificateBySerial(serial: string): Certificate | undefined {
+  const key = String(serial ?? '').trim().toUpperCase()
+  return CERTIFICATES.find((c) => c.serial.toUpperCase() === key)
+}
+
+/** Sertifikat egasining tashkiloti, reyestrda bo‘lmasa `undefined` */
+export function certificateOrganization(cert: Certificate): Organization | undefined {
+  return organizationByStir(cert.organizationStir)
 }

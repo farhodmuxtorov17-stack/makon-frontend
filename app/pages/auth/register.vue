@@ -1,8 +1,18 @@
 <script setup lang="ts">
+import {
+  certificateBySerial,
+  certificateOrganization,
+  phoneDigitsOf,
+  stirDigits as onlyDigits,
+} from '~/data/organizations'
+
 definePageMeta({ layout: 'auth', public: true })
 
 const auth = useAuthStore()
+const lease = useLeaseStore()
 const route = useRoute()
+
+lease.seed()
 
 const MIN_PASSWORD = 8
 
@@ -28,10 +38,38 @@ const termsOpen = ref(false)
 
 const year = new Date().getFullYear()
 
+/** Kalit sertifikati orqali kelingan yo‘l */
+const certificate = computed(() => {
+  const q = route.query.eri
+  return typeof q === 'string' ? (certificateBySerial(q) ?? null) : null
+})
+
+const certificateOrg = computed(() =>
+  certificate.value ? certificateOrganization(certificate.value) : undefined,
+)
+
+/**
+ * Hisobsiz yuborilgan ariza asosida kabinet ochish. Operator taklif qilgan
+ * bo‘lsagina ochiladi, ariza raqami havolada keladi.
+ */
+const guestCase = computed(() => {
+  const q = route.query.ariza
+  if (typeof q !== 'string' || !q) return null
+  const item = lease.byCode(q)
+  if (!item || !item.guest || !item.accountInvitedAt) return null
+  return item
+})
+
 const phoneDigits = computed(() => {
   const q = route.query.phone
-  return typeof q === 'string' && /^\d{9}$/.test(q) ? q : ''
+  if (typeof q === 'string' && /^\d{9}$/.test(q)) return q
+  if (guestCase.value) return phoneDigitsOf(guestCase.value.org.phone)
+  if (certificateOrg.value) return phoneDigitsOf(certificateOrg.value.phone)
+  return ''
 })
+
+/** Rekvizitlar sertifikatdan yoki arizadan kelgan bo‘lsa, tahrirlanmaydi */
+const locked = computed(() => Boolean(certificateOrg.value))
 
 const phoneLabel = computed(() => {
   const d = phoneDigits.value
@@ -47,6 +85,22 @@ const stirLabel = computed(() => {
 const nameLabel = computed(() =>
   kind.value === 'company' ? 'Kompaniya nomi' : 'Ism va familiya',
 )
+
+const stepCaption = computed(() =>
+  certificateOrg.value || guestCase.value
+    ? '3-qadam / 3: Parol o‘rnatish'
+    : '3-qadam / 3: Hisob ma’lumotlari',
+)
+
+const intro = computed(() => {
+  if (certificateOrg.value) {
+    return 'Rekvizitlar kalit sertifikatidan olindi, raqam tasdiqlandi. Endi parol o‘rnating.'
+  }
+  if (guestCase.value) {
+    return 'Arizangiz asosida kabinet ochiladi. Ma’lumotlarni tekshiring va parol o‘rnating.'
+  }
+  return 'Raqam tasdiqlandi. Endi hisob turini tanlang va ma’lumotlarni kiriting.'
+})
 
 /** Parol mustahkamligi: uzunlik, belgi turlari va takrorlanish hisobga olinadi. */
 const strength = computed(() => {
@@ -137,6 +191,23 @@ function onStirInput(event: Event) {
 let timer: ReturnType<typeof setTimeout> | null = null
 
 onMounted(() => {
+  const org = certificateOrg.value
+  const item = guestCase.value
+
+  if (org) {
+    // Rekvizitlar kalit sertifikatidan keladi, foydalanuvchi faqat parol qo‘yadi.
+    kind.value = 'company'
+    name.value = org.name
+    email.value = org.email
+    stirDigits.value = org.stir
+  } else if (item) {
+    const tin = onlyDigits(item.org.tin)
+    kind.value = tin.length === 9 ? 'company' : 'individual'
+    name.value = item.org.name
+    email.value = item.org.email
+    stirDigits.value = tin
+  }
+
   if (!phoneDigits.value) navigateTo('/register')
 })
 
@@ -152,15 +223,24 @@ function submit() {
   timer = setTimeout(() => {
     pending.value = false
 
+    const org = certificateOrg.value
+    const item = guestCase.value
+
     auth.signIn('TENANT_OWNER')
     const account = auth.user
     if (account) {
-      account.fullName = name.value.trim()
-      account.organization = kind.value === 'company' ? name.value.trim() : 'Jismoniy shaxs'
+      account.fullName = certificate.value?.holderName ?? item?.contactName ?? name.value.trim()
+      account.organization =
+        kind.value === 'company' ? name.value.trim() : (item?.org.name ?? 'Jismoniy shaxs')
       account.position = kind.value === 'company' ? 'Tashkilot rahbari' : 'Mulkdor'
       account.phone = phoneLabel.value
       account.email = email.value.trim()
+      account.tin = stirLabel.value
+      account.address = org?.address ?? item?.org.address ?? account.address
     }
+
+    // Hisobsiz yuborilgan ariza endi kabinetga bog‘lanadi.
+    if (item) lease.attachAccount(item.id, account?.fullName ?? item.contactName)
 
     navigateTo('/cabinet')
   }, 520)
@@ -198,20 +278,31 @@ function submit() {
               </template>
             </div>
             <p class="mt-3 text-[11px] font-semibold uppercase tracking-wide text-ink-500">
-              3-qadam / 3: Hisob ma’lumotlari
+              {{ stepCaption }}
             </p>
           </div>
 
           <h1 class="mt-5 font-display text-[26px] font-extrabold leading-tight">
             Hisobni to‘ldiring
           </h1>
-          <p class="mt-2 text-[13.5px] leading-relaxed text-ink-500">
-            Raqam tasdiqlandi. Endi hisob turini tanlang va ma’lumotlarni kiriting.
-          </p>
+          <p class="mt-2 text-[13.5px] leading-relaxed text-ink-500">{{ intro }}</p>
+
+          <!-- Ariza asosida ochilayotgan kabinet -->
+          <div
+            v-if="guestCase"
+            class="mt-4 flex items-start gap-3 rounded-field bg-brand-50 p-3.5 ring-1 ring-inset ring-brand-100"
+          >
+            <UiIcon name="clipboard" :size="18" class="mt-px shrink-0 text-brand-600" />
+            <p class="text-[12.5px] leading-relaxed text-ink-700">
+              <span class="font-semibold text-ink-900">{{ guestCase.code }}</span>
+              arizasi kabinetga bog‘lanadi: {{ guestCase.buildingName }}, Unit
+              {{ guestCase.unitCode }}.
+            </p>
+          </div>
 
           <form class="mt-6 space-y-4" novalidate @submit.prevent="submit">
             <!-- Hisob turi -->
-            <div>
+            <div v-if="!locked">
               <p class="mb-1.5 text-[13px] font-semibold text-ink-700">Hisob turi</p>
               <div
                 role="radiogroup"
@@ -241,7 +332,13 @@ function submit() {
               </div>
             </div>
 
-            <UiField :label="nameLabel" required for="name" :error="nameError">
+            <UiField
+              :label="nameLabel"
+              required
+              for="name"
+              :error="nameError"
+              :hint="locked ? 'Kalit sertifikatidan olindi va o‘zgartirilmaydi' : ''"
+            >
               <UiInput
                 id="name"
                 v-model="name"
@@ -249,7 +346,12 @@ function submit() {
                 :autocomplete="kind === 'company' ? 'organization' : 'name'"
                 :placeholder="kind === 'company' ? 'Urban Office MCHJ' : 'Dilshod Ergashev'"
                 :invalid="Boolean(nameError)"
-              />
+                :readonly="locked"
+              >
+                <template v-if="locked" #suffix>
+                  <UiIcon name="lock" :size="16" />
+                </template>
+              </UiInput>
             </UiField>
 
             <UiField
@@ -282,7 +384,11 @@ function submit() {
               required
               for="stir"
               :error="stirError"
-              hint="To‘qqiz xonali soliq to‘lovchi identifikatsiya raqami"
+              :hint="
+                locked
+                  ? 'Kalit sertifikatidan olindi va o‘zgartirilmaydi'
+                  : 'To‘qqiz xonali soliq to‘lovchi identifikatsiya raqami'
+              "
             >
               <div class="relative">
                 <input
@@ -292,8 +398,9 @@ function submit() {
                   name="stir"
                   placeholder="000 000 000"
                   :value="stirLabel"
+                  :readonly="locked"
                   :aria-invalid="Boolean(stirError) || undefined"
-                  class="tabular h-11 w-full rounded-field bg-white pl-3.5 pr-3.5 text-sm text-ink-800 ring-1 ring-inset transition-colors placeholder:text-ink-400 focus:ring-2 focus:ring-brand-500"
+                  class="tabular h-11 w-full rounded-field bg-white pl-3.5 pr-3.5 text-sm text-ink-800 ring-1 ring-inset transition-colors placeholder:text-ink-400 read-only:bg-ink-50 focus:ring-2 focus:ring-brand-500"
                   :class="stirError ? 'ring-danger-400' : 'ring-ink-200 hover:ring-ink-300'"
                   @input="onStirInput"
                 />

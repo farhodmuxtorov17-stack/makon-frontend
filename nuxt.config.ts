@@ -18,12 +18,12 @@ export default defineNuxtConfig({
   },
 
   app: {
-    // GitHub Pages loyihaning nomli papkasida joylashadi — yo‘l muhit
+    // GitHub Pages loyihaning nomli papkasida joylashadi , yo‘l muhit
     // o‘zgaruvchisidan olinadi, lokal ishlaganda ildizda qoladi.
     baseURL: import.meta.env.NUXT_APP_BASE_URL || '/',
     buildAssetsDir: 'assets',
     head: {
-      title: 'MAKON — Ko‘chmas mulk boshqaruv tizimi',
+      title: 'MAKON, ko‘chmas mulk boshqaruv tizimi',
       htmlAttrs: { lang: 'uz' },
       meta: [
         { charset: 'utf-8' },

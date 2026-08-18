@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { certificateBySerial, certificateOrganization } from '~/data/organizations'
+
 definePageMeta({ layout: 'auth', public: true })
 
 const route = useRoute()
@@ -11,6 +13,16 @@ const phoneDigits = computed(() => {
   const q = route.query.phone
   return typeof q === 'string' && /^\d{9}$/.test(q) ? q : ''
 })
+
+/** Kalit sertifikati orqali kelingan bo‘lsa, tashkilot shu yerdan aniqlanadi */
+const certificate = computed(() => {
+  const q = route.query.eri
+  return typeof q === 'string' ? (certificateBySerial(q) ?? null) : null
+})
+
+const certificateOrg = computed(() =>
+  certificate.value ? certificateOrganization(certificate.value) : undefined,
+)
 
 const phoneLabel = computed(() => {
   const d = phoneDigits.value
@@ -170,7 +182,9 @@ function submit() {
       clearCells()
       return
     }
-    navigateTo({ path: '/auth/register', query: { phone: phoneDigits.value } })
+    const query: Record<string, string> = { phone: phoneDigits.value }
+    if (certificate.value) query.eri = certificate.value.serial
+    navigateTo({ path: '/auth/register', query })
   }, 420)
 }
 
@@ -232,6 +246,26 @@ function resend() {
             <span class="tabular font-semibold text-ink-800">{{ phoneLabel }}</span>
             raqamiga bog‘langan Telegram akkauntiga yuborildi.
           </p>
+
+          <!-- Kalit sertifikatidan olingan tashkilot -->
+          <div
+            v-if="certificateOrg"
+            class="mt-4 flex items-start gap-3 rounded-field bg-surface-sunken p-3.5 ring-1 ring-inset ring-ink-200"
+          >
+            <span
+              class="grid size-9 shrink-0 place-items-center rounded-[10px] bg-white text-brand-600 ring-1 ring-ink-200"
+            >
+              <UiIcon name="building" :size="17" />
+            </span>
+            <span class="min-w-0">
+              <span class="block text-[11px] font-semibold uppercase tracking-wide text-ink-500">
+                Sertifikatdagi tashkilot
+              </span>
+              <span class="mt-0.5 block break-words text-[13px] font-semibold text-ink-900">
+                {{ certificateOrg.name }}
+              </span>
+            </span>
+          </div>
 
           <form class="mt-6" novalidate @submit.prevent="submit">
             <fieldset>
@@ -327,9 +361,9 @@ function resend() {
           </div>
 
           <p class="mt-6 text-center text-[13px] text-ink-500">
-            Raqam noto‘g‘rimi?
+            {{ certificate ? 'Boshqa kalit kerakmi?' : 'Raqam noto‘g‘rimi?' }}
             <NuxtLink to="/register" class="font-semibold text-brand-600 hover:text-brand-700">
-              Raqamni o‘zgartirish
+              {{ certificate ? 'Sertifikatni almashtirish' : 'Raqamni o‘zgartirish' }}
             </NuxtLink>
           </p>
         </div>

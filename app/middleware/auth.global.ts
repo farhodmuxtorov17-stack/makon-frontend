@@ -1,9 +1,12 @@
 import { canAccess } from '~/constants/navigation'
 import { ROLE_META } from '~/constants/roles'
 
-/** Autentifikatsiyasiz ochiladigan sahifalar. */
+/**
+ * Autentifikatsiyasiz ochiladigan sahifalar. `/ariza` ochiq ariza formasi:
+ * potensial mijoz hisob ochmasdan ariza yuboradi va uni kod bo‘yicha kuzatadi.
+ */
 const PUBLIC_EXACT = ['/', '/login', '/register', '/auth']
-const PUBLIC_PREFIXES = ['/auth/', '/catalog']
+const PUBLIC_PREFIXES = ['/auth/', '/catalog', '/ariza']
 
 /** Kirgan foydalanuvchi uchun ma’nosiz sahifalar. */
 const GUEST_ONLY = ['/login', '/register']

@@ -673,6 +673,15 @@ export const useLeaseStore = defineStore('lease', {
   getters: {
     byId: (s) => (id: string) => s.cases.find((c) => c.id === id) ?? null,
 
+    /** Ariza raqami bo‘yicha, kuzatuv sahifasi shu orqali topadi */
+    byCode: (s) => (code: string) => {
+      const key = String(code ?? '').trim().toUpperCase()
+      return s.cases.find((c) => c.code.toUpperCase() === key) ?? null
+    },
+
+    /** Hisobsiz yuborilgan, hali kabinetga bog‘lanmagan arizalar */
+    guestCases: (s) => s.cases.filter((c) => c.guest),
+
     /** Qaror kutayotgan yozuvlar */
     pending: (s) => s.cases.filter((c) => c.status !== 'FAOL' && c.status !== 'RAD_ETILDI'),
 
@@ -703,6 +712,10 @@ export const useLeaseStore = defineStore('lease', {
       term: number
       note: string
       type?: LeaseRequest['type']
+      /** Ariza ochiq forma orqali, hisobsiz yuborilgan */
+      guest?: boolean
+      /** Ariza yuborgan shaxs ismi */
+      contactName?: string
     }): LeaseCase | null {
       const unit = unitById(input.unitId)
       if (!unit) return null
@@ -741,18 +754,52 @@ export const useLeaseStore = defineStore('lease', {
         audit: [],
         contactedAt: null,
         rejectReason: '',
+        guest: input.guest === true,
+        contactName: input.contactName?.trim() || input.org.director,
+        accountInvitedAt: null,
         activation: null,
       }
 
       this.log(item, {
-        actor: input.org.director,
-        roleLabel: 'Ijarachi',
+        actor: item.contactName,
+        roleLabel: item.guest ? 'Mijoz, hisobsiz' : 'Ijarachi',
         action: 'Ariza yuborildi',
-        detail: `${building.name} · Unit ${unit.code} · ${input.term} oy · ${money(input.offerPrice)}`,
+        detail: `${building.name} · Unit ${unit.code} · ${input.term} oy · ${money(input.offerPrice)}${
+          item.guest ? ' · telefon raqami tasdiqlangan' : ''
+        }`,
       })
 
       this.cases.unshift(item)
       return item
+    },
+
+    /**
+     * Operator hisobsiz mijozga kabinet ochishni taklif qiladi. Belgilangandan
+     * so‘ng mijoz ariza raqami bilan parol o‘rnatishi mumkin bo‘ladi.
+     */
+    inviteAccount(id: string, actor: string, roleLabel: string) {
+      const item = this.byId(id)
+      if (!item || !item.guest || item.accountInvitedAt) return
+      item.accountInvitedAt = now()
+      this.log(item, {
+        actor,
+        roleLabel,
+        action: 'Kabinet yaratish taklif qilindi',
+        detail: `${item.contactName} (${item.org.phone}) parol o‘rnatib kabinetga kira oladi`,
+      })
+    },
+
+    /** Mijoz parol o‘rnatdi: ariza kabinetga bog‘landi */
+    attachAccount(id: string, actor: string) {
+      const item = this.byId(id)
+      if (!item || !item.guest) return
+      item.guest = false
+      this.log(item, {
+        actor,
+        roleLabel: 'Ijarachi',
+        action: 'Kabinet ochildi',
+        detail: `${item.org.name} nomiga hisob yaratildi, ariza kabinetga bog‘landi`,
+      })
     },
 
     markContacted(id: string, actor: string, roleLabel: string) {
@@ -1168,6 +1215,13 @@ export const useLeaseStore = defineStore('lease', {
     syncWorld() {
       this.seed()
       for (const item of this.cases) {
+        // Eskiroq saqlangan yozuvlarda yangi maydonlar bo‘lmasligi mumkin.
+        if (typeof item.guest !== 'boolean') item.guest = false
+        if (typeof item.contactName !== 'string' || !item.contactName) {
+          item.contactName = item.org.director
+        }
+        if (item.accountInvitedAt === undefined) item.accountInvitedAt = null
+
         if (item.status === 'FAOL') this.applyCase(item)
       }
     },

@@ -28,11 +28,12 @@ const emit = defineEmits<{ reset: []; clearChip: [key: string] }>()
 
 const q = defineModel<string>('q', { required: true })
 const sort = defineModel<string>('sort', { required: true })
-const priceMin = defineModel<string>('priceMin', { required: true })
-const priceMax = defineModel<string>('priceMax', { required: true })
+// Narx va maydon maydonlari raqamli, shuning uchun bo‘sh bo‘lmaganda son keladi
+const priceMin = defineModel<string | number>('priceMin', { required: true })
+const priceMax = defineModel<string | number>('priceMax', { required: true })
 const selected = defineModel<string[]>('selected', { required: true })
-const areaMin = defineModel<string>('areaMin', { required: true })
-const areaMax = defineModel<string>('areaMax', { required: true })
+const areaMin = defineModel<string | number>('areaMin', { required: true })
+const areaMax = defineModel<string | number>('areaMax', { required: true })
 const distance = defineModel<string>('distance', { required: true })
 
 function toggleType(value: string) {
@@ -57,7 +58,7 @@ function toggleType(value: string) {
           <span class="truncate">{{ c.label }}</span>
           <button
             type="button"
-            class="grid size-5 shrink-0 place-items-center rounded-full text-brand-600 transition-colors duration-150 hover:bg-brand-100 hover:text-brand-800"
+            class="relative grid size-5 shrink-0 place-items-center rounded-full text-brand-600 transition-colors duration-150 after:absolute after:-inset-3 after:content-[''] hover:bg-brand-100 hover:text-brand-800 md:after:hidden"
             :aria-label="`${c.label} shartini olib tashlash`"
             @click="emit('clearChip', c.key)"
           >

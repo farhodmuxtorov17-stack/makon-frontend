@@ -188,15 +188,18 @@ function contractLabel(unit: Unit) {
 }
 
 /**
- * Bo‘sh unit uchun ijara sikli. Tizimga kirmagan foydalanuvchi kirish
- * sahifasiga, ijarachi ariza formasiga yo‘naltiriladi; ish maydoni rollari
- * uchun ariza qaysi kabinetdan yuborilishi tushuntiriladi.
+ * Bo‘sh unit uchun ijara sikli. Tizimga kirmagan foydalanuvchi ochiq ariza
+ * formasiga, ijarachi kabinetdagi ariza formasiga yo‘naltiriladi; ish maydoni
+ * rollari uchun ariza qaysi kabinetdan yuborilishi tushuntiriladi.
  */
 function goApply() {
   const unit = selected.value
   if (!unit || unit.status !== 'VACANT') return
   const next = `/cabinet/apply?unit=${unit.id}`
-  if (!auth.isAuthenticated) return navigateTo({ path: '/login', query: { next } })
+  if (!auth.isAuthenticated) {
+    viewOpen.value = false
+    return navigateTo(`/ariza?unit=${unit.id}`)
+  }
   if (auth.role !== 'TENANT_OWNER') {
     applyOpen.value = true
     return

@@ -266,14 +266,17 @@ function openPhoto(i: number) {
 
 /**
  * «Ariza yuborish»: bo‘sh unit uchun ariza yo‘li. Tizimga kirmagan
- * foydalanuvchi kirish sahifasiga, ijarachi esa to‘g‘ridan-to‘g‘ri ariza
+ * foydalanuvchi ochiq ariza formasiga, ijarachi esa kabinetdagi ariza
  * formasiga yuboriladi.
  */
 function goApply(unitId?: string) {
   const id = unitId ?? selected.value?.id
   if (!id) return
   const next = `/cabinet/apply?unit=${id}`
-  if (!auth.isAuthenticated) return navigateTo({ path: '/login', query: { next } })
+  if (!auth.isAuthenticated) {
+    viewOpen.value = false
+    return navigateTo(`/ariza?unit=${id}`)
+  }
   if (auth.role !== 'TENANT_OWNER') {
     offerOpen.value = true
     return

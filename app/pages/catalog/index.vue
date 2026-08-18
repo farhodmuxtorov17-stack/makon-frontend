@@ -118,10 +118,12 @@ const areaBucket = AREA_BUCKETS[initial('size')] ?? ['', '']
 const q = ref(initial('q'))
 const selectedTypes = ref<string[]>(initialTypes())
 const place = ref(initial('place'))
-const priceMin = ref(initial('pmin') || priceBucket[0])
-const priceMax = ref(initial('pmax') || priceBucket[1])
-const areaMin = ref(initial('amin') || areaBucket[0])
-const areaMax = ref(initial('amax') || areaBucket[1])
+// Raqamli maydon `<input type="number">` bo‘lgani uchun bo‘sh bo‘lmaganda son
+// qaytaradi, shuning uchun turi matn va sondan iborat
+const priceMin = ref<string | number>(initial('pmin') || priceBucket[0] || '')
+const priceMax = ref<string | number>(initial('pmax') || priceBucket[1] || '')
+const areaMin = ref<string | number>(initial('amin') || areaBucket[0] || '')
+const areaMax = ref<string | number>(initial('amax') || areaBucket[1] || '')
 const distance = ref(DISTANCE_OPTIONS.some((o) => o.value === initial('dist')) ? initial('dist') : '')
 const offer = ref(OFFER_TABS.some((o) => o.value === initial('offer')) ? initial('offer') : 'all')
 const sort = ref(SORT_OPTIONS.some((o) => o.value === initial('sort')) ? initial('sort') : 'top')
@@ -157,7 +159,9 @@ function distanceKm(lat: number, lon: number) {
   return 2 * 6371 * Math.asin(Math.min(1, Math.sqrt(a)))
 }
 
-function numberOf(value: string) {
+/** Bo‘sh yoki noto‘g‘ri qiymat cheklov qo‘ymaydi, `null` qaytadi */
+function numberOf(value: string | number) {
+  if (typeof value === 'number') return Number.isFinite(value) ? value : null
   const n = Number(value)
   return value.trim() !== '' && Number.isFinite(n) ? n : null
 }
@@ -304,8 +308,8 @@ const activeCount = computed(() => {
   let n = 0
   if (q.value.trim()) n++
   if (selectedTypes.value.length) n++
-  if (priceMin.value || priceMax.value) n++
-  if (areaMin.value || areaMax.value) n++
+  if (priceMin.value !== '' || priceMax.value !== '') n++
+  if (areaMin.value !== '' || areaMax.value !== '') n++
   if (distance.value) n++
   if (place.value) n++
   if (offer.value !== 'all') n++
@@ -380,10 +384,10 @@ watch(
     if (q.value.trim()) query.q = q.value.trim()
     if (selectedTypes.value.length) query.type = selectedTypes.value.join(',')
     if (place.value) query.place = place.value
-    if (priceMin.value) query.pmin = priceMin.value
-    if (priceMax.value) query.pmax = priceMax.value
-    if (areaMin.value) query.amin = areaMin.value
-    if (areaMax.value) query.amax = areaMax.value
+    if (priceMin.value !== '') query.pmin = String(priceMin.value)
+    if (priceMax.value !== '') query.pmax = String(priceMax.value)
+    if (areaMin.value !== '') query.amin = String(areaMin.value)
+    if (areaMax.value !== '') query.amax = String(areaMax.value)
     if (distance.value) query.dist = distance.value
     if (offer.value !== 'all') query.offer = offer.value
     if (sort.value !== 'top') query.sort = sort.value
@@ -489,6 +493,25 @@ watch(
               {{ t.label }}
             </button>
           </div>
+        </div>
+
+        <!-- Chap ustun yopiq kengliklarda faol shartlar shu yerda ko‘rinadi -->
+        <div v-if="chips.length" class="flex basis-full flex-wrap gap-1.5 xl:hidden">
+          <span
+            v-for="c in chips"
+            :key="c.key"
+            class="inline-flex max-w-full items-center gap-1 rounded-pill bg-brand-50 py-1 pl-2.5 pr-1 text-[11.5px] font-semibold text-brand-700"
+          >
+            <span class="truncate">{{ c.label }}</span>
+            <button
+              type="button"
+              class="relative grid size-6 shrink-0 place-items-center rounded-full text-brand-600 transition-colors duration-150 after:absolute after:-inset-[10px] after:content-[''] hover:bg-brand-100 hover:text-brand-800 md:after:hidden"
+              :aria-label="`${c.label} shartini olib tashlash`"
+              @click="clearChip(c.key)"
+            >
+              <UiIcon name="x" :size="12" />
+            </button>
+          </span>
         </div>
       </div>
 
@@ -684,7 +707,11 @@ watch(
         <Transition
           appear
           enter-active-class="transition-transform duration-200 ease-out"
-          enter-from-class="translate-y-full md:translate-x-[-100%] md:translate-y-0"
+          enter-from-class="translate-y-full md:-translate-x-full md:translate-y-0"
+          enter-to-class="translate-y-0 md:translate-x-0"
+          leave-active-class="transition-transform duration-150 ease-in"
+          leave-from-class="translate-y-0 md:translate-x-0"
+          leave-to-class="translate-y-full md:-translate-x-full md:translate-y-0"
         >
           <div
             role="dialog"
