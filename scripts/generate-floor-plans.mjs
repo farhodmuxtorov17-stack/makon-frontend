@@ -40,7 +40,7 @@ function unitBlocks(src) {
   const blocks = []
   // UNITS massivi elementlari ikki bo‘sh joy bilan boshlanadi, maydonlari
   // to‘rt bo‘sh joy bilan. Ichki ob’ektlar chuqurroq turadi, shu bilan farq qiladi.
-  const re = /\n {2}\{\n {4}id: '([^']+)'/g
+  const re = /\r?\n {2}\{\r?\n {4}id: '([^']+)'/g
   let m
   while ((m = re.exec(src))) {
     let depth = 0
@@ -115,7 +115,10 @@ for (const b of [...blocks].reverse()) {
   const points = polygonById.get(b.id)
   if (!points) continue
   const literal = `polygon: [${points.map(([x, y]) => `[${x}, ${y}]`).join(', ')}]`
-  const replaced = b.text.replace(/polygon: P\([^)]*\)|polygon: \[[^\]]*\](?:\])?/s, () => literal)
+  // Poligon literali `]]` bilan tugaydi, shuning uchun dangasa moslash aynan
+  // shu yergacha boradi. Ilgari naqsh birinchi `]` da to‘xtab, ro‘yxatning
+  // qolgan qismini faylda qoldirib ketardi va faylni buzardi.
+  const replaced = b.text.replace(/polygon: P\([^)]*\)|polygon: \[[\s\S]*?\]\]/, () => literal)
   if (replaced === b.text) {
     console.warn(`  ogohlantirish: ${b.id} da polygon topilmadi`)
     continue

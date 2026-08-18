@@ -541,7 +541,13 @@ function documentLines(d: CabinetDocument): DocxLine[] {
   } else if (d.kind === 'invoice') {
     const inv = invoiceOf(d)
     if (inv) {
-      const monthly = c ? monthlyRentOf(c) : inv.total
+      // Hisob-faktura shartnomasi: unit kodi va ijarachi bo‘yicha topiladi
+      const invContract =
+        c ??
+        myContracts.value.find(
+          (x) => unitCodeOf(x.unitCode) === unitCodeOf(inv.unitCode) && x.status === 'ACTIVE',
+        )
+      const monthly = invContract ? monthlyRentOf(invContract) : inv.total
       const rent = Math.min(monthly || inv.total, inv.total)
       const rest = inv.total - rent
       lines.push(
@@ -552,6 +558,12 @@ function documentLines(d: CabinetDocument): DocxLine[] {
         { text: `Hisob davri: ${inv.period}` },
         { text: `Berilgan sana: ${dateShort(inv.issuedAt)}` },
         { text: `To‘lov muddati: ${dateShort(inv.dueAt)}` },
+        ...(invContract
+          ? [
+              { text: `Shartnoma: ${invContract.code} · ${dateShort(invContract.startsAt)}` },
+              { text: `To‘lov shakli: ${invContract.paymentTerm}` },
+            ]
+          : []),
         { text: 'Xizmatlar', style: 'heading' },
         {
           text: `1. Ijara to‘lovi · 1 oy × ${sum(rent)} · QQS ${VAT_RATE}%: ${sum(vatOf(rent))} · jami ${sum(rent)}`,

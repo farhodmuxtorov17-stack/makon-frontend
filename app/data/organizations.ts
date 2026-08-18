@@ -26,9 +26,12 @@ export interface Organization {
 
 export const ORGANIZATIONS: Organization[] = [
   {
+    // Ijarachi tashkilotning yagona yozuvi: shartnoma, unit va hisob-faktura
+    // reyestrlarida aynan shu to‘liq nom ishlatiladi. Yozuvni bino
+    // reyestridagi «Urban Office» (b-05) obyekti bilan aralashtirib bo‘lmaydi.
     stir: '307219645',
     name: 'Urban Office MCHJ',
-    shortName: 'Urban Office',
+    shortName: 'Urban Office MCHJ',
     address: 'Toshkent shahri, Yunusobod tumani, Abdulla Qodiriy ko‘chasi 10',
     director: 'Dilshod Ergashev',
     phone: '+998 90 567 89 01',

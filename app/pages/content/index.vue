@@ -52,7 +52,7 @@ const queue = computed<QueueRow[]>(() => {
   for (const b of scoped.value) {
     const levels: number[] = []
     for (let f = b.floors; f >= 1; f -= 1) levels.push(f)
-    if (b.undergroundFloors > 0) levels.push(0)
+    for (let k = 1; k <= b.undergroundFloors; k++) levels.push(-k)
 
     for (const floor of levels) {
       const list = UNITS.filter((u) => u.buildingId === b.id && u.floor === floor)

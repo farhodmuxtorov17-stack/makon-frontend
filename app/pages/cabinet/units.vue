@@ -378,6 +378,12 @@ const planOpen = ref(false)
                   </dd>
                 </div>
                 <div class="flex items-center justify-between">
+                  <dt class="text-[12.5px] text-ink-500">Oylik ijara to‘lovi</dt>
+                  <dd class="tabular text-[12.5px] font-semibold text-ink-800">
+                    {{ selected.priceUnit === 'so‘m / oy' ? sum(selected.price) : '-' }}
+                  </dd>
+                </div>
+                <div class="flex items-center justify-between">
                   <dt class="text-[12.5px] text-ink-500">Shartnoma summasi</dt>
                   <dd class="tabular text-[12.5px] font-semibold text-ink-800">
                     {{ sum(selectedContract.amount) }}

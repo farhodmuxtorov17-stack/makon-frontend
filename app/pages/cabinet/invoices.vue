@@ -233,6 +233,11 @@ interface InvoiceLine {
   total: number
 }
 
+/** Miqdor butun bo‘lsa kasr qismi ko‘rsatilmaydi: «1 oy», «1.5 oy» */
+function qty(value: number) {
+  return num(value, Number.isInteger(value) ? 0 : 1)
+}
+
 const detailOpen = ref(false)
 const printOpen = ref(false)
 const savedFile = ref('')
@@ -346,7 +351,7 @@ function invoiceLines(inv: Invoice): DocxLine[] {
   rows.forEach((l, index) => {
     out.push({
       text:
-        `${index + 1}. ${l.service} · ${num(l.qty, 1)} ${l.unit} × ${sum(l.tariff)} · ` +
+        `${index + 1}. ${l.service} · ${qty(l.qty)} ${l.unit} × ${sum(l.tariff)} · ` +
         `QQS ${VAT_RATE}%: ${sum(vatOf(l.total))} · jami ${sum(l.total)}`,
     })
   })
@@ -580,7 +585,7 @@ function downloadInvoice() {
               <td class="px-4 py-2.5 font-medium text-ink-900">{{ l.service }}</td>
               <td class="px-4 py-2.5 text-ink-600">{{ l.unit }}</td>
               <td class="tabular px-4 py-2.5 text-right text-ink-700">{{ num(l.tariff) }}</td>
-              <td class="tabular px-4 py-2.5 text-right text-ink-700">{{ num(l.qty, 1) }}</td>
+              <td class="tabular px-4 py-2.5 text-right text-ink-700">{{ qty(l.qty) }}</td>
               <td class="tabular px-4 py-2.5 text-right text-ink-700">{{ num(vatOf(l.total)) }}</td>
               <td class="tabular px-4 py-2.5 text-right font-semibold text-ink-900">{{ num(l.total) }}</td>
             </tr>
@@ -701,7 +706,7 @@ function downloadInvoice() {
         <tbody>
           <tr v-for="l in lines" :key="`p-${l.service}`" class="border-b border-ink-100">
             <td class="py-2 text-ink-800">{{ l.service }}</td>
-            <td class="tabular py-2 text-right text-ink-700">{{ num(l.qty, 1) }} {{ l.unit }}</td>
+            <td class="tabular py-2 text-right text-ink-700">{{ qty(l.qty) }} {{ l.unit }}</td>
             <td class="tabular py-2 text-right text-ink-700">{{ num(vatOf(l.total)) }}</td>
             <td class="tabular py-2 text-right font-semibold text-ink-900">{{ num(l.total) }}</td>
           </tr>
