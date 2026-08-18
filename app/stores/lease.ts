@@ -177,6 +177,12 @@ export interface LeaseCase {
   audit: AuditEntry[]
   contactedAt: string | null
   rejectReason: string
+  /** Ariza hisobsiz, ochiq forma orqali yuborilgan */
+  guest: boolean
+  /** Ariza yuborgan shaxs ismi, tashkilot rahbaridan farq qilishi mumkin */
+  contactName: string
+  /** Operator kabinet ochishni taklif qilgan vaqt */
+  accountInvitedAt: string | null
   activation: {
     at: string
     invoiceCode: string
@@ -645,6 +651,9 @@ function seedCase(seed: SeedInput): LeaseCase | null {
     audit,
     contactedAt: seed.status === 'OPERATSIYA_TASDIQLADI' ? seed.submittedAt : null,
     rejectReason: seed.rejectReason ?? '',
+    guest: false,
+    contactName: seed.org.director,
+    accountInvitedAt: null,
     activation: null,
   }
 }

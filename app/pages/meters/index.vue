@@ -465,7 +465,7 @@ function saveReading() {
             </svg>
             <button
               type="button"
-              class="absolute right-1 top-1 grid size-6 place-items-center rounded-full bg-ink-900/60 text-white transition-colors hover:bg-danger-600"
+              class="absolute right-1 top-1 grid size-8 place-items-center rounded-full bg-ink-900/60 md:size-6 text-white transition-colors hover:bg-danger-600"
               aria-label="Suratni olib tashlash"
               @click="entryShots = entryShots - 1"
             >

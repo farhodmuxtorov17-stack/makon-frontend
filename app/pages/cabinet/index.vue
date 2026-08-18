@@ -714,7 +714,7 @@ const myPlanCenter = computed(() => {
               <span class="min-w-0 flex-1 truncate text-[12.5px] text-ink-700">{{ a }}</span>
               <button
                 type="button"
-                class="grid size-7 shrink-0 place-items-center rounded-lg text-ink-400 transition-colors hover:bg-danger-50 hover:text-danger-600"
+                class="grid size-9 shrink-0 place-items-center rounded-lg text-ink-400 md:size-7 transition-colors hover:bg-danger-50 hover:text-danger-600"
                 :aria-label="`${a}: biriktirmani olib tashlash`"
                 @click="removeAttachment(i)"
               >

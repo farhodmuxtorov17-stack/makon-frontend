@@ -569,7 +569,7 @@ function printAct() {
         </svg>
         <button
           type="button"
-          class="absolute right-1 top-1 grid size-6 place-items-center rounded-full bg-ink-900/60 text-white transition-colors hover:bg-danger-600"
+          class="absolute right-1 top-1 grid size-8 md:size-6 place-items-center rounded-full bg-ink-900/60 text-white transition-colors hover:bg-danger-600"
           aria-label="Dalilni olib tashlash"
           @click="evidenceStaged = evidenceStaged - 1"
         >
