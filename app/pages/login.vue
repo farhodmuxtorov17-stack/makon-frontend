@@ -17,19 +17,26 @@ definePageMeta({ layout: 'auth', public: true })
 const auth = useAuthStore()
 const route = useRoute()
 const { t } = useI18n()
+const { roleLabel } = useAppLabels()
 
 /**
  * Xodim hisoblarini super rahbar yaratadi va rolni hisobga biriktiradi,
  * shuning uchun kirish oynasida rol tanlanmaydi.
  */
-const ACCOUNTS: Array<{ login: string; email: string; role: Role }> = [
-  { login: 'a.karimov', email: 'a.karimov@makon.uz', role: 'SUPER_HEAD' },
-  { login: 's.yuldoshev', email: 's.yuldoshev@makon.uz', role: 'BUILDING_MANAGER' },
-  { login: 'n.rahimova', email: 'n.rahimova@makon.uz', role: 'ACCOUNTANT' },
-  { login: 'j.toshmatov', email: 'j.toshmatov@servispro.uz', role: 'FACILITY' },
-  { login: 'a.qodirov', email: 'a.qodirov@makon.uz', role: 'WAREHOUSE_OPERATOR' },
-  { login: 'm.yusupova', email: 'm.yusupova@makon.uz', role: 'CONTENT_OPERATOR' },
-  { login: 'd.ergashev', email: 'd.ergashev@urbanoffice.uz', role: 'TENANT_OWNER' },
+/**
+ * Namoyish hisoblari. Parol shu yerda ochiq turadi, chunki bu frontend
+ * prototipi: haqiqiy tekshiruv backend tomonida bo‘ladi. Muhimi, parol
+ * TEKSHIRILADI — ilgari uzunligi yetarli bo‘lgan istalgan matn bilan
+ * kirish mumkin edi va login maydonidagi nom rolni belgilardi.
+ */
+const ACCOUNTS: Array<{ login: string; email: string; role: Role; password: string }> = [
+  { login: 'a.karimov', email: 'a.karimov@makon.uz', role: 'SUPER_HEAD', password: 'Makon2026!' },
+  { login: 's.yuldoshev', email: 's.yuldoshev@makon.uz', role: 'BUILDING_MANAGER', password: 'Makon2026!' },
+  { login: 'n.rahimova', email: 'n.rahimova@makon.uz', role: 'ACCOUNTANT', password: 'Makon2026!' },
+  { login: 'j.toshmatov', email: 'j.toshmatov@servispro.uz', role: 'FACILITY', password: 'Makon2026!' },
+  { login: 'a.qodirov', email: 'a.qodirov@makon.uz', role: 'WAREHOUSE_OPERATOR', password: 'Makon2026!' },
+  { login: 'm.yusupova', email: 'm.yusupova@makon.uz', role: 'CONTENT_OPERATOR', password: 'Makon2026!' },
+  { login: 'd.ergashev', email: 'd.ergashev@urbanoffice.uz', role: 'TENANT_OWNER', password: 'Makon2026!' },
 ]
 
 /** Kalit egasi xodim bo‘lsa, roli hisobga biriktirilgan holicha qoladi */
@@ -174,10 +181,29 @@ onBeforeUnmount(() => {
   if (timer) clearTimeout(timer)
 })
 
-function resolveRole(value: string): Role | null {
+const DEMO_PASSWORD = 'Makon2026!'
+
+/** Kirish oynasida ko‘rsatiladigan namoyish hisoblari */
+const DEMO_ACCOUNTS = computed(() =>
+  ACCOUNTS.map((a) => ({ login: a.login, label: roleLabel(a.role) })),
+)
+
+/** Hisob tanlanganda maydonlar to‘ldiriladi */
+function fillDemo(login: string) {
+  loginName.value = login
+  password.value = DEMO_PASSWORD
+  loginTouched.value = false
+  passwordTouched.value = false
+  rejected.value = false
+}
+
+/** Login va parol juftligi mos kelsagina hisob qaytariladi */
+function resolveAccount(value: string, secret: string) {
   const key = value.trim().toLowerCase()
   if (!key) return null
-  return ACCOUNTS.find((a) => a.login === key || a.email === key)?.role ?? null
+  const account = ACCOUNTS.find((a) => a.login === key || a.email === key)
+  if (!account || account.password !== secret) return null
+  return account
 }
 
 function goNext(fallback: string) {
@@ -208,19 +234,19 @@ function submitStaff() {
   rejected.value = false
   if (!loginValid.value || !passwordValid.value) return
 
-  const role = resolveRole(loginName.value)
+  const account = resolveAccount(loginName.value, password.value)
   pending.value = true
 
   timer = setTimeout(() => {
     pending.value = false
-    if (!role) {
+    if (!account) {
       rejected.value = true
       return
     }
 
     savedLogin.value = remember.value ? loginName.value.trim() : ''
-    auth.signIn(role)
-    goNext(ROLE_META[role].home)
+    auth.signIn(account.role)
+    goNext(ROLE_META[account.role].home)
   }, 420)
 }
 
@@ -433,6 +459,38 @@ function submit() {
                 </svg>
                 {{ pending ? t('common.checking') : t('common.signIn') }}
               </UiButton>
+
+              <!--
+                Namoyish hisoblari. Prototipda backend yo‘q, shuning uchun
+                kirish ma’lumotlari shu yerda ko‘rsatiladi; parol esa
+                haqiqatan tekshiriladi.
+              -->
+              <div class="mt-5 rounded-field bg-surface-sunken p-3.5 ring-1 ring-inset ring-ink-200">
+                <p class="text-[12.5px] font-semibold text-ink-700">{{ t('login.demoTitle') }}</p>
+                <p class="mt-1 text-[12px] leading-relaxed text-ink-500">{{ t('login.demoText') }}</p>
+                <dl class="mt-2.5 space-y-1.5">
+                  <div
+                    v-for="a in DEMO_ACCOUNTS"
+                    :key="a.login"
+                    class="flex items-center justify-between gap-3 text-[12px]"
+                  >
+                    <dt class="min-w-0 truncate text-ink-600">{{ a.label }}</dt>
+                    <dd class="flex shrink-0 items-center gap-1.5">
+                      <button
+                        type="button"
+                        class="tabular rounded-[6px] bg-white px-2 py-0.5 font-semibold text-ink-800 ring-1 ring-ink-200 transition-colors hover:ring-brand-300"
+                        @click="fillDemo(a.login)"
+                      >
+                        {{ a.login }}
+                      </button>
+                    </dd>
+                  </div>
+                </dl>
+                <p class="tabular mt-2.5 text-[12px] text-ink-600">
+                  {{ t('login.demoPassword') }}
+                  <span class="font-semibold text-ink-900">{{ DEMO_PASSWORD }}</span>
+                </p>
+              </div>
             </form>
           </template>
 

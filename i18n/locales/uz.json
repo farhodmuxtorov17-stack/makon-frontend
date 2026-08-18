@@ -510,6 +510,9 @@
     "resetStep3Title": "Vaqtinchalik parol beriladi",
     "resetStep3Text": "Birinchi kirishdan so‘ng uni almashtirasiz.",
     "resetSupport": "Ichki qo‘llab-quvvatlash",
-    "resetUnderstood": "Tushunarli"
+    "resetUnderstood": "Tushunarli",
+    "demoTitle": "Namoyish hisoblari",
+    "demoText": "Rolni tanlash uchun loginni bosing, parol avtomatik qo‘yiladi.",
+    "demoPassword": "Barcha hisoblar uchun parol:"
   }
 }
