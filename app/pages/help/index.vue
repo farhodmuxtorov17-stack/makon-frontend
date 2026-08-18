@@ -175,14 +175,14 @@ const FAQ = [
 ]
 
 const MANUALS = [
-  { id: 'm-01', role: ROLE.tenant, name: 'Ijarachi uchun qo‘llanma', at: '2025-04-20' },
-  { id: 'm-02', role: ROLE.accountant, name: 'Buxgalter uchun qo‘llanma', at: '2025-04-20' },
-  { id: 'm-03', role: ROLE.manager, name: 'Bino rahbari uchun qo‘llanma', at: '2025-04-20' },
-  { id: 'm-04', role: ROLE.facility, name: 'Pudratchi uchun qo‘llanma', at: '2025-04-20' },
-  { id: 'm-06', role: ROLE.head, name: 'Super rahbar uchun qo‘llanma', at: '2025-04-20' },
-  { id: 'm-07', role: ROLE.warehouse, name: 'Omborchi uchun qo‘llanma', at: '2025-04-20' },
-  { id: 'm-08', role: ROLE.content, name: 'Kontent operatori uchun qo‘llanma', at: '2025-04-20' },
-  { id: 'm-05', role: ROLE.general, name: 'Tizim bo‘yicha umumiy qo‘llanma', at: '2025-05-06' },
+  { id: 'm-01', role: ROLE.tenant, name: 'Ijarachi uchun qo‘llanma', at: '2026-07-21' },
+  { id: 'm-02', role: ROLE.accountant, name: 'Buxgalter uchun qo‘llanma', at: '2026-07-21' },
+  { id: 'm-03', role: ROLE.manager, name: 'Bino rahbari uchun qo‘llanma', at: '2026-07-21' },
+  { id: 'm-04', role: ROLE.facility, name: 'Pudratchi uchun qo‘llanma', at: '2026-07-21' },
+  { id: 'm-06', role: ROLE.head, name: 'Super rahbar uchun qo‘llanma', at: '2026-07-21' },
+  { id: 'm-07', role: ROLE.warehouse, name: 'Omborchi uchun qo‘llanma', at: '2026-07-21' },
+  { id: 'm-08', role: ROLE.content, name: 'Kontent operatori uchun qo‘llanma', at: '2026-07-21' },
+  { id: 'm-05', role: ROLE.general, name: 'Tizim bo‘yicha umumiy qo‘llanma', at: '2026-08-06' },
 ]
 
 const roleFilter = ref('all')

@@ -302,14 +302,14 @@ const documents = computed<CabinetDocLink[]>(() => {
         id: 'd-requisites',
         name: 'To‘lov rekvizitlari',
         code: 'REK-2025-0044',
-        at: '2025-01-15',
+        at: '2026-04-17',
         summary: 'Bank rekvizitlari va to‘lov topshiriqnomasini to‘ldirish tartibi.',
       },
       {
         id: 'd-rules',
         name: 'Bino ichki tartib-qoidalari',
         code: 'QDL-2025-0007',
-        at: '2025-01-15',
+        at: '2026-04-17',
         summary: 'Ish vaqti, kirish tartibi va umumiy zonalardan foydalanish qoidalari.',
       },
     )

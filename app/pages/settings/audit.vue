@@ -38,7 +38,7 @@ interface AuditEvent {
 const EVENTS: AuditEvent[] = [
   {
     id: 'log-0184',
-    date: '2025-05-18',
+    date: '2026-08-18',
     time: '10:24:12',
     user: 'Jahongir Alimov',
     role: 'SUPER_HEAD',
@@ -55,7 +55,7 @@ const EVENTS: AuditEvent[] = [
   },
   {
     id: 'log-0183',
-    date: '2025-05-18',
+    date: '2026-08-18',
     time: '09:58:41',
     user: 'Sevara Yusupova',
     role: 'ACCOUNTANT',
@@ -72,7 +72,7 @@ const EVENTS: AuditEvent[] = [
   },
   {
     id: 'log-0182',
-    date: '2025-05-18',
+    date: '2026-08-18',
     time: '09:41:07',
     user: 'Dilshod Karimov',
     role: 'BUILDING_MANAGER',
@@ -89,7 +89,7 @@ const EVENTS: AuditEvent[] = [
   },
   {
     id: 'log-0181',
-    date: '2025-05-18',
+    date: '2026-08-18',
     time: '09:12:55',
     user: 'Jahongir Alimov',
     role: 'SUPER_HEAD',
@@ -106,7 +106,7 @@ const EVENTS: AuditEvent[] = [
   },
   {
     id: 'log-0180',
-    date: '2025-05-18',
+    date: '2026-08-18',
     time: '08:47:30',
     user: 'Otabek Rahimov',
     role: 'FACILITY',
@@ -120,7 +120,7 @@ const EVENTS: AuditEvent[] = [
   },
   {
     id: 'log-0179',
-    date: '2025-05-17',
+    date: '2026-08-17',
     time: '18:30:02',
     user: 'Sevara Yusupova',
     role: 'ACCOUNTANT',
@@ -132,12 +132,12 @@ const EVENTS: AuditEvent[] = [
     detail: 'Kommunal tarif qiymatlari yangi davr uchun yangilandi.',
     diff: [
       { field: 'Elektr energiyasi', before: '1 180 so‘m / kVt-soat', after: '1 250 so‘m / kVt-soat' },
-      { field: 'Amal qilish sanasi', before: '01.04.2025', after: '01.05.2025' },
+      { field: 'Amal qilish sanasi', before: '02.07.2026', after: '01.08.2026' },
     ],
   },
   {
     id: 'log-0178',
-    date: '2025-05-17',
+    date: '2026-08-17',
     time: '17:12:44',
     user: 'Nigora Aripova',
     role: 'BUILDING_MANAGER',
@@ -150,12 +150,12 @@ const EVENTS: AuditEvent[] = [
     diff: [
       { field: 'Status', before: 'Kelishilmoqda', after: 'Imzolangan' },
       { field: 'Tasdiqlagan shaxs', before: '-', after: 'Nigora Aripova' },
-      { field: 'Tasdiqlash sanasi', before: '-', after: '17.05.2025' },
+      { field: 'Tasdiqlash sanasi', before: '-', after: '17.08.2026' },
     ],
   },
   {
     id: 'log-0177',
-    date: '2025-05-17',
+    date: '2026-08-17',
     time: '16:08:19',
     user: 'Sardor Yo‘ldoshev',
     role: 'FACILITY',
@@ -172,7 +172,7 @@ const EVENTS: AuditEvent[] = [
   },
   {
     id: 'log-0176',
-    date: '2025-05-17',
+    date: '2026-08-17',
     time: '12:47:38',
     user: 'Aziza Nurmatova',
     role: 'TENANT_OWNER',
@@ -186,7 +186,7 @@ const EVENTS: AuditEvent[] = [
   },
   {
     id: 'log-0175',
-    date: '2025-05-16',
+    date: '2026-08-16',
     time: '14:20:51',
     user: 'Malika Tosheva',
     role: 'ACCOUNTANT',
@@ -198,12 +198,12 @@ const EVENTS: AuditEvent[] = [
     detail: 'Yangi hisob-faktura shakllantirildi va ijarachiga yuborildi.',
     diff: [
       { field: 'Summa', before: '-', after: '31 200 000 so‘m' },
-      { field: 'To‘lov muddati', before: '-', after: '25.05.2025' },
+      { field: 'To‘lov muddati', before: '-', after: '25.08.2026' },
     ],
   },
   {
     id: 'log-0174',
-    date: '2025-05-16',
+    date: '2026-08-16',
     time: '11:05:23',
     user: 'Bobur Ismoilov',
     role: 'BUILDING_MANAGER',
@@ -217,7 +217,7 @@ const EVENTS: AuditEvent[] = [
   },
   {
     id: 'log-0173',
-    date: '2025-05-16',
+    date: '2026-08-16',
     time: '09:33:10',
     user: 'Rustam Qodirov',
     role: 'TENANT_OWNER',
@@ -231,7 +231,7 @@ const EVENTS: AuditEvent[] = [
   },
   {
     id: 'log-0172',
-    date: '2025-05-15',
+    date: '2026-08-15',
     time: '17:05:48',
     user: 'Jahongir Alimov',
     role: 'SUPER_HEAD',
@@ -248,7 +248,7 @@ const EVENTS: AuditEvent[] = [
   },
   {
     id: 'log-0171',
-    date: '2025-05-15',
+    date: '2026-08-15',
     time: '13:41:02',
     user: 'Jahongir Alimov',
     role: 'SUPER_HEAD',
@@ -262,7 +262,7 @@ const EVENTS: AuditEvent[] = [
   },
   {
     id: 'log-0170',
-    date: '2025-05-15',
+    date: '2026-08-15',
     time: '11:02:37',
     user: 'Dilshod Karimov',
     role: 'BUILDING_MANAGER',
@@ -276,7 +276,7 @@ const EVENTS: AuditEvent[] = [
   },
   {
     id: 'log-0169',
-    date: '2025-05-15',
+    date: '2026-08-15',
     time: '10:22:14',
     user: 'Sevara Yusupova',
     role: 'ACCOUNTANT',

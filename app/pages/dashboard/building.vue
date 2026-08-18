@@ -14,7 +14,7 @@ import { CONTRACTS, INVOICES } from '~/data/business'
 import { SERVICE_REQUESTS, type ServiceRequest } from '~/data/operations'
 import { scheduleTotals, type LeaseStatus } from '~/stores/lease'
 import { ROLE_META } from '~/constants/roles'
-import { num, percent, sum, sumShort, dateShort, timeOf } from '~/utils/format'
+import { num, percent, sum, sumShort, dateShort, timeOf, todayIso } from '~/utils/format'
 
 const auth = useAuthStore()
 const lease = useLeaseStore()
@@ -121,8 +121,8 @@ const overdueInvoices = computed(
   () => INVOICES.filter((i) => i.buildingName === building.value.name && i.status === 'OVERDUE').length,
 )
 
-/** Hisobot sanasi: ma’lumotlar mos keladigan davr */
-const REPORT_DATE = new Date('2025-05-23')
+/** Hisobot sanasi: ko‘rsatkichlar shu kunga tegishli */
+const REPORT_DATE = new Date(todayIso())
 
 const endingSoon = computed(
   () =>

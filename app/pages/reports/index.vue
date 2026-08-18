@@ -2,7 +2,7 @@
 import { BUILDINGS, PORTFOLIO_TOTALS, trendDelta, trendSpark } from '~/data/buildings'
 import { agingOf } from '~/data/business'
 import { csvBlob, docxBlob, fileSlug, saveBlob } from '~/utils/docx'
-import { num, percent, sumShort, dateShort } from '~/utils/format'
+import { num, percent, sumShort, dateShort, todayIso, monthShift } from '~/utils/format'
 
 const auth = useAuthStore()
 
@@ -11,8 +11,9 @@ const scopedBuildings = computed(() => BUILDINGS.filter((b) => auth.inScope(b.id
 
 const MONTHS = ['Yan', 'Fev', 'Mar', 'Apr', 'May', 'Iyun', 'Iyul', 'Avg', 'Sen', 'Okt', 'Noy', 'Dek']
 
-const DEFAULT_FROM = '2025-01-01'
-const DEFAULT_TO = '2025-06-30'
+// Hisobot davri bugun tugaydi: kelajakdagi oy uchun hisobot bo‘lmaydi
+const DEFAULT_FROM = monthShift(-5)
+const DEFAULT_TO = todayIso()
 
 const TYPE_OPTIONS = computed(() => [
   { value: 'all', label: 'Barcha bino turlari' },

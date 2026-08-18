@@ -291,7 +291,7 @@ const DOCUMENTS = computed<CabinetDocument[]>(() => {
         unitCode: 'Umumiy',
         buildingName: building,
         format: 'DOCX',
-        at: '2025-01-15',
+        at: '2026-04-17',
         summary: 'Ijaraga beruvchining bank rekvizitlari va to‘lov topshiriqnomasini to‘ldirish tartibi.',
       },
       {
@@ -303,7 +303,7 @@ const DOCUMENTS = computed<CabinetDocument[]>(() => {
         unitCode: 'Umumiy',
         buildingName: building,
         format: 'DOCX',
-        at: '2025-01-15',
+        at: '2026-04-17',
         summary: 'Ish vaqti, kirish tartibi, umumiy zonalardan foydalanish qoidalari.',
       },
       {
@@ -315,7 +315,7 @@ const DOCUMENTS = computed<CabinetDocument[]>(() => {
         unitCode: 'Umumiy',
         buildingName: building,
         format: 'DOCX',
-        at: '2025-01-15',
+        at: '2026-04-17',
         summary: 'Evakuatsiya rejasi va yong‘in xavfsizligi bo‘yicha talablar.',
       },
     )
