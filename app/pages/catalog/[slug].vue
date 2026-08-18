@@ -69,7 +69,15 @@ onKeyStroke('ArrowRight', () => {
   if (lightboxOpen.value) stepPhoto(1)
 })
 
-const floorUnits = computed(() => units.value.filter((u) => u.floor === activeFloor.value))
+/**
+ * Ommaviy katalog tayyor bo‘lmagan yozuvni ko‘rsatmaydi: qoralama,
+ * yashirilgan va arxivlangan unitlar faqat ichki reyestrda qoladi.
+ */
+const PUBLIC_HIDDEN = ['DRAFT', 'HIDDEN', 'ARCHIVED']
+
+const floorUnits = computed(() =>
+  units.value.filter((u) => u.floor === activeFloor.value && !PUBLIC_HIDDEN.includes(u.status)),
+)
 const floorVacant = computed(() => floorUnits.value.filter((u) => u.status === 'VACANT'))
 const selected = computed(() => units.value.find((u) => u.id === selectedId.value))
 

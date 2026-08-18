@@ -386,6 +386,7 @@ watch(
     areaMin,
     areaMax,
     distance,
+    usage,
     offer,
     sort,
     mode,
@@ -402,6 +403,7 @@ watch(
     if (areaMin.value !== '') query.amin = String(areaMin.value)
     if (areaMax.value !== '') query.amax = String(areaMax.value)
     if (distance.value) query.dist = distance.value
+    if (usage.value) query.usage = usage.value
     if (offer.value !== 'all') query.offer = offer.value
     if (sort.value !== 'top') query.sort = sort.value
     if (mode.value !== 'list') query.mode = mode.value

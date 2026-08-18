@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { buildingById } from '~/data/buildings'
 import { unitsOfFloor, type Unit } from '~/data/units'
-import { UNIT_STATUS } from '~/constants/statuses'
+import { UNIT_STATUS, UNIT_STATUS_COLOR } from '~/constants/statuses'
 import { area, num, percent } from '~/utils/format'
 import { buildFloorPlan } from '~/utils/floorPlan'
 
@@ -34,14 +34,12 @@ const activeStatuses = ref<string[]>([])
 const viewOpen = ref(false)
 const applyOpen = ref(false)
 
-const STATUS_FILL: Record<string, string> = {
-  VACANT: '#16B99A',
-  RESERVED: '#FAA53F',
-  RENTED: '#0256F7',
-  SOLD: '#916CEC',
-  MAINTENANCE: '#F84448',
-  DRAFT: '#CBD4E3',
-}
+/**
+ * Reja ranglari umumiy jadvaldan olinadi. Ilgari bu sahifada o‘z jadvali
+ * bor edi va «Sotilgan» binafsha, «Ta’mirda» qizil chiqardi — katalogda esa
+ * «Sotilgan» qizil. Bitta rang ikki ekranda ikki xil statusni bildirardi.
+ */
+const STATUS_FILL = UNIT_STATUS_COLOR
 
 const LEGEND = ['VACANT', 'RESERVED', 'RENTED', 'SOLD', 'MAINTENANCE']
 
