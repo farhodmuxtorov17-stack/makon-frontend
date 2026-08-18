@@ -50,7 +50,18 @@ const CATEGORY_OF: Record<string, string> = {
 
 const route = useRoute()
 const id = computed(() => String(route.params.id))
-const building = computed(() => buildingById(id.value))
+const auth = useAuthStore()
+
+/** Biriktirilmagan obyekt 3D navigator havolasi orqali ham ochilmaydi */
+const building = computed(() => {
+  const b = buildingById(id.value)
+  return b && auth.inScope(b.id) ? b : undefined
+})
+
+/** Ijarachi va narx ma’lumoti faqat ijara oqimida ishlaydigan rollarga ochiq */
+const showFinance = computed(
+  () => auth.can('application.decide') || auth.can('invoice.create') || auth.can('contract.sign'),
+)
 
 // 0 hech qachon haqiqiy daraja emas (yer osti manfiy, yer usti 1 dan boshlanadi),
 // shu sababli birinchi kuzatuvchi reja kiritilgan eng boy qavatni ochadi.
@@ -199,7 +210,6 @@ function contractLabel(unit: Unit) {
   return 'Shartnoma ma’lumotlari kiritilmagan'
 }
 
-const auth = useAuthStore()
 const applyOpen = ref(false)
 
 /** Bo‘sh unitga ariza yuborish, rolga qarab yo‘naltiradi */
@@ -228,7 +238,10 @@ function goApply() {
           <span class="grid size-14 place-items-center rounded-full bg-warn-50 text-warn-600">
             <UiIcon name="warning" :size="26" />
           </span>
-          <p class="text-[15px] font-bold text-ink-900">Bunday obyekt reyestrda yo‘q</p>
+          <p class="text-[15px] font-bold text-ink-900">Obyekt mavjud emas</p>
+          <p class="max-w-sm text-[13px] leading-relaxed text-ink-500">
+            Havola eskirgan yoki obyekt sizga biriktirilmagan bo‘lishi mumkin.
+          </p>
           <UiButton to="/objects">
             <UiIcon name="chevronLeft" :size="16" />
             Obyektlar reyestri
@@ -537,19 +550,19 @@ function goApply() {
                   {{ currentUnit.usage }} · {{ currentUnit.rooms }} xona · {{ currentUnit.offer }}
                 </dd>
               </div>
-              <div class="flex items-start gap-4 py-2.5">
+              <div v-if="showFinance" class="flex items-start gap-4 py-2.5">
                 <dt class="w-[112px] shrink-0 text-[12.5px] text-ink-500">Ijarachi</dt>
                 <dd class="min-w-0 flex-1 text-[13px] font-semibold text-ink-900">
                   {{ currentUnit.tenant ?? '-' }}
                 </dd>
               </div>
-              <div class="flex items-start gap-4 py-2.5">
+              <div v-if="showFinance" class="flex items-start gap-4 py-2.5">
                 <dt class="w-[112px] shrink-0 text-[12.5px] text-ink-500">Narxi</dt>
                 <dd class="tabular min-w-0 flex-1 text-[13px] font-bold text-brand-600">
                   {{ num(currentUnit.price) }} {{ currentUnit.priceUnit }}
                 </dd>
               </div>
-              <div class="flex items-start gap-4 py-2.5">
+              <div v-if="showFinance" class="flex items-start gap-4 py-2.5">
                 <dt class="w-[112px] shrink-0 text-[12.5px] text-ink-500">Shartnoma</dt>
                 <dd class="min-w-0 flex-1 text-[13px] font-semibold text-ink-800">
                   {{ contractLabel(currentUnit) }}

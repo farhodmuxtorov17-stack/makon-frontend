@@ -1,27 +1,19 @@
 <script setup lang="ts">
+import { useStorage } from '@vueuse/core'
 import { buildingBySlug } from '~/data/buildings'
 import { unitsOfBuilding, type Unit } from '~/data/units'
-import { UNIT_STATUS } from '~/constants/statuses'
+import { UNIT_STATUS, UNIT_STATUS_COLOR } from '~/constants/statuses'
 import { num, sum, area } from '~/utils/format'
 
 definePageMeta({ layout: 'public' })
 
-const STATUS_COLOR: Record<string, string> = {
-  VACANT: '#16B99A',
-  RESERVED: '#FAA53F',
-  RENTED: '#0256F7',
-  SOLD: '#916CEC',
-  MAINTENANCE: '#F84448',
-  DRAFT: '#94A2B8',
-}
+/** Rang ham, nom ham status registridan: legenda va reja bir xil gapiradi */
+const STATUS_COLOR = UNIT_STATUS_COLOR
 
-const LEGEND = [
-  { label: 'Bo‘sh', color: STATUS_COLOR.VACANT },
-  { label: 'Ijarada', color: STATUS_COLOR.RENTED },
-  { label: 'Bron', color: STATUS_COLOR.RESERVED },
-  { label: 'Sotilgan', color: STATUS_COLOR.SOLD },
-  { label: 'Ta’mirda', color: STATUS_COLOR.MAINTENANCE },
-]
+const LEGEND = (['VACANT', 'RENTED', 'RESERVED', 'SOLD', 'MAINTENANCE'] as const).map((key) => ({
+  label: UNIT_STATUS[key]!.label,
+  color: STATUS_COLOR[key],
+}))
 
 const VIEW_LABELS = ['Bosh fasad', 'Yon ko‘rinish', 'Kirish va atrof', 'Umumiy ko‘rinish']
 
@@ -43,7 +35,8 @@ const mainView = ref(0)
 const lightboxOpen = ref(false)
 const offerOpen = ref(false)
 const viewOpen = ref(false)
-const favourites = ref<string[]>([])
+/** Sevimlilar sarlavhadagi nishoncha va katalog ro‘yxati bilan bitta xotirada */
+const favourites = useStorage<string[]>('makon.favourites', [])
 
 const photos = computed(() =>
   (building.value?.gallery ?? []).map((name, i) => ({
@@ -223,7 +216,7 @@ const readiness = computed(() => {
   if (!u) return ''
   if (u.status === 'VACANT') return 'Foydalanishga tayyor'
   if (u.status === 'MAINTENANCE') return 'Ta’mirlash ishlari olib borilmoqda'
-  if (u.status === 'RESERVED') return 'Bron qilingan, ariza ko‘rikda'
+  if (u.status === 'RESERVED') return 'Rezervda, ariza ko‘rikda'
   return 'Band: hozircha mavjud emas'
 })
 
@@ -578,7 +571,7 @@ function goToOffer() {
                           font-size="3.2"
                           :fill="STATUS_COLOR[u.status] ?? '#64748B'"
                         >
-                          {{ u.status === 'VACANT' ? 'Bo‘sh' : 'Band' }}
+                          {{ UNIT_STATUS[u.status]?.label ?? u.status }}
                         </text>
                       </g>
                     </svg>

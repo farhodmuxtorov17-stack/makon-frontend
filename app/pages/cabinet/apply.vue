@@ -14,7 +14,7 @@ const vacantUnits = computed(() => UNITS.filter((u) => u.status === 'VACANT'))
 const unitOptions = computed(() =>
   vacantUnits.value.map((u) => ({
     value: u.id,
-    label: `${buildingById(u.buildingId)?.name ?? ''} · Unit ${u.code} · ${num(u.area, 1)} m²`,
+    label: `${buildingById(u.buildingId)?.name ?? ''} · Unit ${u.code} · ${area(u.area)}`,
   })),
 )
 
@@ -45,14 +45,22 @@ onMounted(() => {
   const found = vacantUnits.value.find((u) => u.id === requested)
   form.unitId = found?.id ?? ''
   form.startDate = firstOfNextMonth()
-  if (found) form.price = String(found.price)
+  if (found) form.price = String(monthlyPrice(found))
 })
+
+/**
+ * Ayrim unitlar m² narxi bilan e’lon qilinadi, taklif narxi maydoni esa oylik
+ * summani kutadi. Shuning uchun m² narxi unit maydoniga ko‘paytiriladi.
+ */
+function monthlyPrice(u: { price: number; area: number; priceUnit: string }) {
+  return u.priceUnit === 'so‘m / m²' ? Math.round(u.price * u.area) : u.price
+}
 
 watch(
   () => form.unitId,
   (id) => {
     const u = vacantUnits.value.find((x) => x.id === id)
-    if (u) form.price = String(u.price)
+    if (u) form.price = String(monthlyPrice(u))
   },
 )
 

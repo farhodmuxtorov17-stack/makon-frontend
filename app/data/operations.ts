@@ -536,8 +536,8 @@ export const NOTIFICATIONS: AppNotification[] = [
   },
   {
     id: 'n-04',
-    title: 'Shartnoma tasdiqlashda',
-    body: 'MKON-2025-0155 shartnomasi tasdiqlash uchun yuborildi va javob kutmoqda.',
+    title: 'Shartnoma Didox’da imzolanmoqda',
+    body: 'MKON-2025-0155 shartnomasi Didox tizimiga yuborildi, imzo kutilmoqda.',
     category: 'Hujjatlar',
     at: 'Kecha 14:22',
     read: true,

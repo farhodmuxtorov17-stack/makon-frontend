@@ -186,18 +186,27 @@
   --color-ok-500: #16b99a;
   --color-ok-600: #01a573;
   --color-ok-700: #04835d;
+  /* Nishoncha matni uchun: ok-50 fonida 6.35:1 */
+  --color-ok-800: #08684c;
 
   --color-warn-50: #fff8ec;
   --color-warn-100: #ffefd0;
   --color-warn-500: #faa53f;
   --color-warn-600: #e8871a;
   --color-warn-700: #bd6512;
+  /* Nishoncha matni uchun: warn-50 fonida 6.49:1 */
+  --color-warn-800: #8a4a0d;
 
   --color-danger-50: #fff1f1;
   --color-danger-100: #ffe0e1;
+  /* Xato halqasi uchun: oq fonda 3.05:1, WCAG 1.4.11 chegarasidan yuqori */
+  --color-danger-400: #fa5f63;
   --color-danger-500: #f84448;
   --color-danger-600: #e11d24;
   --color-danger-700: #bd131a;
+  /* Qizil tugmaning hover va active pog‘onalari: oq matn bilan 8.42:1 va 10.83:1 */
+  --color-danger-800: #9c0f16;
+  --color-danger-900: #7d0d14;
 
   --color-info-50: #f3efff;
   --color-info-100: #e9e2ff;

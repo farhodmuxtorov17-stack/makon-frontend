@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { buildingById } from '~/data/buildings'
 import { unitById } from '~/data/units'
-import { dateShort, num } from '~/utils/format'
+import { dateShort, num, todayIso } from '~/utils/format'
 
 const myUnit = unitById('u-501')!
 const myBuilding = buildingById(myUnit.buildingId)!
@@ -162,7 +162,7 @@ function saveReading() {
   const used = Math.round((value - m.lastReading) * 100) / 100
   m.previousReading = m.lastReading
   m.lastReading = value
-  m.readAt = '2025-05-18'
+  m.readAt = todayIso()
   const nextLabel = NEXT_MONTHS[Math.max(m.labels.length - 5, 0)] ?? 'Keyingi davr'
   m.labels = [...m.labels, nextLabel]
   m.history = [...m.history, used]
@@ -190,7 +190,7 @@ function saveReading() {
     </template>
   </AppTopbar>
 
-  <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-6">
+  <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-4 sm:p-6">
     <div
       v-if="savedMessage"
       class="flex items-center gap-3 rounded-card bg-ok-50 px-5 py-3.5 ring-1 ring-ok-100"
@@ -321,7 +321,7 @@ function saveReading() {
           <span class="flex items-center justify-end">
             <button
               type="button"
-              class="grid size-9 place-items-center rounded-field text-brand-600 transition-colors hover:bg-brand-50"
+              class="grid size-11 place-items-center rounded-field text-brand-600 transition-colors hover:bg-brand-50 md:size-9"
               :aria-label="`${row.code}, ko‘rsatkich kiritish`"
               @click.stop="openEntry(String(row.id))"
             >

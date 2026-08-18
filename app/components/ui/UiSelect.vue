@@ -18,9 +18,19 @@ defineOptions({ inheritAttrs: false })
 
 const attrs = useAttrs()
 const wrapAttrs = computed(() => ({ class: attrs.class, style: attrs.style }))
+
+// UiField ichida bo‘lsa, yorliq va xato matni bilan bog‘lanish shu yerdan
+// keladi; tashqaridan berilgan id yoki aria-describedby ustun turadi.
+const field = useFieldContext()
+
 const fieldAttrs = computed(() => {
   const { class: _c, style: _s, ...rest } = attrs
-  return rest
+  return {
+    ...rest,
+    id: (rest.id as string | undefined) ?? field?.id.value,
+    'aria-describedby':
+      (rest['aria-describedby'] as string | undefined) ?? field?.describedBy.value,
+  }
 })
 </script>
 
@@ -33,7 +43,7 @@ const fieldAttrs = computed(() => {
       :aria-invalid="invalid || undefined"
       class="w-full appearance-none rounded-field bg-white pl-3.5 pr-9 text-sm text-ink-800 ring-1 ring-inset transition-colors focus:ring-2 focus:ring-brand-500 disabled:bg-ink-50 disabled:text-ink-400"
       :class="[
-        invalid ? 'ring-danger-400' : 'ring-ink-200 hover:ring-ink-300',
+        invalid ? 'ring-danger-500' : 'ring-ink-200 hover:ring-ink-300',
         size === 'sm' ? 'h-11 md:h-9' : 'h-11',
       ]"
     >

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { CONTACT } from '~/constants/contacts'
 import { LEASE_STATUS } from '~/constants/statuses'
 import { area, dateShort, sum, timeOf } from '~/utils/format'
 
@@ -73,9 +74,9 @@ const statusLabel = computed(() =>
 const registerPath = computed(() => `/auth/register?ariza=${code.value}`)
 
 const CONTACTS = [
-  { icon: 'phone', label: 'Ijara bo‘limi', value: '+998 78 150 00 00', href: 'tel:+998781500000' },
-  { icon: 'send', label: 'E-pochta', value: 'info@makon.uz', href: 'mailto:info@makon.uz' },
-  { icon: 'clock', label: 'Ish vaqti', value: 'Dushanba – shanba, 09:00 – 19:00', href: '' },
+  { icon: 'phone', label: 'Ijara bo‘limi', value: CONTACT.phone, href: CONTACT.phoneHref },
+  { icon: 'send', label: 'E-pochta', value: CONTACT.email, href: CONTACT.emailHref },
+  { icon: 'clock', label: 'Ish vaqti', value: CONTACT.hours, href: '' },
 ]
 </script>
 

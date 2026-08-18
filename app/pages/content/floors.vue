@@ -1,22 +1,8 @@
 <script setup lang="ts">
 import { BUILDINGS } from '~/data/buildings'
-import { UNITS } from '~/data/units'
+import { UNITS, type Unit, type UnitOffer, type UnitUsage } from '~/data/units'
 import { UNIT_STATUS } from '~/constants/statuses'
 import { area, percent } from '~/utils/format'
-
-type PlanUnit = {
-  id: string
-  code: string
-  buildingId: string
-  floor: number
-  rooms: number
-  area: number
-  usage: string
-  offer: string
-  status: string
-  equipment: string[]
-  polygon: number[][]
-}
 
 const auth = useAuthStore()
 const route = useRoute()
@@ -63,27 +49,16 @@ const EQUIPMENT_LIBRARY = [
   'Yuk platformasi',
 ]
 
-function toPlanUnit(u: (typeof UNITS)[number]): PlanUnit {
-  return {
-    id: u.id,
-    code: u.code,
-    buildingId: u.buildingId,
-    floor: u.floor,
-    rooms: u.rooms,
-    area: u.area,
-    usage: u.usage,
-    offer: u.offer,
-    status: u.status,
-    equipment: [...u.equipment],
-    polygon: u.polygon.map((p) => [...p]),
-  }
-}
-
-function clone(u: PlanUnit): PlanUnit {
+function clone(u: Unit): Unit {
   return { ...u, equipment: [...u.equipment], polygon: u.polygon.map((p) => [...p]) }
 }
 
-const units = ref<PlanUnit[]>(UNITS.filter((u) => auth.inScope(u.buildingId)).map(toPlanUnit))
+/**
+ * Reja umumiy unit reyestri ustida ishlaydi, nusxasi ustida emas: chizilgan
+ * poligon va kiritilgan atribut obyekt sahifasida, katalogda va 3D
+ * ko‘rinishda darhol paydo bo‘ladi hamda sahifa almashganda saqlanib qoladi.
+ */
+const units = computed(() => UNITS.filter((u) => auth.inScope(u.buildingId)))
 
 function levelsOf(id: string) {
   const b = BUILDINGS.find((x) => x.id === id)
@@ -98,11 +73,11 @@ function floorName(value: number) {
   return value === 0 ? 'Yer osti · texnik qavat' : `${value}-qavat`
 }
 
-function attrsReady(u: PlanUnit) {
+function attrsReady(u: Unit) {
   return Boolean(u.usage) && u.area > 0 && Boolean(u.status) && u.equipment.length > 0
 }
 
-function planReady(u: PlanUnit) {
+function planReady(u: Unit) {
   return u.polygon.length >= 3
 }
 
@@ -133,7 +108,7 @@ const notice = ref('')
 const formError = ref('')
 const equipInput = ref('')
 const seq = ref(0)
-const history = ref<PlanUnit[][]>([])
+const history = ref<Unit[][]>([])
 
 const building = computed(() => scoped.value.find((b) => b.id === buildingId.value))
 const levels = computed(() => levelsOf(buildingId.value))
@@ -142,7 +117,7 @@ const floorUnits = computed(() =>
   units.value.filter((u) => u.buildingId === buildingId.value && u.floor === floor.value),
 )
 
-const selected = computed<PlanUnit | undefined>(
+const selected = computed<Unit | undefined>(
   () => floorUnits.value.find((u) => u.id === selectedId.value) ?? floorUnits.value[0],
 )
 
@@ -308,6 +283,17 @@ function nextCode() {
   return code
 }
 
+/** Reyestrda takrorlanmaydigan identifikator: yozuvlar sahifalar orasida saqlanadi */
+function nextId() {
+  seq.value += 1
+  let id = `pl-${buildingId.value}-${floor.value}-${seq.value}`
+  while (UNITS.some((u) => u.id === id)) {
+    seq.value += 1
+    id = `pl-${buildingId.value}-${floor.value}-${seq.value}`
+  }
+  return id
+}
+
 function rect(x: number, y: number, w: number, h: number): number[][] {
   return [
     [x, y],
@@ -318,13 +304,13 @@ function rect(x: number, y: number, w: number, h: number): number[][] {
 }
 
 function addPolygon() {
+  if (!canEdit.value) return
   const n = floorUnits.value.length
   const col = n % 4
   const row = Math.floor(n / 4) % 3
   pushHistory()
-  seq.value += 1
-  const unit: PlanUnit = {
-    id: `pl-${buildingId.value}-${floor.value}-${seq.value}`,
+  const unit: Unit = {
+    id: nextId(),
     code: nextCode(),
     buildingId: buildingId.value,
     floor: floor.value,
@@ -333,46 +319,60 @@ function addPolygon() {
     usage: '',
     offer: '',
     status: 'DRAFT',
+    price: 0,
+    priceUnit: 'so‘m / oy',
     equipment: [],
     polygon: rect(0.06 + col * 0.23, 0.08 + row * 0.3, 0.18, 0.22),
   }
-  units.value.push(unit)
+  UNITS.push(unit)
   selectedId.value = unit.id
   notice.value = `Yangi poligon qo‘shildi, «${unit.code}». Atributlarni to‘ldiring.`
 }
 
 function copyPolygon() {
   const source = selected.value
-  if (!source) return
+  if (!canEdit.value || !source) return
   pushHistory()
-  seq.value += 1
   const shift = (v: number) => Math.min(0.95, Math.round((v + 0.04) * 1000) / 1000)
-  const copy: PlanUnit = {
+  const copy: Unit = {
     ...clone(source),
-    id: `pl-${buildingId.value}-${floor.value}-${seq.value}`,
+    id: nextId(),
     code: nextCode(),
     status: 'DRAFT',
+    tenant: undefined,
+    contractCode: undefined,
     polygon: source.polygon.map((p) => [shift(p[0] ?? 0), shift(p[1] ?? 0)]),
   }
-  units.value.push(copy)
+  UNITS.push(copy)
   selectedId.value = copy.id
   notice.value = `«${source.code}» poligoni «${copy.code}» sifatida nusxalandi.`
 }
 
 function removePolygon() {
   const target = selected.value
-  if (!target) return
+  if (!canEdit.value || !target) return
   pushHistory()
   const code = target.code
-  units.value = units.value.filter((u) => u.id !== target.id)
+  const index = UNITS.findIndex((u) => u.id === target.id)
+  if (index >= 0) UNITS.splice(index, 1)
   selectedId.value = ''
   notice.value = `«${code}» poligoni rejadan o‘chirildi.`
 }
 
+/** Oldingi holatni umumiy reyestrga qaytaradi: qo‘shilgani olib tashlanadi, o‘chirilgani tiklanadi */
 function undo() {
   const previous = history.value.pop()
   if (!previous) return
-  units.value = previous
+  const keep = new Set(previous.map((u) => u.id))
+  for (let i = UNITS.length - 1; i >= 0; i -= 1) {
+    const u = UNITS[i]!
+    if (auth.inScope(u.buildingId) && !keep.has(u.id)) UNITS.splice(i, 1)
+  }
+  for (const snapshot of previous) {
+    const live = UNITS.find((u) => u.id === snapshot.id)
+    if (live) Object.assign(live, clone(snapshot))
+    else UNITS.push(clone(snapshot))
+  }
   selectedId.value = ''
   notice.value = 'Oxirgi o‘zgarish bekor qilindi.'
 }
@@ -393,7 +393,7 @@ function removeEquipment(name: string) {
 
 function saveUnit() {
   const target = selected.value
-  if (!target) return
+  if (!canEdit.value || !target) return
 
   const code = form.code.trim()
   const areaValue = Number(form.area)
@@ -414,9 +414,10 @@ function saveUnit() {
   target.floor = Number.isFinite(nextFloor) ? nextFloor : target.floor
   target.rooms = Number.isFinite(roomsValue) ? Math.max(0, Math.round(roomsValue)) : 0
   target.area = Math.round(areaValue * 100) / 100
-  target.usage = form.usage
-  target.offer = form.offer
-  target.status = form.status || 'DRAFT'
+  // Qiymatlar tanlov ro‘yxatlaridan keladi, shuning uchun tur aniqlashtiriladi
+  target.usage = form.usage as UnitUsage
+  target.offer = form.offer as UnitOffer
+  target.status = (form.status || 'DRAFT') as Unit['status']
   target.equipment = [...equipment.value]
 
   formError.value = ''
@@ -436,7 +437,7 @@ const columns = [
   { key: 'attrs', label: 'Atributlar', width: '150px' },
 ]
 
-function selectRow(row: PlanUnit) {
+function selectRow(row: Unit) {
   selectedId.value = row.id
 }
 </script>
@@ -463,7 +464,7 @@ function selectRow(row: PlanUnit) {
     </template>
   </AppTopbar>
 
-  <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-4 lg:p-6">
+  <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-4 sm:p-6">
     <div
       v-if="notice"
       class="flex items-start gap-3 rounded-card bg-ok-50 px-4 py-3.5 ring-1 ring-inset ring-ok-100"
@@ -867,7 +868,7 @@ function selectRow(row: PlanUnit) {
                   {{ e }}
                   <button
                     type="button"
-                    class="grid size-5 place-items-center rounded-full text-ink-500 transition-colors hover:bg-ink-300 hover:text-ink-900"
+                    class="relative grid size-5 place-items-center rounded-full text-ink-500 transition-colors after:absolute after:-inset-3 after:content-[''] hover:bg-ink-300 hover:text-ink-900 md:after:hidden"
                     :aria-label="`${e} jihozini olib tashlash`"
                     @click="removeEquipment(e)"
                   >

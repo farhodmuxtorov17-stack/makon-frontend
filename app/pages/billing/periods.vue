@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import AppTopbar from '~/components/layout/AppTopbar.vue'
-import { BILLING_SUMMARY } from '~/data/business'
+import { billingSummaryOf } from '~/data/business'
 import { TONE_BADGE } from '~/constants/statuses'
 import { num, percent, sum, sumShort } from '~/utils/format'
 
@@ -19,7 +19,7 @@ const periods = ref<Period[]>([
   { id: 'p-2025-02', year: 2025, month: 'Fevral', contracts: 121, invoices: 121, total: 121750000, closed: true },
   { id: 'p-2025-03', year: 2025, month: 'Mart', contracts: 124, invoices: 124, total: 124900000, closed: true },
   { id: 'p-2025-04', year: 2025, month: 'Aprel', contracts: 126, invoices: 126, total: 126300000, closed: true },
-  { id: 'p-2025-05', year: 2025, month: 'May', contracts: 128, invoices: 128, total: BILLING_SUMMARY.charged, closed: false },
+  { id: 'p-2025-05', year: 2025, month: 'May', contracts: 128, invoices: 128, total: billingSummaryOf().charged, closed: false },
   { id: 'p-2025-06', year: 2025, month: 'Iyun', contracts: 129, invoices: 0, total: 0, closed: false },
 ])
 
@@ -56,7 +56,7 @@ const filtered = computed(() =>
 const columns = [
   { key: 'label', label: 'Davr' },
   { key: 'contracts', label: 'Shartnomalar soni', align: 'right' as const, numeric: true },
-  { key: 'invoices', label: 'Invoice soni', align: 'right' as const, numeric: true },
+  { key: 'invoices', label: 'Hisob-faktura soni', align: 'right' as const, numeric: true },
   { key: 'total', label: 'Jami summa', align: 'right' as const, numeric: true },
   { key: 'state', label: 'Holat' },
   { key: 'actions', label: 'Amallar', align: 'right' as const },
@@ -165,9 +165,9 @@ function createPeriod() {
 
 <template>
   <AppTopbar
-    title="Hisob davrlari"
-    subtitle="Billing davrlari va invoice generatsiyasi"
-    :breadcrumb="[{ label: 'Billing' }, { label: 'Hisob davrlari' }]"
+    title="Hisob-kitob davrlari"
+    subtitle="Hisob-kitob davrlari va hisob-faktura shakllantirish"
+    :breadcrumb="[{ label: 'Billing' }, { label: 'Hisob-kitob davrlari' }]"
   >
     <template #actions>
       <UiButton variant="secondary" size="sm" to="/billing/invoices">
@@ -181,7 +181,7 @@ function createPeriod() {
     </template>
   </AppTopbar>
 
-  <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-6">
+  <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-4 sm:p-6">
     <div
       v-if="banner"
       class="flex items-center gap-3 rounded-card bg-ok-50 px-4 py-3 ring-1 ring-ok-100"
@@ -264,7 +264,7 @@ function createPeriod() {
               @click.stop="askGenerate(String(row.id))"
             >
               <UiIcon name="refresh" :size="15" />
-              Invoice generatsiya qilish
+              Hisob-faktura shakllantirish
             </UiButton>
             <UiButton
               variant="subtle"
@@ -299,7 +299,7 @@ function createPeriod() {
     <UiModal
       v-model="confirmOpen"
       size="sm"
-      :title="confirmMode === 'generate' ? 'Invoice generatsiya qilish' : 'Davrni yopish'"
+      :title="confirmMode === 'generate' ? 'Hisob-faktura shakllantirish' : 'Davrni yopish'"
       :subtitle="target ? `${target.month} ${target.year} hisob davri` : ''"
     >
       <div v-if="target" class="space-y-4">
@@ -322,7 +322,7 @@ function createPeriod() {
             </dd>
           </div>
           <div class="flex items-baseline justify-between gap-4 py-2.5">
-            <dt class="text-[13px] text-ink-500">Joriy invoice soni</dt>
+            <dt class="text-[13px] text-ink-500">Joriy hisob-faktura soni</dt>
             <dd class="tabular text-[13.5px] font-semibold text-ink-900">
               {{ num(target.invoices) }} ta
             </dd>

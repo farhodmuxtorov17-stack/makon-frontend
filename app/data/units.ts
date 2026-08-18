@@ -1,3 +1,8 @@
+import { reactive } from 'vue'
+
+export type UnitUsage = 'Ofis' | 'Savdo' | 'Ombor' | 'Turar joy' | 'Texnik zona'
+export type UnitOffer = 'Ijara' | 'Sotuv' | 'Ikkalasi'
+
 export interface Unit {
   id: string
   code: string
@@ -5,9 +10,10 @@ export interface Unit {
   floor: number
   rooms: number
   area: number
-  usage: 'Ofis' | 'Savdo' | 'Ombor' | 'Turar joy' | 'Texnik zona'
-  offer: 'Ijara' | 'Sotuv' | 'Ikkalasi'
-  status: 'VACANT' | 'RESERVED' | 'RENTED' | 'SOLD' | 'MAINTENANCE' | 'DRAFT'
+  /** Yangi chizilgan poligonda hali kiritilmagan bo‘lishi mumkin */
+  usage: UnitUsage | ''
+  offer: UnitOffer | ''
+  status: 'VACANT' | 'RESERVED' | 'RENTED' | 'SOLD' | 'MAINTENANCE' | 'DRAFT' | 'HIDDEN'
   /** Ijara: so‘m/oy, sotuv: so‘m/m² */
   price: number
   priceUnit: 'so‘m / oy' | 'so‘m / m²'
@@ -25,7 +31,7 @@ const P = (x: number, y: number, w: number, h: number) => [
   [x, y + h],
 ]
 
-export const UNITS: Unit[] = [
+export const UNITS: Unit[] = reactive([
   // --- Green Business Center, 7-qavat ---
   {
     id: 'u-701',
@@ -6356,7 +6362,7 @@ export const UNITS: Unit[] = [
     equipment: ['Balkon', 'Konditsioner', 'Kirish domofoni'],
     polygon: P(0.735, 0.58, 0.22, 0.36),
   },
-]
+])
 
 export function unitsOfBuilding(buildingId: string) {
   return UNITS.filter((u) => u.buildingId === buildingId)
@@ -6370,4 +6376,11 @@ export function unitById(id: string) {
   return UNITS.find((u) => u.id === id)
 }
 
-export const VACANT_UNITS = UNITS.filter((u) => u.status === 'VACANT')
+/**
+ * Bo‘sh unitlar ro‘yxati har chaqiruvda reyestrdan yig‘iladi: shartnoma
+ * faollashtirilib unit band bo‘lganda u ommaviy katalogdan ham, bosh
+ * sahifadagi taklif ro‘yxatidan ham darhol chiqib ketadi.
+ */
+export function vacantUnits() {
+  return UNITS.filter((u) => u.status === 'VACANT')
+}

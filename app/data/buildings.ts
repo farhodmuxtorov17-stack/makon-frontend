@@ -1,3 +1,5 @@
+import { reactive } from 'vue'
+
 export interface Building {
   id: string
   code: string
@@ -37,7 +39,7 @@ export interface Building {
   equipment: string[]
 }
 
-export const BUILDINGS: Building[] = [
+export const BUILDINGS: Building[] = reactive([
   {
     id: 'b-01',
     code: 'BIN-0001',
@@ -211,7 +213,7 @@ export const BUILDINGS: Building[] = [
     occupiedUnits: 77,
     vacantUnits: 19,
     gla: 51900,
-    vacantArea: 8256,
+    vacantArea: 10380,
     occupancy: 80,
     monthlyRevenue: 2110000000,
     debt: 25700000,
@@ -896,7 +898,7 @@ export const BUILDINGS: Building[] = [
     ],
     equipment: ['Lift (4)', 'Generator', 'Yong‘in signalizatsiyasi', 'Suv nasosi', 'CCTV'],
   },
-]
+])
 
 const sumBy = (pick: (b: Building) => number) => BUILDINGS.reduce((s, b) => s + pick(b), 0)
 
@@ -906,22 +908,79 @@ function glaWeighted(pick: (b: Building) => number) {
   return gla ? Math.round(sumBy((b) => pick(b) * b.gla) / gla) : 0
 }
 
+export interface PortfolioTotals {
+  buildings: number
+  gla: number
+  vacantArea: number
+  revenue: number
+  debt: number
+  units: number
+  occupiedUnits: number
+  vacantUnits: number
+  serviceRequests: number
+  occupancy: number
+  sla: number
+}
+
 /**
  * Portfel ko‘rsatkichlari reyestrdan hisoblanadi, shuning uchun yangi obyekt
- * qo‘shilganda barcha sahifadagi jamlar avtomatik to‘g‘ri qoladi.
+ * qo‘shilganda ham, shartnoma faollashtirilib bino statistikasi qayta
+ * hisoblanganda ham barcha sahifadagi jamlar avtomatik to‘g‘ri qoladi.
  */
-export const PORTFOLIO_TOTALS = {
-  buildings: BUILDINGS.length,
-  gla: sumBy((b) => b.gla),
-  vacantArea: sumBy((b) => b.vacantArea),
-  revenue: sumBy((b) => b.monthlyRevenue),
-  debt: sumBy((b) => b.debt),
-  units: sumBy((b) => b.units),
-  occupiedUnits: sumBy((b) => b.occupiedUnits),
-  vacantUnits: sumBy((b) => b.vacantUnits),
-  serviceRequests: sumBy((b) => b.serviceRequests),
-  occupancy: glaWeighted((b) => b.occupancy),
-  sla: glaWeighted((b) => b.sla),
+export function portfolioTotals(): PortfolioTotals {
+  return {
+    buildings: BUILDINGS.length,
+    gla: sumBy((b) => b.gla),
+    vacantArea: sumBy((b) => b.vacantArea),
+    revenue: sumBy((b) => b.monthlyRevenue),
+    debt: sumBy((b) => b.debt),
+    units: sumBy((b) => b.units),
+    occupiedUnits: sumBy((b) => b.occupiedUnits),
+    vacantUnits: sumBy((b) => b.vacantUnits),
+    serviceRequests: sumBy((b) => b.serviceRequests),
+    occupancy: glaWeighted((b) => b.occupancy),
+    sla: glaWeighted((b) => b.sla),
+  }
+}
+
+/**
+ * Bir martalik suratga olish emas: har bir maydon o‘qilganda jamlar
+ * reyestrdan yangidan yig‘iladi.
+ */
+export const PORTFOLIO_TOTALS: PortfolioTotals = {
+  get buildings() {
+    return BUILDINGS.length
+  },
+  get gla() {
+    return sumBy((b) => b.gla)
+  },
+  get vacantArea() {
+    return sumBy((b) => b.vacantArea)
+  },
+  get revenue() {
+    return sumBy((b) => b.monthlyRevenue)
+  },
+  get debt() {
+    return sumBy((b) => b.debt)
+  },
+  get units() {
+    return sumBy((b) => b.units)
+  },
+  get occupiedUnits() {
+    return sumBy((b) => b.occupiedUnits)
+  },
+  get vacantUnits() {
+    return sumBy((b) => b.vacantUnits)
+  },
+  get serviceRequests() {
+    return sumBy((b) => b.serviceRequests)
+  },
+  get occupancy() {
+    return glaWeighted((b) => b.occupancy)
+  },
+  get sla() {
+    return glaWeighted((b) => b.sla)
+  },
 }
 
 export function buildingById(id: string) {
@@ -930,4 +989,92 @@ export function buildingById(id: string) {
 
 export function buildingBySlug(slug: string) {
   return BUILDINGS.find((b) => b.slug === slug)
+}
+
+// ---------------------------------------------------------------------------
+// Dinamika oynasi
+
+const TREND_MONTHS = [
+  'Yanvar',
+  'Fevral',
+  'Mart',
+  'Aprel',
+  'May',
+  'Iyun',
+  'Iyul',
+  'Avgust',
+  'Sentabr',
+  'Oktabr',
+  'Noyabr',
+  'Dekabr',
+]
+
+/** Reyestrdagi ko‘rsatkichlar shu oy holatiga tegishli */
+export const REPORT_PERIOD = { year: 2025, month: 4 }
+
+/** Grafik oynasi: har bir variant joriy hisobot oyida tugaydi */
+export const TREND_SPANS = [
+  { value: '3', label: 'So‘nggi 3 oy' },
+  { value: '6', label: 'So‘nggi 6 oy' },
+  { value: '12', label: 'So‘nggi 12 oy' },
+]
+
+/**
+ * Reyestr obyektlarning joriy holatini saqlaydi, oylik o‘lchov tarixi
+ * yuritilmaydi. Shuning uchun panellardagi dinamika grafiklari va mikro
+ * grafiklar joriy qiymatga bog‘langan trend indeksidan foydalanadi:
+ * indeksning oxirgi qadami doim 1, ya’ni grafikning oxirgi nuqtasi
+ * yonidagi KPI kartadagi qiymatning aynan o‘zi.
+ */
+export const TREND_INDEX = {
+  gla: [0.95, 0.957, 0.963, 0.968, 0.973, 0.978, 0.982, 0.986, 0.99, 0.993, 0.997, 1],
+  sla: [0.938, 0.948, 0.948, 0.958, 0.958, 0.969, 0.969, 0.979, 0.979, 0.99, 0.99, 1],
+  occupancy: [0.908, 0.92, 0.931, 0.931, 0.943, 0.954, 0.954, 0.966, 0.977, 0.977, 0.989, 1],
+  vacantArea: [1.35, 1.31, 1.27, 1.24, 1.2, 1.17, 1.13, 1.1, 1.07, 1.05, 1.02, 1],
+  revenue: [0.742, 0.768, 0.795, 0.818, 0.842, 0.869, 0.895, 0.909, 0.928, 0.941, 0.965, 1],
+  debt: [1.62, 1.556, 1.498, 1.447, 1.402, 1.363, 1.296, 1.243, 1.184, 1.112, 1.048, 1],
+  service: [1.42, 1.38, 1.34, 1.3, 1.27, 1.24, 1.19, 1.14, 1.11, 1.09, 1.05, 1],
+}
+
+export type TrendKey = keyof typeof TREND_INDEX
+
+/** Oyna oxiri joriy hisobot oyi bo‘ladigan oy nomlari */
+export function trendLabels(span: number): string[] {
+  return Array.from({ length: span }, (_, i) => {
+    const shifted = REPORT_PERIOD.month - (span - 1 - i)
+    const year = REPORT_PERIOD.year + Math.floor(shifted / 12)
+    const month = ((shifted % 12) + 12) % 12
+    return year === REPORT_PERIOD.year
+      ? TREND_MONTHS[month]!
+      : `${TREND_MONTHS[month]} ${String(year).slice(2)}`
+  })
+}
+
+/** Tanlangan oyna uchun indeks qadamlari */
+export function trendWindow(key: TrendKey, span: number): number[] {
+  return TREND_INDEX[key].slice(-span)
+}
+
+/** Joriy qiymatga bog‘langan grafik nuqtalari, oxirgisi qiymatning o‘zi */
+export function trendValues(key: TrendKey, value: number, span: number, digits = 2): number[] {
+  return trendWindow(key, span).map((f) => +(value * f).toFixed(digits))
+}
+
+/** Kartadagi mikro grafik: indeksning oxirgi besh qadami */
+export function trendSpark(key: TrendKey, value: number): number[] {
+  return trendValues(key, value, 5)
+}
+
+/** Oxirgi qadamdagi o‘zgarish, foizda: indeksning oxirgi qiymati doim 1 */
+export function trendDelta(key: TrendKey): number {
+  const list = TREND_INDEX[key]
+  const prev = list[list.length - 2] ?? 1
+  return +((1 / prev - 1) * 100).toFixed(1)
+}
+
+/** Grafik o‘lchov birligi KPI kartadagi «sumShort» bilan bir xil bo‘ladi */
+export function moneyScale(value: number) {
+  return Math.abs(value) >= 1_000_000_000
+    ? { div: 1_000_000_000, unit: 'mlrd so‘m', digits: 2 }
+    : { div: 1_000_000, unit: 'mln so‘m', digits: 1 }
 }

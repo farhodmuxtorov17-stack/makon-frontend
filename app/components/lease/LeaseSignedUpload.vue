@@ -127,7 +127,7 @@ async function copyHash() {
         class="flex w-full items-center gap-3.5 rounded-field border border-dashed px-4 py-5 text-left transition-colors duration-150"
         :class="
           error
-            ? 'border-danger-300 bg-danger-50 hover:border-danger-400'
+            ? 'border-danger-400 bg-danger-50 hover:border-danger-500'
             : 'border-ink-300 hover:border-brand-400 hover:bg-brand-50'
         "
         :disabled="busy"

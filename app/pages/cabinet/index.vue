@@ -1,25 +1,65 @@
 <script setup lang="ts">
 import { buildingById } from '~/data/buildings'
-import { unitById, unitsOfFloor } from '~/data/units'
+import { UNITS, unitById, unitsOfFloor, type Unit } from '~/data/units'
 import { CONTRACTS } from '~/data/business'
 import { SERVICE_REQUESTS, type ServiceRequest } from '~/data/operations'
+import { docxBlob, fileSize, saveBlob, type DocxLine } from '~/utils/docx'
 import { area, dateLong, dateShort, num, sum } from '~/utils/format'
 
 const auth = useAuthStore()
+const lease = useLeaseStore()
 
-const TODAY = '2025-05-18'
+lease.seed()
 
-const myUnits = [unitById('u-501')!, unitById('u-502')!]
-const myUnit = myUnits[0]!
-const myBuilding = buildingById(myUnit.buildingId)!
-const myContract = CONTRACTS.find((c) => c.code === myUnit.contractCode)!
-const floorUnits = unitsOfFloor(myUnit.buildingId, myUnit.floor)
+/** Sana haqiqiy soatdan olinadi, qotib qolgan qiymat emas */
+function toIso(d: Date) {
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${d.getFullYear()}-${m}-${day}`
+}
+
+function addDays(iso: string, days: number) {
+  const d = new Date(`${iso}T00:00:00`)
+  d.setDate(d.getDate() + days)
+  return toIso(d)
+}
+
+const TODAY = toIso(new Date())
 
 const firstName = computed(() => (auth.user?.fullName ?? 'Dilshod Ergashev').split(' ')[0])
 const fullName = computed(() => auth.user?.fullName ?? 'Dilshod Ergashev')
 const organization = computed(() => auth.user?.organization ?? 'Urban Office MCHJ')
 
-const MY_INVOICES = [
+const BASE_UNIT_IDS = ['u-501', 'u-502']
+
+/** Faollashtirilgan ijara sikllari shu tashkilot bo‘yicha */
+const myCases = computed(() => lease.activeCases.filter((c) => c.org.name === organization.value))
+
+const myUnits = computed<Unit[]>(() =>
+  [...new Set([...myCases.value.map((c) => c.unitId), ...BASE_UNIT_IDS])]
+    .map((id) => UNITS.find((u) => u.id === id))
+    .filter((u): u is Unit => Boolean(u)),
+)
+
+const myUnit = computed(() => myUnits.value[0] ?? unitById('u-501')!)
+const myBuilding = computed(() => buildingById(myUnit.value.buildingId)!)
+const floorUnits = computed(() => unitsOfFloor(myUnit.value.buildingId, myUnit.value.floor))
+
+const BASE_CONTRACT = CONTRACTS.find((c) => c.code === unitById('u-501')!.contractCode)!
+
+/** Yangi faollashgan shartnoma bo‘lsa, kabinet uni ko‘rsatadi */
+const myContract = computed(() => {
+  const doc = myCases.value[0]?.contract
+  if (!doc) return BASE_CONTRACT
+  return {
+    code: doc.code,
+    startsAt: doc.startsAt,
+    endsAt: doc.endsAt,
+    status: 'ACTIVE',
+  }
+})
+
+const BASE_INVOICES = [
   {
     id: 'i-0605',
     code: 'INV-2025-0605',
@@ -55,13 +95,36 @@ const MY_INVOICES = [
   },
 ]
 
-const currentInvoice = MY_INVOICES[0]!
-const overdueTotal = MY_INVOICES.filter((i) => i.status === 'OVERDUE').reduce(
-  (acc, i) => acc + (i.total - i.paid),
-  0,
+/** Faollashtirishda shakllangan hisob-fakturalar ro‘yxat boshida turadi */
+const MY_INVOICES = computed(() => [
+  ...myCases.value.flatMap((c) => {
+    const first = c.schedule.find((r) => r.kind === 'RENT')
+    if (!first || !c.activation) return []
+    return [
+      {
+        id: `i-${c.activation.invoiceCode.slice(-4)}`,
+        code: c.activation.invoiceCode,
+        unitCode: c.unitCode,
+        period: first.label,
+        issuedAt: c.activation.at.slice(0, 10),
+        dueAt: first.dueAt,
+        total: first.total,
+        paid: 0,
+        status: 'ISSUED',
+      },
+    ]
+  }),
+  ...BASE_INVOICES,
+])
+
+const currentInvoice = computed(() => MY_INVOICES.value[0]!)
+const overdueTotal = computed(() =>
+  MY_INVOICES.value
+    .filter((i) => i.status === 'OVERDUE')
+    .reduce((acc, i) => acc + (i.total - i.paid), 0),
 )
-const overdueCount = MY_INVOICES.filter((i) => i.status === 'OVERDUE').length
-const nextDueAt = currentInvoice.dueAt
+const overdueCount = computed(() => MY_INVOICES.value.filter((i) => i.status === 'OVERDUE').length)
+const nextDueAt = computed(() => currentInvoice.value.dueAt)
 
 const invoiceColumns = [
   { key: 'issuedAt', label: 'Sana' },
@@ -73,13 +136,13 @@ const invoiceColumns = [
 
 type CabinetRequest = ServiceRequest & { attachments?: string[] }
 
-const myUnitCodes = myUnits.map((u) => u.code)
+const myUnitCodes = computed(() => myUnits.value.map((u) => u.code))
 
 const requests = ref<CabinetRequest[]>(
   SERVICE_REQUESTS.filter(
     (r) =>
-      r.buildingName === myBuilding.name &&
-      (myUnitCodes.includes(r.unitCode) ||
+      r.buildingName === myBuilding.value.name &&
+      (myUnitCodes.value.includes(r.unitCode) ||
         r.requester === organization.value ||
         r.requester === fullName.value),
   ).map((r) => ({ ...r })),
@@ -89,7 +152,7 @@ const selectedRequest = ref<CabinetRequest | null>(null)
 const requestOpen = ref(false)
 const newRequestOpen = ref(false)
 const createdCode = ref('')
-const attachments = ref<string[]>([])
+const attachments = ref<File[]>([])
 
 const form = reactive({
   title: '',
@@ -128,9 +191,24 @@ function openRequest(r: CabinetRequest) {
   requestOpen.value = true
 }
 
-function addAttachment() {
-  attachments.value.push(`Unit-${myUnit.code}-rasm-${attachments.value.length + 1}.jpg`)
+const fileInput = ref<HTMLInputElement | null>(null)
+
+function pickAttachments() {
+  fileInput.value?.click()
+}
+
+/** Ro‘yxatdagi qisqa yo‘l: ariza oynasini ochadi va fayl tanlashni boshlaydi */
+function startRequestWithPhoto() {
   newRequestOpen.value = true
+  nextTick(() => pickAttachments())
+}
+
+function onFiles(event: Event) {
+  const target = event.target as HTMLInputElement
+  const picked = Array.from(target.files ?? [])
+  target.value = ''
+  if (picked.length === 0) return
+  attachments.value = [...attachments.value, ...picked]
 }
 
 function removeAttachment(index: number) {
@@ -150,18 +228,18 @@ function submitRequest() {
     code,
     title: form.title.trim(),
     category: form.category as ServiceRequest['category'],
-    buildingName: myBuilding.name,
-    unitCode: myUnit.code,
+    buildingName: myBuilding.value.name,
+    unitCode: myUnit.value.code,
     requester: organization.value,
     priority: form.priority as ServiceRequest['priority'],
     status: 'NEW',
     assignee: null,
-    createdAt: `${TODAY} 09:00`,
-    dueAt: '2025-05-25',
+    createdAt: `${TODAY} ${new Date().toTimeString().slice(0, 5)}`,
+    dueAt: addDays(TODAY, 7),
     slaBreached: false,
     description: form.description.trim() || 'Qo‘shimcha izoh ko‘rsatilmagan.',
     progress: 0,
-    attachments: [...attachments.value],
+    attachments: attachments.value.map((a) => a.name),
   })
   createdCode.value = code
   form.title = ''
@@ -170,21 +248,85 @@ function submitRequest() {
   newRequestOpen.value = false
 }
 
-const documents = [
-  { id: 'd-1', name: 'Ijara shartnomasi', code: myContract.code, size: '2.1 MB', at: '2025-04-02' },
-  { id: 'd-2', name: 'Hisob-faktura', code: currentInvoice.code, size: '208 KB', at: '2025-05-01' },
-  { id: 'd-3', name: 'To‘lov rekvizitlari', code: 'REK-2025-0044', size: '320 KB', at: '2025-01-15' },
-  { id: 'd-4', name: 'Bino ichki tartib-qoidalari', code: 'QDL-2025-0007', size: '640 KB', at: '2025-01-15' },
-]
+interface CabinetDoc {
+  id: string
+  name: string
+  code: string
+  at: string
+  summary: string
+}
+
+const documents = computed<CabinetDoc[]>(() => [
+  {
+    id: 'd-1',
+    name: 'Ijara shartnomasi',
+    code: myContract.value.code,
+    at: myContract.value.startsAt,
+    summary: `Unit ${myUnit.value.code} bo‘yicha ijara shartnomasi, amal qilish muddati ${dateShort(myContract.value.startsAt)} · ${dateShort(myContract.value.endsAt)}.`,
+  },
+  {
+    id: 'd-2',
+    name: 'Hisob-faktura',
+    code: currentInvoice.value.code,
+    at: currentInvoice.value.issuedAt,
+    summary: `${currentInvoice.value.period} davri uchun hisob-faktura, jami ${sum(currentInvoice.value.total)}.`,
+  },
+  {
+    id: 'd-3',
+    name: 'To‘lov rekvizitlari',
+    code: 'REK-2025-0044',
+    at: '2025-01-15',
+    summary: 'Bank rekvizitlari va to‘lov topshiriqnomasini to‘ldirish tartibi.',
+  },
+  {
+    id: 'd-4',
+    name: 'Bino ichki tartib-qoidalari',
+    code: 'QDL-2025-0007',
+    at: '2025-01-15',
+    summary: 'Ish vaqti, kirish tartibi va umumiy zonalardan foydalanish qoidalari.',
+  },
+])
 
 const docOpen = ref(false)
-const selectedDoc = ref<(typeof documents)[number] | null>(null)
-const docReady = ref(false)
+const selectedDoc = ref<CabinetDoc | null>(null)
+const savedDoc = ref('')
 
-function openDoc(d: (typeof documents)[number]) {
+function openDoc(d: CabinetDoc) {
   selectedDoc.value = d
-  docReady.value = false
+  savedDoc.value = ''
   docOpen.value = true
+}
+
+function docLines(d: CabinetDoc): DocxLine[] {
+  return [
+    { text: 'Makon Property Group', style: 'subtitle' },
+    { text: d.name, style: 'title' },
+    { text: `${d.code} · ${dateShort(d.at)}`, style: 'subtitle' },
+    { text: 'Rekvizitlar', style: 'heading' },
+    { text: `Ijarachi: ${organization.value}` },
+    { text: `Obyekt: ${myBuilding.value.name}` },
+    { text: `Unit: ${myUnit.value.code} · ${myUnit.value.floor}-qavat · ${area(myUnit.value.area)}` },
+    { text: `Shartnoma: ${myContract.value.code}` },
+    { text: 'Mazmuni', style: 'heading' },
+    { text: d.summary },
+    { text: 'Hujjat tizim arxivida saqlanadi.', style: 'small' },
+  ]
+}
+
+/** Brauzer saqlaydigan nusxa: nomi va haqiqiy hajmi */
+const docOutput = computed(() => {
+  const d = selectedDoc.value
+  if (!d) return null
+  const blob = docxBlob(docLines(d))
+  return { name: `${d.code}.docx`, size: fileSize(blob.size) }
+})
+
+function downloadDoc() {
+  const d = selectedDoc.value
+  if (!d) return
+  const fileName = `${d.code}.docx`
+  saveBlob(docxBlob(docLines(d)), fileName)
+  savedDoc.value = fileName
 }
 
 const meters = [
@@ -231,8 +373,8 @@ function planPoints(polygon: number[][]) {
 }
 
 const myPlanCenter = computed(() => {
-  const xs = myUnit.polygon.map((p) => p[0]!)
-  const ys = myUnit.polygon.map((p) => p[1]!)
+  const xs = myUnit.value.polygon.map((p) => p[0]!)
+  const ys = myUnit.value.polygon.map((p) => p[1]!)
   return {
     x: ((Math.min(...xs) + Math.max(...xs)) / 2) * 100,
     y: ((Math.min(...ys) + Math.max(...ys)) / 2) * 100 + 2,
@@ -254,7 +396,7 @@ const myPlanCenter = computed(() => {
     </template>
   </AppTopbar>
 
-  <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-6">
+  <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-4 sm:p-6">
     <div
       v-if="createdCode"
       class="flex items-center gap-3 rounded-card bg-ok-50 px-5 py-3.5 ring-1 ring-ok-100"
@@ -498,7 +640,7 @@ const myPlanCenter = computed(() => {
           <button
             type="button"
             class="flex h-11 min-w-[168px] flex-1 items-center gap-2.5 rounded-field border border-dashed border-ink-300 px-3.5 text-left transition-colors hover:border-brand-400 hover:bg-brand-50"
-            @click="addAttachment"
+            @click="startRequestWithPhoto"
           >
             <UiIcon name="image" :size="18" class="shrink-0 text-ink-400" />
             <span class="min-w-0">
@@ -528,13 +670,13 @@ const myPlanCenter = computed(() => {
             </span>
             <span class="min-w-0 flex-1">
               <span class="block truncate text-[13.5px] font-semibold text-ink-900">{{ d.name }}</span>
-              <span class="block truncate text-[12px] text-ink-500">
-                PDF · {{ d.size }} · {{ dateShort(d.at) }}
+              <span class="tabular block truncate text-[12px] text-ink-500">
+                {{ d.code }} · {{ dateShort(d.at) }}
               </span>
             </span>
             <button
               type="button"
-              class="grid size-9 shrink-0 place-items-center rounded-field text-brand-600 transition-colors hover:bg-brand-50"
+              class="grid size-11 shrink-0 place-items-center rounded-field text-brand-600 transition-colors hover:bg-brand-50 md:size-9"
               :aria-label="`${d.name}: yuklab olish`"
               @click="openDoc(d)"
             >
@@ -707,25 +849,37 @@ const myPlanCenter = computed(() => {
           <ul v-if="attachments.length" class="space-y-1.5">
             <li
               v-for="(a, i) in attachments"
-              :key="a"
+              :key="`${a.name}-${i}`"
               class="flex items-center gap-2.5 rounded-field px-3 py-2 ring-1 ring-ink-200"
             >
               <UiIcon name="image" :size="16" class="shrink-0 text-brand-600" />
-              <span class="min-w-0 flex-1 truncate text-[12.5px] text-ink-700">{{ a }}</span>
+              <span class="min-w-0 flex-1 truncate text-[12.5px] text-ink-700">
+                {{ a.name }}
+                <span class="tabular text-ink-500">· {{ fileSize(a.size) }}</span>
+              </span>
               <button
                 type="button"
-                class="grid size-9 shrink-0 place-items-center rounded-lg text-ink-400 md:size-7 transition-colors hover:bg-danger-50 hover:text-danger-600"
-                :aria-label="`${a}: biriktirmani olib tashlash`"
+                class="grid size-11 shrink-0 place-items-center rounded-lg text-ink-400 transition-colors hover:bg-danger-50 hover:text-danger-600 md:size-9"
+                :aria-label="`${a.name}: biriktirmani olib tashlash`"
                 @click="removeAttachment(i)"
               >
                 <UiIcon name="x" :size="14" />
               </button>
             </li>
           </ul>
+          <input
+            ref="fileInput"
+            type="file"
+            accept="image/*"
+            multiple
+            class="sr-only"
+            aria-label="Rasm fayllari"
+            @change="onFiles"
+          />
           <button
             type="button"
             class="flex w-full items-center gap-2.5 rounded-field border border-dashed border-ink-300 px-4 py-2.5 text-left transition-colors hover:border-brand-400 hover:bg-brand-50"
-            @click="addAttachment"
+            @click="pickAttachments"
           >
             <UiIcon name="image" :size="18" class="shrink-0 text-ink-400" />
             <span class="min-w-0">
@@ -751,36 +905,36 @@ const myPlanCenter = computed(() => {
   <UiModal
     v-model="docOpen"
     :title="selectedDoc?.name ?? 'Hujjat'"
-    :subtitle="selectedDoc ? `${selectedDoc.code} · PDF · ${selectedDoc.size}` : ''"
+    :subtitle="selectedDoc ? `${selectedDoc.code} · ${dateShort(selectedDoc.at)}` : ''"
     size="sm"
   >
     <div v-if="selectedDoc" class="space-y-4">
       <div class="flex items-center gap-3.5 rounded-field bg-surface-sunken p-4 ring-1 ring-ink-200">
-        <span class="grid size-12 shrink-0 place-items-center rounded-field bg-danger-50 text-danger-600">
+        <span class="grid size-12 shrink-0 place-items-center rounded-field bg-brand-50 text-brand-600">
           <UiIcon name="doc" :size="24" />
         </span>
         <span class="min-w-0">
           <span class="block truncate text-[13.5px] font-semibold text-ink-900">
-            {{ selectedDoc.name }}.pdf
+            {{ docOutput?.name }}
           </span>
           <span class="block text-[12px] text-ink-500">
-            Yuklangan sana: {{ dateShort(selectedDoc.at) }}
+            DOCX · {{ docOutput?.size }} · {{ dateShort(selectedDoc.at) }}
           </span>
         </span>
       </div>
 
-      <p v-if="!docReady" class="text-[13px] text-ink-600">
-        Hujjat nusxasi tayyorlanadi va brauzeringiz orqali saqlanadi.
+      <p v-if="!savedDoc" class="text-[13px] text-ink-600">
+        Hujjat nusxasi Word ko‘rinishida yig‘iladi va brauzeringiz orqali saqlanadi.
       </p>
-      <p v-else class="flex items-center gap-2 text-[13px] font-semibold text-ok-700">
-        <UiIcon name="check" :size="16" />
-        Hujjat yuklab olishga tayyor.
+      <p v-else class="flex items-start gap-2 text-[13px] font-semibold text-ok-700">
+        <UiIcon name="check" :size="16" class="mt-px shrink-0" />
+        <span class="min-w-0">{{ savedDoc }} fayli saqlandi.</span>
       </p>
     </div>
 
     <template #footer>
       <UiButton variant="ghost" @click="docOpen = false">Yopish</UiButton>
-      <UiButton :disabled="docReady" @click="docReady = true">
+      <UiButton @click="downloadDoc">
         <UiIcon name="download" :size="16" />
         Yuklab olish
       </UiButton>

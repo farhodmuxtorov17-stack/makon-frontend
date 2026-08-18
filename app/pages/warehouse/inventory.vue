@@ -40,7 +40,10 @@ const auth = useAuthStore()
 const CURRENT_DAY = '2025-05-18'
 const canWrite = computed(() => auth.can('warehouse.issue'))
 
-const stock = ref<StockItem[]>(STOCK_ITEMS.map((i) => ({ ...i })))
+/** Ombor mudiriga faqat biriktirilgan ombor ko‘rinadi */
+const stock = ref<StockItem[]>(
+  STOCK_ITEMS.filter((i) => auth.inWarehouseScope(i.warehouse)).map((i) => ({ ...i })),
+)
 const warehouses = computed(() => [...new Set(stock.value.map((i) => i.warehouse))])
 
 const OWNERS = [
@@ -137,7 +140,7 @@ const acts = ref<InventoryAct[]>([
     'Anvar Qodirov',
     [lineOf('w-07', 205)],
   ),
-])
+].filter((a) => auth.inWarehouseScope(a.warehouse)))
 
 const session = ref<Session | null>(null)
 const counted = ref<Record<string, string | number>>({})
@@ -146,7 +149,7 @@ const resultBanner = ref<InventoryAct | null>(null)
 
 const startOpen = ref(false)
 const startName = ref('')
-const startWarehouse = ref(STOCK_ITEMS[0]!.warehouse)
+const startWarehouse = ref(stock.value[0]?.warehouse ?? STOCK_ITEMS[0]!.warehouse)
 const startDate = ref(CURRENT_DAY)
 const startOwner = ref(OWNERS[0]!.value)
 const startError = ref('')
@@ -396,7 +399,7 @@ const actLineRows = computed(() =>
     </template>
   </AppTopbar>
 
-  <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-6">
+  <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-4 sm:p-6">
     <div
       v-if="resultBanner"
       class="flex flex-wrap items-center gap-3 rounded-card px-4 py-3.5 text-[13px] ring-1"

@@ -7,7 +7,13 @@ import {
   WORK_MATERIALS,
   type ServiceRequest,
 } from '~/data/operations'
+import { docxBlob, fileSize, saveBlob, type DocxLine } from '~/utils/docx'
 import { dateShort, sum } from '~/utils/format'
+
+const auth = useAuthStore()
+
+/** Ijro amallari faqat ijrochida: rahbar biriktiradi va kuzatadi */
+const canExecute = computed(() => auth.can('workorder.execute'))
 
 const requests = useState<ServiceRequest[]>('service-requests', () =>
   SERVICE_REQUESTS.map((r) => ({ ...r })),
@@ -74,6 +80,7 @@ const selectedChecks = computed(() =>
 const doneCount = computed(() => selectedChecks.value.filter(Boolean).length)
 
 function toggleCheck(index: number) {
+  if (!canExecute.value) return
   const id = selected.value?.id
   if (!id) return
   if (!checks.value[id]) checks.value[id] = WORK_CHECKLIST.map((c) => c.done)
@@ -94,31 +101,81 @@ const PRIORITY_STYLE: Record<string, { text: string; shape: string }> = {
 }
 
 const uploadOpen = ref(false)
-const uploadShots = ref(0)
 const uploadNote = ref('')
 
+/** Haqiqiy fayllar: tanlash oynasi orqali olinadi */
+const uploadFiles = ref<File[]>([])
+const uploadInput = ref<HTMLInputElement | null>(null)
+
+function pickUploadFiles() {
+  uploadInput.value?.click()
+}
+
+function onUploadFiles(event: Event) {
+  const target = event.target as HTMLInputElement
+  const picked = Array.from(target.files ?? [])
+  target.value = ''
+  if (picked.length === 0) return
+  uploadFiles.value = [...uploadFiles.value, ...picked]
+}
+
+function removeUploadFile(index: number) {
+  uploadFiles.value.splice(index, 1)
+}
+
 function saveUpload() {
+  if (!canExecute.value) return
   const id = selected.value?.id
-  if (!id || !selected.value) return
-  evidence.value[id] = (evidence.value[id] ?? 0) + Math.max(uploadShots.value, 1)
+  if (!id || !selected.value || uploadFiles.value.length === 0) return
+  evidence.value[id] = (evidence.value[id] ?? 0) + uploadFiles.value.length
+  const names = uploadFiles.value.map((x) => x.name).join(', ')
   notes.value[id] = [
-    uploadNote.value.trim() || 'Bajarilgan ish materiallari yuklandi',
+    `${uploadNote.value.trim() || 'Bajarilgan ish materiallari yuklandi'} Fayllar: ${names}.`,
     ...(notes.value[id] ?? []),
   ]
   selected.value.progress = Math.max(selected.value.progress, 90)
-  uploadShots.value = 0
+  uploadFiles.value = []
   uploadNote.value = ''
   uploadOpen.value = false
 }
 
 const evidenceOpen = ref(false)
-const evidenceStaged = ref(0)
+const evidenceFiles = ref<Array<{ file: File; url: string }>>([])
+const evidenceInput = ref<HTMLInputElement | null>(null)
+
+function pickEvidence() {
+  evidenceInput.value?.click()
+}
+
+function onEvidenceFiles(event: Event) {
+  const target = event.target as HTMLInputElement
+  const picked = Array.from(target.files ?? [])
+  target.value = ''
+  for (const file of picked) evidenceFiles.value.push({ file, url: URL.createObjectURL(file) })
+}
+
+function removeEvidence(index: number) {
+  const gone = evidenceFiles.value.splice(index, 1)[0]
+  if (gone) URL.revokeObjectURL(gone.url)
+}
+
+function clearEvidence() {
+  for (const e of evidenceFiles.value) URL.revokeObjectURL(e.url)
+  evidenceFiles.value = []
+}
+
+onBeforeUnmount(clearEvidence)
 
 function saveEvidence() {
+  if (!canExecute.value) return
   const id = selected.value?.id
-  if (!id) return
-  evidence.value[id] = (evidence.value[id] ?? 0) + evidenceStaged.value
-  evidenceStaged.value = 0
+  if (!id || evidenceFiles.value.length === 0) return
+  evidence.value[id] = (evidence.value[id] ?? 0) + evidenceFiles.value.length
+  notes.value[id] = [
+    `Dalil suratlari biriktirildi: ${evidenceFiles.value.map((e) => e.file.name).join(', ')}.`,
+    ...(notes.value[id] ?? []),
+  ]
+  clearEvidence()
   evidenceOpen.value = false
 }
 
@@ -127,6 +184,7 @@ const noteText = ref('')
 const noteError = ref('')
 
 function saveNote() {
+  if (!canExecute.value) return
   const id = selected.value?.id
   if (!id) return
   if (!noteText.value.trim()) {
@@ -143,6 +201,36 @@ const actOpen = ref(false)
 
 function printAct() {
   if (import.meta.client) window.print()
+}
+
+/** Bajarilgan ish akti Word hujjati sifatida */
+function actLines(o: ServiceRequest): DocxLine[] {
+  return [
+    { text: 'Makon Property Group', style: 'subtitle' },
+    { text: 'Bajarilgan ish akti', style: 'title' },
+    { text: `${o.code} · ${dateShort(o.createdAt.slice(0, 10))}`, style: 'subtitle' },
+    { text: 'Topshiriq', style: 'heading' },
+    { text: `Sarlavha: ${o.title}` },
+    { text: `Obyekt: ${o.buildingName} · ${o.unitCode}` },
+    { text: `Murojaatchi: ${o.requester}` },
+    { text: `Ijrochi: ${o.assignee ?? 'Biriktirilmagan'}` },
+    { text: `Kategoriya: ${o.category} · ustuvorlik: ${o.priority}` },
+    { text: `Bajarish muddati: ${dateShort(o.dueAt)}` },
+    { text: 'Materiallar', style: 'heading' },
+    ...WORK_MATERIALS.map((m) => ({
+      text: `${m.name}: ${m.qty} ${m.unit} · ${sum(m.qty * m.price)}`,
+    })),
+    { text: `Jami: ${sum(estimate)}` },
+    { text: 'Imzolar', style: 'heading' },
+    { text: `Topshirdi: ${o.assignee ?? 'Biriktirilmagan'}`, style: 'small' },
+    { text: `Qabul qildi: ${o.requester}`, style: 'small' },
+  ]
+}
+
+function downloadAct() {
+  const o = selected.value
+  if (!o) return
+  saveBlob(docxBlob(actLines(o)), `${o.code}-akt.docx`)
 }
 </script>
 
@@ -163,7 +251,7 @@ function printAct() {
     </template>
   </AppTopbar>
 
-  <main class="scroll-slim flex-1 overflow-y-auto p-6">
+  <main class="scroll-slim flex-1 overflow-y-auto p-4 sm:p-6">
     <div class="grid gap-5 xl:grid-cols-4">
       <UiCard
         title="Mening topshiriqlarim"
@@ -431,7 +519,15 @@ function printAct() {
           </div>
         </UiCard>
 
-        <div class="grid gap-4 lg:grid-cols-2">
+        <p
+          v-if="!canExecute"
+          class="rounded-card bg-surface-sunken px-5 py-4 text-[13px] leading-relaxed text-ink-600 ring-1 ring-inset ring-ink-200"
+        >
+          Bajarilgan ishni yuklash, dalil va eslatma qo‘shish ijrochi huquqiga tegishli. Sizning
+          rolingizda topshiriq faqat kuzatiladi.
+        </p>
+
+        <div v-else class="grid gap-4 lg:grid-cols-2">
           <button
             type="button"
             class="flex items-center gap-4 rounded-card border-2 border-dashed border-brand-200 bg-brand-50/40 px-5 py-4 text-left transition-colors hover:border-brand-400 hover:bg-brand-50"
@@ -498,7 +594,14 @@ function printAct() {
           </div>
           <p v-else class="text-[13px] text-ink-500">Hozircha dalil biriktirilmagan.</p>
 
-          <UiButton variant="ghost" size="sm" block class="mt-3" @click="evidenceOpen = true">
+          <UiButton
+            v-if="canExecute"
+            variant="ghost"
+            size="sm"
+            block
+            class="mt-3"
+            @click="evidenceOpen = true"
+          >
             <UiIcon name="plus" :size="16" />
             Dalil qo‘shish
           </UiButton>
@@ -542,8 +645,10 @@ function printAct() {
             <li v-for="(c, i) in WORK_CHECKLIST" :key="c.label">
               <button
                 type="button"
-                class="flex w-full items-center gap-3 rounded-field px-2 py-2 text-left transition-colors hover:bg-brand-50/60"
+                class="flex w-full items-center gap-3 rounded-field px-2 py-2 text-left transition-colors"
+                :class="canExecute ? 'hover:bg-brand-50/60' : 'cursor-default'"
                 :aria-pressed="selectedChecks[i] === true"
+                :disabled="!canExecute"
                 @click="toggleCheck(i)"
               >
                 <span
@@ -633,7 +738,7 @@ function printAct() {
 
           <UiButton variant="secondary" block class="mt-4" @click="actOpen = true">
             <UiIcon name="doc" :size="17" />
-            Aktni ko‘rish (PDF)
+            Aktni ko‘rish
           </UiButton>
         </UiCard>
       </div>
@@ -646,10 +751,20 @@ function printAct() {
     subtitle="Foto, video yoki hujjat biriktiring va izoh qoldiring"
   >
     <div class="space-y-4">
+      <input
+        ref="uploadInput"
+        type="file"
+        accept="image/*,video/*,.pdf,.docx"
+        multiple
+        class="sr-only"
+        aria-label="Bajarilgan ish fayllari"
+        @change="onUploadFiles"
+      />
+
       <button
         type="button"
         class="grid w-full place-items-center gap-2 rounded-field border-2 border-dashed border-ink-300 bg-ink-50 px-6 py-9 text-ink-500 transition-colors hover:border-brand-400 hover:bg-brand-50 hover:text-brand-600"
-        @click="uploadShots = uploadShots + 1"
+        @click="pickUploadFiles"
       >
         <svg viewBox="0 0 48 48" class="size-11" fill="none" aria-hidden="true">
           <path
@@ -668,8 +783,30 @@ function printAct() {
           />
         </svg>
         <span class="text-[13.5px] font-semibold">Fayl biriktirish uchun bosing</span>
-        <span class="text-[12px]">Biriktirilgan: {{ uploadShots }} ta</span>
+        <span class="text-[12px]">Biriktirilgan: {{ uploadFiles.length }} ta</span>
       </button>
+
+      <ul v-if="uploadFiles.length" class="space-y-1.5">
+        <li
+          v-for="(x, i) in uploadFiles"
+          :key="`${x.name}-${i}`"
+          class="flex items-center gap-2.5 rounded-field px-3 py-2 ring-1 ring-ink-200"
+        >
+          <UiIcon name="doc" :size="16" class="shrink-0 text-brand-600" />
+          <span class="min-w-0 flex-1 truncate text-[12.5px] text-ink-700">
+            {{ x.name }}
+            <span class="tabular text-ink-500">· {{ fileSize(x.size) }}</span>
+          </span>
+          <button
+            type="button"
+            class="grid size-11 shrink-0 place-items-center rounded-lg text-ink-400 transition-colors hover:bg-danger-50 hover:text-danger-600 md:size-9"
+            :aria-label="`${x.name}: faylni olib tashlash`"
+            @click="removeUploadFile(i)"
+          >
+            <UiIcon name="x" :size="14" />
+          </button>
+        </li>
+      </ul>
 
       <UiField label="Izoh" hint="Bajarilgan ish bo‘yicha qisqacha xulosa">
         <textarea
@@ -683,7 +820,7 @@ function printAct() {
 
     <template #footer>
       <UiButton variant="ghost" @click="uploadOpen = false">Bekor qilish</UiButton>
-      <UiButton variant="success" @click="saveUpload">
+      <UiButton variant="success" :disabled="uploadFiles.length === 0" @click="saveUpload">
         <UiIcon name="check" :size="16" />
         Yuklash va saqlash
       </UiButton>
@@ -693,41 +830,46 @@ function printAct() {
   <UiModal v-model="evidenceOpen" title="Dalil qo‘shish" subtitle="Bajarilgan ish suratlarini biriktiring" size="sm">
     <div class="flex flex-wrap gap-3">
       <div
-        v-for="n in evidenceStaged"
-        :key="n"
+        v-for="(e, i) in evidenceFiles"
+        :key="`${e.file.name}-${i}`"
         class="relative size-24 overflow-hidden rounded-field ring-1 ring-ink-200"
       >
-        <svg viewBox="0 0 96 96" class="size-full" aria-hidden="true">
-          <rect width="96" height="96" fill="#eef2f8" />
-          <circle cx="30" cy="28" r="9" fill="#c7d9fe" />
-          <path d="M8 76 34 46l18 20 12-13 26 23z" fill="#a1bffd" />
-          <path d="M0 76h96v20H0z" fill="#e2e8f2" />
-        </svg>
+        <img :src="e.url" :alt="e.file.name" class="size-full object-cover" />
         <button
           type="button"
-          class="absolute right-1 top-1 grid size-8 md:size-6 place-items-center rounded-full bg-ink-900/60 text-white transition-colors hover:bg-danger-600"
-          aria-label="Dalilni olib tashlash"
-          @click="evidenceStaged = evidenceStaged - 1"
+          class="absolute right-1 top-1 grid size-8 place-items-center rounded-full bg-ink-900/60 text-white transition-colors hover:bg-danger-600 md:size-6"
+          :aria-label="`${e.file.name}: dalilni olib tashlash`"
+          @click="removeEvidence(i)"
         >
           <UiIcon name="x" :size="13" />
         </button>
       </div>
 
+      <input
+        ref="evidenceInput"
+        type="file"
+        accept="image/*"
+        multiple
+        class="sr-only"
+        aria-label="Dalil suratlari"
+        @change="onEvidenceFiles"
+      />
+
       <button
         type="button"
         class="grid size-24 place-items-center rounded-field border-2 border-dashed border-ink-300 bg-ink-50 text-ink-500 transition-colors hover:border-brand-400 hover:bg-brand-50 hover:text-brand-600"
         aria-label="Dalil surati qo‘shish"
-        @click="evidenceStaged = evidenceStaged + 1"
+        @click="pickEvidence"
       >
         <UiIcon name="plus" :size="24" />
       </button>
     </div>
 
     <template #footer>
-      <UiButton variant="ghost" @click="((evidenceOpen = false), (evidenceStaged = 0))">
+      <UiButton variant="ghost" @click="((evidenceOpen = false), clearEvidence())">
         Bekor qilish
       </UiButton>
-      <UiButton :disabled="evidenceStaged === 0" @click="saveEvidence">
+      <UiButton :disabled="evidenceFiles.length === 0" @click="saveEvidence">
         <UiIcon name="check" :size="16" />
         Biriktirish
       </UiButton>
@@ -836,6 +978,10 @@ function printAct() {
 
     <template #footer>
       <UiButton variant="ghost" @click="actOpen = false">Yopish</UiButton>
+      <UiButton variant="secondary" :disabled="!selected" @click="downloadAct">
+        <UiIcon name="download" :size="16" />
+        Yuklab olish
+      </UiButton>
       <UiButton @click="printAct">
         <UiIcon name="print" :size="16" />
         Chop etish

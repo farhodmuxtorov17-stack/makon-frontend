@@ -160,6 +160,29 @@ export function docxBlob(lines: DocxLine[]): Blob {
   ])
 }
 
+/**
+ * Jadval satrlaridan haqiqiy CSV fayl. Excel uz/ru mintaqasida nuqta-vergul
+ * ajratgichini kutadi, BOM esa lotin va kirill belgilarini to‘g‘ri ochadi.
+ */
+export function csvBlob(rows: Array<Array<string | number>>): Blob {
+  const cell = (value: string | number) => {
+    const text = String(value)
+    return /[";\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text
+  }
+  const body = rows.map((row) => row.map(cell).join(';')).join('\r\n')
+  return new Blob([`\uFEFF${body}\r\n`], { type: 'text/csv;charset=utf-8' })
+}
+
+/** Fayl nomi uchun xavfsiz asos: «Portfel KPI hisoboti» → «portfel-kpi-hisoboti» */
+export function fileSlug(value: string): string {
+  return (
+    value
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '') || 'hisobot'
+  )
+}
+
 /** Brauzer orqali haqiqiy fayl saqlash */
 export function saveBlob(blob: Blob, fileName: string) {
   const url = URL.createObjectURL(blob)

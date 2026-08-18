@@ -16,14 +16,20 @@ const props = withDefaults(
   { size: 'md' },
 )
 
-const def = computed<StatusDef>(
-  () =>
-    STATUS_REGISTRY[props.kind][props.value] ?? {
-      label: props.value,
-      tone: 'neutral',
-      shape: 'square',
-    },
-)
+const { statusLabel } = useAppLabels()
+
+/**
+ * Rang va shakl registrdan, nom esa tarjima kalitidan olinadi. Shu tufayli
+ * tanlangan til butun mahsulotdagi status nishonchalariga ham tarqaladi.
+ */
+const def = computed<StatusDef>(() => {
+  const found = STATUS_REGISTRY[props.kind][props.value]
+  return {
+    label: statusLabel(props.kind, props.value),
+    tone: found?.tone ?? 'neutral',
+    shape: found?.shape ?? 'square',
+  }
+})
 </script>
 
 <template>

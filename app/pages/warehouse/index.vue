@@ -23,7 +23,10 @@ interface IssueAct {
 
 const auth = useAuthStore()
 
-const items = ref<StockItem[]>(STOCK_ITEMS.map((i) => ({ ...i })))
+/** Ombor mudiriga faqat biriktirilgan ombor ko‘rinadi */
+const items = ref<StockItem[]>(
+  STOCK_ITEMS.filter((i) => auth.inWarehouseScope(i.warehouse)).map((i) => ({ ...i })),
+)
 
 const warehouses = computed(() => [...new Set(items.value.map((i) => i.warehouse))])
 
@@ -143,15 +146,17 @@ const summary = computed(() => [
   },
 ])
 
+const scopedStock = STOCK_ITEMS.filter((i) => auth.inWarehouseScope(i.warehouse))
+
 const acts = ref<IssueAct[]>(
   MATERIAL_REQUESTS.filter((r) => r.status === 'ISSUED' || r.status === 'APPROVED').map((r) => {
-    const picks = STOCK_ITEMS.slice(0, Math.max(r.items, 1))
+    const picks = scopedStock.slice(0, Math.max(r.items, 1))
     return {
       id: r.id,
       code: r.code.replace('MT-', 'BD-'),
       recipient: r.requester,
       request: r.workOrder,
-      warehouse: picks[0]?.warehouse ?? 'Markaziy ombor',
+      warehouse: picks[0]?.warehouse ?? scopedStock[0]?.warehouse ?? 'Markaziy ombor',
       positions: picks.length,
       at: r.createdAt,
       status: r.status === 'ISSUED' ? 'ISSUED' : 'APPROVED',
@@ -190,9 +195,9 @@ function sendToPrinter() {
 }
 
 const receiveOpen = ref(false)
-const receiveItem = ref(STOCK_ITEMS[0]!.id)
+const receiveItem = ref(items.value[0]?.id ?? STOCK_ITEMS[0]!.id)
 const receiveQty = ref(10)
-const receiveWarehouse = ref(STOCK_ITEMS[0]!.warehouse)
+const receiveWarehouse = ref(items.value[0]?.warehouse ?? STOCK_ITEMS[0]!.warehouse)
 const receiveNote = ref('')
 const receiveError = ref('')
 
@@ -221,7 +226,7 @@ function saveReceive() {
 const issueOpen = ref(false)
 const issueRecipient = ref('')
 const issueRequest = ref(SERVICE_REQUESTS[1]!.code)
-const issueWarehouse = ref(STOCK_ITEMS[0]!.warehouse)
+const issueWarehouse = ref(items.value[0]?.warehouse ?? STOCK_ITEMS[0]!.warehouse)
 const issueNote = ref('')
 const issueError = ref('')
 const issueQty = ref<Record<string, number>>({})
@@ -305,7 +310,7 @@ function saveIssue() {
     </template>
   </AppTopbar>
 
-  <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-6">
+  <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-4 sm:p-6">
     <section class="grid gap-5 xl:grid-cols-3">
       <UiCard
         class="xl:col-span-2"

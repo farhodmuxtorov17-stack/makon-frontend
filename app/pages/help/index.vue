@@ -1,107 +1,188 @@
 <script setup lang="ts">
+import { CONTACT } from '~/constants/contacts'
+import { ROLE_META } from '~/constants/roles'
+import { docxBlob, fileSize, saveBlob, type DocxLine } from '~/utils/docx'
 import { dateShort } from '~/utils/format'
 
 const auth = useAuthStore()
 
+/**
+ * Rol nomlari rollar registridan olinadi: yordam markazidagi yozuv bilan
+ * yon paneldagi nom hech qachon ayrilib qolmaydi.
+ */
+const ROLE = {
+  head: ROLE_META.SUPER_HEAD.label,
+  manager: ROLE_META.BUILDING_MANAGER.label,
+  accountant: ROLE_META.ACCOUNTANT.label,
+  facility: ROLE_META.FACILITY.label,
+  warehouse: ROLE_META.WAREHOUSE_OPERATOR.label,
+  content: ROLE_META.CONTENT_OPERATOR.label,
+  tenant: ROLE_META.TENANT_OWNER.label,
+  general: 'Umumiy',
+}
+
 const roleCards = [
   {
-    value: 'Ijarachi',
+    value: ROLE.tenant,
     caption: 'Shartnoma, to‘lov va to‘lov holati',
     icon: 'user',
     tone: 'bg-brand-50 text-brand-600',
   },
   {
-    value: 'Buxgalter',
+    value: ROLE.accountant,
     caption: 'Hisobotlar, hisob-faktura va to‘lovlar',
     icon: 'wallet',
     tone: 'bg-ok-50 text-ok-600',
   },
   {
-    value: 'Bino rahbari',
+    value: ROLE.manager,
     caption: 'Bino boshqaruvi va xizmatlar',
     icon: 'building',
     tone: 'bg-info-50 text-info-600',
   },
   {
-    value: 'Pudratchi',
+    value: ROLE.facility,
     caption: 'Xizmat ko‘rsatish va buyurtmalar',
     icon: 'wrench',
     tone: 'bg-warn-50 text-warn-600',
+  },
+  {
+    value: ROLE.head,
+    caption: 'Portfel ko‘rsatkichlari va nazorat',
+    icon: 'chart',
+    tone: 'bg-brand-50 text-brand-600',
+  },
+  {
+    value: ROLE.warehouse,
+    caption: 'Ombor qoldig‘i va materiallar harakati',
+    icon: 'box',
+    tone: 'bg-lime-50 text-lime-700',
+  },
+  {
+    value: ROLE.content,
+    caption: 'Qavat rejalari va unit atributlari',
+    icon: 'layers',
+    tone: 'bg-rose-50 text-rose-700',
   },
 ]
 
 const FAQ = [
   {
     id: 'f-01',
-    role: 'Ijarachi',
+    role: ROLE.tenant,
     question: 'To‘lovni qanday amalga oshirish mumkin?',
     answer:
       '«To‘lovlarim» bo‘limida joriy hisob-fakturani oching va rekvizitlar bo‘yicha bank o‘tkazmasini amalga oshiring. To‘lov tasdiqlangach hisob-faktura holati avtomatik «To‘langan» ga o‘zgaradi.',
   },
   {
     id: 'f-02',
-    role: 'Ijarachi',
+    role: ROLE.tenant,
     question: 'Hisob-fakturani qayerdan yuklab olish mumkin?',
     answer:
-      'Hisob-faktura qatorini bosing va ochilgan oynadagi «PDF yuklab olish» tugmasini tanlang. Barcha hisob-fakturalar «Hujjatlarim» bo‘limida ham saqlanadi.',
+      'Hisob-faktura qatorini bosing va ochilgan oynadagi «Yuklab olish» tugmasini tanlang. Barcha hisob-fakturalar «Hujjatlarim» bo‘limida ham saqlanadi.',
   },
   {
     id: 'f-03',
-    role: 'Ijarachi',
+    role: ROLE.tenant,
     question: 'Servis arizasini qanday yuborish kerak?',
     answer:
       'Bosh sahifadagi «Yangi ariza yaratish» tugmasini bosing, kategoriya va prioritetni tanlab muammoni tavsiflang. Ariza bino xizmatiga yuboriladi va holati kabinetda kuzatiladi.',
   },
   {
     id: 'f-04',
-    role: 'Bino rahbari',
+    role: ROLE.manager,
     question: 'Yangi ijarachi qo‘shish tartibi qanday?',
     answer:
-      'Ariza tasdiqlangach shartnoma loyihasi shakllantiriladi, mas’ul rahbar tomonidan tizim ichida tasdiqlanadi va unit holati «Ijarada» ga o‘tadi. Har bir bosqich ariza kartochkasida qayd etiladi.',
+      'Ariza qabul qilinadi, operatsiya uni tasdiqlaydi, buxgalter esa moliyaviy shartlarni tasdiqlaydi. So‘ng shartnoma qoralamasi avtomatik tuziladi va Didox orqali imzoga yuboriladi. Didox holati tekshirilib, imzolangan hujjat tizimga yuklanadi: shartnoma faollashadi va unit «Ijarada» holatiga o‘tadi. Har bir bosqich ariza kartochkasida qayd etiladi.',
   },
   {
     id: 'f-05',
-    role: 'Bino rahbari',
+    role: ROLE.manager,
     question: 'Obyekt uchun xizmatlar buyurtma qilish qanday ishlaydi?',
     answer:
       'Servis arizasi yaratiladi, mas’ul xodim biriktiriladi va material so‘rovi tasdiqlanadi. Ish yakunlangach ijarachi tasdiqlashi uchun ariza yuboriladi.',
   },
   {
     id: 'f-06',
-    role: 'Buxgalter',
+    role: ROLE.accountant,
     question: 'Hisob-faktura qanday shakllantiriladi?',
     answer:
       'Shartnoma shartlari va hisoblagich ko‘rsatkichlari asosida davr yakunida hisob-faktura yaratiladi. Tariflar ma’lumotnomasi hisob-kitobga avtomatik qo‘llanadi.',
   },
   {
     id: 'f-07',
-    role: 'Buxgalter',
+    role: ROLE.accountant,
     question: 'Qarzdorlik hisobotini qayerdan olish mumkin?',
     answer:
       '«Qarzdorlik tahlili» bo‘limida muddat bo‘yicha taqsimot va ijarachilar kesimidagi qoldiqlar ko‘rsatiladi. Hisobotni eksport qilish mumkin.',
   },
   {
     id: 'f-08',
-    role: 'Pudratchi',
+    role: ROLE.facility,
     question: 'Ish topshirig‘ini qanday yopish mumkin?',
     answer:
       'Tekshiruv ro‘yxatidagi barcha bandlar bajarilgach ish topshirig‘i «Bajarilgan» holatiga o‘tkaziladi va ijarachi tasdiqlashiga yuboriladi.',
   },
   {
     id: 'f-09',
-    role: 'Pudratchi',
+    role: ROLE.facility,
     question: 'Material so‘rovini kim tasdiqlaydi?',
     answer:
       'Material so‘rovi bino rahbari tomonidan ko‘rib chiqiladi, tasdiqlangach ombordan beriladi va ish topshirig‘iga biriktiriladi.',
   },
+  {
+    id: 'f-10',
+    role: ROLE.head,
+    question: 'Portfel bo‘yicha ko‘rsatkichlar qayerdan ko‘riladi?',
+    answer:
+      'Boshqaruv panelida bandlik, tushum va qarzdorlik obyektlar kesimida jamlanadi. «Hisobotlar» bo‘limida davr tanlanadi va natija jadval ko‘rinishida eksport qilinadi.',
+  },
+  {
+    id: 'f-11',
+    role: ROLE.head,
+    question: 'Yangi xodimga kirish huquqi qanday beriladi?',
+    answer:
+      'Sozlamalardagi «Foydalanuvchilar» bo‘limida hisob yaratiladi, unga rol va biriktirilgan obyektlar tanlanadi. Rolga ochiq modullar ro‘yxati «Rollar va huquqlar» sahifasida ko‘rinadi.',
+  },
+  {
+    id: 'f-12',
+    role: ROLE.warehouse,
+    question: 'Materialni ombordan qanday chiqaraman?',
+    answer:
+      'Tasdiqlangan material so‘rovini oching va berish amalini tanlang. Miqdor qoldiqdan yechiladi, harakat esa «Kirim va chiqim» jurnalida qayd etiladi.',
+  },
+  {
+    id: 'f-13',
+    role: ROLE.warehouse,
+    question: 'Inventarizatsiya natijasi qanday kiritiladi?',
+    answer:
+      '«Inventarizatsiya» bo‘limida sanoq varag‘i ochiladi va har bir pozitsiya bo‘yicha haqiqiy miqdor kiritiladi. Farq avtomatik hisoblanadi, tasdiqlangach qoldiqqa yoziladi.',
+  },
+  {
+    id: 'f-14',
+    role: ROLE.content,
+    question: 'Qavat rejasini qanday yuklayman?',
+    answer:
+      '«Qavat rejalari» bo‘limida obyekt va qavat tanlanadi, reja tasviri yuklanadi va unit chegaralari belgilanadi. Saqlangach reja katalogda hamda 3D navigatorda ko‘rinadi.',
+  },
+  {
+    id: 'f-15',
+    role: ROLE.content,
+    question: 'Unit atributlari qayerda to‘ldiriladi?',
+    answer:
+      '«Unit atributlari» bo‘limida maydon, xonalar soni, qulayliklar va suratlar kiritiladi. To‘liq to‘ldirilgan unit kontent navbatidan chiqadi va e’lon qilishga tayyor bo‘ladi.',
+  },
 ]
 
 const MANUALS = [
-  { id: 'm-01', role: 'Ijarachi', name: 'Ijarachi uchun qo‘llanma', size: '2.4 MB', at: '2025-04-20' },
-  { id: 'm-02', role: 'Buxgalter', name: 'Buxgalter uchun qo‘llanma', size: '3.1 MB', at: '2025-04-20' },
-  { id: 'm-03', role: 'Bino rahbari', name: 'Bino rahbari uchun qo‘llanma', size: '3.8 MB', at: '2025-04-20' },
-  { id: 'm-04', role: 'Pudratchi', name: 'Pudratchi uchun qo‘llanma', size: '2.7 MB', at: '2025-04-20' },
-  { id: 'm-05', role: 'Umumiy', name: 'Tizim bo‘yicha umumiy qo‘llanma', size: '4.2 MB', at: '2025-05-06' },
+  { id: 'm-01', role: ROLE.tenant, name: 'Ijarachi uchun qo‘llanma', at: '2025-04-20' },
+  { id: 'm-02', role: ROLE.accountant, name: 'Buxgalter uchun qo‘llanma', at: '2025-04-20' },
+  { id: 'm-03', role: ROLE.manager, name: 'Bino rahbari uchun qo‘llanma', at: '2025-04-20' },
+  { id: 'm-04', role: ROLE.facility, name: 'Pudratchi uchun qo‘llanma', at: '2025-04-20' },
+  { id: 'm-06', role: ROLE.head, name: 'Super rahbar uchun qo‘llanma', at: '2025-04-20' },
+  { id: 'm-07', role: ROLE.warehouse, name: 'Omborchi uchun qo‘llanma', at: '2025-04-20' },
+  { id: 'm-08', role: ROLE.content, name: 'Kontent operatori uchun qo‘llanma', at: '2025-04-20' },
+  { id: 'm-05', role: ROLE.general, name: 'Tizim bo‘yicha umumiy qo‘llanma', at: '2025-05-06' },
 ]
 
 const roleFilter = ref('all')
@@ -120,7 +201,9 @@ const filteredFaq = computed(() =>
 )
 
 const filteredManuals = computed(() =>
-  MANUALS.filter((m) => roleFilter.value === 'all' || m.role === roleFilter.value || m.role === 'Umumiy'),
+  MANUALS.filter(
+    (m) => roleFilter.value === 'all' || m.role === roleFilter.value || m.role === ROLE.general,
+  ),
 )
 
 function toggleRole(value: string) {
@@ -144,16 +227,66 @@ function runSearch() {
   }
 }
 
-const generalManual = MANUALS[4]!
+const generalManual = MANUALS.find((m) => m.role === ROLE.general)!
 
 const manualOpen = ref(false)
-const manualReady = ref(false)
+const savedManual = ref('')
 const selectedManual = ref<(typeof MANUALS)[number] | null>(null)
 
 function openManual(m: (typeof MANUALS)[number]) {
   selectedManual.value = m
-  manualReady.value = false
+  savedManual.value = ''
   manualOpen.value = true
+}
+
+/** Qo‘llanma matni savol-javob bazasidan yig‘iladi */
+function manualLines(m: (typeof MANUALS)[number]): DocxLine[] {
+  const topics = m.role === ROLE.general ? FAQ : FAQ.filter((q) => q.role === m.role)
+  const lines: DocxLine[] = [
+    { text: 'Makon Property Group', style: 'subtitle' },
+    { text: m.name, style: 'title' },
+    { text: `Nashr sanasi ${dateShort(m.at)}`, style: 'subtitle' },
+    { text: 'Qo‘llanma haqida', style: 'heading' },
+    {
+      text:
+        m.role === ROLE.general
+          ? 'Ushbu qo‘llanmada tizimning barcha rollari bo‘yicha ko‘p uchraydigan savollar va ish tartibi jamlangan.'
+          : `Ushbu qo‘llanma «${m.role}» roli uchun tayyorlangan va shu roldagi asosiy amallar tartibini tushuntiradi.`,
+    },
+  ]
+
+  let index = 0
+  for (const t of topics) {
+    index += 1
+    lines.push({ text: `${index}. ${t.question}`, style: 'heading' })
+    if (m.role === ROLE.general) lines.push({ text: `Rol: ${t.role}`, style: 'small' })
+    lines.push({ text: t.answer })
+  }
+
+  lines.push(
+    { text: 'Qo‘llab-quvvatlash', style: 'heading' },
+    { text: `Telefon: ${CONTACT.phone}` },
+    { text: `E-pochta: ${CONTACT.email}` },
+    { text: `Ish vaqti: ${CONTACT.hours}.`, style: 'small' },
+  )
+
+  return lines
+}
+
+/** Brauzer saqlaydigan nusxa: nomi va haqiqiy hajmi */
+const manualOutput = computed(() => {
+  const m = selectedManual.value
+  if (!m) return null
+  const blob = docxBlob(manualLines(m))
+  return { name: `${m.name}.docx`, size: fileSize(blob.size) }
+})
+
+function downloadManual() {
+  const m = selectedManual.value
+  if (!m) return
+  const fileName = `${m.name}.docx`
+  saveBlob(docxBlob(manualLines(m)), fileName)
+  savedManual.value = fileName
 }
 
 type Ticket = {
@@ -161,7 +294,7 @@ type Ticket = {
   code: string
   subject: string
   category: string
-  priority: 'Past' | 'O‘rta' | 'Yuqori'
+  priority: 'Past' | 'O‘rtacha' | 'Yuqori'
   status: string
   createdAt: string
   description: string
@@ -173,7 +306,7 @@ const tickets = ref<Ticket[]>([
     code: 'TK-2025-078',
     subject: 'To‘lov kvitansiyasini olishda xato',
     category: 'To‘lovlar',
-    priority: 'O‘rta',
+    priority: 'O‘rtacha',
     status: 'IN_PROGRESS',
     createdAt: '2025-05-18 10:24',
     description:
@@ -194,7 +327,7 @@ const tickets = ref<Ticket[]>([
     code: 'TK-2025-076',
     subject: 'Ijara shartnomasiga o‘zgartirish kiritish',
     category: 'Shartnomalar',
-    priority: 'O‘rta',
+    priority: 'O‘rtacha',
     status: 'IN_PROGRESS',
     createdAt: '2025-05-17 16:08',
     description: 'Shartnomaga qo‘shimcha maydon bo‘yicha ilova kiritish so‘ralmoqda.',
@@ -214,7 +347,7 @@ const tickets = ref<Ticket[]>([
     code: 'TK-2025-074',
     subject: 'Yangi foydalanuvchi qo‘shishda yordam',
     category: 'Foydalanuvchilar',
-    priority: 'O‘rta',
+    priority: 'O‘rtacha',
     status: 'CLOSED',
     createdAt: '2025-05-15 14:33',
     description: 'Tashkilot xodimiga kabinetdan foydalanish huquqi berildi.',
@@ -278,7 +411,7 @@ const ticketColumns = [
 
 const PRIORITY_CLASS: Record<string, string> = {
   Yuqori: 'bg-danger-50 text-danger-700',
-  'O‘rta': 'bg-warn-50 text-warn-700',
+  'O‘rtacha': 'bg-warn-50 text-warn-700',
   Past: 'bg-ink-100 text-ink-600',
 }
 
@@ -296,7 +429,7 @@ const createdCode = ref('')
 const ticketForm = reactive({
   subject: '',
   category: 'To‘lovlar',
-  priority: 'O‘rta',
+  priority: 'O‘rtacha',
   description: '',
 })
 const ticketError = ref('')
@@ -313,7 +446,7 @@ const categoryOptions = [
 
 const priorityOptions = [
   { value: 'Past', label: 'Past' },
-  { value: 'O‘rta', label: 'O‘rta' },
+  { value: 'O‘rtacha', label: 'O‘rtacha' },
   { value: 'Yuqori', label: 'Yuqori' },
 ]
 
@@ -359,32 +492,35 @@ function toggleStep(id: string) {
 }
 
 const supportOpen = ref(false)
-const supportChannel = ref<{ title: string; value: string; caption: string; icon: string } | null>(
-  null,
-)
-const supportSent = ref(false)
+const supportChannel = ref<{
+  id: string
+  title: string
+  value: string
+  caption: string
+  icon: string
+} | null>(null)
 
 const supportChannels = [
   {
     id: 'chat',
     title: 'Chat orqali yordam',
     value: 'Onlayn mutaxassis bilan suhbat',
-    caption: 'Ish kunlari 09:00 – 18:00 oralig‘ida javob beriladi.',
+    caption: `Ish vaqti: ${CONTACT.hours}.`,
     icon: 'send',
     tone: 'bg-ok-50 text-ok-600',
   },
   {
     id: 'call',
     title: 'Qo‘ng‘iroq qilish',
-    value: '+998 78 150 00 00',
-    caption: 'Qo‘llab-quvvatlash xizmati: har kuni 09:00 – 18:00.',
+    value: CONTACT.phone,
+    caption: `Ijara, hisob-kitob va servis bo‘yicha yagona raqam. Ish vaqti: ${CONTACT.hours}.`,
     icon: 'help',
     tone: 'bg-brand-50 text-brand-600',
   },
   {
     id: 'email',
-    title: 'Email orqali murojaat',
-    value: 'support@makon.uz',
+    title: 'E-pochta orqali murojaat',
+    value: CONTACT.email,
     caption: 'Murojaatlar ish kuni davomida ko‘rib chiqiladi.',
     icon: 'doc',
     tone: 'bg-info-50 text-info-600',
@@ -401,8 +537,30 @@ const supportChannels = [
 
 function openSupport(c: (typeof supportChannels)[number]) {
   supportChannel.value = c
-  supportSent.value = false
   supportOpen.value = true
+}
+
+/** Qo‘ng‘iroq va e-pochta kanallari haqiqiy havola bilan ochiladi */
+const supportLink = computed(() => {
+  const c = supportChannel.value
+  if (!c) return ''
+  if (c.id === 'call') return `tel:${c.value.replace(/[^+\d]/g, '')}`
+  if (c.id === 'email') return `mailto:${c.value}`
+  return ''
+})
+
+const copied = ref(false)
+
+async function copyChannel() {
+  const c = supportChannel.value
+  if (!c) return
+  try {
+    await navigator.clipboard.writeText(c.value)
+    copied.value = true
+    setTimeout(() => (copied.value = false), 2200)
+  } catch {
+    copied.value = false
+  }
 }
 
 const statusOpen = ref(false)
@@ -433,7 +591,7 @@ const systemServices = [
     </template>
   </AppTopbar>
 
-  <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-6">
+  <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-4 sm:p-6">
     <div
       v-if="createdCode"
       class="flex items-center gap-3 rounded-card bg-ok-50 px-5 py-3.5 ring-1 ring-ok-100"
@@ -555,7 +713,7 @@ const systemServices = [
             </ul>
           </UiCard>
 
-          <UiCard title="Foydalanuvchi qo‘llanmalari" subtitle="PDF hujjatlar" flush>
+          <UiCard title="Foydalanuvchi qo‘llanmalari" subtitle="Word hujjatlari" flush>
             <ul class="divide-y divide-ink-100">
               <li v-for="m in filteredManuals" :key="m.id" class="flex items-center gap-3.5 px-5 py-3.5">
                 <span class="grid size-10 shrink-0 place-items-center rounded-[10px] bg-danger-50 text-danger-600">
@@ -564,12 +722,12 @@ const systemServices = [
                 <span class="min-w-0 flex-1">
                   <span class="block truncate text-[13.5px] font-semibold text-ink-900">{{ m.name }}</span>
                   <span class="block truncate text-[12px] text-ink-500">
-                    PDF · {{ m.size }} · {{ dateShort(m.at) }}
+                    {{ m.role }} · {{ dateShort(m.at) }}
                   </span>
                 </span>
                 <button
                   type="button"
-                  class="grid size-9 shrink-0 place-items-center rounded-field text-brand-600 transition-colors hover:bg-brand-50"
+                  class="grid size-11 shrink-0 place-items-center rounded-field text-brand-600 transition-colors hover:bg-brand-50 md:size-9"
                   :aria-label="`${m.name}: yuklab olish`"
                   @click="openManual(m)"
                 >
@@ -722,31 +880,31 @@ const systemServices = [
   >
     <div v-if="selectedManual" class="space-y-4">
       <div class="flex items-center gap-3.5 rounded-field bg-surface-sunken p-4 ring-1 ring-ink-200">
-        <span class="grid size-12 shrink-0 place-items-center rounded-field bg-danger-50 text-danger-600">
+        <span class="grid size-12 shrink-0 place-items-center rounded-field bg-brand-50 text-brand-600">
           <UiIcon name="doc" :size="24" />
         </span>
         <span class="min-w-0">
           <span class="block truncate text-[13.5px] font-semibold text-ink-900">
-            {{ selectedManual.name }}.pdf
+            {{ manualOutput?.name }}
           </span>
           <span class="block text-[12px] text-ink-500">
-            PDF · {{ selectedManual.size }} · {{ dateShort(selectedManual.at) }}
+            DOCX · {{ manualOutput?.size }} · {{ dateShort(selectedManual.at) }}
           </span>
         </span>
       </div>
 
-      <p v-if="!manualReady" class="text-[13px] text-ink-600">
-        Qo‘llanma nusxasi tayyorlanadi va brauzeringiz orqali saqlanadi.
+      <p v-if="!savedManual" class="text-[13px] text-ink-600">
+        Qo‘llanma Word ko‘rinishida yig‘iladi va brauzeringiz orqali saqlanadi.
       </p>
-      <p v-else class="flex items-center gap-2 text-[13px] font-semibold text-ok-700">
-        <UiIcon name="check" :size="16" />
-        Qo‘llanma yuklab olishga tayyor.
+      <p v-else class="flex items-start gap-2 text-[13px] font-semibold text-ok-700">
+        <UiIcon name="check" :size="16" class="mt-px shrink-0" />
+        <span class="min-w-0">{{ savedManual }} fayli saqlandi.</span>
       </p>
     </div>
 
     <template #footer>
       <UiButton variant="ghost" @click="manualOpen = false">Yopish</UiButton>
-      <UiButton :disabled="manualReady" @click="manualReady = true">
+      <UiButton @click="downloadManual">
         <UiIcon name="download" :size="16" />
         Yuklab olish
       </UiButton>
@@ -859,17 +1017,39 @@ const systemServices = [
         <p class="mt-1 text-[12.5px] text-ink-500">{{ supportChannel.caption }}</p>
       </div>
 
-      <p v-if="supportSent" class="flex items-center gap-2 text-[13px] font-semibold text-ok-700">
+      <p v-if="!supportLink" class="text-[13px] leading-relaxed text-ink-600">
+        Bu kanal {{ CONTACT.phone }} raqami orqali ochiladi: mutaxassisga murojaat qilib, kanal
+        nomini ayting. Yozma murojaat qoldirmoqchi bo‘lsangiz, «Yangi murojaat» tugmasidan
+        foydalaning.
+      </p>
+
+      <p v-if="copied" class="flex items-center gap-2 text-[13px] font-semibold text-ok-700">
         <UiIcon name="check" :size="16" />
-        So‘rovingiz qabul qilindi, mutaxassis siz bilan bog‘lanadi.
+        Manzil nusxalandi.
       </p>
     </div>
 
     <template #footer>
       <UiButton variant="ghost" @click="supportOpen = false">Yopish</UiButton>
-      <UiButton :disabled="supportSent" @click="supportSent = true">
+      <UiButton variant="secondary" @click="copyChannel">
+        <UiIcon name="clipboard" :size="16" />
+        Nusxalash
+      </UiButton>
+      <UiButton v-if="supportLink" :to="supportLink">
         <UiIcon name="send" :size="16" />
-        Bog‘lanishni so‘rash
+        {{ supportChannel?.id === 'call' ? 'Qo‘ng‘iroq qilish' : 'Xat yozish' }}
+      </UiButton>
+      <UiButton
+        v-else
+        @click="
+          () => {
+            supportOpen = false
+            createOpen = true
+          }
+        "
+      >
+        <UiIcon name="send" :size="16" />
+        Yangi murojaat
       </UiButton>
     </template>
   </UiModal>

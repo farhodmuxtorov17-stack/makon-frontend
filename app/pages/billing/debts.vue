@@ -1,37 +1,35 @@
 <script setup lang="ts">
 import AppTopbar from '~/components/layout/AppTopbar.vue'
 import { BUILDINGS } from '~/data/buildings'
-import { AGING, INVOICES } from '~/data/business'
-import { dateShort, num, percent, sum, sumShort } from '~/utils/format'
+import { INVOICES, agingOf, settledInvoices } from '~/data/business'
+import { dateShort, num, percent, sum, sumShort, todayIso } from '~/utils/format'
+import { csvBlob, docxBlob, fileSlug, saveBlob } from '~/utils/docx'
 
-const BUCKET_KEYS = ['0-30', '31-60', '61-90', '90+']
+/**
+ * Qarzdorlar ro‘yxati umumiy hisob-faktura reyestridan hisoblanadi: to‘lov
+ * qabul qilinishi bilan qator shu yerdan ham yo‘qoladi.
+ */
+const debtors = computed(() =>
+  settledInvoices(INVOICES)
+    .filter((i) => i.total - i.paid > 0)
+    .map((i) => ({
+      id: i.id,
+      tenant: i.tenant,
+      buildingName: i.buildingName,
+      unitCode: i.unitCode,
+      code: i.code,
+      dueAt: i.dueAt,
+      balance: i.total - i.paid,
+      agingBucket: i.agingBucket ?? '0-30',
+      status: i.status,
+    })),
+)
 
-const debtors = INVOICES.filter((i) => i.total - i.paid > 0).map((i) => ({
-  id: i.id,
-  tenant: i.tenant,
-  buildingName: i.buildingName,
-  unitCode: i.unitCode,
-  code: i.code,
-  dueAt: i.dueAt,
-  balance: i.total - i.paid,
-  agingBucket: i.agingBucket ?? '0-30',
-  status: i.status,
-}))
+const debtTotal = computed(() => debtors.value.reduce((s, d) => s + d.balance, 0))
 
-const debtTotal = debtors.reduce((s, d) => s + d.balance, 0)
-
-const buckets = AGING.map((a, i) => {
-  const key = BUCKET_KEYS[i] ?? '0-30'
-  const amount = debtors.filter((d) => d.agingBucket === key).reduce((s, d) => s + d.balance, 0)
-  return {
-    key,
-    bucket: a.bucket,
-    share: debtTotal ? (amount / debtTotal) * 100 : 0,
-    amount,
-    tone: a.tone,
-    icon: i < 2 ? 'clock' : 'warning',
-  }
-})
+const buckets = computed(() =>
+  agingOf(INVOICES).map((a, i) => ({ ...a, icon: i < 2 ? 'clock' : 'warning' })),
+)
 
 const search = ref('')
 const building = ref('all')
@@ -43,13 +41,13 @@ const buildingOptions = [
   ...BUILDINGS.map((b) => ({ value: b.name, label: b.name })),
 ]
 
-const bucketOptions = [
+const bucketOptions = computed(() => [
   { value: 'all', label: 'Barcha muddatlar' },
-  ...buckets.map((b) => ({ value: b.key, label: b.bucket })),
-]
+  ...buckets.value.map((b) => ({ value: b.key, label: b.bucket })),
+])
 
 const filtered = computed(() =>
-  debtors.filter((d) => {
+  debtors.value.filter((d) => {
     const q = search.value.trim().toLowerCase()
     const byQuery =
       !q || `${d.tenant} ${d.code} ${d.buildingName} ${d.unitCode}`.toLowerCase().includes(q)
@@ -65,7 +63,7 @@ const columns = [
   { key: 'code', label: 'Hujjat' },
   { key: 'dueAt', label: 'Muddati' },
   { key: 'balance', label: 'Qoldiq', align: 'right' as const, numeric: true },
-  { key: 'aging', label: 'Aging' },
+  { key: 'aging', label: 'Muddat guruhi' },
   { key: 'status', label: 'Status' },
 ]
 
@@ -85,7 +83,7 @@ const rows = computed(() =>
 const filteredTotal = computed(() => filtered.value.reduce((s, d) => s + d.balance, 0))
 
 function bucketMeta(key: string) {
-  return buckets.find((b) => b.key === key) ?? buckets[0]!
+  return buckets.value.find((b) => b.key === key) ?? buckets.value[0]!
 }
 
 function toggleBucket(key: string) {
@@ -111,18 +109,61 @@ function openHistory(row: Record<string, unknown>) {
 
 const exportOpen = ref(false)
 
-function runExport(format: 'PDF' | 'XLSX') {
-  banner.value = `Qarzdorlik reyestri ${format} formatida shakllantirildi, ${num(filtered.value.length)} ta yozuv, ${sum(filteredTotal.value)}.`
+/**
+ * Reyestr haqiqiy fayl bo‘lib yuklanadi: joriy filtrga tushgan qatorlar
+ * qanday ko‘rinsa, faylda ham shunday bo‘ladi.
+ */
+function runExport(format: 'DOCX' | 'CSV') {
+  const scope = building.value === 'all' ? 'Barcha obyektlar' : building.value
+  const period = bucket.value === 'all' ? 'Barcha muddatlar' : bucket.value
+  const title = 'Qarzdorlik reyestri'
+  const name = `${fileSlug(title)}-${todayIso()}.${format.toLowerCase()}`
+
+  if (format === 'DOCX') {
+    saveBlob(
+      docxBlob([
+        { text: title, style: 'title' },
+        { text: `${scope} · ${period} · ${dateShort(todayIso())}`, style: 'subtitle' },
+        { text: `Jami: ${num(filtered.value.length)} ta yozuv, ${sum(filteredTotal.value)}`, style: 'heading' },
+        ...filtered.value.map((d) => ({
+          text: `${d.tenant} · ${d.buildingName}, ${d.unitCode} · ${d.code} · to‘lov muddati ${dateShort(d.dueAt)} · ${sum(d.balance)} · ${d.agingBucket} kun`,
+          style: 'body' as const,
+        })),
+      ]),
+      name,
+    )
+  } else {
+    saveBlob(
+      csvBlob([
+        ['Tashkilot', 'Obyekt', 'Unit', 'Hujjat', 'To‘lov muddati', 'Qarz, so‘m', 'Muddat guruhi'],
+        ...filtered.value.map((d) => [
+          d.tenant,
+          d.buildingName,
+          d.unitCode,
+          d.code,
+          dateShort(d.dueAt),
+          d.balance,
+          d.agingBucket,
+        ]),
+        ['Jami', '', '', '', '', filteredTotal.value, ''],
+      ]),
+      name,
+    )
+  }
+
+  banner.value = `${name} yuklab olindi: ${num(filtered.value.length)} ta yozuv, ${sum(filteredTotal.value)}.`
   exportOpen.value = false
 }
 
-const agingSlices = buckets.map((b) => ({ label: b.bucket, value: b.amount, tone: b.tone }))
+const agingSlices = computed(() =>
+  buckets.value.map((b) => ({ label: b.bucket, value: b.amount, tone: b.tone })),
+)
 </script>
 
 <template>
   <AppTopbar
     title="Qarzdorlik tahlili"
-    subtitle="Muddati o‘tgan to‘lovlar va aging kesimidagi nazorat"
+    subtitle="Muddati o‘tgan to‘lovlar va muddat guruhlari kesimidagi nazorat"
     :breadcrumb="[{ label: 'Billing' }, { label: 'Qarzdorlik tahlili' }]"
   >
     <template #actions>
@@ -137,7 +178,7 @@ const agingSlices = buckets.map((b) => ({ label: b.bucket, value: b.amount, tone
     </template>
   </AppTopbar>
 
-  <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-6">
+  <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-4 sm:p-6">
     <div
       v-if="banner"
       class="flex items-center gap-3 rounded-card bg-ok-50 px-4 py-3 ring-1 ring-ok-100"
@@ -252,7 +293,7 @@ const agingSlices = buckets.map((b) => ({ label: b.bucket, value: b.amount, tone
       </UiCard>
 
       <div class="space-y-5">
-        <UiCard title="Aging taqsimoti" subtitle="Muddat guruhlari bo‘yicha ulush">
+        <UiCard title="Muddat guruhlari taqsimoti" subtitle="Qarzdorlikning muddat bo‘yicha ulushi">
           <UiDonut
             :slices="agingSlices"
             :center-value="sumShort(debtTotal)"
@@ -363,13 +404,13 @@ const agingSlices = buckets.map((b) => ({ label: b.bucket, value: b.amount, tone
         <button
           type="button"
           class="flex w-full items-center gap-3 rounded-field p-3.5 text-left ring-1 ring-ink-200 transition-colors hover:bg-brand-50/60 hover:ring-brand-300"
-          @click="runExport('PDF')"
+          @click="runExport('DOCX')"
         >
           <span class="grid size-10 shrink-0 place-items-center rounded-[10px] bg-danger-50 text-danger-600">
             <UiIcon name="doc" :size="18" />
           </span>
           <span class="min-w-0 flex-1">
-            <span class="block text-[13.5px] font-semibold text-ink-900">PDF hujjat</span>
+            <span class="block text-[13.5px] font-semibold text-ink-900">Word hujjat</span>
             <span class="block text-[12px] text-ink-500">Chop etish uchun tayyor ko‘rinish</span>
           </span>
           <UiIcon name="chevronRight" :size="16" class="text-ink-400" />
@@ -378,13 +419,13 @@ const agingSlices = buckets.map((b) => ({ label: b.bucket, value: b.amount, tone
         <button
           type="button"
           class="flex w-full items-center gap-3 rounded-field p-3.5 text-left ring-1 ring-ink-200 transition-colors hover:bg-brand-50/60 hover:ring-brand-300"
-          @click="runExport('XLSX')"
+          @click="runExport('CSV')"
         >
           <span class="grid size-10 shrink-0 place-items-center rounded-[10px] bg-ok-50 text-ok-600">
             <UiIcon name="layers" :size="18" />
           </span>
           <span class="min-w-0 flex-1">
-            <span class="block text-[13.5px] font-semibold text-ink-900">XLSX jadval</span>
+            <span class="block text-[13.5px] font-semibold text-ink-900">CSV jadval</span>
             <span class="block text-[12px] text-ink-500">Qo‘shimcha hisob-kitob uchun</span>
           </span>
           <UiIcon name="chevronRight" :size="16" class="text-ink-400" />

@@ -1,4 +1,3 @@
-import { canAccess } from '~/constants/navigation'
 import { ROLE_META } from '~/constants/roles'
 
 /**
@@ -27,9 +26,12 @@ export default defineNuxtRouteMiddleware((to) => {
   // Kirgan foydalanuvchi kirish yoki qayd oynasiga qaytmaydi.
   if (GUEST_ONLY.includes(path)) return navigateTo(home)
 
+  // Super rahbar barcha modullarni ochadi, `role.ts` bilan bir xil qoida.
+  if (auth.role === 'SUPER_HEAD') return
+
   // Ruxsat berilmagan: taqiqlangan: noma’lum holatda ham kirish yopiladi.
   // `path !== home` sharti yo‘naltirish halqasining oldini oladi.
-  if (!isPublic && path !== home && !canAccess(path, auth.role)) {
+  if (!isPublic && path !== home && !auth.canRoute(path)) {
     return navigateTo(home)
   }
 })

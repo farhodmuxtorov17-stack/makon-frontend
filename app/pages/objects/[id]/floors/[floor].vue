@@ -9,7 +9,21 @@ const auth = useAuthStore()
 
 const id = computed(() => String(route.params.id))
 const floorNo = computed(() => Number(route.params.floor))
-const building = computed(() => buildingById(id.value))
+/** Biriktirilmagan obyekt qavat rejasi havolasi orqali ham ochilmaydi */
+const building = computed(() => {
+  const b = buildingById(id.value)
+  return b && auth.inScope(b.id) ? b : undefined
+})
+
+/** Ijarachi va narx ma’lumoti faqat ijara oqimida ishlaydigan rollarga ochiq */
+const showFinance = computed(
+  () => auth.can('application.decide') || auth.can('invoice.create') || auth.can('contract.sign'),
+)
+
+/** Arizalar moduli hamma rolga ochiq emas, havola shunga qarab ko‘rsatiladi */
+const canOpenApplications = computed(() =>
+  auth.canRoute('/applications'),
+)
 const units = computed(() => (building.value ? unitsOfFloor(building.value.id, floorNo.value) : []))
 
 const selectedId = ref(String(route.query.unit ?? ''))
@@ -181,11 +195,19 @@ function resetPlan() {
 
 function contractLabel(unit: Unit) {
   if (unit.contractCode) return `Shartnoma imzolangan · ${unit.contractCode}`
-  if (unit.status === 'RESERVED') return 'Bron qilingan, shartnoma tayyorlanmoqda'
+  if (unit.status === 'RESERVED') return 'Rezervda, shartnoma tayyorlanmoqda'
   if (unit.status === 'MAINTENANCE') return 'Ta’mir ishlari tugagunicha to‘xtatilgan'
   if (unit.status === 'VACANT') return 'Shartnoma rasmiylashtirilmagan'
   return 'Shartnoma ma’lumotlari kiritilmagan'
 }
+
+/** Ariza oynasi sarlavhasida narx faqat moliya huquqi bilan ko‘rinadi */
+const applySubtitle = computed(() => {
+  const u = selected.value
+  if (!u) return ''
+  const base = `${area(u.area)} · ${u.usage}`
+  return showFinance.value ? `${base} · ${num(u.price)} ${u.priceUnit}` : base
+})
 
 /**
  * Bo‘sh unit uchun ijara sikli. Tizimga kirmagan foydalanuvchi ochiq ariza
@@ -215,13 +237,16 @@ function goApply() {
       title="Obyekt topilmadi"
       :breadcrumb="[{ label: 'Obyektlar', to: '/objects' }, { label: 'Topilmadi' }]"
     />
-    <main class="scroll-slim flex-1 overflow-y-auto p-6">
+    <main class="scroll-slim flex-1 overflow-y-auto p-4 sm:p-6">
       <UiCard>
         <div class="flex flex-col items-center gap-4 py-12 text-center">
           <span class="grid size-14 place-items-center rounded-full bg-warn-50 text-warn-600">
             <UiIcon name="warning" :size="26" />
           </span>
-          <p class="text-[15px] font-bold text-ink-900">Bunday obyekt reyestrda yo‘q</p>
+          <p class="text-[15px] font-bold text-ink-900">Obyekt mavjud emas</p>
+          <p class="max-w-sm text-[13px] leading-relaxed text-ink-500">
+            Havola eskirgan yoki obyekt sizga biriktirilmagan bo‘lishi mumkin.
+          </p>
           <UiButton to="/objects">
             <UiIcon name="chevronLeft" :size="16" />
             Obyektlar reyestri
@@ -253,7 +278,7 @@ function goApply() {
       </template>
     </AppTopbar>
 
-    <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-4 sm:p-6">
+    <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-4 sm:p-4 sm:p-6">
       <section class="grid gap-5 xl:grid-cols-[minmax(0,1fr)_368px]">
         <div class="min-w-0 space-y-5">
           <UiCard
@@ -278,7 +303,7 @@ function goApply() {
                 >
                   <button
                     type="button"
-                    class="grid size-9 place-items-center rounded-[8px] text-ink-600 transition-colors hover:bg-brand-50 hover:text-brand-600 disabled:opacity-40"
+                    class="grid size-11 md:size-9 place-items-center rounded-[8px] text-ink-600 transition-colors hover:bg-brand-50 hover:text-brand-600 disabled:opacity-40"
                     aria-label="Yaqinlashtirish"
                     :disabled="zoom >= 3"
                     @click="zoomIn"
@@ -287,7 +312,7 @@ function goApply() {
                   </button>
                   <button
                     type="button"
-                    class="grid size-9 place-items-center rounded-[8px] text-ink-600 transition-colors hover:bg-brand-50 hover:text-brand-600 disabled:opacity-40"
+                    class="grid size-11 md:size-9 place-items-center rounded-[8px] text-ink-600 transition-colors hover:bg-brand-50 hover:text-brand-600 disabled:opacity-40"
                     aria-label="Uzoqlashtirish"
                     :disabled="zoom <= 0.5"
                     @click="zoomOut"
@@ -303,7 +328,7 @@ function goApply() {
                   </button>
                   <button
                     type="button"
-                    class="grid size-9 place-items-center rounded-[8px] transition-colors hover:bg-brand-50 hover:text-brand-600"
+                    class="grid size-11 md:size-9 place-items-center rounded-[8px] transition-colors hover:bg-brand-50 hover:text-brand-600"
                     :class="fitMode ? 'text-brand-600' : 'text-ink-600'"
                     aria-label="Rejaga moslashtirish"
                     @click="fitPlan"
@@ -319,7 +344,7 @@ function goApply() {
                   </button>
                   <button
                     type="button"
-                    class="grid size-9 place-items-center rounded-[8px] text-ink-600 transition-colors hover:bg-brand-50 hover:text-brand-600"
+                    class="grid size-11 md:size-9 place-items-center rounded-[8px] text-ink-600 transition-colors hover:bg-brand-50 hover:text-brand-600"
                     aria-label="Qayta tiklash"
                     @click="resetPlan"
                   >
@@ -474,7 +499,7 @@ function goApply() {
                   {{ selected.usage }} · {{ selected.rooms }} xona
                 </dd>
               </div>
-              <div class="flex items-start gap-4 py-2.5">
+              <div v-if="showFinance" class="flex items-start gap-4 py-2.5">
                 <dt class="flex w-[128px] shrink-0 items-center gap-2 text-[12.5px] text-ink-500">
                   <UiIcon name="user" :size="15" />
                   Ijarachi / Xaridor
@@ -483,7 +508,7 @@ function goApply() {
                   {{ selected.tenant ?? '-' }}
                 </dd>
               </div>
-              <div class="flex items-start gap-4 py-2.5">
+              <div v-if="showFinance" class="flex items-start gap-4 py-2.5">
                 <dt class="flex w-[128px] shrink-0 items-center gap-2 text-[12.5px] text-ink-500">
                   <UiIcon name="wallet" :size="15" />
                   Narxi
@@ -509,7 +534,7 @@ function goApply() {
                   </span>
                 </dd>
               </div>
-              <div class="flex items-start gap-4 py-2.5">
+              <div v-if="showFinance" class="flex items-start gap-4 py-2.5">
                 <dt class="flex w-[128px] shrink-0 items-center gap-2 text-[12.5px] text-ink-500">
                   <UiIcon name="clipboard" :size="15" />
                   Shartnoma holati
@@ -634,17 +659,17 @@ function goApply() {
               <dt class="text-[12.5px] text-ink-500">Taklif</dt>
               <dd class="text-[13px] font-semibold text-ink-900">{{ selected.offer }}</dd>
             </div>
-            <div class="flex items-center justify-between gap-4 py-2.5">
+            <div v-if="showFinance" class="flex items-center justify-between gap-4 py-2.5">
               <dt class="text-[12.5px] text-ink-500">Narxi</dt>
               <dd class="tabular text-[13px] font-bold text-brand-600">
                 {{ num(selected.price) }} {{ selected.priceUnit }}
               </dd>
             </div>
-            <div class="flex items-center justify-between gap-4 py-2.5">
+            <div v-if="showFinance" class="flex items-center justify-between gap-4 py-2.5">
               <dt class="text-[12.5px] text-ink-500">Ijarachi / Xaridor</dt>
               <dd class="text-[13px] font-semibold text-ink-900">{{ selected.tenant ?? '-' }}</dd>
             </div>
-            <div class="flex items-start justify-between gap-4 py-2.5">
+            <div v-if="showFinance" class="flex items-start justify-between gap-4 py-2.5">
               <dt class="text-[12.5px] text-ink-500">Shartnoma</dt>
               <dd class="max-w-[60%] text-right text-[13px] font-semibold text-ink-900">
                 {{ contractLabel(selected) }}
@@ -680,7 +705,7 @@ function goApply() {
         v-if="selected"
         v-model="applyOpen"
         :title="`Ariza yuborish: Unit ${selected.code}`"
-        :subtitle="`${area(selected.area)} · ${selected.usage} · ${num(selected.price)} ${selected.priceUnit}`"
+        :subtitle="applySubtitle"
       >
         <div class="flex gap-3 rounded-field bg-brand-50 p-4 ring-1 ring-inset ring-brand-100">
           <UiIcon name="info" :size="20" class="mt-0.5 shrink-0 text-brand-600" />
@@ -713,7 +738,7 @@ function goApply() {
 
         <template #footer>
           <UiButton variant="ghost" @click="applyOpen = false">Yopish</UiButton>
-          <UiButton variant="secondary" to="/applications">
+          <UiButton v-if="canOpenApplications" variant="secondary" to="/applications">
             <UiIcon name="clipboard" :size="16" />
             Arizalar navbati
           </UiButton>

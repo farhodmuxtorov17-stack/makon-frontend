@@ -2,17 +2,41 @@
 import AppTopbar from '~/components/layout/AppTopbar.vue'
 import { BUILDINGS } from '~/data/buildings'
 import {
-  AGING,
-  BILLING_SUMMARY,
   CONTRACTS,
   INVOICES,
-  PAYMENT_STATUS_BREAKDOWN,
   TARIFF_LINES,
+  agingOf,
+  billingSummaryOf,
+  paymentStatusOf,
 } from '~/data/business'
-import { dateShort, num, percent, sum, sumShort } from '~/utils/format'
+import {
+  dateShort,
+  isoShift,
+  monthShift,
+  monthTitle,
+  num,
+  percent,
+  sum,
+  sumShort,
+  todayIso,
+} from '~/utils/format'
 
-const invoices = ref(INVOICES.map((i) => ({ ...i })))
-const seq = ref(587)
+const auth = useAuthStore()
+
+/** Reyestrni ko‘rish huquqi hujjat yaratish yoki to‘lov qabul qilishga ruxsat bermaydi */
+const canCreate = computed(() => auth.can('invoice.create'))
+const canConfirm = computed(() => auth.can('payment.confirm'))
+
+/**
+ * Sahifa umumiy reyestrni o‘qiydi va to‘g‘ridan-to‘g‘ri unga yozadi: qabul
+ * qilingan to‘lov qarzdorlik ekranida ham, sahifa almashganda ham saqlanadi.
+ */
+const summary = computed(() => billingSummaryOf(INVOICES))
+const aging = computed(() => agingOf(INVOICES))
+const paymentStatus = computed(() => paymentStatusOf(INVOICES))
+const paidShare = computed(() =>
+  summary.value.charged ? Math.round((summary.value.paidTotal / summary.value.charged) * 100) : 0,
+)
 
 const search = ref('')
 const building = ref('all')
@@ -35,14 +59,14 @@ const statusOptions = [
 
 const periodOptions = computed(() => [
   { value: 'all', label: 'Barcha davrlar' },
-  ...Array.from(new Set(invoices.value.map((i) => i.period))).map((p) => ({
+  ...Array.from(new Set(INVOICES.map((i) => i.period))).map((p) => ({
     value: p,
     label: p,
   })),
 ])
 
 const scoped = computed(() =>
-  invoices.value.filter((i) => {
+  INVOICES.filter((i) => {
     const q = search.value.trim().toLowerCase()
     const byQuery =
       !q || `${i.code} ${i.tenant} ${i.buildingName} ${i.unitCode}`.toLowerCase().includes(q)
@@ -107,10 +131,10 @@ function resetFilters() {
 
 const detailOpen = ref(false)
 const activeId = ref('')
-const active = computed(() => invoices.value.find((i) => i.id === activeId.value) ?? null)
+const active = computed(() => INVOICES.find((i) => i.id === activeId.value) ?? null)
 
 const payAmount = ref('')
-const payDate = ref('2025-05-19')
+const payDate = ref(todayIso())
 const payMethod = ref('bank')
 const payNote = ref('')
 
@@ -138,7 +162,7 @@ const payValid = computed(() => {
 
 function acceptPayment() {
   const inv = active.value
-  if (!inv || !payValid.value) return
+  if (!canConfirm.value || !inv || !payValid.value) return
   inv.paid += payValue.value
   inv.status = inv.paid >= inv.total ? 'PAID' : 'PARTIALLY_PAID'
   if (inv.paid >= inv.total) inv.agingBucket = null
@@ -147,45 +171,56 @@ function acceptPayment() {
 }
 
 const createOpen = ref(false)
+
+/** Joriy oy va undan keyingi ikki oy: hisob davri qo‘lda yozilmaydi */
+const createPeriods = [0, 1, 2].map((offset) => {
+  const label = monthTitle(monthShift(offset))
+  return { value: label, label }
+})
+
 const form = reactive({
   tenant: '',
   building: BUILDINGS[0]!.name,
   unitCode: '',
-  period: 'May 2025',
+  period: createPeriods[0]!.value,
   total: '',
-  dueAt: '2025-06-10',
+  dueAt: isoShift(10),
 })
-
-const createPeriods = [
-  { value: 'May 2025', label: 'May 2025' },
-  { value: 'Iyun 2025', label: 'Iyun 2025' },
-  { value: 'Iyul 2025', label: 'Iyul 2025' },
-]
 
 const createValid = computed(() => form.tenant.trim().length > 2 && Number(form.total) > 0)
 
 function openCreate() {
+  if (!canCreate.value) return
   form.tenant = ''
   form.building = BUILDINGS[0]!.name
   form.unitCode = ''
-  form.period = 'May 2025'
+  form.period = createPeriods[0]!.value
   form.total = ''
-  form.dueAt = '2025-06-10'
+  form.dueAt = isoShift(10)
   createOpen.value = true
 }
 
+/** Reyestrdagi eng katta tartib raqami: yangi hujjat shundan keyin davom etadi */
+function lastSequence() {
+  return INVOICES.reduce((max, i) => {
+    const n = Number(i.code.slice(-4))
+    return Number.isFinite(n) ? Math.max(max, n) : max
+  }, 0)
+}
+
 function createInvoice() {
-  if (!createValid.value) return
-  seq.value += 1
-  const code = `INV-2025-0${seq.value}`
-  invoices.value.unshift({
-    id: `i-0${seq.value}`,
+  if (!canCreate.value || !createValid.value) return
+  const issuedAt = todayIso()
+  const seq = lastSequence() + 1
+  const code = `INV-${issuedAt.slice(0, 4)}-0${seq}`
+  INVOICES.unshift({
+    id: `i-0${seq}`,
     code,
     tenant: form.tenant.trim(),
     buildingName: form.building,
     unitCode: form.unitCode.trim() || 'Unit -',
     period: form.period,
-    issuedAt: '2025-05-19',
+    issuedAt,
     dueAt: form.dueAt,
     total: Number(form.total),
     paid: 0,
@@ -197,8 +232,16 @@ function createInvoice() {
   status.value = 'all'
 }
 
-const agingSlices = AGING.map((a) => ({ label: a.bucket, value: a.amount, tone: a.tone }))
-const agingTotal = AGING.reduce((s, a) => s + a.amount, 0)
+const agingSlices = computed(() =>
+  aging.value.map((a) => ({ label: a.bucket, value: a.amount, tone: a.tone })),
+)
+const agingTotal = computed(() => aging.value.reduce((s, a) => s + a.amount, 0))
+
+const registrySubtitle = computed(() =>
+  period.value === 'all'
+    ? 'Barcha davrlar bo‘yicha hisob-kitoblar'
+    : `${period.value} davri bo‘yicha hisob-kitoblar`,
+)
 
 const contractId = ref(CONTRACTS[1]!.id)
 const contractOptions = CONTRACTS.map((c) => ({ value: c.id, label: `${c.code}, ${c.tenant}` }))
@@ -219,14 +262,14 @@ const tariffTotal = TARIFF_LINES.reduce((s, t) => s + t.sum, 0)
         <UiIcon name="chart" :size="16" />
         Qarzdorlik tahlili
       </UiButton>
-      <UiButton size="sm" @click="openCreate">
+      <UiButton v-if="canCreate" size="sm" @click="openCreate">
         <UiIcon name="plus" :size="16" />
         Yangi hisob-faktura
       </UiButton>
     </template>
   </AppTopbar>
 
-  <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-6">
+  <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-4 sm:p-6">
     <div
       v-if="banner"
       class="flex items-center gap-3 rounded-card bg-ok-50 px-4 py-3 ring-1 ring-ok-100"
@@ -244,39 +287,21 @@ const tariffTotal = TARIFF_LINES.reduce((s, t) => s + t.sum, 0)
     </div>
 
     <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <UiKpi label="Jami hisoblangan" :value="sumShort(summary.charged)" icon="doc" tone="brand" />
       <UiKpi
-        label="Jami hisoblangan"
-        :value="sumShort(BILLING_SUMMARY.charged)"
-        icon="doc"
-        tone="brand"
-        :spark="[112, 118, 121, 125, 128]"
-      />
-      <UiKpi
-        label="Chegirmalar"
-        :value="sumShort(BILLING_SUMMARY.discounts)"
-        icon="arrowDown"
+        label="To‘langan"
+        :value="sumShort(summary.paidTotal)"
+        icon="check"
         tone="ok"
-        :spark="[7.1, 6.8, 6.2, 6.0, 5.85]"
+        :gauge="paidShare"
       />
-      <UiKpi
-        label="QQS (12%)"
-        :value="sumShort(BILLING_SUMMARY.vat)"
-        icon="meter"
-        tone="violet"
-        :spark="[13.1, 13.6, 14.1, 14.5, 14.93]"
-      />
-      <UiKpi
-        label="Jami summa"
-        :value="sumShort(BILLING_SUMMARY.total)"
-        icon="wallet"
-        tone="brand"
-        :spark="[119, 126, 130, 134, 137]"
-      />
+      <UiKpi label="Qarzdorlik" :value="sumShort(summary.debtTotal)" icon="wallet" tone="warn" />
+      <UiKpi label="QQS (12%)" :value="sumShort(summary.vat)" icon="meter" tone="violet" />
     </section>
 
     <UiCard
       title="Hisob-fakturalar reyestri"
-      :subtitle="`${BILLING_SUMMARY.period} davri bo‘yicha hisob-kitoblar`"
+      :subtitle="registrySubtitle"
       flush
       :padded="false"
     >
@@ -347,14 +372,14 @@ const tariffTotal = TARIFF_LINES.reduce((s, t) => s + t.sum, 0)
     </UiCard>
 
     <section class="grid gap-5 xl:grid-cols-2">
-      <UiCard title="Qarzdorlik tahlili (Aging)" subtitle="Muddat bo‘yicha taqsimot">
+      <UiCard title="Qarzdorlik tahlili" subtitle="Muddat guruhlari bo‘yicha taqsimot">
         <UiDonut
           :slices="agingSlices"
           :center-value="sumShort(agingTotal)"
           center-label="jami qarzdorlik"
         />
         <ul class="mt-5 divide-y divide-ink-100 border-t border-ink-100">
-          <li v-for="a in AGING" :key="a.bucket" class="flex items-center gap-3 py-2.5">
+          <li v-for="a in aging" :key="a.key" class="flex items-center gap-3 py-2.5">
             <span class="min-w-0 flex-1 text-[13px] text-ink-600">{{ a.bucket }}</span>
             <span class="tabular w-12 text-right text-[13px] font-semibold text-ink-700">
               {{ percent(a.share) }}
@@ -368,20 +393,11 @@ const tariffTotal = TARIFF_LINES.reduce((s, t) => s + t.sum, 0)
 
       <UiCard title="To‘lov statusi" subtitle="Hisob-fakturalar bo‘yicha holat" flush :padded="false">
         <ul class="divide-y divide-ink-100 border-t border-ink-100">
-          <li v-for="p in PAYMENT_STATUS_BREAKDOWN" :key="p.label" class="px-5 py-3.5">
+          <li v-for="p in paymentStatus" :key="p.status" class="px-5 py-3.5">
             <button
               type="button"
               class="flex w-full items-center gap-4 text-left"
-              @click="
-                status =
-                  p.label === 'To‘langan'
-                    ? 'PAID'
-                    : p.label === 'Qisman to‘langan'
-                      ? 'PARTIALLY_PAID'
-                      : p.label === 'Kechikkan'
-                        ? 'OVERDUE'
-                        : 'ISSUED'
-              "
+              @click="status = p.status"
             >
               <span
                 class="grid size-10 shrink-0 place-items-center rounded-[10px]"
@@ -525,7 +541,7 @@ const tariffTotal = TARIFF_LINES.reduce((s, t) => s + t.sum, 0)
           </div>
         </dl>
 
-        <div class="rounded-card bg-surface-sunken p-4 ring-1 ring-ink-200/70">
+        <div v-if="canConfirm" class="rounded-card bg-surface-sunken p-4 ring-1 ring-ink-200/70">
           <p class="text-[14px] font-bold text-ink-900">To‘lov qabul qilish</p>
           <div class="mt-4 grid gap-4 sm:grid-cols-2">
             <UiField label="To‘lov summasi" required>
@@ -549,7 +565,12 @@ const tariffTotal = TARIFF_LINES.reduce((s, t) => s + t.sum, 0)
 
       <template #footer>
         <UiButton variant="ghost" @click="detailOpen = false">Yopish</UiButton>
-        <UiButton variant="success" :disabled="!payValid" @click="acceptPayment">
+        <UiButton
+          v-if="canConfirm"
+          variant="success"
+          :disabled="!payValid"
+          @click="acceptPayment"
+        >
           <UiIcon name="check" :size="16" />
           To‘lov qabul qilish
         </UiButton>
@@ -557,6 +578,7 @@ const tariffTotal = TARIFF_LINES.reduce((s, t) => s + t.sum, 0)
     </UiModal>
 
     <UiModal
+      v-if="canCreate"
       v-model="createOpen"
       title="Yangi hisob-faktura"
       subtitle="Shartnoma va tarif jadvali asosida hisob-faktura shakllantiriladi"

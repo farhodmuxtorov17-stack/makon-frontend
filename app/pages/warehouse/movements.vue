@@ -48,7 +48,10 @@ const CURRENT_DAY = '2025-05-18'
 const PERIOD_START = '2025-05-01'
 const OPERATOR = 'Anvar Qodirov'
 
-const stock = ref<StockItem[]>(STOCK_ITEMS.map((i) => ({ ...i })))
+/** Ombor mudiriga faqat biriktirilgan ombor ko‘rinadi */
+const stock = ref<StockItem[]>(
+  STOCK_ITEMS.filter((i) => auth.inWarehouseScope(i.warehouse)).map((i) => ({ ...i })),
+)
 
 const warehouses = computed(() => [...new Set(stock.value.map((i) => i.warehouse))])
 
@@ -257,7 +260,12 @@ function buildMovement(s: SeedMovement, index: number): Movement {
   }
 }
 
-const movements = ref<Movement[]>(SEED_MOVEMENTS.map(buildMovement))
+/** Harakatlar ham biriktirilgan ombor doirasida ko‘rinadi */
+const movements = ref<Movement[]>(
+  SEED_MOVEMENTS.map(buildMovement).filter(
+    (m) => auth.inWarehouseScope(m.warehouse) || (!!m.target && auth.inWarehouseScope(m.target)),
+  ),
+)
 
 const KIND_META: Record<MovementKind, { label: string; icon: string; badge: string; mark: string }> =
   {
@@ -425,8 +433,8 @@ function sendToPrinter() {
 }
 
 const receiveOpen = ref(false)
-const receiveWarehouse = ref(STOCK_ITEMS[0]!.warehouse)
-const receiveItem = ref(STOCK_ITEMS[0]!.id)
+const receiveWarehouse = ref(stock.value[0]?.warehouse ?? STOCK_ITEMS[0]!.warehouse)
+const receiveItem = ref(stock.value[0]?.id ?? STOCK_ITEMS[0]!.id)
 const receiveQty = ref(10)
 const receiveParty = ref('')
 const receiveDoc = ref('')
@@ -494,8 +502,8 @@ function saveReceive() {
 }
 
 const issueOpen = ref(false)
-const issueWarehouse = ref(STOCK_ITEMS[0]!.warehouse)
-const issueItem = ref(STOCK_ITEMS[0]!.id)
+const issueWarehouse = ref(stock.value[0]?.warehouse ?? STOCK_ITEMS[0]!.warehouse)
+const issueItem = ref(stock.value[0]?.id ?? STOCK_ITEMS[0]!.id)
 const issueQty = ref(5)
 const issueRecipient = ref('')
 const issueBasis = ref(SERVICE_REQUESTS[1]!.code)
@@ -598,7 +606,7 @@ function saveIssue() {
     </template>
   </AppTopbar>
 
-  <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-6">
+  <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-4 sm:p-6">
     <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <UiKpi
         label="Bugungi kirim"

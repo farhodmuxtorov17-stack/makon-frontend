@@ -1,22 +1,8 @@
 <script setup lang="ts">
 import { BUILDINGS } from '~/data/buildings'
-import { UNITS } from '~/data/units'
+import { UNITS, type Unit } from '~/data/units'
 import { UNIT_STATUS } from '~/constants/statuses'
 import { area, num, percent } from '~/utils/format'
-
-type EditUnit = {
-  id: string
-  code: string
-  buildingId: string
-  floor: number
-  rooms: number
-  area: number
-  usage: string
-  offer: string
-  status: string
-  equipment: string[]
-  polygon: number[][]
-}
 
 type UnitRow = {
   id: string
@@ -69,7 +55,7 @@ const EQUIPMENT_LIBRARY = [
   'Yuk platformasi',
 ]
 
-const CHECKS: Array<{ key: string; label: string; ok: (u: EditUnit) => boolean }> = [
+const CHECKS: Array<{ key: string; label: string; ok: (u: Unit) => boolean }> = [
   { key: 'code', label: 'Unit kodi', ok: (u) => Boolean(u.code.trim()) },
   { key: 'rooms', label: 'Xonalar soni', ok: (u) => u.rooms > 0 },
   { key: 'area', label: 'Maydoni', ok: (u) => u.area > 0 },
@@ -80,31 +66,22 @@ const CHECKS: Array<{ key: string; label: string; ok: (u: EditUnit) => boolean }
   { key: 'polygon', label: '2D poligon', ok: (u) => u.polygon.length >= 3 },
 ]
 
-const units = ref<EditUnit[]>(
-  UNITS.filter((u) => auth.inScope(u.buildingId)).map((u) => ({
-    id: u.id,
-    code: u.code,
-    buildingId: u.buildingId,
-    floor: u.floor,
-    rooms: u.rooms,
-    area: u.area,
-    usage: u.usage,
-    offer: u.offer,
-    status: u.status,
-    equipment: [...u.equipment],
-    polygon: u.polygon.map((p) => [...p]),
-  })),
-)
+/**
+ * Sahifa umumiy unit reyestrini tahrirlaydi, nusxasini emas: saqlangan
+ * atribut obyekt kartasida, katalogda, qavat rejasida va 3D ko‘rinishda
+ * darhol o‘zgaradi va sahifa almashganda ham saqlanib qoladi.
+ */
+const units = computed(() => UNITS.filter((u) => auth.inScope(u.buildingId)))
 
 function floorName(value: number) {
   return value === 0 ? 'Yer osti · texnik' : `${value}-qavat`
 }
 
-function passedChecks(u: EditUnit) {
+function passedChecks(u: Unit) {
   return CHECKS.filter((c) => c.ok(u))
 }
 
-function completeness(u: EditUnit) {
+function completeness(u: Unit) {
   return Math.round((passedChecks(u).length / CHECKS.length) * 100)
 }
 
@@ -338,7 +315,7 @@ function removeEquipment(name: string) {
 
 function saveUnit() {
   const u = panelUnit.value
-  if (!u) return
+  if (!canEdit.value || !u) return
 
   const code = form.code.trim()
   const areaValue = Number(form.area)
@@ -353,12 +330,13 @@ function saveUnit() {
     return
   }
 
+  // Qiymatlar tanlov ro‘yxatlaridan keladi, shuning uchun tur aniqlashtiriladi
   u.code = code
   u.rooms = Number.isFinite(roomsValue) ? Math.max(0, Math.round(roomsValue)) : 0
   u.area = Math.round(areaValue * 100) / 100
-  u.usage = form.usage
-  u.offer = form.offer
-  u.status = form.status || 'DRAFT'
+  u.usage = form.usage as Unit['usage']
+  u.offer = form.offer as Unit['offer']
+  u.status = (form.status || 'DRAFT') as Unit['status']
   u.equipment = [...equipment.value]
 
   formError.value = ''
@@ -366,10 +344,11 @@ function saveUnit() {
 }
 
 function applyBulk() {
+  if (!canEdit.value) return
   const label = UNIT_STATUS[bulkStatus.value]?.label ?? bulkStatus.value
   const count = selectedIds.value.length
   units.value.forEach((u) => {
-    if (selectedIds.value.includes(u.id)) u.status = bulkStatus.value
+    if (selectedIds.value.includes(u.id)) u.status = bulkStatus.value as Unit['status']
   })
   notice.value = `${count} ta unit «${label}» holatiga o‘tkazildi.`
   selectedIds.value = []
@@ -414,7 +393,7 @@ function toneOf(pct: number) {
     </template>
   </AppTopbar>
 
-  <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-4 lg:p-6">
+  <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-4 sm:p-6">
     <div
       v-if="notice"
       class="flex items-start gap-3 rounded-card bg-ok-50 px-4 py-3.5 ring-1 ring-inset ring-ok-100"
@@ -741,7 +720,7 @@ function toneOf(pct: number) {
                         {{ e }}
                         <button
                           type="button"
-                          class="grid size-5 place-items-center rounded-full text-ink-500 transition-colors hover:bg-ink-300 hover:text-ink-900"
+                          class="relative grid size-5 place-items-center rounded-full text-ink-500 transition-colors after:absolute after:-inset-3 after:content-[''] hover:bg-ink-300 hover:text-ink-900 md:after:hidden"
                           :aria-label="`${e} jihozini olib tashlash`"
                           @click="removeEquipment(e)"
                         >

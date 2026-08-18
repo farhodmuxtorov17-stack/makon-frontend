@@ -70,3 +70,39 @@ export function timeOf(iso: string): string {
   const m = /\b(\d{2}:\d{2})\b/.exec(iso)
   return m ? m[1]! : ''
 }
+
+function pad(value: number): string {
+  return String(value).padStart(2, '0')
+}
+
+function isoOf(date: Date): string {
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
+}
+
+/** Bugungi sana ISO ko‘rinishida: "2026-08-18" */
+export function todayIso(): string {
+  return isoOf(new Date())
+}
+
+/** Bugundan `days` kun oldingi (manfiy) yoki keyingi (musbat) sana */
+export function isoShift(days: number): string {
+  const d = new Date()
+  d.setDate(d.getDate() + days)
+  return isoOf(d)
+}
+
+/** Bugundan `months` oy keyingi sananing boshi: hisob davri yorlig‘i uchun */
+export function monthShift(months: number): string {
+  const d = new Date()
+  d.setDate(1)
+  d.setMonth(d.getMonth() + months)
+  return isoOf(d)
+}
+
+/** "2026-08-18" → "Avgust 2026" (hisob davri yorlig‘i) */
+export function monthTitle(iso: string): string {
+  const p = parts(iso)
+  if (!p) return iso
+  const name = MONTHS[Number(p[1]) - 1] ?? ''
+  return `${name.charAt(0).toUpperCase()}${name.slice(1)} ${p[0]}`
+}

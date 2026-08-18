@@ -8,6 +8,7 @@ import {
   organizationByStir,
   type Certificate,
 } from '~/data/organizations'
+import { CONTACT } from '~/constants/contacts'
 import { dateShort } from '~/utils/format'
 import type { Role } from '~/types/rbac'
 
@@ -15,9 +16,11 @@ definePageMeta({ layout: 'auth', public: true })
 
 const auth = useAuthStore()
 const route = useRoute()
+const { t } = useI18n()
 
 /**
- * Xodim hisoblarini super rahbar yaratadi va rolni hisobga biriktiradi, * shuning uchun kirish oynasida rol tanlanmaydi.
+ * Xodim hisoblarini super rahbar yaratadi va rolni hisobga biriktiradi,
+ * shuning uchun kirish oynasida rol tanlanmaydi.
  */
 const ACCOUNTS: Array<{ login: string; email: string; role: Role }> = [
   { login: 'a.karimov', email: 'a.karimov@makon.uz', role: 'SUPER_HEAD' },
@@ -42,10 +45,10 @@ const MIN_PASSWORD = 6
 const KEY_PASSWORD = '123456'
 
 /** Ikki kirish yo‘li: hisob paroli va kalit sertifikati */
-const MODES = [
-  { value: 'password', label: 'Login va parol' },
-  { value: 'eri', label: 'ERI orqali' },
-]
+const MODES = computed(() => [
+  { value: 'password', label: t('login.modePassword') },
+  { value: 'eri', label: t('login.modeCert') },
+])
 
 const mode = ref('password')
 
@@ -66,15 +69,17 @@ const year = new Date().getFullYear()
 
 const loginError = computed(() => {
   if (!loginTouched.value) return ''
-  if (!loginName.value.trim()) return 'Login kiritilmagan'
-  if (loginName.value.trim().length < 3) return 'Login juda qisqa'
+  if (!loginName.value.trim()) return t('login.loginEmpty')
+  if (loginName.value.trim().length < 3) return t('login.loginShort')
   return ''
 })
 
 const passwordError = computed(() => {
   if (!passwordTouched.value) return ''
-  if (!password.value) return 'Parol kiritilmagan'
-  if (password.value.length < MIN_PASSWORD) return `Parol kamida ${MIN_PASSWORD} ta belgidan iborat`
+  if (!password.value) return t('login.passwordEmpty')
+  if (password.value.length < MIN_PASSWORD) {
+    return t('login.passwordShort', { count: MIN_PASSWORD })
+  }
   return ''
 })
 
@@ -84,10 +89,10 @@ const passwordValid = computed(() => password.value.length >= MIN_PASSWORD)
 // --- Kalit sertifikati yo‘li ----------------------------------------------
 
 /** Kalit qayerda saqlanadi: kompyuter xotirasi yoki tashqi kalit tashuvchi */
-const STORES = [
-  { value: 'local', label: 'Kompyuter xotirasi' },
-  { value: 'token', label: 'Tashqi kalit tashuvchi' },
-]
+const STORES = computed(() => [
+  { value: 'local', label: t('login.storeLocal') },
+  { value: 'token', label: t('login.storeToken') },
+])
 
 const store = ref('local')
 const reading = ref(false)
@@ -121,38 +126,24 @@ function roleForCertificate(cert: Certificate): Role | null {
   return 'TENANT_OWNER'
 }
 
-const FAILURE_TEXT: Record<string, { title: string; text: string }> = {
-  unselected: {
-    title: 'Sertifikat tanlanmagan.',
-    text: 'Ro‘yxatdan kirish uchun foydalanadigan kalitni belgilang.',
-  },
-  expired: {
-    title: 'Sertifikat muddati tugagan.',
-    text: 'Kalitni yangilab, so‘ng qaytadan urinib ko‘ring.',
-  },
-  unregistered: {
-    title: 'Sertifikat tizimda ro‘yxatdan o‘tmagan.',
-    text: 'Kalit egasining tashkiloti reyestrda topilmadi. Tashkilotni ro‘yxatdan o‘tkazing.',
-  },
-  password: {
-    title: 'Kalit paroli noto‘g‘ri.',
-    text: 'Parol kalit berilganda o‘rnatilgan. Tekshirib qaytadan kiriting.',
-  },
-}
+const FAILURE_TEXT = computed<Record<string, { title: string; text: string }>>(() => ({
+  unselected: { title: t('login.failUnselectedTitle'), text: t('login.failUnselectedText') },
+  expired: { title: t('login.failExpiredTitle'), text: t('login.failExpiredText') },
+  unregistered: { title: t('login.failUnregisteredTitle'), text: t('login.failUnregisteredText') },
+  password: { title: t('login.failPasswordTitle'), text: t('login.failPasswordText') },
+}))
 
 const keyPasswordError = computed(() => {
   if (!keyPasswordTouched.value) return ''
-  if (!keyPassword.value) return 'Kalit paroli kiritilmagan'
+  if (!keyPassword.value) return t('login.keyPasswordEmpty')
   if (keyPassword.value.length < MIN_PASSWORD) {
-    return `Kalit paroli kamida ${MIN_PASSWORD} ta belgidan iborat`
+    return t('login.keyPasswordShort', { count: MIN_PASSWORD })
   }
   return ''
 })
 
 const heading = computed(() =>
-  mode.value === 'password'
-    ? 'Login va parolni kiriting, tizim rolingizga mos ish maydonini ochadi.'
-    : 'Kalit do‘konini o‘qing, sertifikatni tanlang va kalit parolini kiriting.',
+  mode.value === 'password' ? t('login.headingPassword') : t('login.headingCert'),
 )
 
 // Kiritish boshlanishi bilan avvalgi rad javobi olib tashlanadi.
@@ -297,7 +288,7 @@ function submit() {
     <!-- Kirish ustuni -->
     <div class="flex min-h-dvh flex-col px-5 py-7 sm:px-8 lg:px-12 lg:py-9">
       <header class="flex items-center justify-between gap-4">
-        <NuxtLink to="/" class="rounded-field" aria-label="Bosh sahifaga o‘tish">
+        <NuxtLink to="/" class="rounded-field" :aria-label="t('login.homeAria')">
           <AppLogo />
         </NuxtLink>
         <LocaleSwitch />
@@ -306,10 +297,10 @@ function submit() {
       <main class="flex flex-1 items-center py-10">
         <div class="mx-auto w-full max-w-[460px]">
           <p class="text-[11px] font-semibold uppercase tracking-wide text-brand-600">
-            Ish maydoniga kirish
+            {{ t('login.eyebrow') }}
           </p>
           <h1 class="mt-2 font-display text-[26px] font-extrabold leading-tight">
-            Profilingizga kiring
+            {{ t('login.title') }}
           </h1>
           <p class="mt-2 text-[13.5px] leading-relaxed text-ink-500">{{ heading }}</p>
 
@@ -324,19 +315,19 @@ function submit() {
             >
               <UiIcon name="warning" :size="18" class="mt-px shrink-0 text-danger-600" />
               <p class="text-[13px] leading-relaxed text-ink-700">
-                <span class="font-semibold text-danger-700">Login yoki parol noto‘g‘ri.</span>
-                Ma’lumotlarni tekshirib qaytadan urinib ko‘ring.
+                <span class="font-semibold text-danger-700">{{ t('login.rejectedTitle') }}</span>
+                {{ t('login.rejectedText') }}
               </p>
             </div>
 
             <form class="mt-6 space-y-4" novalidate @submit.prevent="submit">
-              <UiField label="Login" required for="login" :error="loginError">
+              <UiField :label="t('login.loginLabel')" required for="login" :error="loginError">
                 <UiInput
                   id="login"
                   v-model="loginName"
                   name="username"
                   autocomplete="username"
-                  placeholder="ism.familiya"
+                  :placeholder="t('login.loginPlaceholder')"
                   :invalid="Boolean(loginError)"
                   :valid="loginValid && !loginError && !rejected"
                   @blur="loginTouched = true"
@@ -349,16 +340,16 @@ function submit() {
                     for="password"
                     class="flex items-center gap-1 text-[13px] font-semibold text-ink-700"
                   >
-                    Parol
+                    {{ t('login.passwordLabel') }}
                     <span class="text-danger-500" aria-hidden="true">*</span>
-                    <span class="sr-only">majburiy maydon</span>
+                    <span class="sr-only">{{ t('common.required') }}</span>
                   </label>
                   <button
                     type="button"
                     class="rounded-[6px] text-[12.5px] font-semibold text-brand-600 transition-colors hover:text-brand-700"
                     @click="resetOpen = true"
                   >
-                    Parolni unutdingizmi?
+                    {{ t('login.forgotPassword') }}
                   </button>
                 </div>
 
@@ -380,7 +371,7 @@ function submit() {
                   <button
                     type="button"
                     class="absolute inset-y-0 right-1 my-auto grid size-10 place-items-center rounded-[8px] text-ink-400 transition-colors hover:bg-ink-100 hover:text-ink-700"
-                    :aria-label="showPassword ? 'Parolni yashirish' : 'Parolni ko‘rsatish'"
+                    :aria-label="showPassword ? t('login.hidePassword') : t('login.showPassword')"
                     :aria-pressed="showPassword"
                     @click="showPassword = !showPassword"
                   >
@@ -414,7 +405,7 @@ function submit() {
                   type="checkbox"
                   class="size-4 shrink-0 cursor-pointer rounded-[4px] accent-brand-500"
                 />
-                <span class="text-[13px] text-ink-600">Meni eslab qol</span>
+                <span class="text-[13px] text-ink-600">{{ t('login.remember') }}</span>
               </label>
 
               <UiButton type="submit" size="lg" block :disabled="pending">
@@ -440,7 +431,7 @@ function submit() {
                     stroke-linecap="round"
                   />
                 </svg>
-                {{ pending ? 'Tekshirilmoqda…' : 'Tizimga kirish' }}
+                {{ pending ? t('common.checking') : t('common.signIn') }}
               </UiButton>
             </form>
           </template>
@@ -448,7 +439,7 @@ function submit() {
           <!-- Kalit sertifikati orqali -->
           <template v-else>
             <div class="mt-5 space-y-4">
-              <UiField label="Kalit manbasi" for="key-store">
+              <UiField :label="t('login.storeLabel')" for="key-store">
                 <UiSelect id="key-store" v-model="store" :options="STORES" />
               </UiField>
 
@@ -482,13 +473,7 @@ function submit() {
                   />
                 </svg>
                 <UiIcon v-else name="key" :size="17" />
-                {{
-                  reading
-                    ? 'Kalit do‘koni o‘qilmoqda…'
-                    : scanned
-                      ? 'Ro‘yxatni yangilash'
-                      : 'Sertifikatlarni o‘qish'
-                }}
+                {{ reading ? t('login.scanReading') : scanned ? t('login.scanAgain') : t('login.scan') }}
               </UiButton>
 
               <!-- Do‘kon bo‘sh -->
@@ -499,11 +484,8 @@ function submit() {
               >
                 <UiIcon name="warning" :size="18" class="mt-px shrink-0 text-warn-600" />
                 <p class="text-[13px] leading-relaxed text-ink-700">
-                  <span class="font-semibold text-warn-700">
-                    Kalit do‘konida sertifikat topilmadi.
-                  </span>
-                  Kalit tashuvchi ulanganini tekshiring yoki kalit saqlanadigan boshqa manbani
-                  tanlang.
+                  <span class="font-semibold text-warn-700">{{ t('login.emptyStoreTitle') }}</span>
+                  {{ t('login.emptyStoreText') }}
                 </p>
               </div>
 
@@ -516,8 +498,10 @@ function submit() {
               >
                 <fieldset>
                   <legend class="mb-2 text-[13px] font-semibold text-ink-700">
-                    Kalit sertifikatlari
-                    <span class="font-normal text-ink-500">({{ found.length }} ta)</span>
+                    {{ t('login.certListLegend') }}
+                    <span class="font-normal text-ink-500">
+                      {{ t('login.certCount', { count: found.length }) }}
+                    </span>
                   </legend>
 
                   <div class="scroll-slim max-h-[320px] space-y-2 overflow-y-auto pr-0.5">
@@ -541,7 +525,7 @@ function submit() {
                             {{ c.holderName }}
                           </span>
                           <span class="mt-0.5 block truncate text-[12.5px] text-ink-600">
-                            {{ orgOf(c)?.name ?? 'Tashkilot reyestrda topilmadi' }}
+                            {{ orgOf(c)?.name ?? t('login.certOrgMissing') }}
                           </span>
                         </span>
                         <span
@@ -552,27 +536,32 @@ function submit() {
                               : 'bg-danger-50 text-danger-700'
                           "
                         >
-                          {{ c.status === 'ACTIVE' ? 'Amalda' : 'Muddati tugagan' }}
+                          {{ c.status === 'ACTIVE' ? t('login.certActive') : t('login.certExpired') }}
                         </span>
                       </span>
 
                       <span class="mt-2.5 grid gap-1.5 sm:grid-cols-2">
                         <span class="flex items-baseline gap-1.5 text-[12px]">
-                          <span class="shrink-0 text-ink-500">STIR:</span>
+                          <span class="shrink-0 text-ink-500">{{ t('login.certStir') }}</span>
                           <span class="tabular font-semibold text-ink-800">
                             {{ formatStir(c.organizationStir) }}
                           </span>
                         </span>
                         <span class="flex items-baseline gap-1.5 text-[12px]">
-                          <span class="shrink-0 text-ink-500">Raqami:</span>
+                          <span class="shrink-0 text-ink-500">{{ t('login.certSerial') }}</span>
                           <span class="tabular truncate font-semibold text-ink-800">
                             {{ c.serial }}
                           </span>
                         </span>
                         <span class="flex items-baseline gap-1.5 text-[12px] sm:col-span-2">
-                          <span class="shrink-0 text-ink-500">Amal qilish muddati:</span>
+                          <span class="shrink-0 text-ink-500">{{ t('login.certValidity') }}</span>
                           <span class="tabular font-semibold text-ink-800">
-                            {{ dateShort(c.issuedAt) }} dan {{ dateShort(c.expiresAt) }} gacha
+                            {{
+                              t('login.certValidityValue', {
+                                from: dateShort(c.issuedAt),
+                                to: dateShort(c.expiresAt),
+                              })
+                            }}
                           </span>
                         </span>
                       </span>
@@ -585,9 +574,9 @@ function submit() {
                     for="key-password"
                     class="mb-1.5 flex items-center gap-1 text-[13px] font-semibold text-ink-700"
                   >
-                    Kalit paroli
+                    {{ t('login.keyPasswordLabel') }}
                     <span class="text-danger-500" aria-hidden="true">*</span>
-                    <span class="sr-only">majburiy maydon</span>
+                    <span class="sr-only">{{ t('common.required') }}</span>
                   </label>
 
                   <div class="relative">
@@ -608,7 +597,7 @@ function submit() {
                     <button
                       type="button"
                       class="absolute inset-y-0 right-1 my-auto grid size-10 place-items-center rounded-[8px] text-ink-400 transition-colors hover:bg-ink-100 hover:text-ink-700"
-                      :aria-label="showKeyPassword ? 'Parolni yashirish' : 'Parolni ko‘rsatish'"
+                      :aria-label="showKeyPassword ? t('login.hidePassword') : t('login.showPassword')"
                       :aria-pressed="showKeyPassword"
                       @click="showKeyPassword = !showKeyPassword"
                     >
@@ -673,7 +662,7 @@ function submit() {
                       stroke-linecap="round"
                     />
                   </svg>
-                  {{ pending ? 'Tekshirilmoqda…' : 'Sertifikat bilan kirish' }}
+                  {{ pending ? t('common.checking') : t('login.certSubmit') }}
                 </UiButton>
               </form>
 
@@ -682,8 +671,7 @@ function submit() {
                 class="flex items-start gap-2 rounded-field bg-surface-sunken p-3.5 text-[12.5px] leading-relaxed text-ink-600 ring-1 ring-inset ring-ink-200"
               >
                 <UiIcon name="info" :size="15" class="mt-px shrink-0 text-ink-400" />
-                Kalit do‘koni o‘qilgach, unda saqlangan sertifikatlar ro‘yxati chiqadi. Kalit
-                paroli faqat kirish uchun ishlatiladi va saqlanmaydi.
+                {{ t('login.certHint') }}
               </p>
             </div>
           </template>
@@ -699,12 +687,12 @@ function submit() {
                 <UiIcon name="user" :size="20" />
               </span>
               <div class="min-w-0">
-                <p class="text-[13.5px] font-semibold text-ink-900">Ijarachimisiz?</p>
-                <p class="text-[12.5px] text-ink-500">Hisobni o‘zingiz ochasiz</p>
+                <p class="text-[13.5px] font-semibold text-ink-900">{{ t('login.tenantTitle') }}</p>
+                <p class="text-[12.5px] text-ink-500">{{ t('login.tenantText') }}</p>
               </div>
             </div>
             <UiButton to="/register" variant="secondary" size="sm">
-              Ro‘yxatdan o‘ting
+              {{ t('login.tenantAction') }}
               <UiIcon name="arrowRight" :size="16" />
             </UiButton>
           </div>
@@ -719,12 +707,12 @@ function submit() {
                 <UiIcon name="send" :size="20" />
               </span>
               <div class="min-w-0">
-                <p class="text-[13.5px] font-semibold text-ink-900">Ariza yubormoqchimisiz?</p>
-                <p class="text-[12.5px] text-ink-500">Hisob ochmasdan ham yuborish mumkin</p>
+                <p class="text-[13.5px] font-semibold text-ink-900">{{ t('login.applyTitle') }}</p>
+                <p class="text-[12.5px] text-ink-500">{{ t('login.applyText') }}</p>
               </div>
             </div>
             <UiButton to="/ariza" variant="secondary" size="sm">
-              Ariza yuborish
+              {{ t('login.applyAction') }}
               <UiIcon name="arrowRight" :size="16" />
             </UiButton>
           </div>
@@ -739,7 +727,7 @@ function submit() {
       <div class="absolute inset-0">
         <UiPhoto
           name="urban-office"
-          alt="Toshkentdagi zamonaviy ofis binosi"
+          :alt="t('login.asidePhotoAlt')"
           ratio="h-full"
           rounded="rounded-none"
           sizes="50vw"
@@ -753,23 +741,20 @@ function submit() {
       <div class="relative flex h-full flex-col justify-end gap-8 p-10 xl:p-14">
         <div class="max-w-[36ch]">
           <p class="text-[11px] font-semibold uppercase tracking-wide text-white/70">
-            Boshqaruv platformasi
+            {{ t('login.asideEyebrow') }}
           </p>
           <h2 class="mt-3 font-display text-[28px] font-extrabold leading-tight text-white">
-            Butun portfel bitta oynada
+            {{ t('login.asideTitle') }}
           </h2>
-          <p class="mt-3 text-[14px] leading-relaxed text-white/80">
-            Bandlik, shartnoma, hisob-kitob va texnik xizmat, har bir obyekt bo‘yicha yagona
-            manzil.
-          </p>
+          <p class="mt-3 text-[14px] leading-relaxed text-white/80">{{ t('login.asideText') }}</p>
         </div>
 
         <ul class="grid gap-3 border-t border-white/20 pt-7">
           <li
             v-for="f in [
-              { icon: 'building', text: 'Obyekt, qavat va unitlar yagona reyestrda' },
-              { icon: 'wallet', text: 'Hisob-kitob va qarzdorlik doimiy nazoratda' },
-              { icon: 'wrench', text: 'Servis arizasi topshiriqqa aylanadi va yopiladi' },
+              { icon: 'building', text: t('login.asidePoint1') },
+              { icon: 'wallet', text: t('login.asidePoint2') },
+              { icon: 'wrench', text: t('login.asidePoint3') },
             ]"
             :key="f.text"
             class="flex items-center gap-3"
@@ -788,29 +773,17 @@ function submit() {
     <!-- Parolni tiklash tartibi -->
     <UiModal
       v-model="resetOpen"
-      title="Parolni tiklash"
-      subtitle="Xodim hisoblari markazlashgan tartibda boshqariladi"
+      :title="t('login.resetTitle')"
+      :subtitle="t('login.resetSubtitle')"
     >
-      <p class="text-[13.5px] leading-relaxed text-ink-700">
-        Hisoblarni super rahbar yaratadi va parolni ham faqat u tiklaydi. Kirish imkoni
-        yo‘qolgan bo‘lsa, quyidagi tartibda murojaat qiling.
-      </p>
+      <p class="text-[13.5px] leading-relaxed text-ink-700">{{ t('login.resetLead') }}</p>
 
       <ol class="mt-5 space-y-3.5">
         <li
           v-for="(s, i) in [
-            {
-              title: 'Super rahbarga murojaat qiling',
-              text: 'Familiya, lavozim va login nomingizni ayting.',
-            },
-            {
-              title: 'Shaxsingiz tasdiqlanadi',
-              text: 'Hisob egasi tashkilot ro‘yxati bo‘yicha solishtiriladi.',
-            },
-            {
-              title: 'Vaqtinchalik parol beriladi',
-              text: 'Birinchi kirishdan so‘ng uni almashtirasiz.',
-            },
+            { title: t('login.resetStep1Title'), text: t('login.resetStep1Text') },
+            { title: t('login.resetStep2Title'), text: t('login.resetStep2Text') },
+            { title: t('login.resetStep3Title'), text: t('login.resetStep3Text') },
           ]"
           :key="s.title"
           class="flex gap-3.5"
@@ -836,14 +809,20 @@ function submit() {
           <UiIcon name="help" :size="19" />
         </span>
         <span class="min-w-0 flex-1">
-          <span class="block text-[13px] font-semibold text-ink-900">Ichki qo‘llab-quvvatlash</span>
-          <span class="block text-[12px] text-ink-500">Dushanba–juma, 09:00–18:00</span>
+          <span class="block text-[13px] font-semibold text-ink-900">
+            {{ t('login.resetSupport') }}
+          </span>
+          <span class="block text-[12px] text-ink-500">{{ t('public.contactHours') }}</span>
         </span>
-        <span class="tabular shrink-0 text-[13px] font-semibold text-brand-600">+998 78 150 00 00</span>
+        <span class="tabular shrink-0 text-[13px] font-semibold text-brand-600">
+          {{ CONTACT.phone }}
+        </span>
       </div>
 
       <template #footer>
-        <UiButton variant="secondary" @click="resetOpen = false">Tushunarli</UiButton>
+        <UiButton variant="secondary" @click="resetOpen = false">
+          {{ t('login.resetUnderstood') }}
+        </UiButton>
       </template>
     </UiModal>
   </div>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { SERVICE_REQUESTS, WORK_CHECKLIST, WORK_MATERIALS, type ServiceRequest } from '~/data/operations'
+import type { Capability } from '~/types/rbac'
 import { dateShort, sum } from '~/utils/format'
 
 type ServiceStatus = ServiceRequest['status']
@@ -13,7 +14,13 @@ interface FlowAction {
   progress: number
   note: string
   question: string
+  /** Amalni bajarish uchun yetarli bo‘lgan huquqlar */
+  capabilities: Capability[]
 }
+
+/** Biriktirish bosqichi rahbarga ham, ijrochiga ham ochiq */
+const ASSIGN_OR_EXECUTE: Capability[] = ['workorder.assign', 'workorder.execute']
+const EXECUTE_ONLY: Capability[] = ['workorder.execute']
 
 const route = useRoute()
 const auth = useAuthStore()
@@ -26,6 +33,12 @@ const request = computed(() => requests.value.find((r) => r.id === String(route.
 
 const checklist = ref(WORK_CHECKLIST.map((c) => ({ ...c })))
 const doneCount = computed(() => checklist.value.filter((c) => c.done).length)
+
+function toggleCheck(index: number) {
+  if (!canExecute.value) return
+  const item = checklist.value[index]
+  if (item) item.done = !item.done
+}
 
 const materialsTotal = WORK_MATERIALS.reduce((s, m) => s + m.qty * m.price, 0)
 
@@ -49,6 +62,7 @@ const ACCEPT: FlowAction = {
   progress: 10,
   note: 'Ariza qabul qilindi va ijrochiga biriktirildi',
   question: 'Ariza qabul qilinsin va sizga biriktirilsinmi?',
+  capabilities: ASSIGN_OR_EXECUTE,
 }
 
 const START: FlowAction = {
@@ -60,6 +74,7 @@ const START: FlowAction = {
   progress: 35,
   note: 'Ish boshlandi',
   question: 'Ish boshlandi deb belgilansinmi?',
+  capabilities: EXECUTE_ONLY,
 }
 
 const FLOW: Record<string, FlowAction[]> = {
@@ -78,6 +93,7 @@ const FLOW: Record<string, FlowAction[]> = {
       progress: 50,
       note: 'Ombordan material so‘raldi',
       question: 'Ushbu ariza bo‘yicha ombordan material so‘ralsinmi?',
+      capabilities: EXECUTE_ONLY,
     },
     {
       key: 'finish',
@@ -88,6 +104,7 @@ const FLOW: Record<string, FlowAction[]> = {
       progress: 100,
       note: 'Ish yakunlandi',
       question: 'Ish to‘liq bajarildi va yakunlansinmi?',
+      capabilities: EXECUTE_ONLY,
     },
   ],
   MATERIAL_PENDING: [
@@ -100,6 +117,7 @@ const FLOW: Record<string, FlowAction[]> = {
       progress: 60,
       note: 'Material olindi, ish davom ettirildi',
       question: 'Material olindi va ish davom ettirilsinmi?',
+      capabilities: EXECUTE_ONLY,
     },
   ],
   COMPLETED: [
@@ -112,6 +130,7 @@ const FLOW: Record<string, FlowAction[]> = {
       progress: 100,
       note: 'Murojaatchi tasdig‘iga yuborildi',
       question: 'Bajarilgan ish murojaatchi tasdig‘iga yuborilsinmi?',
+      capabilities: EXECUTE_ONLY,
     },
   ],
   TENANT_CONFIRMATION: [
@@ -124,12 +143,23 @@ const FLOW: Record<string, FlowAction[]> = {
       progress: 100,
       note: 'Ariza yopildi',
       question: 'Ariza yopilsinmi?',
+      capabilities: EXECUTE_ONLY,
     },
   ],
   CLOSED: [],
 }
 
-const actions = computed(() => (request.value ? (FLOW[request.value.status] ?? []) : []))
+const canExecute = computed(() => auth.can('workorder.execute'))
+
+/** Rolga tegishli bo‘lmagan bosqich tugmasi umuman ko‘rsatilmaydi */
+const actions = computed(() =>
+  request.value
+    ? (FLOW[request.value.status] ?? []).filter((a) => a.capabilities.some((c) => auth.can(c)))
+    : [],
+)
+
+const isClosed = computed(() => request.value?.status === 'CLOSED')
+const stageActions = computed(() => (request.value ? (FLOW[request.value.status] ?? []) : []))
 
 const pending = ref<FlowAction | null>(null)
 const confirmOpen = computed({
@@ -142,10 +172,10 @@ const confirmOpen = computed({
 function applyAction() {
   const action = pending.value
   const r = request.value
-  if (action && r) {
+  if (action && r && action.capabilities.some((c) => auth.can(c))) {
     r.status = action.next
     r.progress = Math.max(r.progress, action.progress)
-    if (!r.assignee) r.assignee = auth.user?.fullName ?? 'Ijrochi'
+    if (!r.assignee && canExecute.value) r.assignee = auth.user?.fullName ?? 'Ijrochi'
     if (action.next === 'CLOSED' || action.next === 'COMPLETED') r.slaBreached = false
     history.value.unshift({ label: action.note, status: action.next, at: 'Hozir' })
   }
@@ -190,7 +220,7 @@ const info = computed(() => {
     </template>
   </AppTopbar>
 
-  <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-6">
+  <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-4 sm:p-6">
     <template v-if="request">
       <section class="grid gap-5 xl:grid-cols-3">
         <div class="min-w-0 space-y-5 xl:col-span-2">
@@ -358,9 +388,11 @@ const info = computed(() => {
               <li v-for="(c, i) in checklist" :key="c.label">
                 <button
                   type="button"
-                  class="flex w-full items-center gap-3 rounded-field px-2 py-2.5 text-left transition-colors hover:bg-brand-50/60"
+                  class="flex w-full items-center gap-3 rounded-field px-2 py-2.5 text-left transition-colors"
+                  :class="canExecute ? 'hover:bg-brand-50/60' : 'cursor-default'"
                   :aria-pressed="c.done"
-                  @click="checklist[i]!.done = !c.done"
+                  :disabled="!canExecute"
+                  @click="toggleCheck(i)"
                 >
                   <span
                     class="grid size-5 shrink-0 place-items-center rounded-full ring-1 transition-colors"
@@ -406,8 +438,20 @@ const info = computed(() => {
                 {{ a.label }}
               </UiButton>
             </div>
-            <p v-else class="rounded-field bg-ok-50 px-4 py-3 text-[13px] font-medium text-ok-700">
+            <p
+              v-else-if="isClosed"
+              class="rounded-field bg-ok-50 px-4 py-3 text-[13px] font-medium text-ok-700"
+            >
               Ariza yopilgan: qo‘shimcha amal talab etilmaydi.
+            </p>
+            <p
+              v-else-if="stageActions.length"
+              class="rounded-field bg-surface-sunken px-4 py-3 text-[13px] leading-relaxed text-ink-600"
+            >
+              Bu bosqichdagi amallarni ijrochi bajaradi. Sizning rolingizda ariza faqat kuzatiladi.
+            </p>
+            <p v-else class="rounded-field bg-surface-sunken px-4 py-3 text-[13px] text-ink-600">
+              Joriy bosqichda amal talab etilmaydi.
             </p>
           </UiCard>
 

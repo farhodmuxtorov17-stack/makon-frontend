@@ -84,13 +84,36 @@ const STATUS_CLASS: Record<string, string> = {
             </td>
           </tr>
         </tbody>
+        <!--
+          Jadvalda depozit qatori ham ko‘rinadi, shuning uchun jamlanma uch
+          satrga bo‘lindi: ijara to‘lovlari, depozit va ustun bo‘yicha yakun.
+          Aks holda ustundagi sonlar yig‘indisi pastdagi son bilan mos kelmaydi.
+        -->
         <tfoot>
           <tr class="border-t border-ink-200 bg-surface-sunken">
-            <th scope="row" colspan="2" class="px-4 py-3 text-left text-[12.5px] font-semibold text-ink-600">
-              Shartnoma bo‘yicha jami ({{ totals.periods }} ta davr)
+            <th scope="row" colspan="2" class="px-4 py-2.5 text-left text-[12.5px] font-semibold text-ink-600">
+              Ijara to‘lovlari ({{ totals.periods }} ta davr)
+            </th>
+            <td class="tabular px-4 py-2.5 text-right text-[13px] font-bold text-ink-900">
+              {{ sum(totals.total) }}
+            </td>
+            <td />
+          </tr>
+          <tr v-if="totals.deposit > 0" class="bg-surface-sunken">
+            <th scope="row" colspan="2" class="px-4 py-2.5 text-left text-[12.5px] font-semibold text-ink-600">
+              Kafolat depoziti
+            </th>
+            <td class="tabular px-4 py-2.5 text-right text-[13px] font-bold text-ink-900">
+              {{ sum(totals.deposit) }}
+            </td>
+            <td />
+          </tr>
+          <tr class="border-t border-ink-200 bg-surface-sunken">
+            <th scope="row" colspan="2" class="px-4 py-3 text-left text-[12.5px] font-semibold text-ink-700">
+              Shartnoma bo‘yicha jami
             </th>
             <td class="tabular px-4 py-3 text-right text-[13.5px] font-extrabold text-brand-700">
-              {{ sum(totals.total) }}
+              {{ sum(totals.total + totals.deposit) }}
             </td>
             <td />
           </tr>

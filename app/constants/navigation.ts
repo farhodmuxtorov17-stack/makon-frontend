@@ -1,12 +1,65 @@
+import { INVOICES } from '~/data/business'
+import { MATERIAL_REQUESTS } from '~/data/operations'
+import { useAuthStore } from '~/stores/auth'
+import { useLeaseStore, type LeaseStatus } from '~/stores/lease'
 import type { Role } from '~/types/rbac'
+
+export interface NavChild {
+  label: string
+  /** Tarjima kaliti: `nav.*`. Berilmasa `label` ko‘rsatiladi. */
+  key?: string
+  to: string
+}
 
 export interface NavItem {
   label: string
+  /** Tarjima kaliti: `nav.*`. Berilmasa `label` ko‘rsatiladi. */
+  key?: string
   to: string
   icon: string
-  /** O‘qilmagan yozuvlar soni */
+  /** Navbatda turgan yozuvlar soni, chizish paytida hisoblanadi */
   badge?: number
-  children?: Array<{ label: string; to: string }>
+  children?: NavChild[]
+}
+
+/**
+ * Rol qaysi bosqichdagi arizalar uchun javobgar. Ariza sahifasidagi «Mening
+ * vazifalarim» navbati ham shu ro‘yxatdan o‘qiladi, shuning uchun yon
+ * menyudagi son sahifadagi son bilan doim mos tushadi.
+ */
+export const APPLICATION_QUEUE: Partial<Record<Role, LeaseStatus[]>> = {
+  BUILDING_MANAGER: ['YANGI', 'QORALAMA_TAYYOR', 'DIDOX_YUBORILDI', 'DIDOX_IMZOLANDI'],
+  ACCOUNTANT: ['OPERATSIYA_TASDIQLADI', 'MOLIYA_TASDIQLADI'],
+}
+
+/** Bo‘sh navbat nishonchasiz ko‘rsatiladi */
+function queueBadge(count: () => number): number | undefined {
+  try {
+    const value = count()
+    return value > 0 ? value : undefined
+  } catch {
+    return undefined
+  }
+}
+
+/** Biriktirilgan binolardagi, shu rol qaroriga qolgan arizalar */
+function applicationQueue(): number {
+  const auth = useAuthStore()
+  const statuses = auth.role ? (APPLICATION_QUEUE[auth.role] ?? []) : []
+  if (!statuses.length) return 0
+  return useLeaseStore().cases.filter(
+    (c) => statuses.includes(c.status) && auth.inScope(c.buildingId),
+  ).length
+}
+
+/** To‘lov kutayotgan hisob-fakturalar: to‘lov sahifasidagi navbat bilan bir xil shart */
+function paymentQueue(): number {
+  return INVOICES.filter((i) => i.status === 'ISSUED' || i.status === 'PARTIALLY_PAID').length
+}
+
+/** Ombor javobini kutayotgan material so‘rovlari */
+function materialQueue(): number {
+  return MATERIAL_REQUESTS.filter((r) => r.status === 'SUBMITTED' || r.status === 'APPROVED').length
 }
 
 export interface NavSection {
@@ -14,30 +67,32 @@ export interface NavSection {
   items: NavItem[]
 }
 
-const SETTINGS_CHILDREN = [
-  { label: 'Foydalanuvchilar', to: '/settings/users' },
-  { label: 'Rollar va huquqlar', to: '/settings/roles' },
-  { label: 'Ma’lumotnomalar', to: '/settings/reference-data' },
-  { label: 'Tizim sozlamalari', to: '/settings/system' },
-  { label: 'Audit jurnali', to: '/settings/audit' },
+export const SETTINGS_CHILDREN: NavChild[] = [
+  { label: 'Foydalanuvchilar', key: 'nav.settingsUsers', to: '/settings/users' },
+  { label: 'Rollar va huquqlar', key: 'nav.settingsRoles', to: '/settings/roles' },
+  { label: 'Integratsiyalar', key: 'nav.settingsIntegrations', to: '/settings/integrations' },
+  { label: 'Ma’lumotnomalar', key: 'nav.settingsReference', to: '/settings/reference-data' },
+  { label: 'Tizim sozlamalari', key: 'nav.settingsSystem', to: '/settings/system' },
+  { label: 'Audit jurnali', key: 'nav.settingsAudit', to: '/settings/audit' },
 ]
 
 /**
- * Bildirishnoma va profil sidebar’da emas, faqat header’da bo‘ladi, * yon menyu ish modullariga ajratilgan.
+ * Bildirishnoma va profil sidebar’da emas, faqat header’da bo‘ladi,
+ * yon menyu ish modullariga ajratilgan.
  */
-const HELP_ITEM = { label: 'Yordam markazi', to: '/help', icon: 'help' }
+const HELP_ITEM: NavItem = { label: 'Yordam markazi', key: 'nav.help', to: '/help', icon: 'help' }
 
 export const NAVIGATION: Record<Role, NavSection[]> = {
   SUPER_HEAD: [
     {
       items: [
-        { label: 'Boshqaruv paneli', to: '/dashboard/executive', icon: 'dashboard' },
-        { label: 'Obyektlar', to: '/objects', icon: 'building' },
-        { label: 'Shartnomalar', to: '/contracts', icon: 'contract' },
-        { label: 'Billing va nazorat', to: '/billing/invoices', icon: 'wallet' },
-        { label: 'Servis va monitoring', to: '/service-requests', icon: 'wrench' },
-        { label: 'Hisobotlar', to: '/reports', icon: 'chart' },
-        { label: 'Sozlamalar', to: '/settings/users', icon: 'gear', children: SETTINGS_CHILDREN },
+        { label: 'Boshqaruv paneli', key: 'nav.dashboardExecutive', to: '/dashboard/executive', icon: 'dashboard' },
+        { label: 'Obyektlar', key: 'nav.objects', to: '/objects', icon: 'building' },
+        { label: 'Shartnomalar', key: 'nav.contracts', to: '/contracts', icon: 'contract' },
+        { label: 'Billing va nazorat', key: 'nav.billing', to: '/billing/invoices', icon: 'wallet' },
+        { label: 'Servis va monitoring', key: 'nav.serviceMonitoring', to: '/service-requests', icon: 'wrench' },
+        { label: 'Hisobotlar', key: 'nav.reports', to: '/reports', icon: 'chart' },
+        { label: 'Sozlamalar', key: 'nav.settings', to: '/settings/users', icon: 'gear', children: SETTINGS_CHILDREN },
       ],
     },
     { items: [HELP_ITEM] },
@@ -46,14 +101,22 @@ export const NAVIGATION: Record<Role, NavSection[]> = {
   BUILDING_MANAGER: [
     {
       items: [
-        { label: 'Boshqaruv paneli', to: '/dashboard/building', icon: 'dashboard' },
-        { label: 'Obyektlar', to: '/objects', icon: 'building' },
-        { label: 'Arizalar', to: '/applications', icon: 'clipboard', badge: 5 },
-        { label: 'Shartnomalar', to: '/contracts', icon: 'contract' },
-        { label: 'Servis arizalari', to: '/service-requests', icon: 'wrench', badge: 4 },
-        { label: 'Ish topshiriqlari', to: '/facility/work-orders', icon: 'tools' },
-        { label: 'Hisoblagichlar', to: '/meters', icon: 'meter' },
-        { label: 'Hisobotlar', to: '/reports', icon: 'chart' },
+        { label: 'Boshqaruv paneli', key: 'nav.dashboardBuilding', to: '/dashboard/building', icon: 'dashboard' },
+        { label: 'Obyektlar', key: 'nav.objects', to: '/objects', icon: 'building' },
+        {
+          label: 'Arizalar',
+          key: 'nav.applications',
+          to: '/applications',
+          icon: 'clipboard',
+          get badge() {
+            return queueBadge(applicationQueue)
+          },
+        },
+        { label: 'Shartnomalar', key: 'nav.contracts', to: '/contracts', icon: 'contract' },
+        { label: 'Servis arizalari', key: 'nav.serviceRequests', to: '/service-requests', icon: 'wrench' },
+        { label: 'Ish topshiriqlari', key: 'nav.workOrders', to: '/facility/work-orders', icon: 'tools' },
+        { label: 'Hisoblagichlar', key: 'nav.meters', to: '/meters', icon: 'meter' },
+        { label: 'Hisobotlar', key: 'nav.reports', to: '/reports', icon: 'chart' },
       ],
     },
     { items: [HELP_ITEM] },
@@ -62,13 +125,29 @@ export const NAVIGATION: Record<Role, NavSection[]> = {
   ACCOUNTANT: [
     {
       items: [
-        { label: 'Hisob-fakturalar', to: '/billing/invoices', icon: 'wallet' },
-        { label: 'To‘lovlarni tasdiqlash', to: '/billing/payments', icon: 'check', badge: 7 },
-        { label: 'Qarzdorlik tahlili', to: '/billing/debts', icon: 'chart' },
-        { label: 'Hisob-kitob davrlari', to: '/billing/periods', icon: 'calendar' },
-        { label: 'Shartnomalar', to: '/contracts', icon: 'contract' },
-        { label: 'Arizalar', to: '/applications', icon: 'clipboard', badge: 5 },
-        { label: 'Hisobotlar', to: '/reports', icon: 'chart' },
+        { label: 'Hisob-fakturalar', key: 'nav.invoices', to: '/billing/invoices', icon: 'wallet' },
+        {
+          label: 'To‘lovlarni tasdiqlash',
+          key: 'nav.paymentsApprove',
+          to: '/billing/payments',
+          icon: 'check',
+          get badge() {
+            return queueBadge(paymentQueue)
+          },
+        },
+        { label: 'Qarzdorlik tahlili', key: 'nav.debts', to: '/billing/debts', icon: 'chart' },
+        { label: 'Hisob-kitob davrlari', key: 'nav.periods', to: '/billing/periods', icon: 'calendar' },
+        { label: 'Shartnomalar', key: 'nav.contracts', to: '/contracts', icon: 'contract' },
+        {
+          label: 'Arizalar',
+          key: 'nav.applications',
+          to: '/applications',
+          icon: 'clipboard',
+          get badge() {
+            return queueBadge(applicationQueue)
+          },
+        },
+        { label: 'Hisobotlar', key: 'nav.reports', to: '/reports', icon: 'chart' },
       ],
     },
     { items: [HELP_ITEM] },
@@ -77,10 +156,10 @@ export const NAVIGATION: Record<Role, NavSection[]> = {
   FACILITY: [
     {
       items: [
-        { label: 'Mening ishlarim', to: '/facility/work-orders', icon: 'tools' },
-        { label: 'Servis arizalari', to: '/service-requests', icon: 'wrench', badge: 3 },
-        { label: 'Material so‘rovlari', to: '/facility/materials', icon: 'box' },
-        { label: 'Hisoblagichlar', to: '/meters', icon: 'meter' },
+        { label: 'Mening ishlarim', key: 'nav.myWorkOrders', to: '/facility/work-orders', icon: 'tools' },
+        { label: 'Servis arizalari', key: 'nav.serviceRequests', to: '/service-requests', icon: 'wrench' },
+        { label: 'Material so‘rovlari', key: 'nav.materials', to: '/facility/materials', icon: 'box' },
+        { label: 'Hisoblagichlar', key: 'nav.meters', to: '/meters', icon: 'meter' },
       ],
     },
     { items: [HELP_ITEM] },
@@ -89,10 +168,18 @@ export const NAVIGATION: Record<Role, NavSection[]> = {
   WAREHOUSE_OPERATOR: [
     {
       items: [
-        { label: 'Ombor qoldig‘i', to: '/warehouse', icon: 'box' },
-        { label: 'Material so‘rovlari', to: '/facility/materials', icon: 'clipboard', badge: 4 },
-        { label: 'Kirim va chiqim', to: '/warehouse/movements', icon: 'layers' },
-        { label: 'Inventarizatsiya', to: '/warehouse/inventory', icon: 'check' },
+        { label: 'Ombor qoldig‘i', key: 'nav.warehouse', to: '/warehouse', icon: 'box' },
+        {
+          label: 'Material so‘rovlari',
+          key: 'nav.materials',
+          to: '/facility/materials',
+          icon: 'clipboard',
+          get badge() {
+            return queueBadge(materialQueue)
+          },
+        },
+        { label: 'Kirim va chiqim', key: 'nav.movements', to: '/warehouse/movements', icon: 'layers' },
+        { label: 'Inventarizatsiya', key: 'nav.inventory', to: '/warehouse/inventory', icon: 'check' },
       ],
     },
     { items: [HELP_ITEM] },
@@ -101,10 +188,10 @@ export const NAVIGATION: Record<Role, NavSection[]> = {
   CONTENT_OPERATOR: [
     {
       items: [
-        { label: 'Kontent navbati', to: '/content', icon: 'dashboard', badge: 6 },
-        { label: 'Obyektlar', to: '/objects', icon: 'building' },
-        { label: 'Qavat rejalari', to: '/content/floors', icon: 'layers' },
-        { label: 'Unit atributlari', to: '/content/units', icon: 'grid' },
+        { label: 'Kontent navbati', key: 'nav.contentQueue', to: '/content', icon: 'dashboard' },
+        { label: 'Obyektlar', key: 'nav.objects', to: '/objects', icon: 'building' },
+        { label: 'Qavat rejalari', key: 'nav.floors', to: '/content/floors', icon: 'layers' },
+        { label: 'Unit atributlari', key: 'nav.unitAttributes', to: '/content/units', icon: 'grid' },
       ],
     },
     { items: [HELP_ITEM] },
@@ -113,12 +200,12 @@ export const NAVIGATION: Record<Role, NavSection[]> = {
   TENANT_OWNER: [
     {
       items: [
-        { label: 'Bosh sahifa', to: '/cabinet', icon: 'dashboard' },
-        { label: 'Mening unitim', to: '/cabinet/units', icon: 'building' },
-        { label: 'To‘lovlarim', to: '/cabinet/invoices', icon: 'wallet' },
-        { label: 'Arizalarim', to: '/cabinet/applications', icon: 'clipboard' },
-        { label: 'Hujjatlarim', to: '/cabinet/documents', icon: 'doc' },
-        { label: 'Hisoblagichlar', to: '/cabinet/meters', icon: 'meter' },
+        { label: 'Bosh sahifa', key: 'nav.cabinet', to: '/cabinet', icon: 'dashboard' },
+        { label: 'Mening unitim', key: 'nav.myUnits', to: '/cabinet/units', icon: 'building' },
+        { label: 'To‘lovlarim', key: 'nav.myInvoices', to: '/cabinet/invoices', icon: 'wallet' },
+        { label: 'Arizalarim', key: 'nav.myApplications', to: '/cabinet/applications', icon: 'clipboard' },
+        { label: 'Hujjatlarim', key: 'nav.myDocuments', to: '/cabinet/documents', icon: 'doc' },
+        { label: 'Hisoblagichlar', key: 'nav.meters', to: '/cabinet/meters', icon: 'meter' },
       ],
     },
     { items: [HELP_ITEM] },

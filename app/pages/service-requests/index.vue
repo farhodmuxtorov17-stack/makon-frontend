@@ -7,6 +7,7 @@ import {
   UTILITY_SUMMARY,
   type ServiceRequest,
 } from '~/data/operations'
+import { fileSize } from '~/utils/docx'
 import { dateShort, num } from '~/utils/format'
 
 type ServiceStatus = ServiceRequest['status']
@@ -21,9 +22,15 @@ interface BoardColumn {
 
 const auth = useAuthStore()
 
-const requests = useState<ServiceRequest[]>('service-requests', () =>
+/** Foydalanuvchi biriktirilgan obyektlar. Ariza faqat shular bo‘yicha ko‘rinadi. */
+const scopedBuildings = computed(() => BUILDINGS.filter((b) => auth.inScope(b.id)))
+const scopedNames = computed(() => new Set(scopedBuildings.value.map((b) => b.name)))
+
+const allRequests = useState<ServiceRequest[]>('service-requests', () =>
   SERVICE_REQUESTS.map((r) => ({ ...r })),
 )
+
+const requests = computed(() => allRequests.value.filter((r) => scopedNames.value.has(r.buildingName)))
 
 const view = ref('table')
 const viewTabs = [
@@ -39,10 +46,10 @@ const fCategory = ref('all')
 const fAssignee = ref('all')
 const fSla = ref('all')
 
-const buildingOptions = [
+const buildingOptions = computed(() => [
   { value: 'all', label: 'Barcha obyektlar' },
-  ...BUILDINGS.map((b) => ({ value: b.name, label: b.name })),
-]
+  ...scopedBuildings.value.map((b) => ({ value: b.name, label: b.name })),
+])
 
 const statusOptions = computed(() => [
   { value: 'all', label: 'Barcha statuslar' },
@@ -211,23 +218,53 @@ function addDays(iso: string, days: number) {
 }
 
 const createOpen = ref(false)
-const shots = ref(0)
 const formError = ref('')
 const form = reactive({
   category: 'Santexnika' as ServiceRequest['category'],
-  building: BUILDINGS[0]!.name,
+  building: scopedBuildings.value[0]?.name ?? BUILDINGS[0]!.name,
   unit: '',
   description: '',
   priority: 'O‘rtacha' as ServiceRequest['priority'],
 })
 
+/** Biriktirilgan rasmlar: haqiqiy fayllar va ularning ko‘rinishi */
+const photos = ref<Array<{ file: File; url: string }>>([])
+const photoInput = ref<HTMLInputElement | null>(null)
+const PHOTO_LIMIT = 4
+
+function pickPhotos() {
+  photoInput.value?.click()
+}
+
+function onPhotos(event: Event) {
+  const target = event.target as HTMLInputElement
+  const picked = Array.from(target.files ?? [])
+  target.value = ''
+  for (const file of picked) {
+    if (photos.value.length >= PHOTO_LIMIT) break
+    photos.value.push({ file, url: URL.createObjectURL(file) })
+  }
+}
+
+function removePhoto(index: number) {
+  const gone = photos.value.splice(index, 1)[0]
+  if (gone) URL.revokeObjectURL(gone.url)
+}
+
+function clearPhotos() {
+  for (const p of photos.value) URL.revokeObjectURL(p.url)
+  photos.value = []
+}
+
+onBeforeUnmount(clearPhotos)
+
 function resetForm() {
   form.category = 'Santexnika'
-  form.building = BUILDINGS[0]!.name
+  form.building = scopedBuildings.value[0]?.name ?? BUILDINGS[0]!.name
   form.unit = ''
   form.description = ''
   form.priority = 'O‘rtacha'
-  shots.value = 0
+  clearPhotos()
   formError.value = ''
 }
 
@@ -236,10 +273,11 @@ function submitRequest() {
     formError.value = 'Joylashuv va muammo tavsifi to‘ldirilishi shart'
     return
   }
-  const seq = requests.value.reduce((m, r) => Math.max(m, Number(r.code.slice(-4)) || 0), 0) + 1
+  const seq = allRequests.value.reduce((m, r) => Math.max(m, Number(r.code.slice(-4)) || 0), 0) + 1
   const numbered = String(seq).padStart(4, '0')
   const day = latestDay.value
-  requests.value.unshift({
+  const attached = photos.value.map((p) => p.file.name)
+  allRequests.value.unshift({
     id: `s-${numbered}`,
     code: `SR-2025-${numbered}`,
     title: form.description.trim().split('.')[0]!.slice(0, 58),
@@ -253,7 +291,10 @@ function submitRequest() {
     createdAt: `${day} 09:00`,
     dueAt: addDays(day, form.priority === 'Yuqori' ? 3 : 7),
     slaBreached: false,
-    description: form.description.trim(),
+    description:
+      attached.length > 0
+        ? `${form.description.trim()} Biriktirilgan fayllar: ${attached.join(', ')}.`
+        : form.description.trim(),
     progress: 0,
   })
   resetFilters()
@@ -279,7 +320,7 @@ function submitRequest() {
     </template>
   </AppTopbar>
 
-  <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-6">
+  <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-4 sm:p-6">
     <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <UiKpi
         label="Yangi arizalar"
@@ -460,7 +501,7 @@ function submitRequest() {
           ariza tafsiloti ochiladi.
         </p>
 
-        <div class="scroll-slim grid gap-4 overflow-x-auto xl:grid-cols-5">
+        <div class="scroll-slim grid gap-4 overflow-x-auto xl:grid-cols-[repeat(5,minmax(248px,1fr))]">
           <div
             v-for="col in board"
             :key="col.key"
@@ -630,7 +671,7 @@ function submitRequest() {
         <UiField label="Obyekt" required>
           <UiSelect
             v-model="form.building"
-            :options="BUILDINGS.map((b) => ({ value: b.name, label: b.name }))"
+            :options="scopedBuildings.map((b) => ({ value: b.name, label: b.name }))"
           />
         </UiField>
 
@@ -651,32 +692,37 @@ function submitRequest() {
       <UiField label="Rasm biriktirish" hint="Muammoni ko‘rsatuvchi suratlar tekshiruvni tezlashtiradi">
         <div class="flex flex-wrap gap-3">
           <div
-            v-for="n in shots"
-            :key="n"
+            v-for="(p, i) in photos"
+            :key="`${p.file.name}-${i}`"
             class="relative size-24 overflow-hidden rounded-field ring-1 ring-ink-200"
           >
-            <svg viewBox="0 0 96 96" class="size-full" aria-hidden="true">
-              <rect width="96" height="96" fill="#eef2f8" />
-              <circle cx="30" cy="28" r="9" fill="#c7d9fe" />
-              <path d="M8 76 34 46l18 20 12-13 26 23z" fill="#a1bffd" />
-              <path d="M0 76h96v20H0z" fill="#e2e8f2" />
-            </svg>
+            <img :src="p.url" :alt="p.file.name" class="size-full object-cover" />
             <button
               type="button"
-              class="absolute right-1 top-1 grid size-8 place-items-center rounded-full bg-ink-900/60 md:size-6 text-white transition-colors hover:bg-danger-600"
-              aria-label="Rasmni olib tashlash"
-              @click="shots = shots - 1"
+              class="absolute right-1 top-1 grid size-8 place-items-center rounded-full bg-ink-900/60 text-white transition-colors hover:bg-danger-600 md:size-6"
+              :aria-label="`${p.file.name}: rasmni olib tashlash`"
+              @click="removePhoto(i)"
             >
               <UiIcon name="x" :size="13" />
             </button>
           </div>
 
+          <input
+            ref="photoInput"
+            type="file"
+            accept="image/*"
+            multiple
+            class="sr-only"
+            aria-label="Ariza rasmlari"
+            @change="onPhotos"
+          />
+
           <button
-            v-if="shots < 4"
+            v-if="photos.length < PHOTO_LIMIT"
             type="button"
             class="grid size-24 place-items-center rounded-field border-2 border-dashed border-ink-300 bg-ink-50 text-ink-500 transition-colors hover:border-brand-400 hover:bg-brand-50 hover:text-brand-600"
             aria-label="Rasm qo‘shish"
-            @click="shots = shots + 1"
+            @click="pickPhotos"
           >
             <svg viewBox="0 0 32 32" class="size-8" fill="none" aria-hidden="true">
               <rect
@@ -693,7 +739,16 @@ function submitRequest() {
             </svg>
           </button>
         </div>
-        <p class="mt-2 text-[12px] text-ink-500">Biriktirilgan: {{ shots }} ta</p>
+        <ul v-if="photos.length" class="mt-2 space-y-1">
+          <li
+            v-for="(p, i) in photos"
+            :key="`n-${p.file.name}-${i}`"
+            class="tabular truncate text-[12px] text-ink-500"
+          >
+            {{ p.file.name }} · {{ fileSize(p.file.size) }}
+          </li>
+        </ul>
+        <p v-else class="mt-2 text-[12px] text-ink-500">Rasm biriktirilmagan</p>
       </UiField>
     </div>
 

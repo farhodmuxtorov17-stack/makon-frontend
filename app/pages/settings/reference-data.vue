@@ -1,7 +1,10 @@
 <script setup lang="ts">
+import { UNIT_STATUS } from '~/constants/statuses'
+
 const SETTINGS_TABS = [
   { label: 'Foydalanuvchilar', to: '/settings/users', icon: 'users' },
   { label: 'Rollar va huquqlar', to: '/settings/roles', icon: 'shield' },
+  { label: 'Integratsiyalar', to: '/settings/integrations', icon: 'globe' },
   { label: 'Ma’lumotnomalar', to: '/settings/reference-data', icon: 'layers' },
   { label: 'Tizim sozlamalari', to: '/settings/system', icon: 'gear' },
   { label: 'Audit jurnali', to: '/settings/audit', icon: 'clipboard' },
@@ -24,6 +27,16 @@ const CATEGORY_FALLBACK = { label: 'Turkumsiz', badge: 'bg-ink-100 text-ink-700 
 function categoryMeta(category: string) {
   return CATEGORY_META[category] ?? CATEGORY_FALLBACK
 }
+
+/**
+ * Unit statuslari ma’lumotnomasi status registridan olinadi: kod sifatida
+ * tizim ishlatadigan haqiqiy belgi ko‘rsatiladi, nomi esa boshqa ekranlar
+ * bilan bir xil bo‘ladi.
+ */
+const UNIT_STATUS_RECORDS = Object.entries(UNIT_STATUS).map(([code, def]) => ({
+  code,
+  label: def.label,
+}))
 
 const GROUPS: Record<string, string[]> = {
   all: Object.keys(CATEGORY_META),
@@ -192,14 +205,7 @@ const entries = ref<RefEntry[]>([
     updatedAt: '15.05.2025 10:22',
     updatedBy: 'Jahongir Alimov',
     icon: 'clipboard',
-    records: [
-      { code: 'ST-01', label: 'Bo‘sh' },
-      { code: 'ST-02', label: 'Bron' },
-      { code: 'ST-03', label: 'Ijarada' },
-      { code: 'ST-04', label: 'Sotilgan' },
-      { code: 'ST-05', label: 'Ta’mirda' },
-      { code: 'ST-06', label: 'Arxivlangan' },
-    ],
+    records: UNIT_STATUS_RECORDS,
   },
 ])
 
@@ -276,6 +282,12 @@ function logActivity(title: string, icon: string) {
 }
 
 const panelOpen = ref(false)
+
+/** Boshqa dialoglar kabi Escape bilan yopiladi */
+onKeyStroke('Escape', () => {
+  if (panelOpen.value) panelOpen.value = false
+})
+
 const panelTab = ref('general')
 const panelTabs = [
   { value: 'general', label: 'Umumiy ma’lumot' },
@@ -464,7 +476,7 @@ function confirmAction() {
     </template>
   </AppTopbar>
 
-  <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-6">
+  <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-4 sm:p-6">
     <nav class="flex flex-wrap gap-2">
       <NuxtLink
         v-for="t in SETTINGS_TABS"

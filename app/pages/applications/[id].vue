@@ -15,7 +15,14 @@ const lease = useLeaseStore()
 
 lease.seed()
 
-const item = computed(() => lease.byId(String(route.params.id)))
+/**
+ * Biriktirilgan binodan tashqaridagi ariza to‘g‘ridan-to‘g‘ri havola bilan ham
+ * ochilmaydi: yozuv topilmagan holatga tushadi va barcha amal tugmalari yopiladi.
+ */
+const item = computed(() => {
+  const c = lease.byId(String(route.params.id))
+  return c && auth.inScope(c.buildingId) ? c : null
+})
 const unit = computed(() => (item.value ? unitById(item.value.unitId) : undefined))
 
 const actorName = computed(() => auth.user?.fullName ?? '-')
@@ -109,6 +116,27 @@ const canActivate = computed(
     isManager.value &&
     auth.can('application.decide'),
 )
+
+/** Rad etish har bir jonli bosqichda ochiq: sikl hech qayerda qotib qolmaydi */
+const canDecide = computed(
+  () =>
+    Boolean(item.value) &&
+    !['FAOL', 'RAD_ETILDI'].includes(item.value?.status ?? '') &&
+    auth.can('application.decide'),
+)
+
+/** Birinchi bosqichda qaytariladigan oldingi bosqich yo‘q */
+const canRework = computed(() => canDecide.value && item.value?.status !== 'YANGI')
+
+/** Qaror huquqi yo‘q rol uchun tugma o‘rniga aniq belgi ko‘rsatiladi */
+const readOnly = computed(
+  () =>
+    !auth.can('application.decide') &&
+    !['FAOL', 'RAD_ETILDI'].includes(item.value?.status ?? ''),
+)
+
+/** Obyektlar moduli hamma rolga ochiq emas, havola shunga qarab ko‘rsatiladi */
+const canOpenObjects = computed(() => auth.canRoute('/objects'))
 
 const editing = computed(() => canApproveOperation.value || canApproveFinance.value)
 
@@ -292,31 +320,45 @@ function inviteAccount() {
             Didox holatini tekshirish
           </UiButton>
 
-          <template v-if="canApproveOperation">
-            <UiButton variant="success" size="sm" :disabled="formInvalid" @click="approveOperation">
-              <UiIcon name="check" :size="15" />
-              Tasdiqlash
-            </UiButton>
-            <UiButton variant="danger" size="sm" @click="rejectOpen = true">
-              <UiIcon name="x" :size="15" />
-              Rad etish
-            </UiButton>
-          </template>
+          <UiButton
+            v-if="canApproveOperation"
+            variant="success"
+            size="sm"
+            :disabled="formInvalid"
+            @click="approveOperation"
+          >
+            <UiIcon name="check" :size="15" />
+            Tasdiqlash
+          </UiButton>
 
-          <template v-if="canApproveFinance">
-            <UiButton variant="success" size="sm" :disabled="formInvalid" @click="approveFinance">
-              <UiIcon name="check" :size="15" />
-              Moliya tasdiqlash
-            </UiButton>
-            <UiButton variant="secondary" size="sm" @click="reworkOpen = true">
-              <UiIcon name="refresh" :size="15" />
-              Qayta ishlashga yuborish
-            </UiButton>
-            <UiButton variant="danger" size="sm" @click="rejectOpen = true">
-              <UiIcon name="x" :size="15" />
-              Rad etish
-            </UiButton>
-          </template>
+          <UiButton
+            v-if="canApproveFinance"
+            variant="success"
+            size="sm"
+            :disabled="formInvalid"
+            @click="approveFinance"
+          >
+            <UiIcon name="check" :size="15" />
+            Moliya tasdiqlash
+          </UiButton>
+
+          <UiButton v-if="canRework" variant="secondary" size="sm" @click="reworkOpen = true">
+            <UiIcon name="refresh" :size="15" />
+            Qayta ishlashga yuborish
+          </UiButton>
+
+          <UiButton v-if="canDecide" variant="danger" size="sm" @click="rejectOpen = true">
+            <UiIcon name="x" :size="15" />
+            Rad etish
+          </UiButton>
+
+          <span
+            v-if="readOnly"
+            class="inline-flex items-center gap-2 rounded-pill bg-ink-100 px-3 py-1.5 text-[12px] font-semibold text-ink-600"
+          >
+            <UiIcon name="eye" :size="15" />
+            Faqat kuzatuv: qaror huquqi yo‘q
+          </span>
         </div>
       </div>
 
@@ -659,6 +701,7 @@ function inviteAccount() {
           </div>
 
           <UiButton
+            v-if="canOpenObjects"
             variant="secondary"
             size="sm"
             block
@@ -717,8 +760,8 @@ function inviteAccount() {
     <UiCard>
       <UiEmpty
         icon="clipboard"
-        title="Bunday ariza topilmadi"
-        description="Ariza arxivlangan yoki havola noto‘g‘ri bo‘lishi mumkin."
+        title="Ariza mavjud emas"
+        description="Yozuv arxivlangan, havola noto‘g‘ri yoki ariza sizga biriktirilgan obyektlarga tegishli emas."
         action-label="Arizalar navbatiga qaytish"
         action-to="/applications"
       />

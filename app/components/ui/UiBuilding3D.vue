@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { UNIT_STATUS, UNIT_STATUS_COLOR } from '~/constants/statuses'
 import type { Building } from '~/data/buildings'
 import { unitsOfBuilding, type Unit } from '~/data/units'
 import { area as areaLabel } from '~/utils/format'
@@ -177,13 +178,16 @@ const MODES: Array<{ value: ViewMode; label: string; hint: string }> = [
   { value: 'wire', label: 'Karkas', hint: 'Faqat qirralar, ichki tuzilma ko‘rinadi' },
 ]
 
-/** Holat legendasi: tartib va ranglar buyurtmachi maketidan */
+/**
+ * Holat legendasi. Rang va nom qavat rejasi bilan bitta jadvaldan olinadi,
+ * shuning uchun 3D va 2D ko‘rinishda bir xil bo‘ladi.
+ */
 const CATEGORIES: Array<{ key: string; label: string; color: string }> = [
-  { key: 'vacant', label: 'Bo‘sh', color: '#16B99A' },
-  { key: 'rented', label: 'Ijarada', color: '#0256F7' },
-  { key: 'sold', label: 'Sotilgan', color: '#F84448' },
-  { key: 'reserved', label: 'Rezerv', color: '#FAA53F' },
-  { key: 'other', label: 'Texnik / Boshqa', color: '#8494AC' },
+  { key: 'vacant', label: UNIT_STATUS.VACANT!.label, color: UNIT_STATUS_COLOR.VACANT! },
+  { key: 'rented', label: UNIT_STATUS.RENTED!.label, color: UNIT_STATUS_COLOR.RENTED! },
+  { key: 'sold', label: UNIT_STATUS.SOLD!.label, color: UNIT_STATUS_COLOR.SOLD! },
+  { key: 'reserved', label: UNIT_STATUS.RESERVED!.label, color: UNIT_STATUS_COLOR.RESERVED! },
+  { key: 'other', label: 'Texnik / Boshqa', color: UNIT_STATUS_COLOR.MAINTENANCE! },
 ]
 
 const CATEGORY_OF: Record<string, string> = {

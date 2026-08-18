@@ -75,7 +75,7 @@ function toggleType(value: string) {
     </UiInput>
 
     <section>
-      <p class="text-[11px] font-bold uppercase tracking-wide text-ink-400">Saralash</p>
+      <p class="text-[11px] font-bold uppercase tracking-wide text-ink-500">Saralash</p>
       <UiSelect
         v-model="sort"
         :options="sortOptions"
@@ -86,7 +86,7 @@ function toggleType(value: string) {
     </section>
 
     <section>
-      <p class="text-[11px] font-bold uppercase tracking-wide text-ink-400">Narx (so‘m / oy)</p>
+      <p class="text-[11px] font-bold uppercase tracking-wide text-ink-500">Narx (so‘m / oy)</p>
       <div class="mt-2 grid grid-cols-2 gap-2">
         <label class="block min-w-0">
           <span class="mb-1 block text-[11px] font-medium text-ink-500">Min</span>
@@ -114,7 +114,7 @@ function toggleType(value: string) {
     </section>
 
     <section>
-      <p class="text-[11px] font-bold uppercase tracking-wide text-ink-400">Mulk turi</p>
+      <p class="text-[11px] font-bold uppercase tracking-wide text-ink-500">Mulk turi</p>
       <ul class="mt-1.5 -mx-2">
         <li v-for="t in types" :key="t.value">
           <label
@@ -130,7 +130,7 @@ function toggleType(value: string) {
             <span class="min-w-0 flex-1 truncate text-[13px] font-medium text-ink-700">
               {{ t.label }}
             </span>
-            <span class="tabular shrink-0 text-[12px] font-semibold text-ink-400">
+            <span class="tabular shrink-0 text-[12px] font-semibold text-ink-500">
               {{ t.count }}
             </span>
           </label>
@@ -139,7 +139,7 @@ function toggleType(value: string) {
     </section>
 
     <section>
-      <p class="text-[11px] font-bold uppercase tracking-wide text-ink-400">Maydon (m²)</p>
+      <p class="text-[11px] font-bold uppercase tracking-wide text-ink-500">Maydon (m²)</p>
       <div class="mt-2 grid grid-cols-2 gap-2">
         <label class="block min-w-0">
           <span class="mb-1 block text-[11px] font-medium text-ink-500">Min</span>
@@ -167,7 +167,7 @@ function toggleType(value: string) {
     </section>
 
     <section>
-      <p class="text-[11px] font-bold uppercase tracking-wide text-ink-400">Markazdan masofa</p>
+      <p class="text-[11px] font-bold uppercase tracking-wide text-ink-500">Markazdan masofa</p>
       <UiSelect
         v-model="distance"
         :options="distanceOptions"

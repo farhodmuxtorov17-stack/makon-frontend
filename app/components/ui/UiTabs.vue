@@ -23,7 +23,7 @@ const model = defineModel<string>({ required: true })
       role="tab"
       type="button"
       :aria-selected="model === t.value"
-      class="inline-flex items-center gap-2 rounded-[8px] px-4 py-2 text-[13px] font-semibold transition-colors"
+      class="inline-flex min-h-11 items-center gap-2 rounded-[8px] px-4 py-2 text-[13px] font-semibold transition-colors md:min-h-9"
       :class="
         model === t.value
           ? 'bg-white text-brand-600 shadow-card'
@@ -49,7 +49,7 @@ const model = defineModel<string>({ required: true })
       role="tab"
       type="button"
       :aria-selected="model === t.value"
-      class="relative -mb-px inline-flex items-center gap-2 border-b-2 pb-3 text-sm font-semibold transition-colors"
+      class="relative -mb-px inline-flex min-h-11 items-center gap-2 border-b-2 pb-3 text-sm font-semibold transition-colors md:min-h-0"
       :class="
         model === t.value
           ? 'border-brand-500 text-brand-600'

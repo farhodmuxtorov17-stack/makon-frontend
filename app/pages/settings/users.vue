@@ -8,6 +8,7 @@ import { ROUTE_ACCESS } from '~/constants/navigation'
 const SETTINGS_TABS = [
   { label: 'Foydalanuvchilar', to: '/settings/users', icon: 'users' },
   { label: 'Rollar va huquqlar', to: '/settings/roles', icon: 'shield' },
+  { label: 'Integratsiyalar', to: '/settings/integrations', icon: 'globe' },
   { label: 'Ma’lumotnomalar', to: '/settings/reference-data', icon: 'layers' },
   { label: 'Tizim sozlamalari', to: '/settings/system', icon: 'gear' },
   { label: 'Audit jurnali', to: '/settings/audit', icon: 'clipboard' },
@@ -122,6 +123,11 @@ function openEdit(row: Record<string, unknown>) {
   editTab.value = 'main'
   editOpen.value = true
 }
+
+/** Boshqa dialoglar kabi Escape bilan yopiladi */
+onKeyStroke('Escape', () => {
+  if (editOpen.value) editOpen.value = false
+})
 
 function toggleDraftBuilding(id: string) {
   const i = draft.buildings.indexOf(id)
@@ -274,7 +280,7 @@ function toggleStatus(id: string) {
     </template>
   </AppTopbar>
 
-  <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-6">
+  <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-4 sm:p-6">
     <nav class="flex flex-wrap gap-2">
       <NuxtLink
         v-for="t in SETTINGS_TABS"
@@ -688,7 +694,10 @@ function toggleStatus(id: string) {
                   </button>
                 </div>
 
-                <UiField label="Interfeys tili">
+                <UiField
+                  label="Interfeys tili"
+                  hint="Shu hisob uchun boshlang‘ich til, egasi uni o‘z profilida o‘zgartira oladi"
+                >
                   <UiSelect
                     v-model="draft.language"
                     :options="[

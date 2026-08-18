@@ -1,6 +1,12 @@
 <script setup lang="ts">
+import { BUILDINGS } from '~/data/buildings'
 import { METERS, UTILITY_SUMMARY, type Meter } from '~/data/operations'
 import { dateShort, num } from '~/utils/format'
+
+const auth = useAuthStore()
+
+/** Hisoblagichlar faqat biriktirilgan obyektlar bo‘yicha ko‘rinadi */
+const scopedNames = new Set(BUILDINGS.filter((b) => auth.inScope(b.id)).map((b) => b.name))
 
 interface Reading {
   at: string
@@ -9,7 +15,9 @@ interface Reading {
   note: string
 }
 
-const meters = ref<Meter[]>(METERS.map((m) => ({ ...m })))
+const meters = ref<Meter[]>(
+  METERS.filter((m) => scopedNames.has(m.buildingName)).map((m) => ({ ...m })),
+)
 
 const STEPS = [0.88, 1.06, 0.95, 1.12, 1]
 
@@ -139,7 +147,37 @@ const entryMeter = ref(METERS[0]!.id)
 const entryDate = ref(METERS[0]!.readAt)
 const entryValue = ref<string | number>(METERS[0]!.lastReading)
 const entryNote = ref('')
-const entryShots = ref(0)
+
+/** Ko‘rsatkich suratlari: haqiqiy fayllar */
+const entryPhotos = ref<Array<{ file: File; url: string }>>([])
+const entryInput = ref<HTMLInputElement | null>(null)
+const PHOTO_LIMIT = 3
+
+function pickEntryPhotos() {
+  entryInput.value?.click()
+}
+
+function onEntryPhotos(event: Event) {
+  const target = event.target as HTMLInputElement
+  const picked = Array.from(target.files ?? [])
+  target.value = ''
+  for (const file of picked) {
+    if (entryPhotos.value.length >= PHOTO_LIMIT) break
+    entryPhotos.value.push({ file, url: URL.createObjectURL(file) })
+  }
+}
+
+function removeEntryPhoto(index: number) {
+  const gone = entryPhotos.value.splice(index, 1)[0]
+  if (gone) URL.revokeObjectURL(gone.url)
+}
+
+function clearEntryPhotos() {
+  for (const p of entryPhotos.value) URL.revokeObjectURL(p.url)
+  entryPhotos.value = []
+}
+
+onBeforeUnmount(clearEntryPhotos)
 
 const activeMeter = computed(() => meters.value.find((m) => m.id === entryMeter.value) ?? null)
 
@@ -180,14 +218,18 @@ function saveReading() {
       at: entryDate.value,
       value,
       consumption: roundTo(value - m.lastReading, dec),
-      note: entryNote.value.trim() || 'Qo‘lda kiritilgan ko‘rsatkich',
+      note:
+        (entryNote.value.trim() || 'Qo‘lda kiritilgan ko‘rsatkich') +
+        (entryPhotos.value.length > 0
+          ? ` Suratlar: ${entryPhotos.value.map((p) => p.file.name).join(', ')}.`
+          : ''),
     },
   ]
   m.previousReading = m.lastReading
   m.lastReading = value
   m.readAt = entryDate.value
   entryNote.value = ''
-  entryShots.value = 0
+  clearEntryPhotos()
   entryOpen.value = false
 }
 </script>
@@ -209,7 +251,7 @@ function saveReading() {
     </template>
   </AppTopbar>
 
-  <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-6">
+  <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-4 sm:p-6">
     <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <UiKpi
         v-for="(u, i) in UTILITY_SUMMARY"
@@ -453,32 +495,37 @@ function saveReading() {
       <UiField label="Hisoblagich surati" hint="Ko‘rsatkich sifatini tasdiqlash uchun surat biriktiring">
         <div class="flex flex-wrap gap-3">
           <div
-            v-for="n in entryShots"
-            :key="n"
+            v-for="(p, i) in entryPhotos"
+            :key="`${p.file.name}-${i}`"
             class="relative size-24 overflow-hidden rounded-field ring-1 ring-ink-200"
           >
-            <svg viewBox="0 0 96 96" class="size-full" aria-hidden="true">
-              <rect width="96" height="96" fill="#eef2f8" />
-              <rect x="18" y="30" width="60" height="36" rx="6" fill="#c7d9fe" />
-              <rect x="26" y="40" width="44" height="16" rx="3" fill="#ffffff" />
-              <circle cx="48" cy="22" r="6" fill="#a1bffd" />
-            </svg>
+            <img :src="p.url" :alt="p.file.name" class="size-full object-cover" />
             <button
               type="button"
-              class="absolute right-1 top-1 grid size-8 place-items-center rounded-full bg-ink-900/60 md:size-6 text-white transition-colors hover:bg-danger-600"
-              aria-label="Suratni olib tashlash"
-              @click="entryShots = entryShots - 1"
+              class="absolute right-1 top-1 grid size-8 place-items-center rounded-full bg-ink-900/60 text-white transition-colors hover:bg-danger-600 md:size-6"
+              :aria-label="`${p.file.name}: suratni olib tashlash`"
+              @click="removeEntryPhoto(i)"
             >
               <UiIcon name="x" :size="13" />
             </button>
           </div>
 
+          <input
+            ref="entryInput"
+            type="file"
+            accept="image/*"
+            multiple
+            class="sr-only"
+            aria-label="Hisoblagich suratlari"
+            @change="onEntryPhotos"
+          />
+
           <button
-            v-if="entryShots < 3"
+            v-if="entryPhotos.length < PHOTO_LIMIT"
             type="button"
             class="grid size-24 place-items-center rounded-field border-2 border-dashed border-ink-300 bg-ink-50 text-ink-500 transition-colors hover:border-brand-400 hover:bg-brand-50 hover:text-brand-600"
             aria-label="Hisoblagich surati qo‘shish"
-            @click="entryShots = entryShots + 1"
+            @click="pickEntryPhotos"
           >
             <svg viewBox="0 0 32 32" class="size-8" fill="none" aria-hidden="true">
               <rect x="3" y="7" width="26" height="18" rx="3" stroke="currentColor" stroke-width="1.8" />

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { canAccess } from '~/constants/navigation'
 import { ROLE_TONE_CLASSES } from '~/constants/roles'
 import { NOTIFICATIONS, type AppNotification } from '~/data/operations'
 
@@ -11,6 +10,7 @@ defineProps<{
 
 const auth = useAuthStore()
 const route = useRoute()
+const { t, roleLabel } = useAppLabels()
 
 // --- Ko‘rsatkichlar: valyuta kursi va ob-havo ------------------------------
 
@@ -36,10 +36,10 @@ const WEATHER_TONE: Record<string, string> = {
 
 const weatherTone = computed(() => WEATHER_TONE[weather.value.icon] ?? 'text-ink-400')
 
-const CURRENCY_NAME: Record<string, string> = {
-  USD: 'AQSH dollari',
-  EUR: 'Yevro',
-  RUB: 'Rossiya rubli',
+const CURRENCY_KEY: Record<string, string> = {
+  USD: 'shell.currencyUSD',
+  EUR: 'shell.currencyEUR',
+  RUB: 'shell.currencyRUB',
 }
 
 const ORDER = ['USD', 'EUR', 'RUB']
@@ -62,8 +62,12 @@ function signedDiff(value: number) {
   return `${value > 0 ? '+' : ''}${money(value)}`
 }
 
+/**
+ * Oq fonda o‘qiladigan ranglar: ok-700 4.76:1, danger-600 4.77:1,
+ * ink-500 4.76:1. ok-600 (3.17:1) matn uchun yetarli emas edi.
+ */
 function diffTone(value: number) {
-  return value > 0 ? 'text-ok-600' : value < 0 ? 'text-danger-600' : 'text-ink-500'
+  return value > 0 ? 'text-ok-700' : value < 0 ? 'text-danger-600' : 'text-ink-500'
 }
 
 function diffIcon(value: number) {
@@ -95,8 +99,26 @@ const notifications = useState<AppNotification[]>('header-notifications', () =>
   NOTIFICATIONS.map((n) => ({ ...n })),
 )
 
-const unread = computed(() => notifications.value.filter((n) => !n.read).length)
-const recent = computed(() => notifications.value.slice(0, 5))
+/**
+ * Moliyaviy xabarlar boshqa ijarachining nomi va hisob-fakturasini o‘z ichiga
+ * oladi, shuning uchun ular faqat billing moduli ochiq bo‘lgan rollarga
+ * (SUPER_HEAD va ACCOUNTANT) ko‘rsatiladi; TENANT_OWNER, BUILDING_MANAGER,
+ * FACILITY, WAREHOUSE_OPERATOR va CONTENT_OPERATOR ularni ko‘rmaydi.
+ */
+const CATEGORY_MODULE: Partial<Record<AppNotification['category'], string>> = {
+  'To‘lovlar': '/billing',
+}
+
+const visible = computed(() =>
+  notifications.value.filter((n) => {
+    const module = CATEGORY_MODULE[n.category]
+    if (!module) return true
+    return auth.canRoute(module)
+  }),
+)
+
+const unread = computed(() => visible.value.filter((n) => !n.read).length)
+const recent = computed(() => visible.value.slice(0, 5))
 
 const NOTIFICATION_TONE: Record<string, string> = {
   'To‘lovlar': 'bg-warn-50 text-warn-600',
@@ -107,7 +129,10 @@ const NOTIFICATION_TONE: Record<string, string> = {
 }
 
 function markAllRead() {
-  notifications.value = notifications.value.map((n) => ({ ...n, read: true }))
+  const shown = new Set(visible.value.map((n) => n.id))
+  notifications.value = notifications.value.map((n) =>
+    shown.has(n.id) ? { ...n, read: true } : n,
+  )
 }
 
 function openNotification(item: AppNotification) {
@@ -130,7 +155,7 @@ const initials = computed(() =>
 )
 
 const settingsTo = computed(() =>
-  auth.role && canAccess('/settings/users', auth.role) ? '/settings/users' : '/profile',
+  auth.canRoute('/settings/users') ? '/settings/users' : '/profile',
 )
 
 function signOut() {
@@ -168,7 +193,7 @@ function signOut() {
           </template>
         </nav>
 
-        <h1 v-if="title" class="truncate text-[19px] font-bold text-ink-900">{{ title }}</h1>
+        <h1 v-if="title" class="truncate text-[22px] font-bold text-ink-900">{{ title }}</h1>
         <p v-if="subtitle" class="truncate text-[13px] text-ink-500">{{ subtitle }}</p>
       </div>
 
@@ -186,7 +211,7 @@ function signOut() {
 
         <!-- Ob-havo -->
         <div class="hidden shrink-0 items-center gap-2 pr-0.5 sm:flex">
-          <span class="sr-only">{{ weather.city }} ob-havosi:</span>
+          <span class="sr-only">{{ t('shell.weatherOf', { city: weather.city }) }}</span>
           <UiIcon :name="weather.icon" :size="19" :class="weatherTone" />
           <span class="tabular text-[13.5px] font-semibold text-ink-800">
             {{ weather.tempC }}°
@@ -212,8 +237,8 @@ function signOut() {
             :aria-expanded="panel === 'rate'"
             @click="toggle('rate')"
           >
-            <span class="sr-only">Markaziy bank kursi:</span>
-            <span class="hidden text-[11px] font-semibold uppercase tracking-wide text-ink-400 xl:block">
+            <span class="sr-only">{{ t('shell.ratesLabel') }}</span>
+            <span class="hidden text-[11px] font-semibold uppercase tracking-wide text-ink-500 xl:block">
               1 USD
             </span>
             <span class="tabular text-[13.5px] font-semibold text-ink-800">
@@ -234,11 +259,11 @@ function signOut() {
             <div
               v-if="panel === 'rate'"
               role="dialog"
-              aria-label="Markaziy bank valyuta kurslari"
+              :aria-label="t('shell.ratesDialog')"
               class="absolute right-0 z-30 mt-2 w-[300px] max-w-[calc(100vw-2rem)] overflow-hidden rounded-panel bg-surface shadow-pop ring-1 ring-ink-200"
             >
               <div class="flex items-center justify-between gap-3 border-b border-ink-100 px-4 py-3">
-                <p class="text-[13px] font-semibold text-ink-900">Valyuta kurslari</p>
+                <p class="text-[13px] font-semibold text-ink-900">{{ t('shell.ratesTitle') }}</p>
                 <p class="tabular text-[11.5px] text-ink-500">{{ usd.date }}</p>
               </div>
 
@@ -254,7 +279,7 @@ function signOut() {
                     {{ r.code }}
                   </span>
                   <span class="min-w-0 flex-1 truncate text-[12.5px] text-ink-600">
-                    {{ CURRENCY_NAME[r.code] ?? r.label }}
+                    {{ CURRENCY_KEY[r.code] ? t(CURRENCY_KEY[r.code]!) : r.label }}
                   </span>
                   <span class="shrink-0 text-right">
                     <span class="tabular block text-[13px] font-semibold text-ink-900">
@@ -272,7 +297,7 @@ function signOut() {
               </ul>
 
               <p class="bg-surface-sunken px-4 py-2.5 text-[11.5px] leading-snug text-ink-500">
-                Manba: O‘zbekiston Respublikasi Markaziy banki
+                {{ t('shell.ratesSource') }}
               </p>
             </div>
           </Transition>
@@ -289,7 +314,7 @@ function signOut() {
             class="relative grid size-10 place-items-center rounded-field text-ink-500 transition-colors hover:bg-ink-100 hover:text-ink-800"
             :class="panel === 'bell' ? 'bg-ink-100 text-ink-800' : ''"
             :aria-label="
-              unread ? `Bildirishnomalar: ${unread} ta o‘qilmagan` : 'Bildirishnomalar'
+              unread ? t('shell.notificationsAria', { count: unread }) : t('common.notifications')
             "
             aria-haspopup="menu"
             :aria-expanded="panel === 'bell'"
@@ -315,14 +340,18 @@ function signOut() {
               class="absolute right-0 top-full z-30 mt-2 w-[336px] max-w-[calc(100vw-2rem)] overflow-hidden rounded-panel bg-surface shadow-pop ring-1 ring-ink-200"
             >
               <div class="flex items-center justify-between gap-3 border-b border-ink-100 px-4 py-3">
-                <p class="text-[13.5px] font-semibold text-ink-900">Bildirishnomalar</p>
+                <p class="text-[13.5px] font-semibold text-ink-900">
+                  {{ t('common.notifications') }}
+                </p>
                 <span
                   v-if="unread"
                   class="tabular rounded-pill bg-danger-50 px-2 py-0.5 text-[11px] font-bold text-danger-700"
                 >
-                  {{ unread }} ta yangi
+                  {{ t('shell.notificationsNew', { count: unread }) }}
                 </span>
-                <span v-else class="text-[11.5px] text-ink-500">Yangi xabar yo‘q</span>
+                <span v-else class="text-[11.5px] text-ink-500">
+                  {{ t('shell.notificationsNone') }}
+                </span>
               </div>
 
               <ul v-if="recent.length" class="scroll-slim max-h-[320px] divide-y divide-ink-100 overflow-y-auto">
@@ -362,7 +391,9 @@ function signOut() {
                 <span class="mx-auto grid size-11 place-items-center rounded-full bg-ink-100 text-ink-400">
                   <UiIcon name="bell" :size="20" />
                 </span>
-                <p class="mt-2.5 text-[12.5px] text-ink-500">Hozircha xabarlar yo‘q</p>
+                <p class="mt-2.5 text-[12.5px] text-ink-500">
+                  {{ t('shell.notificationsEmpty') }}
+                </p>
               </div>
 
               <div class="flex items-center justify-between gap-2 border-t border-ink-100 px-2 py-2">
@@ -372,14 +403,14 @@ function signOut() {
                   :disabled="!unread"
                   @click="markAllRead"
                 >
-                  Hammasini o‘qilgan deb belgilash
+                  {{ t('shell.notificationsMarkAll') }}
                 </button>
                 <NuxtLink
                   to="/notifications"
                   class="flex h-10 items-center gap-1 rounded-[8px] px-2.5 text-[12px] font-semibold text-brand-600 transition-colors hover:bg-brand-50"
                   @click="panel = null"
                 >
-                  Barchasi
+                  {{ t('shell.notificationsAll') }}
                   <UiIcon name="chevronRight" :size="13" />
                 </NuxtLink>
               </div>
@@ -393,7 +424,7 @@ function signOut() {
             type="button"
             class="flex h-10 items-center gap-1.5 rounded-field pl-0.5 pr-1 transition-colors hover:bg-ink-100"
             :class="panel === 'profile' ? 'bg-ink-100' : ''"
-            :aria-label="`Profil menyusi: ${auth.user?.fullName ?? ''}`"
+            :aria-label="t('shell.profileMenuAria', { name: auth.user?.fullName ?? '' })"
             aria-haspopup="menu"
             :aria-expanded="panel === 'profile'"
             @click="toggle('profile')"
@@ -441,7 +472,7 @@ function signOut() {
                     class="mt-1.5 inline-flex rounded-pill px-2 py-0.5 text-[10.5px] font-bold uppercase tracking-wide ring-1 ring-inset"
                     :class="ROLE_TONE_CLASSES[auth.roleMeta.tone]"
                   >
-                    {{ auth.roleMeta.label }}
+                    {{ roleLabel(auth.role) }}
                   </span>
                 </div>
               </div>
@@ -454,7 +485,7 @@ function signOut() {
                   @click="panel = null"
                 >
                   <UiIcon name="user" :size="18" class="text-ink-500" />
-                  Mening profilim
+                  {{ t('shell.myProfile') }}
                 </NuxtLink>
                 <NuxtLink
                   :to="settingsTo"
@@ -463,7 +494,7 @@ function signOut() {
                   @click="panel = null"
                 >
                   <UiIcon name="gear" :size="18" class="text-ink-500" />
-                  Sozlamalar
+                  {{ t('common.settings') }}
                 </NuxtLink>
               </div>
 
@@ -475,7 +506,7 @@ function signOut() {
                   @click="signOut"
                 >
                   <UiIcon name="logout" :size="18" />
-                  Chiqish
+                  {{ t('common.signOut') }}
                 </button>
               </div>
             </div>

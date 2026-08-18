@@ -1,29 +1,38 @@
 <script setup lang="ts">
-import { useStorage } from '@vueuse/core'
-
 /**
  * Interfeys tili: o‘zbek yoki rus. Tanlov brauzer xotirasida saqlanadi va
  * sahifa yangilangandan keyin ham saqlanadi. `<html lang>` shu tanlovga mos
- * ravishda yangilanadi.
+ * ravishda yangilanadi. Saqlash va tilni almashtirish `useLocaleChoice` da,
+ * shuning uchun profil hamda sozlamalardagi tanlov ham shu yerga tushadi.
  */
-type LocaleCode = 'uz' | 'ru'
+import type { LocaleCode } from '~/composables/useLocaleChoice'
 
-const OPTIONS: Array<{ code: LocaleCode; short: string; label: string }> = [
-  { code: 'uz', short: 'UZ', label: 'O‘zbekcha' },
-  { code: 'ru', short: 'RU', label: 'Ruscha' },
-]
+const { t, locales } = useI18n()
 
-const { locale, setLocale } = useI18n()
+/**
+ * Til nomi tanlangan interfeys tilida yoziladi: rus tiliga o‘tilganda
+ * ro‘yxat ham rus tilida o‘qiladi. Ro‘yxatning o‘zi `nuxt.config.ts`
+ * dagi `i18n.locales` dan olinadi, shuning uchun sarlavha, profil va
+ * sozlamalardagi tanlov bir xil qatorlarni ko‘rsatadi.
+ */
+const LABEL_KEY: Record<LocaleCode, string> = {
+  uz: 'shell.localeUz',
+  ru: 'shell.localeRu',
+}
 
-const stored = useStorage<LocaleCode>('makon.locale', 'uz')
-const current = computed(() => OPTIONS.find((o) => o.code === stored.value) ?? OPTIONS[0]!)
+const options = computed<Array<{ code: LocaleCode; short: string; label: string }>>(() =>
+  (Object.keys(LABEL_KEY) as LocaleCode[])
+    .filter((code) =>
+      (locales.value as Array<{ code: string }>).length
+        ? (locales.value as Array<{ code: string }>).some((l) => l.code === code)
+        : true,
+    )
+    .map((code) => ({ code, short: code.toUpperCase(), label: t(LABEL_KEY[code]) })),
+)
 
-watch(
-  stored,
-  (code) => {
-    if (locale.value !== code) setLocale(code)
-  },
-  { immediate: true },
+const { stored, pick } = useLocaleChoice()
+const current = computed(
+  () => options.value.find((o) => o.code === stored.value) ?? options.value[0]!,
 )
 
 useHead(() => ({ htmlAttrs: { lang: stored.value } }))
@@ -42,8 +51,8 @@ function close() {
 
 onKeyStroke('Escape', () => close())
 
-function pick(code: LocaleCode) {
-  stored.value = code
+function choose(code: LocaleCode) {
+  pick(code)
   close()
 }
 </script>
@@ -57,7 +66,7 @@ function pick(code: LocaleCode) {
       :class="open ? 'bg-ink-100' : ''"
       aria-haspopup="menu"
       :aria-expanded="open"
-      :aria-label="`Interfeys tili: ${current.label}`"
+      :aria-label="t('shell.localeAria', { label: current.label })"
       @click="open = !open"
     >
       <UiIcon name="globe" :size="17" class="text-ink-500" />
@@ -81,14 +90,14 @@ function pick(code: LocaleCode) {
         role="menu"
         class="absolute right-0 z-30 mt-2 w-48 max-w-[calc(100vw-2rem)] overflow-hidden rounded-field bg-surface p-1 shadow-pop ring-1 ring-ink-200"
       >
-        <li v-for="l in OPTIONS" :key="l.code">
+        <li v-for="l in options" :key="l.code">
           <button
             type="button"
             role="menuitemradio"
             :aria-checked="l.code === stored"
             class="flex h-10 w-full items-center gap-2.5 rounded-[8px] px-3 text-left text-[13px] font-medium transition-colors hover:bg-ink-100"
             :class="l.code === stored ? 'text-brand-700' : 'text-ink-700'"
-            @click="pick(l.code)"
+            @click="choose(l.code)"
           >
             <span
               class="grid size-6 shrink-0 place-items-center rounded-[6px] text-[10.5px] font-bold"

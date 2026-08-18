@@ -1,3 +1,5 @@
+import { reactive } from 'vue'
+
 export interface Contract {
   id: string
   code: string
@@ -15,7 +17,7 @@ export interface Contract {
   timeline: Array<{ label: string; date: string; actor: string; done: boolean }>
 }
 
-export const CONTRACTS: Contract[] = [
+export const CONTRACTS: Contract[] = reactive([
   {
     id: 'c-0161',
     code: 'MKON-2025-0161',
@@ -194,7 +196,7 @@ export const CONTRACTS: Contract[] = [
       { label: 'Faollashdi', date: '2025-03-01', actor: 'Tizim', done: true },
     ],
   },
-]
+])
 
 // ---------------------------------------------------------------------------
 
@@ -213,7 +215,7 @@ export interface Invoice {
   agingBucket: '0-30' | '31-60' | '61-90' | '90+' | null
 }
 
-export const INVOICES: Invoice[] = [
+export const INVOICES: Invoice[] = reactive([
   {
     id: 'i-0587',
     code: 'INV-2025-0587',
@@ -326,32 +328,120 @@ export const INVOICES: Invoice[] = [
     status: 'PAID',
     agingBucket: null,
   },
-]
+])
 
-export const BILLING_SUMMARY = {
-  period: 'May 2025',
-  charged: 128350000,
-  discounts: 5850000,
-  vat: 14925000,
-  total: 137425000,
-  paidTotal: 78890000,
-  debtTotal: 46960000,
-  overdueTotal: 18675000,
+// ---------------------------------------------------------------------------
+// Moliyaviy jamlar: hammasi hisob-faktura reyestridan hisoblanadi.
+//
+// Reyestr, to‘lovlar va qarzdorlik ekranlari shu funksiyalarni chaqiradi,
+// shuning uchun uchala sahifa bir xil raqamni ko‘rsatadi va to‘lov qabul
+// qilingan zahoti jamlar yangilanadi.
+
+/**
+ * Moliyaviy jamga kiradigan hujjatlar. Bekor qilingan hujjat hisobdan
+ * chiqadi, qolganlari (qoralamaga qaytarilgani ham) qoladi: ijarachining
+ * qarzi hujjat qaytarilgani uchun yo‘qolmaydi.
+ */
+export function settledInvoices(list: Invoice[] = INVOICES) {
+  return list.filter((i) => i.status !== 'CANCELLED')
 }
 
-export const AGING = [
-  { bucket: '0–30 kun', share: 28, amount: 13150000, tone: 'ok' as const },
-  { bucket: '31–60 kun', share: 24, amount: 11265000, tone: 'brand' as const },
-  { bucket: '61–90 kun', share: 8, amount: 3870000, tone: 'warn' as const },
-  { bucket: '90+ kun', share: 40, amount: 18675000, tone: 'danger' as const },
+export interface BillingSummary {
+  /** Hisoblangan jami summa, QQS bilan */
+  charged: number
+  /** Summaga kiritilgan QQS, 12% */
+  vat: number
+  /** QQS siz summa */
+  net: number
+  paidTotal: number
+  debtTotal: number
+  overdueTotal: number
+  count: number
+  paidCount: number
+}
+
+export function billingSummaryOf(list: Invoice[] = INVOICES): BillingSummary {
+  const live = settledInvoices(list)
+  const charged = live.reduce((s, i) => s + i.total, 0)
+  const vat = Math.round(charged - charged / 1.12)
+  return {
+    charged,
+    vat,
+    net: charged - vat,
+    paidTotal: live.reduce((s, i) => s + i.paid, 0),
+    debtTotal: live.reduce((s, i) => s + Math.max(0, i.total - i.paid), 0),
+    overdueTotal: live
+      .filter((i) => i.status === 'OVERDUE')
+      .reduce((s, i) => s + Math.max(0, i.total - i.paid), 0),
+    count: live.length,
+    paidCount: live.filter((i) => i.paid >= i.total).length,
+  }
+}
+
+export type AgingKey = '0-30' | '31-60' | '61-90' | '90+'
+
+export interface AgingRow {
+  key: AgingKey
+  bucket: string
+  share: number
+  amount: number
+  tone: 'ok' | 'brand' | 'warn' | 'danger'
+}
+
+const AGING_BUCKETS: Array<Pick<AgingRow, 'key' | 'bucket' | 'tone'>> = [
+  { key: '0-30', bucket: '0–30 kun', tone: 'ok' },
+  { key: '31-60', bucket: '31–60 kun', tone: 'brand' },
+  { key: '61-90', bucket: '61–90 kun', tone: 'warn' },
+  { key: '90+', bucket: '90+ kun', tone: 'danger' },
 ]
 
-export const PAYMENT_STATUS_BREAKDOWN = [
-  { label: 'To‘langan', count: 78, share: 61, amount: 83520000, tone: 'ok' as const },
-  { label: 'Qisman to‘langan', count: 21, share: 16, amount: 23150000, tone: 'warn' as const },
-  { label: 'Tasdiqlangan', count: 15, share: 12, amount: 12845000, tone: 'brand' as const },
-  { label: 'Kechikkan', count: 14, share: 11, amount: 18675000, tone: 'danger' as const },
+/** Qarzdorlikning muddat guruhlari bo‘yicha taqsimoti */
+export function agingOf(list: Invoice[] = INVOICES): AgingRow[] {
+  const open = settledInvoices(list).filter((i) => i.total - i.paid > 0)
+  const total = open.reduce((s, i) => s + (i.total - i.paid), 0)
+  return AGING_BUCKETS.map((b) => {
+    const amount = open
+      .filter((i) => (i.agingBucket ?? '0-30') === b.key)
+      .reduce((s, i) => s + (i.total - i.paid), 0)
+    return { ...b, amount, share: total ? Math.round((amount / total) * 100) : 0 }
+  })
+}
+
+export interface PaymentStatusRow {
+  label: string
+  status: Invoice['status']
+  count: number
+  share: number
+  amount: number
+  tone: 'ok' | 'brand' | 'warn' | 'danger'
+}
+
+const PAYMENT_STATUS_ROWS: Array<Pick<PaymentStatusRow, 'label' | 'status' | 'tone'>> = [
+  { label: 'To‘langan', status: 'PAID', tone: 'ok' },
+  { label: 'Qisman to‘langan', status: 'PARTIALLY_PAID', tone: 'warn' },
+  { label: 'Tasdiqlangan', status: 'ISSUED', tone: 'brand' },
+  { label: 'Kechikkan', status: 'OVERDUE', tone: 'danger' },
 ]
+
+/** Hisob-fakturalarning to‘lov holati kesimi */
+export function paymentStatusOf(list: Invoice[] = INVOICES): PaymentStatusRow[] {
+  const live = settledInvoices(list)
+  return PAYMENT_STATUS_ROWS.map((row) => {
+    const rows = live.filter((i) => i.status === row.status)
+    return {
+      ...row,
+      count: rows.length,
+      share: live.length ? Math.round((rows.length / live.length) * 100) : 0,
+      amount: rows.reduce((s, i) => s + i.total, 0),
+    }
+  })
+}
+
+/**
+ * Sahifa ochilganda hisoblanadigan muddat guruhlari. Jonli qiymat kerak
+ * bo‘lganda `agingOf()` computed ichida chaqiriladi.
+ */
+export const AGING = agingOf()
 
 export const TARIFF_LINES = [
   { service: 'Elektr energiyasi', unit: 'kVt-soat', tariff: 1250, qty: 4800, sum: 6000000 },
@@ -359,114 +449,4 @@ export const TARIFF_LINES = [
   { service: 'Issiqlik ta’minoti', unit: 'Gkal', tariff: 160000, qty: 8, sum: 1280000 },
   { service: 'Boshqaruv xizmati', unit: 'm²', tariff: 3000, qty: 200, sum: 600000 },
   { service: 'Tozalash xizmati', unit: 'm²', tariff: 2000, qty: 200, sum: 400000 },
-]
-
-// ---------------------------------------------------------------------------
-
-export interface Application {
-  id: string
-  code: string
-  tenant: string
-  buildingName: string
-  unitCode: string
-  area: number
-  type: 'Ijaraga olish' | 'Sotib olish'
-  price: number
-  stage: 'Bino rahbari' | 'Buxgalter' | 'Yakuniy'
-  status:
-    | 'DRAFT'
-    | 'SUBMITTED'
-    | 'BUILDING_REVIEW'
-    | 'FINANCE_REVIEW'
-    | 'OFFER_SENT'
-    | 'APPROVED'
-    | 'REJECTED'
-    | 'COMPLETED'
-  submittedAt: string
-  contactPerson: string
-  phone: string
-  note: string
-}
-
-export const APPLICATIONS: Application[] = [
-  {
-    id: 'a-0156',
-    code: 'ARZ-2025-0156',
-    tenant: 'Makon Solutions MCHJ',
-    buildingName: 'Green Business Center',
-    unitCode: '704',
-    area: 58.6,
-    type: 'Ijaraga olish',
-    price: 10900000,
-    stage: 'Bino rahbari',
-    status: 'BUILDING_REVIEW',
-    submittedAt: '2025-05-12 10:30',
-    contactPerson: 'Dilshod Ergashev',
-    phone: '+998 90 567 89 01',
-    note: 'Uch yillik muddatga ijaraga olmoqchimiz, dastlabki ko‘rikni tashkil qilishingizni so‘raymiz.',
-  },
-  {
-    id: 'a-0155',
-    code: 'ARZ-2025-0155',
-    tenant: 'Tech Solutions UZB MChJ',
-    buildingName: 'Mega Mall',
-    unitCode: '301',
-    area: 142.5,
-    type: 'Ijaraga olish',
-    price: 18500000,
-    stage: 'Buxgalter',
-    status: 'FINANCE_REVIEW',
-    submittedAt: '2025-05-11 14:05',
-    contactPerson: 'Sanjar Aliyev',
-    phone: '+998 90 771 22 33',
-    note: 'Savdo nuqtasi ochish rejalashtirilgan. To‘lov shartlarini muhokama qilishni so‘raymiz.',
-  },
-  {
-    id: 'a-0154',
-    code: 'ARZ-2025-0154',
-    tenant: 'Mega Invest Group',
-    buildingName: 'Industrial Park 2',
-    unitCode: 'B-14',
-    area: 620.0,
-    type: 'Sotib olish',
-    price: 31000000,
-    stage: 'Bino rahbari',
-    status: 'SUBMITTED',
-    submittedAt: '2025-05-10 09:20',
-    contactPerson: 'Aziz Nazarov',
-    phone: '+998 90 882 44 55',
-    note: 'Logistika markazi uchun ombor maydoni kerak.',
-  },
-  {
-    id: 'a-0153',
-    code: 'ARZ-2025-0153',
-    tenant: 'Creative Agency',
-    buildingName: 'Green Business Center',
-    unitCode: '706',
-    area: 61.3,
-    type: 'Ijaraga olish',
-    price: 11200000,
-    stage: 'Yakuniy',
-    status: 'APPROVED',
-    submittedAt: '2025-05-06 16:40',
-    contactPerson: 'Kamola Yusupova',
-    phone: '+998 90 993 66 77',
-    note: 'Joriy ofisdan kengaytirish maqsadida qo‘shimcha maydon.',
-  },
-  {
-    id: 'a-0152',
-    code: 'ARZ-2025-0152',
-    tenant: 'Alpha Solutions',
-    buildingName: 'Urban Office',
-    unitCode: '402',
-    area: 74.2,
-    type: 'Ijaraga olish',
-    price: 13400000,
-    stage: 'Bino rahbari',
-    status: 'REJECTED',
-    submittedAt: '2025-05-04 11:15',
-    contactPerson: 'Rustam Qodirov',
-    phone: '+998 90 445 88 99',
-    note: 'Talab qilingan muddat bo‘sh maydon rejasiga to‘g‘ri kelmadi.',
-  },
 ]

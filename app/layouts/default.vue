@@ -7,6 +7,7 @@
 const auth = useAuthStore()
 const route = useRoute()
 const router = useRouter()
+const { t } = useI18n()
 
 const home = computed(() => auth.roleMeta?.home ?? '/')
 const showBack = computed(() => route.path !== home.value)
@@ -31,7 +32,7 @@ function goBack() {
           v-if="showBack"
           type="button"
           class="grid size-11 shrink-0 place-items-center rounded-field text-ink-600 transition-colors hover:bg-ink-100 active:bg-ink-100"
-          aria-label="Orqaga qaytish"
+          :aria-label="t('common.backAria')"
           @click="goBack"
         >
           <UiIcon name="chevronLeft" :size="21" />

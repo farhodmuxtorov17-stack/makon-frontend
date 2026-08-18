@@ -1,6 +1,16 @@
 <script setup lang="ts">
-import { BUILDINGS } from '~/data/buildings'
-import { num } from '~/utils/format'
+import { OCCUPANCY_BANDS } from '~/constants/statuses'
+import { BUILDINGS, type Building } from '~/data/buildings'
+import { dateShort, num, percent, sum, todayIso } from '~/utils/format'
+import { csvBlob, docxBlob, saveBlob } from '~/utils/docx'
+
+const auth = useAuthStore()
+
+/** Ro‘yxat, filtr variantlari, jamlar va eksport faqat biriktirilgan obyektlardan */
+const scoped = computed(() => BUILDINGS.filter((b) => auth.inScope(b.id)))
+
+/** Reyestrga yangi obyekt qo‘shish tizim ma’muriyati huquqiga bog‘liq */
+const canCreate = computed(() => auth.can('system.administer'))
 
 const search = ref('')
 const typeFilter = ref('')
@@ -24,12 +34,20 @@ const createTouched = ref(false)
 
 const uniq = (values: string[]) => Array.from(new Set(values))
 
-const typeOptions = uniq(BUILDINGS.map((b) => b.type)).map((v) => ({ value: v, label: v }))
-const cityOptions = uniq(BUILDINGS.map((b) => b.city)).map((v) => ({ value: v, label: v }))
-const districtOptions = uniq(BUILDINGS.map((b) => b.district))
-  .sort((a, b) => a.localeCompare(b))
-  .map((v) => ({ value: v, label: v }))
-const classOptions = uniq(BUILDINGS.map((b) => b.buildingClass)).map((v) => ({ value: v, label: v }))
+const typeOptions = computed(() =>
+  uniq(scoped.value.map((b) => b.type)).map((v) => ({ value: v, label: v })),
+)
+const cityOptions = computed(() =>
+  uniq(scoped.value.map((b) => b.city)).map((v) => ({ value: v, label: v })),
+)
+const districtOptions = computed(() =>
+  uniq(scoped.value.map((b) => b.district))
+    .sort((a, b) => a.localeCompare(b))
+    .map((v) => ({ value: v, label: v })),
+)
+const classOptions = computed(() =>
+  uniq(scoped.value.map((b) => b.buildingClass)).map((v) => ({ value: v, label: v })),
+)
 
 const statusOptions = [
   { value: 'ACTIVE', label: 'Faol' },
@@ -37,9 +55,9 @@ const statusOptions = [
 ]
 
 const occupancyOptions = [
-  { value: 'high', label: '90% va yuqori' },
-  { value: 'mid', label: '84% – 89%' },
-  { value: 'low', label: '84% dan past' },
+  { value: 'high', label: OCCUPANCY_BANDS[0]!.label },
+  { value: 'mid', label: OCCUPANCY_BANDS[1]!.label },
+  { value: 'low', label: OCCUPANCY_BANDS[2]!.label },
 ]
 
 const sortOptions = [
@@ -56,9 +74,8 @@ const perPageOptions = [
 ]
 
 const exportFormats = [
-  { value: 'xlsx', label: 'Excel jadvali', hint: 'Barcha ustunlar, filtr saqlanadi', icon: 'chart' },
-  { value: 'pdf', label: 'PDF hujjat', hint: 'Chop etishga tayyor ko‘rinish', icon: 'doc' },
-  { value: 'csv', label: 'CSV fayl', hint: 'Tashqi tizimga yuklash uchun', icon: 'upload' },
+  { value: 'csv', label: 'CSV jadval', hint: 'Excel va tashqi tizimlar uchun', icon: 'chart' },
+  { value: 'docx', label: 'Word hujjat', hint: 'Chop etishga tayyor ko‘rinish', icon: 'doc' },
 ]
 
 const createForm = reactive({
@@ -78,7 +95,7 @@ const createForm = reactive({
 const filtered = computed(() => {
   const q = search.value.trim().toLowerCase()
 
-  const list = BUILDINGS.filter((b) => {
+  const list = scoped.value.filter((b) => {
     if (q) {
       const haystack = `${b.code} ${b.name} ${b.city} ${b.district} ${b.street} ${b.type}`.toLowerCase()
       if (!haystack.includes(q)) return false
@@ -200,18 +217,118 @@ function goToPage(target: number) {
   page.value = Math.min(Math.max(target, 1), pageCount.value)
 }
 
+/** Reyestr haqiqiy fayl bo‘lib saqlanadi, ustunlar jadvaldagidek */
 function submitExport() {
-  const format = exportFormats.find((f) => f.value === exportFormat.value)
-  const count = exportScope.value === 'filtered' ? filtered.value.length : BUILDINGS.length
-  notice.value = `Reyestr «${format?.label}» ko‘rinishida tayyorlandi, ${count} ta obyekt.`
+  const rows = exportScope.value === 'filtered' ? filtered.value : scoped.value
+  const name = `obyektlar-reyestri-${todayIso()}.${exportFormat.value}`
+
+  if (exportFormat.value === 'csv') {
+    saveBlob(
+      csvBlob([
+        ['ID', 'Bino nomi', 'Manzil', 'Turi', 'Qavatlar', 'Unitlar', 'Band', 'Bo‘sh', 'Bandlik, %', 'GLA, m²', 'Oylik tushum, so‘m'],
+        ...rows.map((b) => [
+          b.code,
+          b.name,
+          `${b.city}, ${b.district}, ${b.street}`,
+          b.type,
+          b.floors,
+          b.units,
+          b.occupiedUnits,
+          b.vacantUnits,
+          b.occupancy,
+          b.gla,
+          b.monthlyRevenue,
+        ]),
+      ]),
+      name,
+    )
+  } else {
+    saveBlob(
+      docxBlob([
+        { text: 'Obyektlar reyestri', style: 'title' },
+        { text: `${rows.length} ta obyekt · ${dateShort(todayIso())}`, style: 'subtitle' },
+        ...rows.map((b) => ({
+          text: `${b.code} · ${b.name} · ${b.city}, ${b.district}, ${b.street} · ${b.type} · ${b.floors} qavat · ${b.units} unit (band ${b.occupiedUnits}, bo‘sh ${b.vacantUnits}) · bandlik ${percent(b.occupancy)} · oylik tushum ${sum(b.monthlyRevenue)}`,
+          style: 'body' as const,
+        })),
+      ]),
+      name,
+    )
+  }
+
+  notice.value = `${name} yuklab olindi, ${num(rows.length)} ta obyekt.`
   exportOpen.value = false
 }
 
+const toNum = (value: string) => Math.max(0, Math.round(Number(value) || 0))
+
+/** Yangi yozuv uchun keyingi bo‘sh identifikator va reyestr raqami */
+function nextIdentity() {
+  const last = BUILDINGS.reduce((max, b) => Math.max(max, Number(b.id.replace(/[^0-9]/g, '')) || 0), 0)
+  const next = last + 1
+  return {
+    id: `b-${String(next).padStart(2, '0')}`,
+    code: `BIN-${String(next).padStart(4, '0')}`,
+    order: next,
+  }
+}
+
+function slugOf(name: string, order: number) {
+  const base =
+    name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '') || `obyekt-${order}`
+  return BUILDINGS.some((b) => b.slug === base) ? `${base}-${order}` : base
+}
+
 function submitCreate() {
+  if (!canCreate.value) return
   createTouched.value = true
   if (!createForm.name.trim() || !createForm.type || !createForm.city) return
 
-  notice.value = `«${createForm.name.trim()}» obyekti reyestrga qo‘shildi va tasdiqlash uchun yuborildi.`
+  const { id, code, order } = nextIdentity()
+  const name = createForm.name.trim()
+  const units = toNum(createForm.units)
+  const gla = toNum(createForm.gla)
+
+  const created: Building = {
+    id,
+    code,
+    name,
+    slug: slugOf(name, order),
+    type: createForm.type as Building['type'],
+    city: createForm.city,
+    district: createForm.district.trim(),
+    street: createForm.street.trim(),
+    buildYear: new Date().getFullYear(),
+    buildingClass: createForm.buildingClass || 'B klass',
+    floors: toNum(createForm.floors),
+    undergroundFloors: 0,
+    units,
+    occupiedUnits: 0,
+    vacantUnits: units,
+    gla,
+    vacantArea: gla,
+    occupancy: 0,
+    monthlyRevenue: 0,
+    debt: 0,
+    sla: 100,
+    serviceRequests: 0,
+    lat: 41.3111,
+    lon: 69.2797,
+    photo: '',
+    gallery: [],
+    manager: createForm.manager.trim(),
+    managerPhone: createForm.phone.trim(),
+    status: 'ACTIVE',
+    amenities: [],
+    equipment: [],
+  }
+
+  BUILDINGS.unshift(created)
+
+  notice.value = `«${name}» obyekti reyestrga qo‘shildi, ID: ${code}.`
   createOpen.value = false
   createTouched.value = false
   Object.assign(createForm, {
@@ -240,14 +357,21 @@ function submitCreate() {
         <UiIcon name="download" :size="16" />
         Eksport
       </UiButton>
-      <UiButton size="sm" @click="createOpen = true">
+      <UiButton v-if="canCreate" size="sm" @click="createOpen = true">
         <UiIcon name="plus" :size="16" />
         Yangi obyekt
       </UiButton>
+      <span
+        v-else
+        class="inline-flex items-center gap-2 rounded-pill bg-ink-100 px-3 py-1.5 text-[12px] font-semibold text-ink-600"
+      >
+        <UiIcon name="eye" :size="15" />
+        Faqat ko‘rish huquqi
+      </span>
     </template>
   </AppTopbar>
 
-  <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-6">
+  <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-4 sm:p-6">
     <div
       v-if="notice"
       class="flex items-start gap-3 rounded-card bg-ok-50 px-4 py-3.5 ring-1 ring-inset ring-ok-100"
@@ -345,7 +469,11 @@ function submitCreate() {
         :columns="columns"
         :rows="rows"
         :to="objectPath"
-        empty="Filtr shartlariga mos obyekt topilmadi"
+        :empty="
+          scoped.length
+            ? 'Filtr shartlariga mos obyekt topilmadi'
+            : 'Sizga biriktirilgan obyekt yo‘q'
+        "
       >
         <template #cell-code="{ row }">
           <span class="tabular text-[13px] font-semibold text-ink-700">{{ row.code }}</span>
@@ -528,7 +656,7 @@ function submitCreate() {
           <button
             v-for="s in [
               { value: 'filtered', label: `Filtrlangan yozuvlar (${filtered.length})` },
-              { value: 'all', label: `Barcha obyektlar (${BUILDINGS.length})` },
+              { value: 'all', label: `Barcha obyektlar (${scoped.length})` },
             ]"
             :key="s.value"
             type="button"
@@ -555,6 +683,7 @@ function submitCreate() {
     </UiModal>
 
     <UiModal
+      v-if="canCreate"
       v-model="createOpen"
       title="Yangi obyekt"
       subtitle="Obyekt pasporti uchun asosiy ma’lumotlarni kiriting"

@@ -188,9 +188,11 @@ function step(delta: number) {
 function fmt(v: number) {
   const a = Math.abs(v)
   if (a >= 1000) return num(Math.round(v))
-  if (a >= 100) return num(v, 0)
-  if (a >= 10) return num(v, 1)
-  return num(v, 2)
+  // Aniqlik karta sarlavhasidagi qiymat bilan bir xil bo‘lishi kerak: 37.58
+  // va 440.1 chizmaning maslahat oynasida 37.6 va 440 bo‘lib qolmasin.
+  // Ortiqcha nollar olib tashlanadi, shuning uchun 12.00 «12» ko‘rinishida.
+  const text = num(v, a >= 100 ? 1 : 2)
+  return text.replace(/(\.\d*?)0+$/, '$1').replace(/\.$/, '')
 }
 
 const tipShift = computed(() => {
@@ -413,7 +415,7 @@ const summary = computed(() => {
         </svg>
         <span class="text-ink-600">{{ s.label }}</span>
       </li>
-      <li v-if="unit" class="text-[12px] text-ink-400">{{ unit }}</li>
+      <li v-if="unit" class="text-[12px] text-ink-500">{{ unit }}</li>
     </ul>
 
     <!-- Ekran o‘qigichlar uchun to‘liq qiymatlar -->

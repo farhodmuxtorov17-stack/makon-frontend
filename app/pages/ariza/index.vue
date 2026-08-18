@@ -13,7 +13,13 @@ lease.seed()
 
 const CODE_LENGTH = 6
 const RESEND_SECONDS = 60
-const EXPECTED = '123456'
+
+/** Raqamga yuborilgan bir martalik kod, tasdiqlash qadamida ko‘rsatiladi */
+const sentCode = ref('')
+
+function newCode() {
+  return String(Math.floor(100000 + Math.random() * 900000))
+}
 
 /** Uch bosqich: forma, telefon tasdig‘i, natija */
 const step = ref('form')
@@ -23,7 +29,7 @@ const vacantUnits = computed(() => UNITS.filter((u) => u.status === 'VACANT'))
 const unitOptions = computed(() =>
   vacantUnits.value.map((u) => ({
     value: u.id,
-    label: `${buildingById(u.buildingId)?.name ?? ''} · Unit ${u.code} · ${num(u.area, 1)} m²`,
+    label: `${buildingById(u.buildingId)?.name ?? ''} · Unit ${u.code} · ${area(u.area)}`,
   })),
 )
 
@@ -74,14 +80,22 @@ onMounted(() => {
   const found = vacantUnits.value.find((u) => u.id === requested)
   form.unitId = found?.id ?? ''
   form.startDate = firstOfNextMonth()
-  if (found) form.price = String(found.price)
+  if (found) form.price = String(monthlyPrice(found))
 })
+
+/**
+ * Ayrim unitlar m² narxi bilan e’lon qilinadi, taklif narxi maydoni esa oylik
+ * summani kutadi. Shuning uchun m² narxi unit maydoniga ko‘paytiriladi.
+ */
+function monthlyPrice(u: { price: number; area: number; priceUnit: string }) {
+  return u.priceUnit === 'so‘m / m²' ? Math.round(u.price * u.area) : u.price
+}
 
 watch(
   () => form.unitId,
   (id) => {
     const u = vacantUnits.value.find((x) => x.id === id)
-    if (u) form.price = String(u.price)
+    if (u) form.price = String(monthlyPrice(u))
   },
 )
 
@@ -270,6 +284,7 @@ function onCellPaste(event: ClipboardEvent, index: number) {
 function resend() {
   if (secondsLeft.value > 0) return
   wrong.value = false
+  sentCode.value = newCode()
   clearCells()
   startCountdown()
   resent.value = true
@@ -278,11 +293,47 @@ function resend() {
 // --- Yuborish --------------------------------------------------------------
 
 /** Forma to‘g‘ri to‘ldirilgan bo‘lsa, raqamga bir martalik kod yuboriladi */
+/** Xato maydonni ekranda topish uchun input identifikatorlari */
+const FIELD_ANCHOR: Record<string, string> = {
+  fullName: 'ariza-name',
+  phone: 'ariza-phone',
+  email: 'ariza-email',
+  orgName: 'ariza-org',
+  stir: 'ariza-stir',
+  unitId: 'ariza-unit',
+  price: 'ariza-price',
+  startDate: 'ariza-start',
+}
+
+const firstErrorLabel = computed(() => {
+  const keys = Object.keys(errors.value)
+  if (keys.length === 0) return ''
+  const first = keys[0] as string
+  return errors.value[first] ?? ''
+})
+
+function focusFirstError() {
+  const first = Object.keys(errors.value)[0]
+  const id = first ? FIELD_ANCHOR[first] : undefined
+  if (!id) return
+  nextTick(() => {
+    const el = document.getElementById(id)
+    if (!el) return
+    el.scrollIntoView({ block: 'center', behavior: 'smooth' })
+    el.focus()
+  })
+}
+
 function requestCode() {
   submitted.value = true
-  if (Object.keys(errors.value).length > 0 || pending.value) return
+  if (pending.value) return
+  if (Object.keys(errors.value).length > 0) {
+    focusFirstError()
+    return
+  }
 
   pending.value = true
+  sentCode.value = newCode()
   timer = setTimeout(() => {
     pending.value = false
     step.value = 'verify'
@@ -308,7 +359,7 @@ function confirmCode() {
 
   timer = setTimeout(() => {
     pending.value = false
-    if (entered !== EXPECTED) {
+    if (entered !== sentCode.value) {
       wrong.value = true
       clearCells()
       return
@@ -436,9 +487,24 @@ const lastFour = computed(() => form.phone.slice(-4))
           <p class="mt-2 text-[13.5px] leading-relaxed text-ink-600">
             Olti xonali kod
             <span class="tabular font-semibold text-ink-900">{{ phoneFormatted }}</span>
-            raqamiga bog‘langan Telegram akkauntiga yuborildi. Ariza faqat shu qadamdan keyin
-            ro‘yxatga olinadi.
+            raqamiga SMS orqali yuborildi. Ariza faqat shu qadamdan keyin ro‘yxatga olinadi.
           </p>
+
+          <div
+            class="mt-3 flex items-start gap-2.5 rounded-field bg-surface-sunken p-3.5 ring-1 ring-inset ring-ink-200"
+          >
+            <UiIcon name="info" :size="16" class="mt-px shrink-0 text-ink-400" />
+            <p class="min-w-0 text-[12.5px] leading-relaxed text-ink-600">
+              Yuborilgan kod:
+              <span class="tabular text-[14px] font-bold tracking-wide text-ink-900">
+                {{ sentCode }}
+              </span>
+              <span class="mt-1 block">
+                Tashqi SMS xizmati bu qurilmaga ulanmagan, shuning uchun raqamga yuborilgan kod
+                shu yerda ko‘rsatilmoqda.
+              </span>
+            </p>
+          </div>
 
           <form class="mt-6" novalidate @submit.prevent="confirmCode">
             <fieldset>
@@ -711,8 +777,9 @@ const lastFour = computed(() => form.phone.slice(-4))
 
           <UiCard title="So‘rov shartlari" subtitle="Yakuniy shartlar ko‘rikdan keyin kelishiladi" icon="clipboard">
             <form class="space-y-4" novalidate @submit.prevent="requestCode">
-              <UiField label="Bo‘sh unit" required :error="errorOf('unitId')">
+              <UiField label="Bo‘sh unit" required for="ariza-unit" :error="errorOf('unitId')">
                 <UiSelect
+                  id="ariza-unit"
                   v-model="form.unitId"
                   :options="unitOptions"
                   placeholder="Maydonni tanlang"
@@ -721,8 +788,15 @@ const lastFour = computed(() => form.phone.slice(-4))
               </UiField>
 
               <div class="grid gap-4 sm:grid-cols-2">
-                <UiField label="Taklif narxi" required :error="errorOf('price')" hint="Oylik summa, so‘m">
+                <UiField
+                  label="Taklif narxi"
+                  required
+                  for="ariza-price"
+                  :error="errorOf('price')"
+                  hint="Oylik summa, so‘m"
+                >
                   <UiInput
+                    id="ariza-price"
                     v-model="form.price"
                     type="number"
                     min="0"
@@ -737,8 +811,9 @@ const lastFour = computed(() => form.phone.slice(-4))
                 </UiField>
               </div>
 
-              <UiField label="Boshlanish sanasi" required :error="errorOf('startDate')">
+              <UiField label="Boshlanish sanasi" required for="ariza-start" :error="errorOf('startDate')">
                 <UiInput
+                  id="ariza-start"
                   v-model="form.startDate"
                   type="date"
                   :invalid="Boolean(errorOf('startDate'))"
@@ -763,6 +838,17 @@ const lastFour = computed(() => form.phone.slice(-4))
                   majburiy tasdiq: aloqa raqami haqiqiy bo‘lishi kerak.
                 </p>
               </div>
+
+              <p
+                v-if="submitted && firstErrorLabel"
+                role="alert"
+                class="flex items-start gap-2 rounded-field bg-danger-50 p-3.5 text-[12.5px] leading-relaxed font-medium text-danger-700 ring-1 ring-inset ring-danger-100"
+              >
+                <UiIcon name="warning" :size="16" class="mt-px shrink-0" />
+                <span class="min-w-0">
+                  Forma to‘liq emas: {{ firstErrorLabel }}. Maydon avtomatik ochib beriladi.
+                </span>
+              </p>
 
               <div class="flex flex-wrap items-center justify-end gap-3 border-t border-ink-100 pt-4">
                 <UiButton variant="ghost" to="/catalog">Bekor qilish</UiButton>

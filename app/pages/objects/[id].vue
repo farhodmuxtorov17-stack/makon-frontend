@@ -1,13 +1,33 @@
 <script setup lang="ts">
-import { buildingById } from '~/data/buildings'
+import { buildingById, type Building } from '~/data/buildings'
 import { unitsOfBuilding, unitsOfFloor } from '~/data/units'
-import { area, num, percent, sum, sumShort } from '~/utils/format'
+import { area, num, percent, sum, sumShort, todayIso } from '~/utils/format'
+import { docxBlob, fileSlug, saveBlob, type DocxLine } from '~/utils/docx'
 
 const route = useRoute()
+const auth = useAuthStore()
 
 const id = computed(() => String(route.params.id))
 const nested = computed(() => route.path.replace(/\/+$/, '') !== `/objects/${id.value}`)
-const building = computed(() => buildingById(id.value))
+/**
+ * Yozuv ref’da saqlanadi: reyestr massivi reaktiv emas, shuning uchun tahrirdan
+ * keyin sahifa shu yerdan yangilanadi. Biriktirilmagan obyekt to‘g‘ridan-to‘g‘ri
+ * havola orqali ham ochilmaydi.
+ */
+const building = ref<Building | undefined>()
+
+watchEffect(() => {
+  const b = buildingById(id.value)
+  building.value = b && auth.inScope(b.id) ? b : undefined
+})
+
+/** Ijara va moliya ma’lumoti faqat shu oqimda ishlaydigan rollarga ochiq */
+const showFinance = computed(
+  () => auth.can('application.decide') || auth.can('invoice.create') || auth.can('contract.sign'),
+)
+
+/** Pasportni tahrirlash: texnik ma’lumot yoki tizim ma’muriyati huquqi bilan */
+const canEdit = computed(() => auth.can('unit.editTechnical') || auth.can('system.administer'))
 
 const units = computed(() => (building.value ? unitsOfBuilding(building.value.id) : []))
 
@@ -25,9 +45,10 @@ const editForm = reactive({
   managerPhone: '',
 })
 
-watchEffect(() => {
+/** Forma modal ochilganda to‘ldiriladi, aks holda kiritilgan qiymat ustidan yoziladi */
+watch(editOpen, (open) => {
   const b = building.value
-  if (!b) return
+  if (!open || !b) return
   editForm.name = b.name
   editForm.street = b.street
   editForm.district = b.district
@@ -118,16 +139,21 @@ const locationMarkers = computed(() =>
     : [],
 )
 
-const unitColumns = [
+/** Ijarachi va narx ustunlari moliya huquqi bo‘lmaganda umuman chizilmaydi */
+const unitColumns = computed(() => [
   { key: 'code', label: 'Unit', width: '110px' },
   { key: 'floor', label: 'Qavat', align: 'right' as const, numeric: true },
   { key: 'areaLabel', label: 'Maydoni', align: 'right' as const, numeric: true },
   { key: 'usage', label: 'Turi' },
   { key: 'offer', label: 'Taklif' },
-  { key: 'tenant', label: 'Ijarachi / Xaridor' },
-  { key: 'priceLabel', label: 'Narxi', align: 'right' as const, numeric: true },
+  ...(showFinance.value
+    ? [
+        { key: 'tenant', label: 'Ijarachi / Xaridor' },
+        { key: 'priceLabel', label: 'Narxi', align: 'right' as const, numeric: true },
+      ]
+    : []),
   { key: 'status', label: 'Holat', align: 'center' as const, width: '140px' },
-]
+])
 
 const unitRows = computed(() =>
   units.value.map((u) => ({
@@ -137,8 +163,8 @@ const unitRows = computed(() =>
     areaLabel: area(u.area),
     usage: u.usage,
     offer: u.offer,
-    tenant: u.tenant ?? '-',
-    priceLabel: `${num(u.price)} ${u.priceUnit}`,
+    tenant: showFinance.value ? (u.tenant ?? '-') : '',
+    priceLabel: showFinance.value ? `${num(u.price)} ${u.priceUnit}` : '',
     status: u.status,
   })),
 )
@@ -160,12 +186,76 @@ function togglePdfSection(key: string) {
 }
 
 function submitEdit() {
-  notice.value = `«${editForm.name}» obyekti ma’lumotlari yangilandi va auditda qayd etildi.`
+  const b = building.value
+  if (!canEdit.value || !b) return
+
+  const name = editForm.name.trim() || b.name
+  Object.assign(b, {
+    name,
+    street: editForm.street.trim(),
+    district: editForm.district.trim(),
+    buildingClass: editForm.buildingClass.trim() || b.buildingClass,
+    manager: editForm.manager.trim(),
+    managerPhone: editForm.managerPhone.trim(),
+  })
+
+  notice.value = `«${name}» obyekti ma’lumotlari yangilandi.`
   editOpen.value = false
 }
 
+/**
+ * Pasport haqiqiy Word hujjati bo‘lib saqlanadi: faqat belgilangan bo‘limlar
+ * kiritiladi, moliyaviy bo‘lim esa shu rolga ko‘rinadigan bo‘lsagina.
+ */
 function submitPdf() {
-  notice.value = `Bino pasporti PDF ko‘rinishida tayyorlandi, ${pdfSections.value.length} ta bo‘lim.`
+  const b = building.value
+  if (!b) return
+  const picked = pdfSections.value
+  const lines: DocxLine[] = [
+    { text: `${b.name} · bino pasporti`, style: 'title' },
+    { text: `${b.code} · ${b.city} shahri, ${b.district}, ${b.street}`, style: 'subtitle' },
+  ]
+
+  if (picked.includes('pasport')) {
+    lines.push({ text: 'Asosiy ma’lumotlar', style: 'heading' })
+    lines.push(...spec.value.map((r) => ({ text: `${r.label}: ${r.value}`, style: 'body' as const })))
+  }
+
+  if (picked.includes('qavatlar')) {
+    lines.push({ text: 'Qavatlar ro‘yxati', style: 'heading' })
+    lines.push(
+      ...floors.value.map((f) => ({
+        text: `${f.label}: jami ${num(f.total)} ta unit, bo‘sh ${num(f.vacant)} ta, maydon ${area(f.area)}`,
+        style: 'body' as const,
+      })),
+    )
+  }
+
+  if (picked.includes('unitlar')) {
+    lines.push({ text: 'Unitlar jadvali', style: 'heading' })
+    lines.push(
+      ...unitRows.value.map((u) => ({
+        text: showFinance.value
+          ? `${u.code} · ${u.areaLabel} · ${u.usage} · ${u.offer} · ${u.tenant} · ${u.priceLabel}`
+          : `${u.code} · ${u.areaLabel} · ${u.usage} · ${u.offer}`,
+        style: 'body' as const,
+      })),
+    )
+  }
+
+  if (picked.includes('moliya') && showFinance.value) {
+    lines.push({ text: 'Moliyaviy ko‘rsatkichlar', style: 'heading' })
+    lines.push(
+      { text: `Oylik tushum: ${sum(b.monthlyRevenue)}`, style: 'body' },
+      { text: `Qarzdorlik: ${sum(b.debt)}`, style: 'body' },
+      { text: `Bandlik: ${percent(b.occupancy)}`, style: 'body' },
+      { text: `Ijaraga beriladigan maydon: ${area(b.gla)}, bo‘sh: ${area(b.vacantArea)}`, style: 'body' },
+    )
+  }
+
+  const name = `${fileSlug(b.name)}-pasport-${todayIso()}.docx`
+  saveBlob(docxBlob(lines), name)
+  notice.value = `${name} yuklab olindi, ${picked.length} ta bo‘lim.`
   pdfOpen.value = false
 }
 </script>
@@ -178,7 +268,7 @@ function submitPdf() {
       title="Obyekt topilmadi"
       :breadcrumb="[{ label: 'Obyektlar', to: '/objects' }, { label: 'Topilmadi' }]"
     />
-    <main class="scroll-slim flex-1 overflow-y-auto p-6">
+    <main class="scroll-slim flex-1 overflow-y-auto p-4 sm:p-6">
       <UiCard>
         <div class="flex flex-col items-center gap-4 py-12 text-center">
           <span class="grid size-14 place-items-center rounded-full bg-warn-50 text-warn-600">
@@ -187,7 +277,8 @@ function submitPdf() {
           <div>
             <p class="text-[15px] font-bold text-ink-900">Bunday obyekt reyestrda yo‘q</p>
             <p class="mt-1 text-[13px] text-ink-500">
-              Havola eskirgan bo‘lishi mumkin. Reyestrga qaytib, kerakli obyektni tanlang.
+              Havola eskirgan yoki obyekt sizga biriktirilmagan bo‘lishi mumkin. Reyestrga
+              qaytib, kerakli obyektni tanlang.
             </p>
           </div>
           <UiButton to="/objects">
@@ -206,13 +297,20 @@ function submitPdf() {
       :breadcrumb="[{ label: 'Obyektlar', to: '/objects' }, { label: building.name }]"
     >
       <template #actions>
-        <UiButton variant="secondary" size="sm" @click="editOpen = true">
+        <UiButton v-if="canEdit" variant="secondary" size="sm" @click="editOpen = true">
           <UiIcon name="edit" :size="16" />
           Tahrirlash
         </UiButton>
+        <span
+          v-else
+          class="inline-flex items-center gap-2 rounded-pill bg-ink-100 px-3 py-1.5 text-[12px] font-semibold text-ink-600"
+        >
+          <UiIcon name="eye" :size="15" />
+          Faqat ko‘rish huquqi
+        </span>
         <UiButton variant="secondary" size="sm" @click="pdfOpen = true">
           <UiIcon name="doc" :size="16" />
-          PDF pasport
+          Bino pasporti
         </UiButton>
         <UiButton size="sm" :to="`/objects/${building.id}/3d`">
           <UiIcon name="cube" :size="16" />
@@ -221,7 +319,7 @@ function submitPdf() {
       </template>
     </AppTopbar>
 
-    <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-6">
+    <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-4 sm:p-6">
       <div
         v-if="notice"
         class="flex items-start gap-3 rounded-card bg-ok-50 px-4 py-3.5 ring-1 ring-inset ring-ok-100"
@@ -238,7 +336,10 @@ function submitPdf() {
         </button>
       </div>
 
-      <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <section
+        class="grid gap-4 sm:grid-cols-2"
+        :class="showFinance ? 'xl:grid-cols-4' : 'xl:grid-cols-2'"
+      >
         <UiKpi
           label="Bandlik darajasi"
           :value="percent(building.occupancy)"
@@ -254,12 +355,14 @@ function submitPdf() {
           tone="ok"
         />
         <UiKpi
+          v-if="showFinance"
           label="Oylik ijara tushumi"
           :value="sumShort(building.monthlyRevenue)"
           icon="wallet"
           tone="violet"
         />
         <UiKpi
+          v-if="showFinance"
           label="Qarzdorlik"
           :value="sumShort(building.debt)"
           icon="warning"
@@ -449,6 +552,7 @@ function submitPdf() {
       </section>
 
       <UiModal
+        v-if="canEdit"
         v-model="editOpen"
         title="Obyekt ma’lumotlarini tahrirlash"
         :subtitle="building.code"
@@ -486,16 +590,28 @@ function submitPdf() {
 
       <UiModal
         v-model="pdfOpen"
-        title="PDF pasport"
-        subtitle="Hujjatga kiritiladigan bo‘limlarni belgilang"
+        title="Bino pasporti"
+        subtitle="Word hujjatiga kiritiladigan bo‘limlarni belgilang"
       >
         <div class="space-y-2.5">
           <button
             v-for="s in [
               { key: 'pasport', label: 'Bino pasporti', hint: 'Asosiy ma’lumotlar va jihozlar' },
               { key: 'qavatlar', label: 'Qavatlar ro‘yxati', hint: 'Har bir qavat bo‘yicha yig‘ma' },
-              { key: 'unitlar', label: 'Unitlar jadvali', hint: 'Holat, ijarachi va narx' },
-              { key: 'moliya', label: 'Moliyaviy ko‘rsatkichlar', hint: 'Tushum va qarzdorlik' },
+              {
+                key: 'unitlar',
+                label: 'Unitlar jadvali',
+                hint: showFinance ? 'Holat, ijarachi va narx' : 'Holat va texnik ma’lumotlar',
+              },
+              ...(showFinance
+                ? [
+                    {
+                      key: 'moliya',
+                      label: 'Moliyaviy ko‘rsatkichlar',
+                      hint: 'Tushum va qarzdorlik',
+                    },
+                  ]
+                : []),
             ]"
             :key="s.key"
             type="button"
@@ -524,8 +640,8 @@ function submitPdf() {
 
         <p class="mt-4 text-[12.5px] text-ink-500">
           Hujjat {{ building.name }} obyekti bo‘yicha {{ pdfSections.length }} ta bo‘limdan
-          shakllantiriladi. Umumiy maydon: {{ area(building.gla) }}, oylik tushum:
-          {{ sum(building.monthlyRevenue) }}.
+          shakllantiriladi. Umumiy maydon: {{ area(building.gla) }}<template v-if="showFinance">,
+          oylik tushum: {{ sum(building.monthlyRevenue) }}</template>.
         </p>
 
         <template #footer>

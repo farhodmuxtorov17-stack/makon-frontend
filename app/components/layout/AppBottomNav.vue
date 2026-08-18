@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { NAVIGATION, type NavItem } from '~/constants/navigation'
+import { NAVIGATION, type NavChild, type NavItem } from '~/constants/navigation'
 
 /**
  * Telefon ko‘rinishidagi asosiy navigatsiya. Yon panel o‘rniga pastki qatorda
@@ -9,37 +9,43 @@ import { NAVIGATION, type NavItem } from '~/constants/navigation'
 
 const auth = useAuthStore()
 const route = useRoute()
+const { t, tr } = useAppLabels()
 
 /** Pastki qator tor bo‘lgani uchun yorliqlar qisqartirilgan ko‘rinishda beriladi. */
-const SHORT_LABELS: Record<string, string> = {
-  '/dashboard/executive': 'Panel',
-  '/dashboard/building': 'Panel',
-  '/objects': 'Obyektlar',
-  '/contracts': 'Shartnoma',
-  '/billing/invoices': 'Fakturalar',
-  '/billing/payments': 'To‘lovlar',
-  '/billing/debts': 'Qarzdorlik',
-  '/billing/periods': 'Davrlar',
-  '/applications': 'Arizalar',
-  '/service-requests': 'Servis',
-  '/facility/work-orders': 'Ishlarim',
-  '/facility/materials': 'Materiallar',
-  '/meters': 'Hisoblagich',
-  '/warehouse': 'Ombor',
-  '/warehouse/movements': 'Harakat',
-  '/warehouse/inventory': 'Inventar',
-  '/content': 'Navbat',
-  '/content/floors': 'Qavatlar',
-  '/content/units': 'Unitlar',
-  '/cabinet': 'Bosh sahifa',
-  '/cabinet/units': 'Unitim',
-  '/cabinet/invoices': 'To‘lovlarim',
-  '/cabinet/applications': 'Arizalarim',
-  '/cabinet/documents': 'Hujjatlar',
-  '/cabinet/meters': 'Hisoblagich',
-  '/reports': 'Hisobot',
-  '/settings/users': 'Sozlamalar',
-  '/help': 'Yordam',
+const SHORT_KEYS: Record<string, string> = {
+  '/dashboard/executive': 'navShort.dashboard',
+  '/dashboard/building': 'navShort.dashboard',
+  '/objects': 'navShort.objects',
+  '/contracts': 'navShort.contracts',
+  '/billing/invoices': 'navShort.invoices',
+  '/billing/payments': 'navShort.payments',
+  '/billing/debts': 'navShort.debts',
+  '/billing/periods': 'navShort.periods',
+  '/applications': 'navShort.applications',
+  '/service-requests': 'navShort.service',
+  '/facility/work-orders': 'navShort.workOrders',
+  '/facility/materials': 'navShort.materials',
+  '/meters': 'navShort.meters',
+  '/warehouse': 'navShort.warehouse',
+  '/warehouse/movements': 'navShort.movements',
+  '/warehouse/inventory': 'navShort.inventory',
+  '/content': 'navShort.contentQueue',
+  '/content/floors': 'navShort.floors',
+  '/content/units': 'navShort.units',
+  '/cabinet': 'navShort.cabinet',
+  '/cabinet/units': 'navShort.myUnits',
+  '/cabinet/invoices': 'navShort.myInvoices',
+  '/cabinet/applications': 'navShort.myApplications',
+  '/cabinet/documents': 'navShort.documents',
+  '/cabinet/meters': 'navShort.meters',
+  '/reports': 'navShort.reports',
+  '/settings/users': 'navShort.settings',
+  '/help': 'navShort.help',
+}
+
+/** To‘liq yorliq: kalit berilmagan bo‘lsa registrdagi nom qoladi */
+function navLabel(item: NavItem | NavChild) {
+  return tr(item.key, item.label)
 }
 
 /** Qatorga sig‘adigan eng ko‘p element soni */
@@ -75,7 +81,8 @@ function isActive(item: NavItem) {
 }
 
 function shortLabel(item: NavItem) {
-  return SHORT_LABELS[item.to] ?? item.label
+  const key = SHORT_KEYS[item.to]
+  return key ? t(key) : navLabel(item)
 }
 
 const extraActive = computed(() => extra.value.some(isActive))
@@ -95,7 +102,7 @@ onKeyStroke('Escape', () => (sheetOpen.value = false))
   <nav
     v-if="items.length"
     class="fixed inset-x-0 bottom-0 z-40 border-t border-ink-200 bg-surface/95 backdrop-blur-md md:hidden"
-    aria-label="Asosiy navigatsiya"
+    :aria-label="t('shell.primaryNav')"
   >
     <ul class="flex items-stretch pb-[env(safe-area-inset-bottom)]">
       <li v-for="item in primary" :key="item.to" class="min-w-0 flex-1">
@@ -144,7 +151,7 @@ onKeyStroke('Escape', () => (sheetOpen.value = false))
             </span>
           </span>
           <span class="w-full truncate text-center text-[10.5px] font-semibold leading-none">
-            Yana
+            {{ t('shell.moreTab') }}
           </span>
         </button>
       </li>
@@ -172,18 +179,18 @@ onKeyStroke('Escape', () => (sheetOpen.value = false))
           <div
             role="dialog"
             aria-modal="true"
-            aria-label="Barcha bo‘limlar"
+            :aria-label="t('shell.allSections')"
             class="absolute inset-x-0 bottom-0 flex max-h-[78dvh] flex-col rounded-t-panel bg-surface shadow-pop"
           >
             <header class="relative flex shrink-0 items-center justify-between gap-3 px-4 pb-2 pt-4">
               <span
                 class="absolute left-1/2 top-2 h-1 w-10 -translate-x-1/2 rounded-pill bg-ink-200"
               />
-              <h2 class="text-[15px] font-bold text-ink-900">Barcha bo‘limlar</h2>
+              <h2 class="text-[15px] font-bold text-ink-900">{{ t('shell.allSections') }}</h2>
               <button
                 type="button"
                 class="-mr-2 grid size-11 place-items-center rounded-field text-ink-500 transition-colors hover:bg-ink-100 hover:text-ink-800"
-                aria-label="Yopish"
+                :aria-label="t('common.close')"
                 @click="sheetOpen = false"
               >
                 <UiIcon name="x" :size="19" />
@@ -210,7 +217,7 @@ onKeyStroke('Escape', () => (sheetOpen.value = false))
                     >
                       <UiIcon :name="item.icon" :size="19" />
                     </span>
-                    <span class="min-w-0 flex-1 truncate">{{ item.label }}</span>
+                    <span class="min-w-0 flex-1 truncate">{{ navLabel(item) }}</span>
                     <span
                       v-if="item.badge"
                       class="tabular grid min-w-5 shrink-0 place-items-center rounded-pill bg-danger-500 px-1.5 py-0.5 text-[11px] font-bold text-white"
@@ -231,7 +238,7 @@ onKeyStroke('Escape', () => (sheetOpen.value = false))
                             : 'text-ink-600 hover:bg-ink-100 hover:text-ink-900'
                         "
                       >
-                        {{ child.label }}
+                        {{ navLabel(child) }}
                       </NuxtLink>
                     </li>
                   </ul>

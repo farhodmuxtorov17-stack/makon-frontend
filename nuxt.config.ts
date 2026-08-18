@@ -18,7 +18,7 @@ export default defineNuxtConfig({
   },
 
   app: {
-    // GitHub Pages loyihaning nomli papkasida joylashadi , yo‘l muhit
+    // GitHub Pages loyihaning nomli papkasida joylashadi, yo‘l muhit
     // o‘zgaruvchisidan olinadi, lokal ishlaganda ildizda qoladi.
     baseURL: import.meta.env.NUXT_APP_BASE_URL || '/',
     buildAssetsDir: 'assets',
@@ -38,7 +38,7 @@ export default defineNuxtConfig({
     defaultLocale: 'uz',
     locales: [
       { code: 'uz', name: 'O‘zbekcha', file: 'uz.json' },
-      { code: 'ru', name: 'Русский', file: 'ru.json' },
+      { code: 'ru', name: 'Ruscha', file: 'ru.json' },
     ],
     detectBrowserLanguage: false,
   },

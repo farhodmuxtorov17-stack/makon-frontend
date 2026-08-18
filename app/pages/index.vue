@@ -1,9 +1,18 @@
 <script setup lang="ts">
+import { useStorage } from '@vueuse/core'
 import { BUILDINGS, PORTFOLIO_TOTALS, buildingById, type Building } from '~/data/buildings'
-import { VACANT_UNITS, type Unit } from '~/data/units'
+import { vacantUnits, type Unit } from '~/data/units'
+import { OCCUPANCY_BANDS } from '~/constants/statuses'
 import { num, area, percent, dateLong } from '~/utils/format'
 
 definePageMeta({ layout: 'public' })
+
+const { t } = useI18n()
+
+/** «5 ta» ko‘rinishidagi son: rus tilida sanoq so‘zi bo‘lmagani uchun tushib qoladi */
+function counted(value: string | number) {
+  return `${value} ${t('common.count')}`.trim()
+}
 
 interface Listing {
   unit: Unit
@@ -18,7 +27,7 @@ const CATEGORY_TYPES: Record<string, string[]> = {
 }
 
 const listings = computed<Listing[]>(() =>
-  VACANT_UNITS.map((u) => ({ unit: u, building: buildingById(u.buildingId)! })).filter(
+  vacantUnits().map((u) => ({ unit: u, building: buildingById(u.buildingId)! })).filter(
     (l) => !!l.building,
   ),
 )
@@ -45,39 +54,43 @@ const featured = computed<Listing[]>(() => {
 const vacantCount = computed(() => listings.value.length)
 const vacantAreaTotal = computed(() => listings.value.reduce((s, l) => s + l.unit.area, 0))
 
-const TRUST = [
-  { label: 'Obyektlar', value: num(PORTFOLIO_TOTALS.buildings), unit: 'ta' },
-  { label: 'Umumiy ijara maydoni', value: num(PORTFOLIO_TOTALS.gla), unit: 'm²' },
-  { label: 'Ijarachilar', value: num(PORTFOLIO_TOTALS.occupiedUnits), unit: 'ta' },
-  { label: 'Bandlik', value: percent(PORTFOLIO_TOTALS.occupancy), unit: '' },
-]
+const TRUST = computed(() => [
+  { label: t('landing.trustObjects'), value: num(PORTFOLIO_TOTALS.buildings), unit: t('common.count') },
+  { label: t('landing.trustGla'), value: num(PORTFOLIO_TOTALS.gla), unit: t('common.areaUnit') },
+  {
+    label: t('landing.trustTenants'),
+    value: num(PORTFOLIO_TOTALS.occupiedUnits),
+    unit: t('common.count'),
+  },
+  { label: t('landing.trustOccupancy'), value: percent(PORTFOLIO_TOTALS.occupancy), unit: '' },
+])
 
 const CATEGORY_META = [
   {
     key: 'biznes',
-    label: 'Biznes markazlar',
-    caption: 'Ofis va biznes markazlaridagi maydonlar',
+    labelKey: 'public.categoryBiznes',
+    captionKey: 'landing.categoryBiznesCaption',
     photo: 'green-business-center-3',
     icon: 'building',
   },
   {
     key: 'savdo',
-    label: 'Savdo markazlar',
-    caption: 'Savdo va xizmat ko‘rsatish maydonlari',
+    labelKey: 'public.categorySavdo',
+    captionKey: 'landing.categorySavdoCaption',
     photo: 'mega-mall-3',
     icon: 'box',
   },
   {
     key: 'ombor',
-    label: 'Ombor va logistika',
-    caption: 'Saqlash va sanoat bloklari',
+    labelKey: 'public.categoryOmbor',
+    captionKey: 'landing.categoryOmborCaption',
     photo: 'industrial-park-2-3',
     icon: 'cube',
   },
   {
     key: 'turar',
-    label: 'Turar joy',
-    caption: 'Rezidensiyalardagi turar joy birliklari',
+    labelKey: 'public.categoryTurar',
+    captionKey: 'landing.categoryTurarCaption',
     photo: 'harmony-residence',
     icon: 'layers',
   },
@@ -90,6 +103,8 @@ const categories = computed(() =>
     )
     return {
       ...c,
+      label: t(c.labelKey),
+      caption: t(c.captionKey),
       count: items.length,
       area: items.reduce((s, l) => s + l.unit.area, 0),
     }
@@ -97,11 +112,11 @@ const categories = computed(() =>
 )
 
 const tab = ref('all')
-const TABS = [
-  { value: 'all', label: 'Barcha' },
-  { value: 'rent', label: 'Ijaraga' },
-  { value: 'buy', label: 'Sotib olish' },
-]
+const TABS = computed(() => [
+  { value: 'all', label: t('landing.tabAll') },
+  { value: 'rent', label: t('landing.tabRent') },
+  { value: 'buy', label: t('landing.tabBuy') },
+])
 
 const q = ref('')
 const fType = ref('')
@@ -110,45 +125,45 @@ const fPlace = ref('')
 const fPrice = ref('')
 const fArea = ref('')
 
-const TYPE_OPTIONS = [
-  { value: '', label: 'Barchasi' },
-  { value: 'biznes', label: 'Biznes markaz' },
-  { value: 'savdo', label: 'Savdo markaz' },
-  { value: 'ombor', label: 'Ombor / logistika' },
-  { value: 'turar', label: 'Turar joy' },
-]
+const TYPE_OPTIONS = computed(() => [
+  { value: '', label: t('common.all') },
+  { value: 'biznes', label: t('landing.typeBiznes') },
+  { value: 'savdo', label: t('landing.typeSavdo') },
+  { value: 'ombor', label: t('landing.typeOmbor') },
+  { value: 'turar', label: t('landing.typeTurar') },
+])
 
-const USAGE_OPTIONS = [
-  { value: '', label: 'Barchasi' },
-  { value: 'Ofis', label: 'Ofis' },
-  { value: 'Savdo', label: 'Savdo' },
-  { value: 'Ombor', label: 'Ombor' },
-  { value: 'Turar joy', label: 'Turar joy' },
-]
+const USAGE_OPTIONS = computed(() => [
+  { value: '', label: t('common.all') },
+  { value: 'Ofis', label: t('landing.usageOffice') },
+  { value: 'Savdo', label: t('landing.usageRetail') },
+  { value: 'Ombor', label: t('landing.usageWarehouse') },
+  { value: 'Turar joy', label: t('landing.usageResidential') },
+])
 
 /** Bir tumanda bir nechta obyekt bo‘lishi mumkin, ro‘yxatda hudud bir marta chiqadi */
-const PLACE_OPTIONS = [
-  { value: '', label: 'Barchasi' },
+const PLACE_OPTIONS = computed(() => [
+  { value: '', label: t('common.all') },
   ...[...new Set(BUILDINGS.map((b) => `${b.city}|${b.district}`))]
     .sort((a, b) => a.localeCompare(b))
     .map((value) => ({ value, label: value.replace('|', ', ') })),
-]
+])
 
-const PRICE_OPTIONS = [
-  { value: '', label: 'Barchasi' },
-  { value: 'p1', label: '5 mln so‘mgacha' },
-  { value: 'p2', label: '5 – 15 mln so‘m' },
-  { value: 'p3', label: '15 – 50 mln so‘m' },
-  { value: 'p4', label: '50 mln so‘mdan yuqori' },
-]
+const PRICE_OPTIONS = computed(() => [
+  { value: '', label: t('common.all') },
+  { value: 'p1', label: t('landing.price1') },
+  { value: 'p2', label: t('landing.price2') },
+  { value: 'p3', label: t('landing.price3') },
+  { value: 'p4', label: t('landing.price4') },
+])
 
-const AREA_OPTIONS = [
-  { value: '', label: 'Barchasi' },
-  { value: 'a1', label: '100 m² gacha' },
-  { value: 'a2', label: '100 – 300 m²' },
-  { value: 'a3', label: '300 – 600 m²' },
-  { value: 'a4', label: '600 m² dan katta' },
-]
+const AREA_OPTIONS = computed(() => [
+  { value: '', label: t('common.all') },
+  { value: 'a1', label: t('landing.area1') },
+  { value: 'a2', label: t('landing.area2') },
+  { value: 'a3', label: t('landing.area3') },
+  { value: 'a4', label: t('landing.area4') },
+])
 
 function searchQuery() {
   const query: Record<string, string> = {}
@@ -179,7 +194,7 @@ const mapMarkers = computed(() =>
     label: b.name,
     caption: `${b.district} · ${b.type}`,
     value: b.occupancy,
-    valueLabel: '% bandlik',
+    valueLabel: t('landing.occupancyValueLabel'),
     to: `/catalog/${b.slug}`,
     tone:
       b.occupancy >= 90 ? ('ok' as const) : b.occupancy >= 84 ? ('brand' as const) : ('warn' as const),
@@ -187,27 +202,30 @@ const mapMarkers = computed(() =>
 )
 
 const mapStats = computed(() => [
-  { label: 'Obyektlar', value: `${num(PORTFOLIO_TOTALS.buildings)} ta` },
-  { label: 'Bandlik', value: percent(PORTFOLIO_TOTALS.occupancy) },
-  { label: 'Umumiy maydon', value: `${num(Math.round(PORTFOLIO_TOTALS.gla / 1000))} ming m²` },
+  { label: t('landing.mapStatObjects'), value: counted(num(PORTFOLIO_TOTALS.buildings)) },
+  { label: t('landing.mapStatOccupancy'), value: percent(PORTFOLIO_TOTALS.occupancy) },
   {
-    label: 'Bo‘sh maydon',
-    value: `${num(Math.round(PORTFOLIO_TOTALS.vacantArea / 1000))} ming m²`,
+    label: t('landing.mapStatArea'),
+    value: `${num(Math.round(PORTFOLIO_TOTALS.gla / 1000))} ${t('landing.thousandArea')}`,
+  },
+  {
+    label: t('landing.mapStatVacant'),
+    value: `${num(Math.round(PORTFOLIO_TOTALS.vacantArea / 1000))} ${t('landing.thousandArea')}`,
   },
 ])
 
-const mapLegend = [
-  { label: 'Bandlik 90% dan yuqori', class: 'bg-ok-500' },
-  { label: '84 – 90%', class: 'bg-brand-500' },
-  { label: '84% dan past', class: 'bg-warn-500' },
-]
+/** Chegara ham, yozuv ham `OCCUPANCY_BANDS` dan: uch ekranda bitta shkala */
+const mapLegend = computed(() =>
+  OCCUPANCY_BANDS.map((b) => ({ label: t(b.labelKey), class: b.class })),
+)
 
 const objects = computed(() => [...BUILDINGS].sort((a, b) => a.name.localeCompare(b.name)))
 
 /** Kartalar bo‘limi portfelning eng yirik obyektlarini ko‘rsatadi, to‘liq ro‘yxat katalogda */
 const featuredObjects = computed(() => [...BUILDINGS].sort((a, b) => b.gla - a.gla).slice(0, 8))
 
-const favourites = ref<string[]>([])
+/** Sevimlilar sarlavhadagi nishoncha va katalog bilan bitta xotirada */
+const favourites = useStorage<string[]>('makon.favourites', [])
 
 function toggleFavourite(id: string) {
   favourites.value = favourites.value.includes(id)
@@ -216,121 +234,42 @@ function toggleFavourite(id: string) {
 }
 
 const STEPS = [
-  {
-    step: '01',
-    photo: 'iso-cutaway-office',
-    title: 'Obyekt va qavatni tanlang',
-    text: 'Katalogdan obyektni oching, qavatlar rejasidan bo‘sh bloklarni ko‘ring va joyni maydon, narx hamda qulayliklar bo‘yicha solishtiring.',
-  },
-  {
-    step: '02',
-    photo: 'iso-floorplan-open',
-    title: 'Unit pasportini o‘rganing',
-    text: 'Har bir unit uchun maydon, xonalar soni, jihozlar ro‘yxati, qavat va aniq narx ko‘rsatilgan. Yoqqan joylarni sevimlilarga saqlang.',
-  },
-  {
-    step: '03',
-    photo: 'iso-warehouse',
-    title: 'Ariza yuboring va imzolang',
-    text: 'Tanlangan joyga onlayn ariza yuboring. Kelishuv shartlari tasdiqlangach, shartnoma avtomatik shakllanadi va imzolashga yuboriladi.',
-  },
+  { step: '01', photo: 'iso-cutaway-office', titleKey: 'landing.step1Title', textKey: 'landing.step1Text' },
+  { step: '02', photo: 'iso-floorplan-open', titleKey: 'landing.step2Title', textKey: 'landing.step2Text' },
+  { step: '03', photo: 'iso-warehouse', titleKey: 'landing.step3Title', textKey: 'landing.step3Text' },
 ]
 
 const SERVICES = [
-  {
-    icon: 'search',
-    tone: 'bg-brand-50 text-brand-600',
-    title: 'Bo‘sh joy qidirish',
-    text: 'Joy turi, maqsad, hudud, narx, maydon va qavat bo‘yicha aniq filtrlash. Yoqqan joylarni sevimlilarga saqlang va yonma-yon solishtiring.',
-  },
-  {
-    icon: 'shield',
-    tone: 'bg-ok-50 text-ok-600',
-    title: 'Ariza va shartnoma',
-    text: 'Tanlangan unitga onlayn ariza yuboring. Shartnoma qoralamasi avtomatik tuziladi va imzolangach tizimda saqlanadi, qog‘oz almashinuvi talab etilmaydi.',
-  },
-  {
-    icon: 'contract',
-    tone: 'bg-info-50 text-info-600',
-    title: 'Shartnoma va hisob-kitob',
-    text: 'Shartnoma shartlari, oylik hisob-fakturalar, to‘lov holati va qarzdorlik bo‘yicha ogohlantirishlar bitta oynada jamlanadi.',
-  },
-  {
-    icon: 'wrench',
-    tone: 'bg-warn-50 text-warn-600',
-    title: 'Servis va texnik xizmat',
-    text: 'Buzilish yoki xizmat so‘rovini yuboring, biriktirilgan usta va bajarilish bosqichini real vaqtda kuzating.',
-  },
-  {
-    icon: 'chart',
-    tone: 'bg-brand-50 text-brand-600',
-    title: 'Hisobot va monitoring',
-    text: 'Bandlik, bo‘sh maydon, tushum va kommunal sarflar bo‘yicha ko‘rsatkichlar obyekt va portfel kesimida.',
-  },
-  {
-    icon: 'doc',
-    tone: 'bg-ok-50 text-ok-600',
-    title: 'Hujjatlar reyestri',
-    text: 'Texnik pasport, ruxsatnoma va kadastr hujjatlari yagona reyestrda saqlanadi, muddati tugashi oldindan eslatiladi.',
-  },
+  { icon: 'search', tone: 'bg-brand-50 text-brand-600', titleKey: 'landing.service1Title', textKey: 'landing.service1Text' },
+  { icon: 'shield', tone: 'bg-ok-50 text-ok-600', titleKey: 'landing.service2Title', textKey: 'landing.service2Text' },
+  { icon: 'contract', tone: 'bg-info-50 text-info-600', titleKey: 'landing.service3Title', textKey: 'landing.service3Text' },
+  { icon: 'wrench', tone: 'bg-warn-50 text-warn-600', titleKey: 'landing.service4Title', textKey: 'landing.service4Text' },
+  { icon: 'chart', tone: 'bg-brand-50 text-brand-600', titleKey: 'landing.service5Title', textKey: 'landing.service5Text' },
+  { icon: 'doc', tone: 'bg-ok-50 text-ok-600', titleKey: 'landing.service6Title', textKey: 'landing.service6Text' },
 ]
 
 const SYSTEM_POINTS = [
-  {
-    icon: 'refresh',
-    title: 'Real vaqt rejimida yangilanish',
-    text: 'Unit bo‘shashi yoki bandlanishi bilan e’lon holati avtomatik o‘zgaradi.',
-  },
-  {
-    icon: 'filter',
-    title: 'Aqlli filter va moslashtirilgan qidiruv',
-    text: 'Joy turi, narx, maydon, qavat va qulayliklar bo‘yicha kesim.',
-  },
-  {
-    icon: 'layers',
-    title: 'Sevimlilar va solishtirish',
-    text: 'Bir nechta joyni tanlab, asosiy parametrlarni yonma-yon taqqoslang.',
-  },
-  {
-    icon: 'cube',
-    title: 'Tizim yadrosi bilan integratsiya',
-    text: 'Ariza, shartnoma, billing va monitoring bitta ma’lumot bazasida ishlaydi.',
-  },
+  { icon: 'refresh', titleKey: 'landing.point1Title', textKey: 'landing.point1Text' },
+  { icon: 'filter', titleKey: 'landing.point2Title', textKey: 'landing.point2Text' },
+  { icon: 'layers', titleKey: 'landing.point3Title', textKey: 'landing.point3Text' },
+  { icon: 'cube', titleKey: 'landing.point4Title', textKey: 'landing.point4Text' },
 ]
 
 const stats = computed(() => [
-  { label: 'Obyektlar', value: num(PORTFOLIO_TOTALS.buildings), unit: 'ta' },
-  { label: 'Umumiy ijara maydoni', value: num(PORTFOLIO_TOTALS.gla), unit: 'm²' },
-  { label: 'Bandlik', value: percent(PORTFOLIO_TOTALS.occupancy), unit: '' },
-  { label: 'Bo‘sh maydon', value: num(PORTFOLIO_TOTALS.vacantArea), unit: 'm²' },
-  { label: 'Unitlar', value: num(PORTFOLIO_TOTALS.units), unit: 'ta' },
-  { label: 'Bo‘sh unitlar', value: num(PORTFOLIO_TOTALS.vacantUnits), unit: 'ta' },
-  { label: 'Katalogdagi bo‘sh maydon', value: num(vacantAreaTotal.value), unit: 'm²' },
-  { label: 'Katalogdagi bo‘sh unitlar', value: num(vacantCount.value), unit: 'ta' },
+  { label: t('landing.statObjects'), value: num(PORTFOLIO_TOTALS.buildings), unit: t('common.count') },
+  { label: t('landing.statGla'), value: num(PORTFOLIO_TOTALS.gla), unit: t('common.areaUnit') },
+  { label: t('landing.statOccupancy'), value: percent(PORTFOLIO_TOTALS.occupancy), unit: '' },
+  { label: t('landing.statVacantArea'), value: num(PORTFOLIO_TOTALS.vacantArea), unit: t('common.areaUnit') },
+  { label: t('landing.statUnits'), value: num(PORTFOLIO_TOTALS.units), unit: t('common.count') },
+  { label: t('landing.statVacantUnits'), value: num(PORTFOLIO_TOTALS.vacantUnits), unit: t('common.count') },
+  { label: t('landing.statCatalogArea'), value: num(vacantAreaTotal.value), unit: t('common.areaUnit') },
+  { label: t('landing.statCatalogUnits'), value: num(vacantCount.value), unit: t('common.count') },
 ])
 
 const ARTICLES = [
-  {
-    id: 'a1',
-    tag: 'Bozor tahlili',
-    date: '2026-07-28',
-    title: 'Toshkent ofis bozorida bandlik 87 foizga yetdi',
-    text: 'Portfeldagi barcha obyektlar bo‘yicha maydonga o‘lchangan o‘rtacha bandlik 87 foizni tashkil etdi. A klass biznes markazlarda bo‘sh maydon ulushi eng past darajada qoldi, B klass ofislarda esa yangi ijarachilar hisobiga bandlik barqarorlashdi. Tahlil obyektlar bo‘yicha oylik yopilgan shartnomalar va bo‘shagan unitlar nisbatiga asoslangan.',
-  },
-  {
-    id: 'a2',
-    tag: 'Platforma',
-    date: '2026-06-14',
-    title: 'Ariza va shartnomalar to‘liq raqamli konturga o‘tdi',
-    text: 'Bo‘sh joyga ariza yuborishdan tortib shartnoma rasmiylashtirishgacha bo‘lgan barcha bosqichlar tizimda kuzatiladi. Taklif shartlari kelishilgach shartnoma qoralamasi avtomatik shakllanadi, imzolangan hujjat esa reyestrda saqlanib, istalgan vaqtda yuklab olinadi.'
-  },
-  {
-    id: 'a3',
-    tag: 'Bozor tahlili',
-    date: '2026-05-30',
-    title: 'Ombor va logistika maydonlariga talab ortmoqda',
-    text: 'Yirik yuk oqimlari va onlayn savdoning o‘sishi hisobiga shahar atrofidagi ombor maydonlariga so‘rov sezilarli ko‘paydi. Katta maydonli bloklar odatda birinchi so‘rovdanoq bron qilinmoqda, shu bois katalogda bo‘sh ombor bloklari uzoq turmaydi.',
-  },
+  { id: 'a1', tagKey: 'landing.tagMarket', date: '2026-07-28', titleKey: 'landing.article1Title', textKey: 'landing.article1Text' },
+  { id: 'a2', tagKey: 'landing.tagPlatform', date: '2026-06-14', titleKey: 'landing.article2Title', textKey: 'landing.article2Text' },
+  { id: 'a3', tagKey: 'landing.tagMarket', date: '2026-05-30', titleKey: 'landing.article3Title', textKey: 'landing.article3Text' },
 ]
 
 const articleOpen = ref(false)
@@ -349,7 +288,7 @@ function openArticle(a: (typeof ARTICLES)[number]) {
       <div class="absolute inset-0">
         <UiPhoto
           name="green-business-center-3"
-          alt="Green Business Center biznes markazi tashqi ko‘rinishi"
+          :alt="t('landing.heroPhotoAlt')"
           ratio="size-full"
           rounded="rounded-none"
           sizes="100vw"
@@ -370,19 +309,18 @@ function openArticle(a: (typeof ARTICLES)[number]) {
           class="inline-flex items-center gap-2 rounded-pill bg-white/15 px-3.5 py-1.5 text-[12.5px] font-semibold text-white ring-1 ring-inset ring-white/25 backdrop-blur-sm"
         >
           <UiIcon name="refresh" :size="15" />
-          Bo‘sh joylar bazasi real vaqt rejimida yangilanadi
+          {{ t('landing.heroBadge') }}
         </span>
 
         <h1
           class="mt-5 max-w-[18ch] text-[34px] font-extrabold leading-[1.08] text-white sm:text-[44px] lg:text-[54px]"
         >
-          Toshkentdagi bo‘sh maydonlar, <span class="text-brand-400">bitta ishonchli katalogda</span>
+          {{ t('landing.heroTitle') }}
+          <span class="text-brand-400">{{ t('landing.heroTitleAccent') }}</span>
         </h1>
 
         <p class="mt-4 max-w-[58ch] text-[15px] leading-relaxed text-white/80 sm:text-[16px]">
-          Ofis, do‘kon, ombor yoki turar joy, boshqaruvdagi {{ PORTFOLIO_TOTALS.buildings }} ta
-          obyektning bo‘sh bloklari maydon, narx va qavat bo‘yicha ochiq ko‘rsatilgan. Joyni
-          tanlang va to‘g‘ridan-to‘g‘ri ariza yuboring.
+          {{ t('landing.heroLead', { count: PORTFOLIO_TOTALS.buildings }) }}
         </p>
 
         <!-- Qidiruv paneli -->
@@ -394,7 +332,7 @@ function openArticle(a: (typeof ARTICLES)[number]) {
                 to="/catalog"
                 class="inline-flex items-center gap-1.5 text-[13px] font-semibold text-brand-600 transition-colors duration-150 hover:text-brand-700"
               >
-                Kengaytirilgan filtr
+                {{ t('landing.advancedFilter') }}
                 <UiIcon name="arrowRight" :size="15" />
               </NuxtLink>
             </div>
@@ -402,8 +340,8 @@ function openArticle(a: (typeof ARTICLES)[number]) {
             <UiInput
               v-model="q"
               class="mt-3.5"
-              placeholder="Obyekt nomi, manzil yoki kalit so‘z"
-              aria-label="Kalit so‘z bo‘yicha qidirish"
+              :placeholder="t('landing.searchPlaceholder')"
+              :aria-label="t('landing.searchAria')"
             >
               <template #prefix>
                 <UiIcon name="search" :size="18" />
@@ -411,25 +349,25 @@ function openArticle(a: (typeof ARTICLES)[number]) {
             </UiInput>
 
             <div class="mt-3.5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-              <UiField label="Joy turi">
+              <UiField :label="t('landing.fieldType')">
                 <UiSelect v-model="fType" :options="TYPE_OPTIONS" size="sm" />
               </UiField>
-              <UiField label="Maqsad">
+              <UiField :label="t('landing.fieldUsage')">
                 <UiSelect v-model="fUsage" :options="USAGE_OPTIONS" size="sm" />
               </UiField>
-              <UiField label="Shahar / tuman">
+              <UiField :label="t('landing.fieldPlace')">
                 <UiSelect v-model="fPlace" :options="PLACE_OPTIONS" size="sm" />
               </UiField>
-              <UiField label="Maydon oralig‘i">
+              <UiField :label="t('landing.fieldArea')">
                 <UiSelect v-model="fArea" :options="AREA_OPTIONS" size="sm" />
               </UiField>
-              <UiField label="Narx oralig‘i">
+              <UiField :label="t('landing.fieldPrice')">
                 <UiSelect v-model="fPrice" :options="PRICE_OPTIONS" size="sm" />
               </UiField>
               <div class="flex items-end">
                 <UiButton type="submit" size="sm" block>
                   <UiIcon name="search" :size="16" />
-                  Qidirish
+                  {{ t('common.search') }}
                 </UiButton>
               </div>
             </div>
@@ -438,7 +376,7 @@ function openArticle(a: (typeof ARTICLES)[number]) {
               class="mt-3.5 flex flex-wrap items-center gap-2 border-t border-ink-100 pt-3.5"
             >
               <span class="text-[11.5px] font-bold uppercase tracking-wide text-ink-500">
-                Tez tanlov
+                {{ t('landing.quickPick') }}
               </span>
               <button
                 v-for="c in categories"
@@ -454,7 +392,7 @@ function openArticle(a: (typeof ARTICLES)[number]) {
                 class="ml-auto inline-flex items-center gap-1.5 rounded-pill px-3 py-1.5 text-[12.5px] font-semibold text-brand-600 transition-colors duration-150 hover:bg-brand-50"
               >
                 <UiIcon name="location" :size="15" />
-                Xaritada ko‘rish
+                {{ t('landing.showOnMap') }}
               </NuxtLink>
             </div>
           </form>
@@ -463,16 +401,18 @@ function openArticle(a: (typeof ARTICLES)[number]) {
         <!-- Ishonch qatori -->
         <dl class="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
           <div
-            v-for="t in TRUST"
-            :key="t.label"
+            v-for="item in TRUST"
+            :key="item.label"
             class="rounded-field bg-white/10 px-4 py-3 ring-1 ring-inset ring-white/20 backdrop-blur-sm"
           >
             <dt class="text-[11px] font-semibold uppercase tracking-wide text-white/75">
-              {{ t.label }}
+              {{ item.label }}
             </dt>
             <dd class="tabular mt-1 text-[20px] font-bold text-white sm:text-[24px]">
-              {{ t.value }}
-              <span v-if="t.unit" class="text-[12px] font-medium text-white/75">{{ t.unit }}</span>
+              {{ item.value }}
+              <span v-if="item.unit" class="text-[12px] font-medium text-white/75">
+                {{ item.unit }}
+              </span>
             </dd>
           </div>
         </dl>
@@ -483,14 +423,18 @@ function openArticle(a: (typeof ARTICLES)[number]) {
     <section class="mx-auto max-w-[1360px] px-4 py-12 lg:px-8 lg:py-14">
       <div class="mb-5 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p class="text-[11.5px] font-bold uppercase tracking-wide text-brand-600">Kategoriyalar</p>
-          <h2 class="mt-2 text-[22px] font-bold sm:text-[26px]">Qaysi turdagi joy kerak?</h2>
+          <p class="text-[11.5px] font-bold uppercase tracking-wide text-brand-600">
+            {{ t('landing.categoriesEyebrow') }}
+          </p>
+          <h2 class="mt-2 text-[22px] font-bold sm:text-[26px]">
+            {{ t('landing.categoriesTitle') }}
+          </h2>
         </div>
         <NuxtLink
           to="/catalog"
           class="inline-flex items-center gap-1.5 text-[13.5px] font-semibold text-brand-600 transition-colors duration-150 hover:text-brand-700"
         >
-          Butun katalog
+          {{ t('landing.wholeCatalog') }}
           <UiIcon name="arrowRight" :size="16" />
         </NuxtLink>
       </div>
@@ -522,8 +466,10 @@ function openArticle(a: (typeof ARTICLES)[number]) {
             <p class="mt-3 text-[16px] font-bold text-white">{{ c.label }}</p>
             <p class="mt-0.5 text-[12.5px] leading-snug text-white/85">{{ c.caption }}</p>
             <p class="tabular mt-2.5 flex items-center gap-2 text-[12.5px] font-semibold text-white">
-              <span class="rounded-pill bg-white/15 px-2 py-0.5">{{ c.count }} ta e’lon</span>
-              <span class="text-white/75">{{ num(c.area) }} m²</span>
+              <span class="rounded-pill bg-white/15 px-2 py-0.5">
+                {{ t('landing.listingCount', { count: c.count }) }}
+              </span>
+              <span class="text-white/75">{{ num(c.area) }} {{ t('common.areaUnit') }}</span>
             </p>
           </div>
         </NuxtLink>
@@ -535,17 +481,19 @@ function openArticle(a: (typeof ARTICLES)[number]) {
       <div class="mx-auto max-w-[1360px] px-4 py-12 lg:px-8 lg:py-14">
         <div class="mb-5 flex flex-wrap items-end justify-between gap-3">
           <div>
-            <p class="text-[11.5px] font-bold uppercase tracking-wide text-brand-600">E’lonlar</p>
-            <h2 class="mt-2 text-[22px] font-bold sm:text-[26px]">Tavsiya etilgan bo‘sh joylar</h2>
-            <p class="mt-2 text-[13.5px] text-ink-500">
-              Katalogda hozir mavjud, darhol ariza yuborish mumkin bo‘lgan unitlar
+            <p class="text-[11.5px] font-bold uppercase tracking-wide text-brand-600">
+              {{ t('landing.listingsEyebrow') }}
             </p>
+            <h2 class="mt-2 text-[22px] font-bold sm:text-[26px]">
+              {{ t('landing.listingsTitle') }}
+            </h2>
+            <p class="mt-2 text-[13.5px] text-ink-500">{{ t('landing.listingsCaption') }}</p>
           </div>
           <NuxtLink
             to="/catalog"
             class="inline-flex items-center gap-1.5 text-[13.5px] font-semibold text-brand-600 transition-colors duration-150 hover:text-brand-700"
           >
-            Hammasini ko‘rish ({{ vacantCount }})
+            {{ t('landing.showAll', { count: vacantCount }) }}
             <UiIcon name="arrowRight" :size="16" />
           </NuxtLink>
         </div>
@@ -560,11 +508,11 @@ function openArticle(a: (typeof ARTICLES)[number]) {
               <NuxtLink
                 :to="`/catalog/${l.building.slug}?unit=${l.unit.id}`"
                 class="block"
-                :aria-label="`${l.building.name}, ${l.unit.code}-unit`"
+                :aria-label="t('landing.unitAria', { building: l.building.name, code: l.unit.code })"
               >
                 <UiPhoto
                   :name="l.building.photo"
-                  :alt="`${l.building.name}, ${l.unit.code}-unit`"
+                  :alt="t('landing.unitAria', { building: l.building.name, code: l.unit.code })"
                   ratio="aspect-[16/10]"
                   rounded="rounded-none"
                   sizes="(max-width: 640px) 100vw, 420px"
@@ -586,7 +534,7 @@ function openArticle(a: (typeof ARTICLES)[number]) {
                 class="absolute left-3 top-3 rounded-pill px-2.5 py-1 text-[11px] font-bold text-white shadow-card"
                 :class="l.unit.offer === 'Sotuv' ? 'bg-teal-500' : 'bg-brand-500'"
               >
-                {{ l.unit.offer === 'Sotuv' ? 'Sotib olish' : 'Ijaraga' }}
+                {{ l.unit.offer === 'Sotuv' ? t('landing.offerSale') : t('landing.offerRent') }}
               </span>
 
               <button
@@ -598,7 +546,9 @@ function openArticle(a: (typeof ARTICLES)[number]) {
                     : 'text-ink-400 hover:text-danger-500'
                 "
                 :aria-pressed="favourites.includes(l.unit.id)"
-                :aria-label="`${l.building.name} ${l.unit.code}-unitni sevimlilarga qo‘shish`"
+                :aria-label="
+                  t('landing.favouriteAria', { building: l.building.name, code: l.unit.code })
+                "
                 @click="toggleFavourite(l.unit.id)"
               >
                 <svg
@@ -625,7 +575,7 @@ function openArticle(a: (typeof ARTICLES)[number]) {
                 </span>
                 <span class="inline-flex items-center gap-1.5">
                   <UiIcon name="building" :size="15" class="text-ink-400" />
-                  <span class="tabular">{{ l.unit.floor }}-qavat</span>
+                  <span class="tabular">{{ t('landing.floorNo', { floor: l.unit.floor }) }}</span>
                 </span>
                 <span class="inline-flex items-center gap-1.5">
                   <UiIcon name="cube" :size="15" class="text-ink-400" />
@@ -634,7 +584,13 @@ function openArticle(a: (typeof ARTICLES)[number]) {
               </div>
 
               <p class="mt-3 text-[12.5px] text-ink-500">
-                {{ l.unit.code }}-unit · {{ l.unit.rooms }} xona · {{ l.building.buildingClass }}
+                {{
+                  t('landing.unitSummary', {
+                    code: l.unit.code,
+                    rooms: l.unit.rooms,
+                    class: l.building.buildingClass,
+                  })
+                }}
               </p>
 
               <div class="mt-auto flex items-end justify-between gap-3 pt-4">
@@ -652,7 +608,7 @@ function openArticle(a: (typeof ARTICLES)[number]) {
                   size="sm"
                   :to="`/catalog/${l.building.slug}?unit=${l.unit.id}`"
                 >
-                  Batafsil
+                  {{ t('common.details') }}
                   <UiIcon name="chevronRight" :size="16" />
                 </UiButton>
               </div>
@@ -667,19 +623,19 @@ function openArticle(a: (typeof ARTICLES)[number]) {
       <div class="mx-auto max-w-[1360px] px-4 py-12 lg:px-8 lg:py-14">
         <div class="mb-5 flex flex-wrap items-end justify-between gap-3">
           <div class="max-w-[62ch]">
-            <p class="text-[11.5px] font-bold uppercase tracking-wide text-brand-600">Joylashuv</p>
-            <h2 class="mt-2 text-[22px] font-bold sm:text-[26px]">Obyektlar xaritasi</h2>
+            <p class="text-[11.5px] font-bold uppercase tracking-wide text-brand-600">
+              {{ t('landing.mapEyebrow') }}
+            </p>
+            <h2 class="mt-2 text-[22px] font-bold sm:text-[26px]">{{ t('landing.mapTitle') }}</h2>
             <p class="mt-2 text-[14px] leading-relaxed text-ink-600">
-              Toshkent shahri va viloyatidagi {{ PORTFOLIO_TOTALS.buildings }} ta obyektning
-              haqiqiy joylashuvi. Nishonchani bosing, bandlik darajasi va obyektga o‘tish havolasi
-              ochiladi.
+              {{ t('landing.mapLead', { count: PORTFOLIO_TOTALS.buildings }) }}
             </p>
           </div>
           <NuxtLink
             to="/catalog"
             class="inline-flex items-center gap-1.5 text-[13.5px] font-semibold text-brand-600 transition-colors duration-150 hover:text-brand-700"
           >
-            Katalogdan tanlash
+            {{ t('landing.mapPick') }}
             <UiIcon name="arrowRight" :size="16" />
           </NuxtLink>
         </div>
@@ -716,7 +672,7 @@ function openArticle(a: (typeof ARTICLES)[number]) {
                   {{ o.name }}
                 </span>
                 <span class="tabular block truncate text-[12px] text-ink-500">
-                  {{ o.district }} · {{ percent(o.occupancy) }} bandlik
+                  {{ o.district }} · {{ t('landing.occupancyOf', { percent: percent(o.occupancy) }) }}
                 </span>
               </span>
             </NuxtLink>
@@ -730,21 +686,21 @@ function openArticle(a: (typeof ARTICLES)[number]) {
       <div class="mx-auto max-w-[1360px] px-4 py-12 lg:px-8 lg:py-14">
         <div class="mb-5 flex flex-wrap items-end justify-between gap-3">
           <div class="max-w-[62ch]">
-            <p class="text-[11.5px] font-bold uppercase tracking-wide text-brand-600">Obyektlar</p>
+            <p class="text-[11.5px] font-bold uppercase tracking-wide text-brand-600">
+              {{ t('landing.objectsEyebrow') }}
+            </p>
             <h2 class="mt-2 text-[22px] font-bold sm:text-[26px]">
-              Portfeldagi {{ PORTFOLIO_TOTALS.buildings }} ta obyekt
+              {{ t('landing.objectsTitle', { count: PORTFOLIO_TOTALS.buildings }) }}
             </h2>
             <p class="mt-2 text-[14px] leading-relaxed text-ink-600">
-              Quyida maydoni bo‘yicha eng yirik {{ featuredObjects.length }} ta obyekt keltirilgan.
-              Har bir obyekt bo‘yicha qavatlar rejasi, bo‘sh unitlar, jihozlar va qulayliklar
-              ro‘yxati ochiq ko‘rinishda taqdim etilgan.
+              {{ t('landing.objectsLead', { count: featuredObjects.length }) }}
             </p>
           </div>
           <NuxtLink
             to="/catalog"
             class="inline-flex items-center gap-1.5 text-[13.5px] font-semibold text-brand-600 transition-colors duration-150 hover:text-brand-700"
           >
-            Barcha obyektlar
+            {{ t('landing.allObjects') }}
             <UiIcon name="arrowRight" :size="16" />
           </NuxtLink>
         </div>
@@ -788,7 +744,9 @@ function openArticle(a: (typeof ARTICLES)[number]) {
 
             <div class="flex flex-1 flex-col p-5">
               <div class="flex items-center justify-between gap-3">
-                <span class="text-[12.5px] font-semibold text-ink-600">Bandlik</span>
+                <span class="text-[12.5px] font-semibold text-ink-600">
+                  {{ t('landing.occupancy') }}
+                </span>
                 <span class="tabular text-[15px] font-bold text-ink-900">
                   {{ percent(o.occupancy) }}
                 </span>
@@ -809,22 +767,22 @@ function openArticle(a: (typeof ARTICLES)[number]) {
 
               <dl class="mt-4 grid grid-cols-3 gap-3 border-t border-ink-100 pt-4">
                 <div>
-                  <dt class="text-[12px] text-ink-500">Qavat</dt>
+                  <dt class="text-[12px] text-ink-500">{{ t('landing.floors') }}</dt>
                   <dd class="tabular text-[15px] font-bold text-ink-900">{{ o.floors }}</dd>
                 </div>
                 <div>
-                  <dt class="text-[12px] text-ink-500">Unit</dt>
+                  <dt class="text-[12px] text-ink-500">{{ t('landing.units') }}</dt>
                   <dd class="tabular text-[15px] font-bold text-ink-900">{{ o.units }}</dd>
                 </div>
                 <div>
-                  <dt class="text-[12px] text-ink-500">Bo‘sh m²</dt>
+                  <dt class="text-[12px] text-ink-500">{{ t('landing.vacantArea') }}</dt>
                   <dd class="tabular text-[15px] font-bold text-ok-600">{{ num(o.vacantArea) }}</dd>
                 </div>
               </dl>
 
               <div class="mt-auto pt-4">
                 <UiButton variant="secondary" size="sm" :to="`/catalog/${o.slug}`" block>
-                  Obyekt pasporti
+                  {{ t('landing.objectPassport') }}
                   <UiIcon name="chevronRight" :size="16" />
                 </UiButton>
               </div>
@@ -840,23 +798,19 @@ function openArticle(a: (typeof ARTICLES)[number]) {
               >
                 <UiIcon name="search" :size="22" />
               </span>
-              <h3 class="mt-4 text-[18px] font-bold text-white">
-                Barcha bo‘sh bloklarni bir joyda ko‘ring
-              </h3>
+              <h3 class="mt-4 text-[18px] font-bold text-white">{{ t('landing.promoTitle') }}</h3>
               <p class="mt-2 text-[13.5px] leading-relaxed text-white/85">
-                Katalogda hozir {{ vacantCount }} ta bo‘sh unit va jami
-                {{ num(vacantAreaTotal) }} m² maydon mavjud. Filtrlar orqali kerakli o‘lchamdagi
-                joyni bir necha soniyada toping.
+                {{ t('landing.promoText', { units: vacantCount, area: num(vacantAreaTotal) }) }}
               </p>
             </div>
             <div class="flex flex-wrap gap-3">
               <UiButton variant="secondary" size="sm" to="/catalog">
                 <UiIcon name="search" :size="16" />
-                Katalogga o‘tish
+                {{ t('landing.toCatalog') }}
               </UiButton>
               <UiButton variant="success" size="sm" to="/login">
                 <UiIcon name="shield" :size="16" />
-                Tizimga kirish
+                {{ t('common.signIn') }}
               </UiButton>
             </div>
           </article>
@@ -868,13 +822,10 @@ function openArticle(a: (typeof ARTICLES)[number]) {
     <section class="mx-auto max-w-[1360px] px-4 py-12 lg:px-8 lg:py-14">
       <div class="mb-6 max-w-[62ch]">
         <p class="text-[11.5px] font-bold uppercase tracking-wide text-brand-600">
-          Qanday ishlaydi
+          {{ t('landing.stepsEyebrow') }}
         </p>
-        <h2 class="mt-2 text-[22px] font-bold sm:text-[26px]">Uch bosqichda mos joyni toping</h2>
-        <p class="mt-2 text-[14px] leading-relaxed text-ink-600">
-          Qidiruvdan shartnomagacha bo‘lgan yo‘l bitta tizim ichida kechadi, hujjatni qayta
-          to‘ldirish yoki ma’lumotni takroran kiritish talab etilmaydi.
-        </p>
+        <h2 class="mt-2 text-[22px] font-bold sm:text-[26px]">{{ t('landing.stepsTitle') }}</h2>
+        <p class="mt-2 text-[14px] leading-relaxed text-ink-600">{{ t('landing.stepsLead') }}</p>
       </div>
 
       <ol class="grid gap-5 lg:grid-cols-3">
@@ -886,7 +837,7 @@ function openArticle(a: (typeof ARTICLES)[number]) {
           <div class="rounded-card bg-surface-sunken p-3">
             <UiPhoto
               :name="s.photo"
-              :alt="s.title"
+              :alt="t(s.titleKey)"
               ratio="aspect-[16/10]"
               rounded="rounded-card"
               sizes="220px"
@@ -894,10 +845,10 @@ function openArticle(a: (typeof ARTICLES)[number]) {
             />
           </div>
           <p class="tabular mt-4 text-[11.5px] font-bold uppercase tracking-wide text-brand-600">
-            {{ s.step }}-bosqich
+            {{ t('landing.stepNo', { step: s.step }) }}
           </p>
-          <h3 class="mt-1.5 text-[16px] font-bold">{{ s.title }}</h3>
-          <p class="mt-2 text-[13.5px] leading-relaxed text-ink-600">{{ s.text }}</p>
+          <h3 class="mt-1.5 text-[16px] font-bold">{{ t(s.titleKey) }}</h3>
+          <p class="mt-2 text-[13.5px] leading-relaxed text-ink-600">{{ t(s.textKey) }}</p>
         </li>
       </ol>
     </section>
@@ -906,27 +857,24 @@ function openArticle(a: (typeof ARTICLES)[number]) {
     <section id="xizmatlar" class="scroll-mt-24 border-y border-ink-200 bg-surface">
       <div class="mx-auto max-w-[1360px] px-4 py-12 lg:px-8 lg:py-14">
         <div class="max-w-[62ch]">
-          <p class="text-[11.5px] font-bold uppercase tracking-wide text-brand-600">Xizmatlar</p>
-          <h2 class="mt-2 text-[22px] font-bold sm:text-[26px]">
-            Joy tanlashdan shartnoma va servisgacha, bitta oqimda
-          </h2>
-          <p class="mt-2 text-[14px] leading-relaxed text-ink-600">
-            Platforma ijarachi va mulk egasi o‘rtasidagi barcha bosqichlarni qamrab oladi: e’lon,
-            ariza, imzo, hisob-kitob va texnik xizmat.
+          <p class="text-[11.5px] font-bold uppercase tracking-wide text-brand-600">
+            {{ t('landing.servicesEyebrow') }}
           </p>
+          <h2 class="mt-2 text-[22px] font-bold sm:text-[26px]">{{ t('landing.servicesTitle') }}</h2>
+          <p class="mt-2 text-[14px] leading-relaxed text-ink-600">{{ t('landing.servicesLead') }}</p>
         </div>
 
         <div class="mt-7 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           <article
             v-for="s in SERVICES"
-            :key="s.title"
+            :key="s.titleKey"
             class="rounded-panel bg-canvas p-5 ring-1 ring-ink-200/70"
           >
             <span class="grid size-11 place-items-center rounded-field" :class="s.tone">
               <UiIcon :name="s.icon" :size="22" />
             </span>
-            <h3 class="mt-4 text-[15.5px] font-bold">{{ s.title }}</h3>
-            <p class="mt-2 text-[13.5px] leading-relaxed text-ink-600">{{ s.text }}</p>
+            <h3 class="mt-4 text-[15.5px] font-bold">{{ t(s.titleKey) }}</h3>
+            <p class="mt-2 text-[13.5px] leading-relaxed text-ink-600">{{ t(s.textKey) }}</p>
           </article>
         </div>
       </div>
@@ -938,28 +886,27 @@ function openArticle(a: (typeof ARTICLES)[number]) {
         <div class="grid gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,560px)]">
           <div>
             <p class="text-[11.5px] font-bold uppercase tracking-wide text-brand-600">
-              Tizim haqida
+              {{ t('landing.systemEyebrow') }}
             </p>
-            <h2 class="mt-2 text-[22px] font-bold sm:text-[26px]">
-              Ko‘chmas mulk boshqaruvining yagona raqamli yadrosi
-            </h2>
+            <h2 class="mt-2 text-[22px] font-bold sm:text-[26px]">{{ t('landing.systemTitle') }}</h2>
             <p class="mt-3 max-w-[58ch] text-[14px] leading-relaxed text-ink-600">
-              MAKON obyekt, unit, ariza, shartnoma, hisob-kitob va servis jarayonlarini bitta
-              ma’lumot bazasida birlashtiradi. Ommaviy katalogda faqat bo‘sh joylar va ularning
-              mavjudligi ko‘rsatiladi: band unitlar bo‘yicha ijarachi va moliyaviy ma’lumotlar
-              ochiq emas.
+              {{ t('landing.systemLead') }}
             </p>
 
             <ul class="mt-6 space-y-4">
-              <li v-for="p in SYSTEM_POINTS" :key="p.title" class="flex gap-3.5">
+              <li v-for="p in SYSTEM_POINTS" :key="p.titleKey" class="flex gap-3.5">
                 <span
                   class="grid size-10 shrink-0 place-items-center rounded-field bg-brand-50 text-brand-600"
                 >
                   <UiIcon :name="p.icon" :size="20" />
                 </span>
                 <span>
-                  <span class="block text-[14.5px] font-semibold text-ink-900">{{ p.title }}</span>
-                  <span class="block text-[13px] leading-relaxed text-ink-600">{{ p.text }}</span>
+                  <span class="block text-[14.5px] font-semibold text-ink-900">
+                    {{ t(p.titleKey) }}
+                  </span>
+                  <span class="block text-[13px] leading-relaxed text-ink-600">
+                    {{ t(p.textKey) }}
+                  </span>
                 </span>
               </li>
             </ul>
@@ -967,11 +914,11 @@ function openArticle(a: (typeof ARTICLES)[number]) {
             <div class="mt-7 flex flex-wrap gap-3">
               <UiButton to="/catalog">
                 <UiIcon name="search" :size="17" />
-                Katalogga o‘tish
+                {{ t('landing.toCatalog') }}
               </UiButton>
               <UiButton variant="secondary" to="/login">
                 <UiIcon name="shield" :size="17" />
-                Tizimga kirish
+                {{ t('common.signIn') }}
               </UiButton>
             </div>
           </div>
@@ -980,14 +927,14 @@ function openArticle(a: (typeof ARTICLES)[number]) {
             <div class="grid grid-cols-2 gap-4">
               <UiPhoto
                 name="interior-office"
-                alt="Biznes markazdagi ofis interyeri"
+                :alt="t('landing.photoInteriorAlt')"
                 ratio="aspect-[4/3]"
                 sizes="270px"
                 class="shadow-card"
               />
               <UiPhoto
                 name="green-business-center-2"
-                alt="Green Business Center binosining ichki hovlisi"
+                :alt="t('landing.photoCourtyardAlt')"
                 ratio="aspect-[4/3]"
                 sizes="270px"
                 class="shadow-card"
@@ -1018,8 +965,10 @@ function openArticle(a: (typeof ARTICLES)[number]) {
     <section id="blog" class="scroll-mt-24 border-y border-ink-200 bg-surface">
       <div class="mx-auto max-w-[1360px] px-4 py-12 lg:px-8 lg:py-14">
         <div class="mb-6 max-w-[62ch]">
-          <p class="text-[11.5px] font-bold uppercase tracking-wide text-brand-600">Blog</p>
-          <h2 class="mt-2 text-[22px] font-bold sm:text-[26px]">Bozor va platforma yangiliklari</h2>
+          <p class="text-[11.5px] font-bold uppercase tracking-wide text-brand-600">
+            {{ t('landing.blogEyebrow') }}
+          </p>
+          <h2 class="mt-2 text-[22px] font-bold sm:text-[26px]">{{ t('landing.blogTitle') }}</h2>
         </div>
 
         <div class="grid gap-5 lg:grid-cols-3">
@@ -1034,22 +983,22 @@ function openArticle(a: (typeof ARTICLES)[number]) {
               <span
                 class="rounded-pill bg-brand-50 px-2.5 py-1 text-[11.5px] font-bold text-brand-700"
               >
-                {{ a.tag }}
+                {{ t(a.tagKey) }}
               </span>
               <span class="tabular text-[12.5px] text-ink-500">{{ dateLong(a.date) }}</span>
             </span>
             <span
               class="mt-3 text-[16px] font-bold leading-snug text-ink-900 group-hover:text-brand-700"
             >
-              {{ a.title }}
+              {{ t(a.titleKey) }}
             </span>
             <span class="mt-2 line-clamp-3 text-[13.5px] leading-relaxed text-ink-600">
-              {{ a.text }}
+              {{ t(a.textKey) }}
             </span>
             <span
               class="mt-4 inline-flex items-center gap-1.5 text-[13px] font-semibold text-brand-600"
             >
-              To‘liq o‘qish
+              {{ t('landing.readFull') }}
               <UiIcon name="arrowRight" :size="15" />
             </span>
           </button>
@@ -1063,7 +1012,7 @@ function openArticle(a: (typeof ARTICLES)[number]) {
         <div class="absolute inset-0">
           <UiPhoto
             name="urban-office-4"
-            alt="Urban Office ofis binosi"
+            :alt="t('landing.ctaPhotoAlt')"
             ratio="size-full"
             rounded="rounded-none"
             sizes="(max-width: 1360px) 100vw, 1360px"
@@ -1079,21 +1028,18 @@ function openArticle(a: (typeof ARTICLES)[number]) {
         >
           <div class="max-w-[56ch]">
             <h2 class="text-[22px] font-bold text-white sm:text-[26px]">
-              Mos joyni tanladingizmi?
+              {{ t('landing.ctaTitle') }}
             </h2>
-            <p class="mt-2 text-[14.5px] leading-relaxed text-white/85">
-              Katalogdan bo‘sh unitni tanlang va ariza yuboring. Ariza yuborish uchun tizimga
-              tizimga kirish talab etiladi.
-            </p>
+            <p class="mt-2 text-[14.5px] leading-relaxed text-white/85">{{ t('landing.ctaText') }}</p>
           </div>
           <div class="flex flex-wrap gap-3">
             <UiButton to="/catalog">
               <UiIcon name="search" :size="17" />
-              Bo‘sh joylar katalogi
+              {{ t('landing.ctaCatalog') }}
             </UiButton>
             <UiButton variant="success" to="/login">
               <UiIcon name="shield" :size="17" />
-              Tizimga kirish
+              {{ t('common.signIn') }}
             </UiButton>
           </div>
         </div>
@@ -1102,17 +1048,17 @@ function openArticle(a: (typeof ARTICLES)[number]) {
 
     <UiModal
       v-model="articleOpen"
-      :title="activeArticle.title"
+      :title="t(activeArticle.titleKey)"
       :subtitle="dateLong(activeArticle.date)"
     >
       <span class="rounded-pill bg-brand-50 px-2.5 py-1 text-[11.5px] font-bold text-brand-700">
-        {{ activeArticle.tag }}
+        {{ t(activeArticle.tagKey) }}
       </span>
-      <p class="mt-4 text-[14px] leading-relaxed text-ink-700">{{ activeArticle.text }}</p>
+      <p class="mt-4 text-[14px] leading-relaxed text-ink-700">{{ t(activeArticle.textKey) }}</p>
 
       <template #footer>
-        <UiButton variant="secondary" @click="articleOpen = false">Yopish</UiButton>
-        <UiButton to="/catalog">Katalogga o‘tish</UiButton>
+        <UiButton variant="secondary" @click="articleOpen = false">{{ t('common.close') }}</UiButton>
+        <UiButton to="/catalog">{{ t('landing.toCatalog') }}</UiButton>
       </template>
     </UiModal>
   </div>

@@ -18,10 +18,84 @@ const SIZES = {
 }
 
 const overlay = ref<HTMLElement | null>(null)
+const dialog = ref<HTMLElement | null>(null)
+/** Oyna ochilishidan oldin fokusda turgan element, yopilgach unga qaytamiz */
+const restore = ref<HTMLElement | null>(null)
 const route = useRoute()
 
 onKeyStroke('Escape', () => {
   if (open.value) open.value = false
+})
+
+const FOCUSABLE =
+  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+
+function focusables(): HTMLElement[] {
+  if (!dialog.value) return []
+  return Array.from(dialog.value.querySelectorAll<HTMLElement>(FOCUSABLE)).filter(
+    (el) => el.offsetParent !== null,
+  )
+}
+
+/**
+ * Tab oyna ichida aylanadi: orqadagi sahifa `inert` emas, shuning uchun
+ * chegarani qo‘lda ushlab turamiz. Tinglovchi oynaga emas, `window` ga
+ * qo‘yiladi, aks holda fokus vaqtincha `body` da qolganda hodisa yetib
+ * kelmasdi (public maketdagi menyu bilan bir xil usul).
+ */
+function onTab(e: KeyboardEvent) {
+  if (e.key !== 'Tab' || !open.value) return
+
+  const items = focusables()
+  if (!items.length) {
+    e.preventDefault()
+    dialog.value?.focus()
+    return
+  }
+
+  const first = items[0]!
+  const last = items[items.length - 1]!
+  const current = document.activeElement as HTMLElement | null
+  const inside = !!current && !!dialog.value?.contains(current)
+
+  if (e.shiftKey && (!inside || current === first)) {
+    e.preventDefault()
+    last.focus()
+  } else if (!e.shiftKey && (!inside || current === last)) {
+    e.preventDefault()
+    first.focus()
+  }
+}
+
+/**
+ * Ochilganda fokus sarlavhadagi «Yopish» tugmasiga emas, mazmundagi birinchi
+ * boshqaruv elementiga boradi: aks holda tasodifiy Enter oynani yopib
+ * yuborardi. Ichida boshqaruv bo‘lmasa, oynaning o‘zi fokus oladi.
+ */
+function target(): HTMLElement | null {
+  const items = focusables()
+  if (!items.length) return dialog.value
+  const header = dialog.value?.querySelector('header')
+  return items.find((el) => !header?.contains(el)) ?? items[0]!
+}
+
+useEventListener(window, 'keydown', onTab)
+
+watch(open, async (isOpen) => {
+  if (!import.meta.client) return
+
+  if (isOpen) {
+    const active = document.activeElement
+    restore.value = active instanceof HTMLElement ? active : null
+    await nextTick()
+    target()?.focus()
+    return
+  }
+
+  const back = restore.value
+  restore.value = null
+  // Yopilish animatsiyasi tugashini kutmaymiz: fokus darhol qaytadi
+  if (back?.isConnected) back.focus()
 })
 
 /** Sahifa almashganda ochiq oyna yopiladi */
@@ -70,10 +144,12 @@ onBeforeUnmount(() => {
           enter-from-class="opacity-0 scale-[0.97] translate-y-2"
         >
           <div
+            ref="dialog"
             role="dialog"
             aria-modal="true"
             :aria-label="title"
-            class="flex max-h-[88vh] w-full min-w-0 flex-col overflow-hidden rounded-panel bg-surface shadow-pop"
+            tabindex="-1"
+            class="flex max-h-[88vh] w-full min-w-0 flex-col overflow-hidden rounded-panel bg-surface shadow-pop focus:outline-none"
             :class="SIZES[size]"
           >
             <header class="flex items-start justify-between gap-4 border-b border-ink-200 px-6 py-5">

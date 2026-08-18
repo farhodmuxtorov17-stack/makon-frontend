@@ -1,11 +1,30 @@
 <script setup lang="ts">
 import { useMediaQuery, useStorage } from '@vueuse/core'
-import { NAVIGATION, type NavItem } from '~/constants/navigation'
+import { NAVIGATION, type NavChild, type NavItem } from '~/constants/navigation'
+import { CONTACT } from '~/constants/contacts'
 
 const auth = useAuthStore()
 const route = useRoute()
+const { t, tr } = useAppLabels()
 
-const sections = computed(() => (auth.role ? NAVIGATION[auth.role] : []))
+/** Yorliq tarjimasi: kalit berilmagan bo‘lsa registrdagi nom qoladi */
+function navLabel(item: NavItem | NavChild) {
+  return tr(item.key, item.label)
+}
+
+/**
+ * Yon paneldagi bo‘limlar. Sozlamalarda bo‘lim yopilgan bo‘lsa, u yerdagi
+ * yozuv ham yo‘qoladi: ochilmaydigan havola ko‘rinib turmaydi.
+ */
+const sections = computed(() => {
+  if (!auth.role) return []
+  return NAVIGATION[auth.role]
+    .map((section) => ({
+      ...section,
+      items: section.items.filter((item) => auth.canRoute(item.to)),
+    }))
+    .filter((section) => section.items.length > 0)
+})
 const meta = computed(() => auth.roleMeta)
 
 /**
@@ -50,6 +69,8 @@ function toggleGroup(to: string) {
  * ro‘yxati o‘zi aylanadigan blok bo‘lgani uchun oynacha `body` ga
  * ko‘chiriladi: aks holda u qirqilib qolardi.
  */
+const HELP_HINT: NavItem = { label: 'Yordam markazi', key: 'nav.help', to: '/help', icon: 'headset' }
+
 const hint = ref<{ item: NavItem; top: number } | null>(null)
 
 function showHint(item: NavItem, event: Event) {
@@ -87,7 +108,7 @@ watch(() => route.fullPath, hideHint)
         v-if="wideScreen"
         type="button"
         class="grid size-9 shrink-0 place-items-center rounded-field text-ink-400 transition-colors hover:bg-ink-100 hover:text-ink-700"
-        :aria-label="collapsed ? 'Yon panelni yoyish' : 'Yon panelni yig‘ish'"
+        :aria-label="collapsed ? t('shell.expandSidebar') : t('shell.collapseSidebar')"
         :aria-pressed="collapsed"
         @click="collapsed = !collapsed"
       >
@@ -99,14 +120,14 @@ watch(() => route.fullPath, hideHint)
     <nav
       class="scroll-slim flex-1 overflow-y-auto pb-4 pt-1"
       :class="rail ? 'px-2' : 'px-3'"
-      aria-label="Bo‘limlar"
+      :aria-label="t('shell.sections')"
     >
       <div v-for="(section, si) in sections" :key="si" :class="si > 0 ? (rail ? 'mt-4' : 'mt-6') : ''">
         <div v-if="si > 0 && rail" class="mx-auto mb-3 h-px w-8 bg-ink-200" />
 
         <p
           v-if="section.title && !rail"
-          class="mb-2 px-3 text-[10px] font-bold uppercase tracking-wider text-ink-400"
+          class="mb-2 px-3 text-[10px] font-bold uppercase tracking-wider text-ink-500"
         >
           {{ section.title }}
         </p>
@@ -134,7 +155,7 @@ watch(() => route.fullPath, hideHint)
                 @click="toggleGroup(item.to)"
               >
                 <UiIcon :name="item.icon" :size="19" />
-                <span class="flex-1 truncate">{{ item.label }}</span>
+                <span class="flex-1 truncate">{{ navLabel(item) }}</span>
                 <UiIcon
                   name="chevronDown"
                   :size="15"
@@ -154,7 +175,7 @@ watch(() => route.fullPath, hideHint)
                         : 'text-ink-500 hover:bg-ink-100 hover:text-ink-800'
                     "
                   >
-                    {{ child.label }}
+                    {{ navLabel(child) }}
                   </NuxtLink>
                 </li>
               </ul>
@@ -173,12 +194,12 @@ watch(() => route.fullPath, hideHint)
                   ? 'bg-brand-500 text-white shadow-brand'
                   : 'text-ink-600 hover:bg-ink-100 hover:text-ink-900',
               ]"
-              :aria-label="rail ? item.label : undefined"
+              :aria-label="rail ? navLabel(item) : undefined"
               :aria-current="isActive(item) ? 'page' : undefined"
             >
               <UiIcon :name="item.icon" :size="rail ? 21 : 19" />
 
-              <span v-if="!rail" class="flex-1 truncate">{{ item.label }}</span>
+              <span v-if="!rail" class="flex-1 truncate">{{ navLabel(item) }}</span>
 
               <span
                 v-if="item.badge"
@@ -205,10 +226,10 @@ watch(() => route.fullPath, hideHint)
         v-if="rail"
         to="/help"
         class="mx-auto grid size-11 place-items-center rounded-field bg-brand-500 text-white shadow-brand transition-transform duration-200 hover:-translate-y-0.5"
-        aria-label="Yordam markazi, 24/7 qo‘llab-quvvatlash"
-        @mouseenter="showHint({ label: 'Yordam markazi', to: '/help', icon: 'headset' }, $event)"
+        :aria-label="t('shell.helpCardAria')"
+        @mouseenter="showHint(HELP_HINT, $event)"
         @mouseleave="hideHint"
-        @focusin="showHint({ label: 'Yordam markazi', to: '/help', icon: 'headset' }, $event)"
+        @focusin="showHint(HELP_HINT, $event)"
         @focusout="hideHint"
       >
         <UiIcon name="headset" :size="21" />
@@ -220,11 +241,13 @@ watch(() => route.fullPath, hideHint)
         class="flex items-center gap-3 rounded-panel bg-gradient-to-br from-brand-50 to-brand-100/70 p-3.5 ring-1 ring-inset ring-brand-100 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-card hover:ring-brand-300"
       >
         <span class="min-w-0 flex-1">
-          <span class="block text-[12.5px] font-semibold text-ink-900">Yordam markazi</span>
-          <span class="tabular mt-0.5 block text-[14px] font-bold text-brand-700">
-            +998 71 205 00 00
+          <span class="block text-[12.5px] font-semibold text-ink-900">
+            {{ t('shell.helpCard') }}
           </span>
-          <span class="mt-0.5 block text-[11px] text-ink-500">24/7 qo‘llab-quvvatlash</span>
+          <span class="tabular mt-0.5 block text-[14px] font-bold text-brand-700">
+            {{ CONTACT.phone }}
+          </span>
+          <span class="mt-0.5 block text-[11px] text-ink-500">{{ t('shell.helpCardHours') }}</span>
         </span>
         <span
           class="grid size-11 shrink-0 place-items-center rounded-field bg-brand-500 text-white shadow-brand"
@@ -245,7 +268,7 @@ watch(() => route.fullPath, hideHint)
     >
       <div class="max-w-[220px] rounded-field bg-ink-900 px-3 py-2 shadow-pop">
         <p class="whitespace-nowrap text-[12.5px] font-semibold leading-[26px] text-white">
-          {{ hint.item.label }}
+          {{ navLabel(hint.item) }}
         </p>
       </div>
     </div>

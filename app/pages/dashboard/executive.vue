@@ -1,16 +1,23 @@
 <script setup lang="ts">
-import { BUILDINGS, PORTFOLIO_TOTALS } from '~/data/buildings'
+import { OCCUPANCY_BANDS } from '~/constants/statuses'
+import {
+  BUILDINGS,
+  PORTFOLIO_TOTALS,
+  TREND_SPANS,
+  moneyScale,
+  trendDelta,
+  trendLabels,
+  trendSpark,
+  trendWindow,
+} from '~/data/buildings'
+import { INVOICES } from '~/data/business'
+import type { LeaseStatus } from '~/stores/lease'
 import { num, percent, sumShort } from '~/utils/format'
 
-const period = ref('may-2025')
-const scope = ref('all')
+const lease = useLeaseStore()
+lease.seed()
 
-const periods = [
-  { value: 'may-2025', label: 'May 2025' },
-  { value: 'apr-2025', label: 'Aprel 2025' },
-  { value: 'q2-2025', label: '2-chorak 2025' },
-  { value: 'y-2025', label: '2025-yil' },
-]
+const scope = ref('all')
 
 const scopes = [
   { value: 'all', label: 'Barcha obyektlar' },
@@ -46,50 +53,72 @@ const portfolioSlices = computed(() => [
 
 const serviceCount = computed(() => visible.value.reduce((s, b) => s + b.serviceRequests, 0))
 
-/** Tanlangan obyektning portfeldagi ulushi, grafik shunga moslashadi */
-const scopeShare = computed(() => totals.value.revenue / PORTFOLIO_TOTALS.revenue)
+/* --- Davr oynasi --- */
 
-const PERIOD_DATA: Record<string, { labels: string[]; revenue: number[]; debt: number[] }> = {
-  'may-2025': {
-    labels: ['Yanvar', 'Fevral', 'Mart', 'Aprel', 'May'],
-    revenue: [10.9, 11.4, 11.8, 12.1, 12.54],
-    debt: [1.62, 1.48, 1.39, 1.31, 1.25],
-  },
-  'apr-2025': {
-    labels: ['Dekabr', 'Yanvar', 'Fevral', 'Mart', 'Aprel'],
-    revenue: [10.4, 10.9, 11.4, 11.8, 12.1],
-    debt: [1.71, 1.62, 1.48, 1.39, 1.31],
-  },
-  'q2-2025': {
-    labels: ['Aprel', 'May', 'Iyun'],
-    revenue: [12.1, 12.54, 12.9],
-    debt: [1.31, 1.25, 1.18],
-  },
-  'y-2025': {
-    labels: ['1-chorak', '2-chorak', '3-chorak', '4-chorak'],
-    revenue: [34.1, 37.5, 39.2, 41.0],
-    debt: [4.49, 3.74, 3.42, 3.15],
-  },
-}
+const span = ref('6')
+const spanLength = computed(() => Number(span.value))
 
-const dynamicsLabels = computed(() => PERIOD_DATA[period.value]!.labels)
+const dynamicsLabels = computed(() => trendLabels(spanLength.value))
 
-const dynamicsSeries = computed(() => {
-  const d = PERIOD_DATA[period.value]!
-  const k = scopeShare.value
+const revenueSeries = computed(() => {
+  const s = moneyScale(totals.value.revenue)
   return [
     {
-      label: 'Ijara tushumi, mlrd so‘m',
+      label: `Ijara tushumi, ${s.unit}`,
       tone: 'brand' as const,
-      values: d.revenue.map((v) => +(v * k).toFixed(2)),
-    },
-    {
-      label: 'Qarzdorlik, mlrd so‘m',
-      tone: 'danger' as const,
-      values: d.debt.map((v) => +(v * k).toFixed(2)),
+      fill: true,
+      values: trendWindow('revenue', spanLength.value).map(
+        (f) => +((totals.value.revenue / s.div) * f).toFixed(s.digits),
+      ),
     },
   ]
 })
+
+const debtSeries = computed(() => {
+  const s = moneyScale(totals.value.debt)
+  return [
+    {
+      label: `Qarzdorlik, ${s.unit}`,
+      tone: 'danger' as const,
+      values: trendWindow('debt', spanLength.value).map(
+        (f) => +((totals.value.debt / s.div) * f).toFixed(s.digits),
+      ),
+    },
+  ]
+})
+
+/* --- Diqqat talab qiladigan holatlar --- */
+
+const debtAlerts = computed(() =>
+  INVOICES.filter(
+    (i) =>
+      (i.status === 'OVERDUE' || i.status === 'PARTIALLY_PAID') &&
+      (scope.value === 'all' || i.buildingName === visible.value[0]?.name),
+  )
+    .map((i) => ({ ...i, outstanding: i.total - i.paid }))
+    .sort((a, b) => b.outstanding - a.outstanding)
+    .slice(0, 3),
+)
+
+const PENDING_LEASE: LeaseStatus[] = [
+  'YANGI',
+  'OPERATSIYA_TASDIQLADI',
+  'MOLIYA_TASDIQLADI',
+  'QORALAMA_TAYYOR',
+  'DIDOX_YUBORILDI',
+  'DIDOX_IMZOLANDI',
+]
+
+const pendingCases = computed(() =>
+  lease.cases
+    .filter(
+      (c) =>
+        PENDING_LEASE.includes(c.status) && (scope.value === 'all' || c.buildingId === scope.value),
+    )
+    .slice(0, 3),
+)
+
+/* --- Xarita --- */
 
 const mapMarkers = computed(() =>
   visible.value.map((b) => ({
@@ -112,18 +141,15 @@ const mapStats = computed(() => [
   { label: 'Bo‘sh maydon', value: `${num(Math.round(totals.value.vacantArea / 1000))} ming m²` },
 ])
 
-const mapLegend = [
-  { label: '90% dan yuqori', class: 'bg-ok-500' },
-  { label: '84–90%', class: 'bg-brand-500' },
-  { label: '84% dan past', class: 'bg-warn-500' },
-]
+// Shkala bitta manbadan: reyestr, xarita va landing bir xil chegara ko‘rsatadi
+const mapLegend = OCCUPANCY_BANDS.map((b) => ({ label: b.label, class: b.class }))
 </script>
 
 <template>
   <AppTopbar title="Boshqaruv paneli" subtitle="Portfel bo‘yicha strategik ko‘rinish">
     <template #actions>
       <UiSelect v-model="scope" :options="scopes" size="sm" class="w-52" />
-      <UiSelect v-model="period" :options="periods" size="sm" class="w-40" />
+      <UiSelect v-model="span" :options="TREND_SPANS" size="sm" class="w-40" />
       <UiButton variant="secondary" size="sm" to="/reports">
         <UiIcon name="download" :size="16" />
         Eksport
@@ -131,70 +157,64 @@ const mapLegend = [
     </template>
   </AppTopbar>
 
-  <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-6">
+  <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-4 sm:p-6">
     <!-- KPI qatori -->
-    <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+    <section class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
       <UiKpi
         label="Bandlik (o‘rtacha)"
         :value="percent(totals.occupancy)"
-        :delta="4.2"
+        :delta="trendDelta('occupancy')"
         icon="building"
         tone="brand"
-        :spark="[81, 83, 84, 86, 87]"
+        :spark="trendSpark('occupancy', totals.occupancy)"
         to="/objects"
       />
       <UiKpi
         label="Bo‘sh maydon (vacancy)"
         :value="num(totals.vacantArea)"
         unit="m²"
-        :delta="-4.6"
+        :delta="trendDelta('vacantArea')"
         invert
         icon="layers"
         tone="ok"
-        :spark="[62, 60, 58, 57, 55]"
+        :spark="trendSpark('vacantArea', totals.vacantArea)"
         to="/objects"
       />
       <UiKpi
         label="Qarzdorlik"
         :value="sumShort(totals.debt)"
-        :delta="6.3"
+        :delta="trendDelta('debt')"
         invert
         icon="warning"
         tone="danger"
-        :spark="[102, 108, 115, 120, 125]"
+        :spark="trendSpark('debt', totals.debt / 1_000_000)"
         to="/billing/debts"
       />
       <UiKpi
         label="Servis arizalari"
         :value="String(serviceCount)"
-        :delta="-8"
+        :delta="trendDelta('service')"
         invert
         icon="wrench"
         tone="warn"
-        :spark="[
-          Math.round(serviceCount * 1.19),
-          Math.round(serviceCount * 1.14),
-          Math.round(serviceCount * 1.09),
-          Math.round(serviceCount * 1.05),
-          serviceCount,
-        ]"
+        :spark="trendSpark('service', serviceCount)"
         to="/service-requests"
       />
       <UiKpi
         label="Ijara tushumi (oylik)"
         :value="sumShort(totals.revenue)"
-        :delta="12.5"
+        :delta="trendDelta('revenue')"
         icon="wallet"
         tone="violet"
-        :spark="[10.9, 11.4, 11.8, 12.1, 12.54]"
+        :spark="trendSpark('revenue', totals.revenue / 1_000_000_000)"
         to="/billing/invoices"
       />
     </section>
 
     <!-- Portfel ko‘rinishi -->
-    <section class="grid gap-5 xl:grid-cols-4">
+    <section class="grid gap-5 lg:grid-cols-2 xl:grid-cols-4">
       <UiCard
-        class="xl:col-span-2"
+        class="lg:col-span-2"
         title="Bandlik xaritasi"
         subtitle="Obyektlarning haqiqiy joylashuvi"
       >
@@ -240,11 +260,28 @@ const mapLegend = [
       </UiCard>
 
       <UiCard
-        class="xl:col-span-2"
         :title="scope === 'all' ? 'Portfel dinamikasi' : 'Obyekt dinamikasi'"
-        subtitle="Davrlar kesimida tushum va qarzdorlik"
+        subtitle="Oxirgi nuqta: KPI kartadagi joriy qiymat"
       >
-        <UiLine :labels="dynamicsLabels" :series="dynamicsSeries" :height="216" />
+        <div>
+          <div class="flex items-baseline justify-between gap-3">
+            <p class="text-[13px] font-semibold text-ink-700">Ijara tushumi</p>
+            <p class="tabular text-[13.5px] font-bold text-brand-600">
+              {{ sumShort(totals.revenue) }}
+            </p>
+          </div>
+          <UiLine :labels="dynamicsLabels" :series="revenueSeries" :height="132" />
+        </div>
+
+        <div class="mt-5 border-t border-ink-100 pt-4">
+          <div class="flex items-baseline justify-between gap-3">
+            <p class="text-[13px] font-semibold text-ink-700">Qarzdorlik</p>
+            <p class="tabular text-[13.5px] font-bold text-danger-600">
+              {{ sumShort(totals.debt) }}
+            </p>
+          </div>
+          <UiLine :labels="dynamicsLabels" :series="debtSeries" :height="132" />
+        </div>
       </UiCard>
     </section>
 
@@ -257,7 +294,7 @@ const mapLegend = [
         </UiButton>
       </template>
 
-      <div class="grid gap-4 p-5 pt-1 sm:grid-cols-2 xl:grid-cols-5">
+      <div class="grid gap-4 p-5 pt-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         <NuxtLink
           v-for="b in visible"
           :key="b.id"
@@ -312,16 +349,13 @@ const mapLegend = [
         <template #actions>
           <UiButton variant="ghost" size="sm" to="/billing/debts">Barchasi</UiButton>
         </template>
-        <ul class="divide-y divide-ink-100">
-          <li
-            v-for="d in [
-              { tenant: 'Dream Retail', building: 'Mega Mall', amount: 7890000, days: 61 },
-              { tenant: 'FinTech Services', building: 'Green Business Center', amount: 6480000, days: 97 },
-              { tenant: 'Global Logistics & Trans', building: 'Harmony Residence', amount: 5145000, days: 38 },
-            ]"
-            :key="d.tenant"
-            class="px-5 py-3.5"
-          >
+
+        <p v-if="!debtAlerts.length" class="px-5 py-10 text-center text-[13px] text-ink-500">
+          Tanlangan qamrov bo‘yicha muddati o‘tgan to‘lov yo‘q
+        </p>
+
+        <ul v-else class="divide-y divide-ink-100">
+          <li v-for="d in debtAlerts" :key="d.id" class="px-5 py-3.5">
             <NuxtLink to="/billing/debts" class="group flex items-center gap-4">
               <span
                 class="grid size-10 shrink-0 place-items-center rounded-[10px] bg-danger-50 text-danger-600"
@@ -334,13 +368,17 @@ const mapLegend = [
                 >
                   {{ d.tenant }}
                 </span>
-                <span class="block truncate text-[12px] text-ink-500">{{ d.building }}</span>
+                <span class="block truncate text-[12px] text-ink-500">
+                  {{ d.buildingName }} · {{ d.code }}
+                </span>
               </span>
               <span class="shrink-0 text-right">
                 <span class="tabular block text-[13.5px] font-bold text-danger-600">
-                  {{ sumShort(d.amount) }}
+                  {{ sumShort(d.outstanding) }}
                 </span>
-                <span class="block text-[12px] text-ink-500">{{ d.days }} kun</span>
+                <span class="block text-[12px] text-ink-500">
+                  {{ d.agingBucket ? `${d.agingBucket} kun` : 'muddatida' }}
+                </span>
               </span>
               <UiIcon name="chevronRight" :size="16" class="shrink-0 text-ink-400" />
             </NuxtLink>
@@ -348,21 +386,18 @@ const mapLegend = [
         </ul>
       </UiCard>
 
-      <UiCard title="Tasdiqlash kutilmoqda" subtitle="Qaror talab qiladigan yozuvlar" flush>
+      <UiCard title="Tasdiqlash kutilmoqda" subtitle="Qaror talab qiladigan arizalar" flush>
         <template #actions>
           <UiButton variant="ghost" size="sm" to="/applications">Barchasi</UiButton>
         </template>
-        <ul class="divide-y divide-ink-100">
-          <li
-            v-for="a in [
-              { title: 'Yangi ijara shartnomasi', org: 'Makon Solutions MCHJ', to: '/applications/a-0156' },
-              { title: 'Sotuv shartnomasi loyihasi', org: 'Mega Invest Group', to: '/contracts/c-0156' },
-              { title: 'Material so‘rovi MT-2025-0096', org: 'Servis Pro MCHJ', to: '/warehouse' },
-            ]"
-            :key="a.title"
-            class="px-5 py-3.5"
-          >
-            <NuxtLink :to="a.to" class="flex items-center gap-4 group">
+
+        <p v-if="!pendingCases.length" class="px-5 py-10 text-center text-[13px] text-ink-500">
+          Tanlangan qamrov bo‘yicha tasdiqlash kutayotgan ariza yo‘q
+        </p>
+
+        <ul v-else class="divide-y divide-ink-100">
+          <li v-for="c in pendingCases" :key="c.id" class="px-5 py-3.5">
+            <NuxtLink :to="`/applications/${c.id}`" class="group flex items-center gap-4">
               <span class="grid size-10 shrink-0 place-items-center rounded-[10px] bg-warn-50 text-warn-600">
                 <UiIcon name="clock" :size="18" />
               </span>
@@ -370,10 +405,13 @@ const mapLegend = [
                 <span
                   class="block truncate text-[13.5px] font-semibold text-ink-900 group-hover:text-brand-600"
                 >
-                  {{ a.title }}
+                  {{ c.code }} · {{ c.unitCode }}
                 </span>
-                <span class="block truncate text-[12px] text-ink-500">{{ a.org }}</span>
+                <span class="block truncate text-[12px] text-ink-500">
+                  {{ c.org.name }} · {{ c.buildingName }}
+                </span>
               </span>
+              <UiStatus kind="lease" :value="c.status" size="sm" />
               <UiIcon name="chevronRight" :size="16" class="shrink-0 text-ink-400" />
             </NuxtLink>
           </li>

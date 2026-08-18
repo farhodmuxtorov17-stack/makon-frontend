@@ -1,5 +1,8 @@
 import { defineStore } from 'pinia'
 import { ROLE_CAPABILITIES, ROLE_META } from '~/constants/roles'
+import { ACCESS_AREAS, areaOfPath, overrideKey, type AccessLevel } from '~/constants/accessAreas'
+import { canAccess } from '~/constants/navigation'
+import { warehouseByName } from '~/constants/warehouses'
 import type { Capability, Role, SessionUser } from '~/types/rbac'
 
 /** Rol bo‘yicha xodim hisoblari, login orqali aniqlanadi. */
@@ -99,6 +102,11 @@ export const useAuthStore = defineStore('auth', {
      * haqiqiy autentifikatsiya natijasi, `user.role` esa hozir ko‘rilayotgan rol.
      */
     realRole: null as Role | null,
+    /**
+     * Sozlamalardagi ruxsat matritsasi o‘zgartirilsa, farq shu yerda saqlanadi
+     * va marshrut hamda amal tekshiruvida qo‘llanadi. Kalit: «ROL:bo‘lim».
+     */
+    accessOverrides: {} as Record<string, AccessLevel>,
   }),
 
   getters: {
@@ -114,13 +122,49 @@ export const useAuthStore = defineStore('auth', {
      * Amal huquqi. Marshrutga kirish huquqidan alohida: rol sahifani
      * ko‘rishi mumkin-u, undagi qarorni qabul qila olmasligi mumkin.
      */
-    can: (s) => (capability: Capability) =>
-      s.user ? ROLE_CAPABILITIES[s.user.role].includes(capability) : false,
+    can: (s) => (capability: Capability) => {
+      if (!s.user) return false
+      const role = s.user.role
+      /*
+       * Bitta amal bir nechta bo‘limda uchraydi (masalan `contract.sign`
+       * shartnomalarda ham, kabinetda ham). Matritsada shulardan biri
+       * o‘zgartirilgan bo‘lsa, o‘sha o‘zgartirishlar hal qiladi: kamida
+       * bittasi «To‘liq» bo‘lsa huquq beriladi.
+       */
+      const levels = ACCESS_AREAS.filter((a) => a.writes.includes(capability))
+        .map((a) => s.accessOverrides[overrideKey(role, a.key)])
+        .filter(Boolean)
+      if (levels.length) return levels.includes('full')
+      return ROLE_CAPABILITIES[role].includes(capability)
+    },
+
+    /**
+     * Marshrutga kirish huquqi. Asosiy qoida `ROUTE_ACCESS` da, sozlamalarda
+     * yopilgan bo‘lim esa shu yerda hisobga olinadi. Super rahbarning
+     * sozlamalar bo‘limi bundan mustasno: aks holda tizim boshqaruvsiz qoladi.
+     */
+    canRoute: (s) => (path: string) => {
+      if (!s.user) return false
+      const role = s.user.role
+      const area = areaOfPath(path)
+      if (area && !(role === 'SUPER_HEAD' && area.key === 'settings')) {
+        const level = s.accessOverrides[overrideKey(role, area.key)]
+        if (level) return level !== 'none'
+      }
+      return canAccess(path, role)
+    },
 
     /** Bino shu foydalanuvchining ko‘rish sohasiga kiradimi */
     inScope: (s) => (buildingId: string) => {
       const list = s.user?.buildingScope ?? []
       return list.length === 0 || list.includes(buildingId)
+    },
+
+    /** Ombor shu foydalanuvchiga biriktirilganmi */
+    inWarehouseScope: (s) => (name: string) => {
+      const list = s.user?.warehouseScope ?? []
+      if (list.length === 0) return true
+      return list.includes(warehouseByName(name)?.id ?? '')
     },
   },
 
@@ -140,6 +184,11 @@ export const useAuthStore = defineStore('auth', {
     exitViewAs() {
       if (!this.realRole) return
       this.user = { ...ACCOUNTS[this.realRole] }
+    },
+
+    /** Sozlamalardagi matritsa saqlanganda chaqiriladi */
+    applyAccessOverrides(next: Record<string, AccessLevel>) {
+      this.accessOverrides = { ...next }
     },
 
     signOut() {

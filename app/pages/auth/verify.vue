@@ -7,7 +7,13 @@ const route = useRoute()
 
 const CODE_LENGTH = 6
 const RESEND_SECONDS = 60
-const EXPECTED = '123456'
+
+/** Raqamga yuborilgan bir martalik kod, shu qadamda ko‘rsatiladi */
+const sentCode = ref('')
+
+function newCode() {
+  return String(Math.floor(100000 + Math.random() * 900000))
+}
 
 const phoneDigits = computed(() => {
   const q = route.query.phone
@@ -83,6 +89,7 @@ onMounted(() => {
     navigateTo('/register')
     return
   }
+  sentCode.value = newCode()
   startCountdown()
   nextTick(() => focusAt(0))
 })
@@ -177,7 +184,7 @@ function submit() {
 
   timer = setTimeout(() => {
     pending.value = false
-    if (entered !== EXPECTED) {
+    if (entered !== sentCode.value) {
       wrong.value = true
       clearCells()
       return
@@ -191,6 +198,7 @@ function submit() {
 function resend() {
   if (secondsLeft.value > 0) return
   wrong.value = false
+  sentCode.value = newCode()
   clearCells()
   startCountdown()
   resent.value = true
@@ -244,8 +252,24 @@ function resend() {
           <p class="mt-2 text-[13.5px] leading-relaxed text-ink-500">
             Olti xonali kod
             <span class="tabular font-semibold text-ink-800">{{ phoneLabel }}</span>
-            raqamiga bog‘langan Telegram akkauntiga yuborildi.
+            raqamiga SMS orqali yuborildi.
           </p>
+
+          <div
+            class="mt-3 flex items-start gap-2.5 rounded-field bg-surface-sunken p-3.5 ring-1 ring-inset ring-ink-200"
+          >
+            <UiIcon name="info" :size="16" class="mt-px shrink-0 text-ink-400" />
+            <p class="min-w-0 text-[12.5px] leading-relaxed text-ink-500">
+              Yuborilgan kod:
+              <span class="tabular text-[14px] font-bold tracking-wide text-ink-800">
+                {{ sentCode }}
+              </span>
+              <span class="mt-1 block">
+                Tashqi SMS xizmati bu qurilmaga ulanmagan, shuning uchun raqamga yuborilgan kod
+                shu yerda ko‘rsatilmoqda.
+              </span>
+            </p>
+          </div>
 
           <!-- Kalit sertifikatidan olingan tashkilot -->
           <div

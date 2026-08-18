@@ -14,13 +14,18 @@ const props = withDefaults(
   { variant: 'primary', size: 'md', type: 'button' },
 )
 
+/**
+ * Fon ranglari oq yorliq bilan WCAG AA (≥4.5:1) chegarasidan o‘tadi: brand-500
+ * 5.71:1, teal-700 4.76:1, danger-700 6.42:1. Yorliq 13–15px, ya’ni «yirik
+ * matn» emas, shuning uchun 3:1 emas, 4.5:1 talab qilinadi.
+ */
 const VARIANTS: Record<Variant, string> = {
   primary:
     'bg-brand-500 text-white shadow-brand hover:bg-brand-600 active:bg-brand-700 disabled:bg-brand-300 disabled:shadow-none',
   success:
-    'bg-teal-500 text-white shadow-[0_6px_20px_rgb(22_185_154/0.3)] hover:bg-teal-600 active:bg-teal-700 disabled:bg-teal-300 disabled:shadow-none',
+    'bg-teal-700 text-white shadow-[0_6px_20px_rgb(4_131_93/0.3)] hover:bg-teal-800 active:bg-teal-900 disabled:bg-teal-300 disabled:shadow-none',
   danger:
-    'bg-danger-500 text-white hover:bg-danger-600 active:bg-danger-700 disabled:bg-danger-100',
+    'bg-danger-700 text-white hover:bg-danger-800 active:bg-danger-900 disabled:bg-danger-100',
   secondary:
     'bg-white text-brand-600 ring-1 ring-inset ring-brand-200 hover:bg-brand-50 hover:ring-brand-300 active:bg-brand-100',
   subtle: 'bg-ink-100 text-ink-700 hover:bg-ink-200 active:bg-ink-300',

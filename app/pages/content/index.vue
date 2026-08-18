@@ -185,7 +185,7 @@ function resetFilters() {
     </template>
   </AppTopbar>
 
-  <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-4 lg:p-6">
+  <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-4 sm:p-6">
     <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <button type="button" class="block w-full text-left" :aria-pressed="!dirty" @click="resetFilters">
         <UiKpi

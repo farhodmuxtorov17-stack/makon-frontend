@@ -36,7 +36,7 @@ export const ROLE_META: Record<Role, RoleMeta> = {
     label: 'Pudratchi / xo‘jalik bo‘limi',
     caption: 'Texnik xizmat va ta’mirlash ishlari',
     level: 'Ijrochi operatsion rol',
-    scope: 'Biriktirilgan work order',
+    scope: 'Biriktirilgan ish topshiriqlari',
     limitation: 'Moliyaviy tasdiq va shartnomaga kira olmaydi',
     tone: 'amber',
     home: '/facility/work-orders',

@@ -1,12 +1,27 @@
 <script setup lang="ts">
 import AppTopbar from '~/components/layout/AppTopbar.vue'
-import { AGING, BILLING_SUMMARY, INVOICES } from '~/data/business'
-import { dateShort, num, percent, sum, sumShort } from '~/utils/format'
+import { INVOICES, agingOf, billingSummaryOf } from '~/data/business'
+import { LANDLORD_STIR, organizationByStir } from '~/data/organizations'
+import { dateShort, num, percent, sum, sumShort, todayIso } from '~/utils/format'
 
-const queue = ref(
-  INVOICES.filter((i) => i.status === 'PARTIALLY_PAID' || i.status === 'ISSUED').map((i) => ({
-    ...i,
-  })),
+const auth = useAuthStore()
+
+/** To‘lovni tasdiqlash yozuv amali: sahifani ko‘rish huquqi buni bermaydi */
+const canConfirm = computed(() => auth.can('payment.confirm'))
+
+/**
+ * Navbat umumiy reyestrdan hisoblanadi. Tasdiqlangan to‘lov hisob-faktura
+ * yozuviga tushadi, shuning uchun u navbatdan chiqadi va qarzdorlik
+ * ekranida ham darhol ko‘rinadi.
+ */
+const queue = computed(() =>
+  INVOICES.filter((i) => i.status === 'PARTIALLY_PAID' || i.status === 'ISSUED'),
+)
+
+const summary = computed(() => billingSummaryOf(INVOICES))
+const aging = computed(() => agingOf(INVOICES))
+const paidShare = computed(() =>
+  summary.value.charged ? Math.round((summary.value.paidTotal / summary.value.charged) * 100) : 0,
 )
 
 const search = ref('')
@@ -16,10 +31,11 @@ const banner = ref('')
 const bannerTone = ref<'ok' | 'danger'>('ok')
 
 const payMethod = ref('bank')
-const account = ref('2020 8000 1234 5678 9010')
+/** Ijaraga beruvchining hisob raqami tashkilotlar reyestridan olinadi */
+const account = ref(organizationByStir(LANDLORD_STIR)?.account ?? '')
 const purpose = ref('')
 const note = ref('')
-const payDate = ref('2025-05-19')
+const payDate = ref(todayIso())
 
 const methodOptions = [
   { value: 'bank', label: 'Bank o‘tkazmasi' },
@@ -54,7 +70,7 @@ const statusTabs = computed(() => [
 const columns = [
   { key: 'pick', label: '', width: '44px' },
   { key: 'idx', label: '№', width: '52px', align: 'right' as const, numeric: true },
-  { key: 'code', label: 'Invoice raqami' },
+  { key: 'code', label: 'Hisob-faktura raqami' },
   { key: 'tenant', label: 'Mijoz' },
   { key: 'place', label: 'Obyekt / Unit' },
   { key: 'dueAt', label: 'To‘lov muddati' },
@@ -95,7 +111,7 @@ const processed = ref<
 
 function resolve(action: 'confirm' | 'return') {
   const inv = selected.value
-  if (!inv) return
+  if (!canConfirm.value || !inv) return
   const amount = inv.total - inv.paid
   processed.value.unshift({
     id: `${inv.id}-${processed.value.length}`,
@@ -105,7 +121,17 @@ function resolve(action: 'confirm' | 'return') {
     action: action === 'confirm' ? 'Tasdiqlandi' : 'Qaytarildi',
     tone: action === 'confirm' ? 'ok' : 'danger',
   })
-  queue.value = queue.value.filter((i) => i.id !== inv.id)
+
+  if (action === 'confirm') {
+    // To‘lov hisob-faktura yozuviga tushadi: qoldiq yopiladi
+    inv.paid = inv.total
+    inv.status = 'PAID'
+    inv.agingBucket = null
+  } else {
+    // Hujjat tuzatish uchun ijarachiga qaytariladi va qoralamaga o‘tadi
+    inv.status = 'DRAFT'
+  }
+
   selectedId.value = ''
   bannerTone.value = action === 'confirm' ? 'ok' : 'danger'
   banner.value =
@@ -120,8 +146,10 @@ const cashSeries = [
   { label: 'Chiqim, mln so‘m', tone: 'ok' as const, values: [9.4, 11.2, 12.8, 10.6, 13.5], fill: true },
 ]
 
-const agingSlices = AGING.map((a) => ({ label: a.bucket, value: a.amount, tone: a.tone }))
-const agingTotal = AGING.reduce((s, a) => s + a.amount, 0)
+const agingSlices = computed(() =>
+  aging.value.map((a) => ({ label: a.bucket, value: a.amount, tone: a.tone })),
+)
+const agingTotal = computed(() => aging.value.reduce((s, a) => s + a.amount, 0))
 </script>
 
 <template>
@@ -142,7 +170,7 @@ const agingTotal = AGING.reduce((s, a) => s + a.amount, 0)
     </template>
   </AppTopbar>
 
-  <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-6">
+  <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-4 sm:p-6">
     <div
       v-if="banner"
       class="flex items-center gap-3 rounded-card px-4 py-3 ring-1"
@@ -177,38 +205,20 @@ const agingTotal = AGING.reduce((s, a) => s + a.amount, 0)
     </div>
 
     <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-      <UiKpi
-        label="Hisoblangan"
-        :value="sumShort(BILLING_SUMMARY.charged)"
-        icon="doc"
-        tone="brand"
-        :spark="[112, 118, 121, 125, 128]"
-      />
+      <UiKpi label="Hisoblangan" :value="sumShort(summary.charged)" icon="doc" tone="brand" />
       <UiKpi
         label="To‘langan"
-        :value="sumShort(BILLING_SUMMARY.paidTotal)"
-        :delta="9.4"
+        :value="sumShort(summary.paidTotal)"
         icon="check"
         tone="ok"
-        :spark="[61, 66, 70, 74, 78.9]"
+        :gauge="paidShare"
       />
-      <UiKpi
-        label="Qarzdorlik"
-        :value="sumShort(BILLING_SUMMARY.debtTotal)"
-        :delta="6.3"
-        invert
-        icon="wallet"
-        tone="warn"
-        :spark="[41, 43, 44, 46, 46.9]"
-      />
+      <UiKpi label="Qarzdorlik" :value="sumShort(summary.debtTotal)" icon="wallet" tone="warn" />
       <UiKpi
         label="Kechikkan to‘lovlar"
-        :value="sumShort(BILLING_SUMMARY.overdueTotal)"
-        :delta="4.1"
-        invert
+        :value="sumShort(summary.overdueTotal)"
         icon="clock"
         tone="danger"
-        :spark="[15.2, 16.1, 17, 17.9, 18.6]"
       />
     </section>
 
@@ -223,7 +233,7 @@ const agingTotal = AGING.reduce((s, a) => s + a.amount, 0)
           <div class="flex flex-wrap items-center gap-3 px-5 pb-4">
             <UiInput
               v-model="search"
-              placeholder="Invoice raqami yoki mijoz bo‘yicha qidirish"
+              placeholder="Hisob-faktura raqami yoki mijoz bo‘yicha qidirish"
               class="min-w-[220px] flex-1"
             >
               <template #prefix>
@@ -283,7 +293,7 @@ const agingTotal = AGING.reduce((s, a) => s + a.amount, 0)
             <UiLine :labels="cashLabels" :series="cashSeries" :height="200" />
           </UiCard>
 
-          <UiCard title="Qarzdorlik tahlili (Aging)" subtitle="Muddat bo‘yicha taqsimot">
+          <UiCard title="Qarzdorlik tahlili" subtitle="Muddat guruhlari bo‘yicha taqsimot">
             <UiDonut
               :slices="agingSlices"
               :center-value="sumShort(agingTotal)"
@@ -292,7 +302,7 @@ const agingTotal = AGING.reduce((s, a) => s + a.amount, 0)
             />
             <ul class="mt-4 space-y-2 border-t border-ink-100 pt-3">
               <li
-                v-for="a in AGING"
+                v-for="a in aging"
                 :key="a.bucket"
                 class="flex items-center justify-between gap-3 text-[13px]"
               >
@@ -324,7 +334,7 @@ const agingTotal = AGING.reduce((s, a) => s + a.amount, 0)
 
             <dl class="divide-y divide-ink-100 border-y border-ink-100">
               <div class="flex items-baseline justify-between gap-4 py-2.5">
-                <dt class="text-[13px] text-ink-500">Invoice raqami</dt>
+                <dt class="text-[13px] text-ink-500">Hisob-faktura raqami</dt>
                 <dd class="text-[13.5px] font-semibold text-ink-900">{{ selected.code }}</dd>
               </div>
               <div class="flex items-baseline justify-between gap-4 py-2.5">
@@ -351,41 +361,48 @@ const agingTotal = AGING.reduce((s, a) => s + a.amount, 0)
               </div>
             </dl>
 
-            <UiField label="To‘lov sanasi">
-              <UiInput v-model="payDate" type="date" />
-            </UiField>
-            <UiField label="To‘lov usuli">
-              <UiSelect v-model="payMethod" :options="methodOptions" />
-            </UiField>
-            <UiField label="Hisob raqami">
-              <UiInput v-model="account" />
-            </UiField>
-            <UiField label="Maqsad">
-              <UiInput v-model="purpose" placeholder="To‘lov maqsadi" />
-            </UiField>
-            <UiField label="Izoh">
-              <textarea
-                v-model="note"
-                rows="3"
-                maxlength="500"
-                placeholder="Qaytarish sababi yoki qo‘shimcha izoh"
-                class="scroll-slim w-full rounded-field bg-white px-3.5 py-2.5 text-sm text-ink-800 ring-1 ring-inset ring-ink-200 transition-colors placeholder:text-ink-400 hover:ring-ink-300 focus:ring-2 focus:ring-brand-500"
-              />
-              <p class="tabular mt-1 text-right text-[11.5px] text-ink-400">
-                {{ note.length }}/500
-              </p>
-            </UiField>
+            <template v-if="canConfirm">
+              <UiField label="To‘lov sanasi">
+                <UiInput v-model="payDate" type="date" />
+              </UiField>
+              <UiField label="To‘lov usuli">
+                <UiSelect v-model="payMethod" :options="methodOptions" />
+              </UiField>
+              <UiField label="Hisob raqami">
+                <UiInput v-model="account" />
+              </UiField>
+              <UiField label="Maqsad">
+                <UiInput v-model="purpose" placeholder="To‘lov maqsadi" />
+              </UiField>
+              <UiField label="Izoh">
+                <textarea
+                  v-model="note"
+                  rows="3"
+                  maxlength="500"
+                  placeholder="Qaytarish sababi yoki qo‘shimcha izoh"
+                  class="scroll-slim w-full rounded-field bg-white px-3.5 py-2.5 text-sm text-ink-800 ring-1 ring-inset ring-ink-200 transition-colors placeholder:text-ink-400 hover:ring-ink-300 focus:ring-2 focus:ring-brand-500"
+                />
+                <p class="tabular mt-1 text-right text-[11.5px] text-ink-400">
+                  {{ note.length }}/500
+                </p>
+              </UiField>
 
-            <div class="grid grid-cols-2 gap-3 pt-1">
-              <UiButton variant="success" block @click="resolve('confirm')">
-                <UiIcon name="check" :size="16" />
-                Tasdiqlash
-              </UiButton>
-              <UiButton variant="danger" block @click="resolve('return')">
-                <UiIcon name="refresh" :size="16" />
-                Qaytarish
-              </UiButton>
-            </div>
+              <div class="grid grid-cols-2 gap-3 pt-1">
+                <UiButton variant="success" block @click="resolve('confirm')">
+                  <UiIcon name="check" :size="16" />
+                  Tasdiqlash
+                </UiButton>
+                <UiButton variant="danger" block @click="resolve('return')">
+                  <UiIcon name="refresh" :size="16" />
+                  Qaytarish
+                </UiButton>
+              </div>
+            </template>
+
+            <p v-else class="rounded-field bg-surface-sunken px-3.5 py-3 text-[12.5px] text-ink-500">
+              To‘lovni tasdiqlash huquqi buxgalter rolida beriladi. Ushbu rolda hujjat faqat
+              kuzatiladi.
+            </p>
           </div>
         </UiCard>
 
@@ -420,13 +437,13 @@ const agingTotal = AGING.reduce((s, a) => s + a.amount, 0)
           <div class="flex items-baseline justify-between">
             <span class="text-[13px] text-ink-500">To‘langan ulush</span>
             <span class="tabular text-[15px] font-bold text-ink-900">
-              {{ percent((BILLING_SUMMARY.paidTotal / BILLING_SUMMARY.charged) * 100) }}
+              {{ percent(paidShare) }}
             </span>
           </div>
           <div class="mt-2 h-2 overflow-hidden rounded-pill bg-ink-100">
             <div
               class="h-full rounded-pill bg-ok-500"
-              :style="{ width: `${(BILLING_SUMMARY.paidTotal / BILLING_SUMMARY.charged) * 100}%` }"
+              :style="{ width: `${paidShare}%` }"
             />
           </div>
           <dl class="mt-4 grid grid-cols-2 gap-3 border-t border-ink-100 pt-4">

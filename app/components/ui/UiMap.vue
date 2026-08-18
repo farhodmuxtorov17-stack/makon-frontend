@@ -126,7 +126,7 @@ const tiles = computed(() => {
   return out
 })
 
-/** Pin gradienti uchun ochiq va toʻq ohang */
+/** Pin gradienti uchun ochiq va to‘q ohang */
 const TONE_HEX: Record<string, [string, string]> = {
   brand: ['#4E8BFB', '#0139B0'],
   ok: ['#3FBDA8', '#04835D'],
@@ -576,7 +576,7 @@ function hideTile(e: Event) {
               stroke-width="2.6"
             />
 
-            <!-- Yuqoridan tushuvchi yorugʻlik, pin bilan bir tilda -->
+            <!-- Yuqoridan tushuvchi yorug‘lik, pin bilan bir tilda -->
             <path
               d="M32 11.5c-9.9 0-18.2 7-20.1 16.3A20.5 20.5 0 0 1 32 18.9c8.4 0 15.8 5 20.1 8.9C50.2 18.5 41.9 11.5 32 11.5z"
               fill="#FFFFFF"
@@ -644,7 +644,7 @@ function hideTile(e: Event) {
               stroke-linejoin="round"
             />
 
-            <!-- Yuqoridan tushuvchi yorugʻlik -->
+            <!-- Yuqoridan tushuvchi yorug‘lik -->
             <path
               d="M22 6.4c-7 0-12.8 5.4-13 12.2 3.4-3.6 7.9-5.6 13-5.6s9.6 2 13 5.6c-.2-6.8-6-12.2-13-12.2z"
               fill="#FFFFFF"

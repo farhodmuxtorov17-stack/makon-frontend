@@ -543,7 +543,7 @@ const activeHooks = computed(() => webhooks.value.filter((w) => w.active).length
     </template>
   </AppTopbar>
 
-  <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-6">
+  <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-4 sm:p-6">
     <nav class="flex flex-wrap gap-2">
       <NuxtLink
         v-for="t in SETTINGS_TABS"

@@ -2,6 +2,7 @@
 const SETTINGS_TABS = [
   { label: 'Foydalanuvchilar', to: '/settings/users', icon: 'users' },
   { label: 'Rollar va huquqlar', to: '/settings/roles', icon: 'shield' },
+  { label: 'Integratsiyalar', to: '/settings/integrations', icon: 'globe' },
   { label: 'Ma’lumotnomalar', to: '/settings/reference-data', icon: 'layers' },
   { label: 'Tizim sozlamalari', to: '/settings/system', icon: 'gear' },
   { label: 'Audit jurnali', to: '/settings/audit', icon: 'clipboard' },
@@ -241,7 +242,7 @@ const TONE_DOT: Record<string, string> = {
     </template>
   </AppTopbar>
 
-  <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-6">
+  <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-4 sm:p-6">
     <nav class="flex flex-wrap gap-2">
       <NuxtLink
         v-for="t in SETTINGS_TABS"
@@ -291,7 +292,7 @@ const TONE_DOT: Record<string, string> = {
                 <dd class="tabular text-right font-semibold text-ink-900">{{ settings.company.phone }}</dd>
               </div>
               <div class="flex items-start justify-between gap-3">
-                <dt class="text-ink-500">Email</dt>
+                <dt class="text-ink-500">E-pochta</dt>
                 <dd class="text-right font-semibold text-ink-900">{{ settings.company.email }}</dd>
               </div>
             </dl>
@@ -455,7 +456,10 @@ const TONE_DOT: Record<string, string> = {
             </ul>
 
             <div class="mt-3.5 space-y-3.5">
-              <UiField label="Interfeys tili">
+              <UiField
+                label="Standart interfeys tili"
+                hint="Yangi hisoblar shu til bilan ochiladi, foydalanuvchi uni profilida o‘zgartiradi"
+              >
                 <UiSelect v-model="settings.prefs.language" :options="languageOptions" />
               </UiField>
               <UiField label="Vaqt zonasi">
@@ -559,7 +563,7 @@ const TONE_DOT: Record<string, string> = {
         <UiField label="Manzil">
           <UiInput v-model="companyDraft.address" />
         </UiField>
-        <UiField label="Email">
+        <UiField label="E-pochta">
           <UiInput v-model="companyDraft.email" type="email" />
         </UiField>
       </div>

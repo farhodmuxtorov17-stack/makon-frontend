@@ -368,7 +368,7 @@ const summary = computed(() => {
         />
         <span class="text-ink-600">{{ s.label }}</span>
       </li>
-      <li v-if="unit" class="text-[12px] text-ink-400">{{ unit }}</li>
+      <li v-if="unit" class="text-[12px] text-ink-500">{{ unit }}</li>
     </ul>
 
     <!-- Ekran o‘qigichlar uchun to‘liq qiymatlar -->

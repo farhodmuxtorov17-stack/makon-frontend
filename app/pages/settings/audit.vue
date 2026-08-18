@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { ROLE_META, ROLE_TONE_CLASSES } from '~/constants/roles'
 import { ROLES, type Role } from '~/types/rbac'
-import { dateShort } from '~/utils/format'
+import { dateShort, todayIso } from '~/utils/format'
+import { csvBlob, docxBlob, fileSlug, saveBlob } from '~/utils/docx'
 
 const SETTINGS_TABS = [
   { label: 'Foydalanuvchilar', to: '/settings/users', icon: 'users' },
   { label: 'Rollar va huquqlar', to: '/settings/roles', icon: 'shield' },
+  { label: 'Integratsiyalar', to: '/settings/integrations', icon: 'globe' },
   { label: 'Ma’lumotnomalar', to: '/settings/reference-data', icon: 'layers' },
   { label: 'Tizim sozlamalari', to: '/settings/system', icon: 'gear' },
   { label: 'Audit jurnali', to: '/settings/audit', icon: 'clipboard' },
@@ -298,8 +300,16 @@ const roleFilter = ref('all')
 const moduleFilter = ref('all')
 const actionFilter = ref('all')
 const resultFilter = ref('all')
-const fromDate = ref('2025-05-15')
-const toDate = ref('2025-05-18')
+/**
+ * Sana oralig‘i jurnaldagi yozuvlardan olinadi: sahifa ochilganda butun
+ * jurnal ko‘rinadi va yangi yozuv qo‘shilganda oraliq o‘zi kengayadi.
+ */
+const LOG_DATES = EVENTS.map((e) => e.date).sort()
+const LOG_FROM = LOG_DATES[0] ?? todayIso()
+const LOG_TO = LOG_DATES[LOG_DATES.length - 1] ?? todayIso()
+
+const fromDate = ref(LOG_FROM)
+const toDate = ref(LOG_TO)
 
 const userOptions = [{ value: 'all', label: 'Barcha foydalanuvchilar' }, ...USERS.map((u) => ({ value: u, label: u }))]
 const roleOptions = [
@@ -344,8 +354,8 @@ function resetFilters() {
   moduleFilter.value = 'all'
   actionFilter.value = 'all'
   resultFilter.value = 'all'
-  fromDate.value = '2025-05-15'
-  toDate.value = '2025-05-18'
+  fromDate.value = LOG_FROM
+  toDate.value = LOG_TO
 }
 
 const columns = [
@@ -368,7 +378,7 @@ function openDetail(row: AuditEvent) {
 }
 
 const exportOpen = ref(false)
-const exportFormat = ref('XLSX')
+const exportFormat = ref('CSV')
 const exportResult = ref('')
 
 function exportFromDetail() {
@@ -376,8 +386,47 @@ function exportFromDetail() {
   exportOpen.value = true
 }
 
+/**
+ * Jurnal haqiqiy fayl bo‘lib yuklanadi. Audit yozuvi tekshiruvda dalil
+ * sifatida ishlatiladi, shuning uchun ekrandagi filtr faylga ham tushadi.
+ */
 function confirmExport() {
-  exportResult.value = `${filtered.value.length} ta yozuv ${exportFormat.value} ko‘rinishida tayyorlandi (${dateShort(fromDate.value)} – ${dateShort(toDate.value)}).`
+  const range = `${dateShort(fromDate.value)} – ${dateShort(toDate.value)}`
+  const name = `${fileSlug('Audit jurnali')}-${fromDate.value}-${toDate.value}.${exportFormat.value.toLowerCase()}`
+
+  if (exportFormat.value === 'DOCX') {
+    saveBlob(
+      docxBlob([
+        { text: 'Audit jurnali', style: 'title' },
+        { text: `${range} · ${filtered.value.length} ta yozuv`, style: 'subtitle' },
+        ...filtered.value.map((e) => ({
+          text: `${dateShort(e.date)} ${e.time} · ${e.user} (${ROLE_META[e.role].label}) · ${e.module} · ${e.action} · ${e.object} · ${e.result === 'SUCCESS' ? 'Muvaffaqiyatli' : 'Xato'} · ${e.ip}`,
+          style: 'body' as const,
+        })),
+      ]),
+      name,
+    )
+  } else {
+    saveBlob(
+      csvBlob([
+        ['Sana', 'Vaqt', 'Foydalanuvchi', 'Rol', 'Modul', 'Amal', 'Obyekt', 'Natija', 'IP manzil'],
+        ...filtered.value.map((e) => [
+          dateShort(e.date),
+          e.time,
+          e.user,
+          ROLE_META[e.role].label,
+          e.module,
+          e.action,
+          e.object,
+          e.result === 'SUCCESS' ? 'Muvaffaqiyatli' : 'Xato',
+          e.ip,
+        ]),
+      ]),
+      name,
+    )
+  }
+
+  exportResult.value = `${name} yuklab olindi: ${filtered.value.length} ta yozuv (${range}).`
   exportOpen.value = false
 }
 </script>
@@ -396,7 +445,7 @@ function confirmExport() {
     </template>
   </AppTopbar>
 
-  <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-6">
+  <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-4 sm:p-6">
     <nav class="flex flex-wrap gap-2">
       <NuxtLink
         v-for="t in SETTINGS_TABS"
@@ -656,7 +705,7 @@ function confirmExport() {
         <p class="mb-2 text-[13px] font-semibold text-ink-700">Format</p>
         <div class="flex gap-2">
           <button
-            v-for="f in ['XLSX', 'PDF', 'CSV']"
+            v-for="f in ['CSV', 'DOCX']"
             :key="f"
             type="button"
             class="inline-flex items-center gap-2 rounded-field px-4 py-2.5 text-[13px] font-semibold ring-1 ring-inset transition-colors"

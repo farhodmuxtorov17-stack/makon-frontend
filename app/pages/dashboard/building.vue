@@ -1,11 +1,38 @@
 <script setup lang="ts">
-import { BUILDINGS, buildingById } from '~/data/buildings'
+import {
+  BUILDINGS,
+  TREND_SPANS,
+  buildingById,
+  moneyScale,
+  trendDelta,
+  trendLabels,
+  trendSpark,
+  trendWindow,
+} from '~/data/buildings'
 import { unitsOfBuilding } from '~/data/units'
-import { APPLICATIONS, CONTRACTS, INVOICES } from '~/data/business'
-import { SERVICE_REQUESTS } from '~/data/operations'
+import { CONTRACTS, INVOICES } from '~/data/business'
+import { SERVICE_REQUESTS, type ServiceRequest } from '~/data/operations'
+import { scheduleTotals, type LeaseStatus } from '~/stores/lease'
+import { ROLE_META } from '~/constants/roles'
 import { num, percent, sum, sumShort, dateShort, timeOf } from '~/utils/format'
 
 const auth = useAuthStore()
+const lease = useLeaseStore()
+
+lease.seed()
+
+/**
+ * Rolga ochiq bo‘lgan birinchi manzil. Bino rahbari billing modulini
+ * ocholmaydi, shuning uchun moliyaviy kartalar unga ochiq ekranga yo‘naltiriladi.
+ */
+function pick(...candidates: string[]) {
+  const role = auth.role
+  if (!role) return candidates[0]!
+  return candidates.find((c) => auth.canRoute(c)) ?? ROLE_META[role].home
+}
+
+const invoicesTarget = computed(() => pick('/billing/invoices', '/contracts'))
+const debtsTarget = computed(() => pick('/billing/debts', '/reports'))
 
 const scopedBuildings = computed(() =>
   auth.scope.length ? BUILDINGS.filter((b) => auth.scope.includes(b.id)) : BUILDINGS,
@@ -18,12 +45,8 @@ const buildingOptions = computed(() =>
   scopedBuildings.value.map((b) => ({ value: b.id, label: b.name })),
 )
 
-const period = ref('may-2025')
-const periods = [
-  { value: 'may-2025', label: 'May 2025' },
-  { value: 'apr-2025', label: 'Aprel 2025' },
-  { value: 'q2-2025', label: '2-chorak 2025' },
-]
+const span = ref('6')
+const spanLength = computed(() => Number(span.value))
 
 /** Qavatlar kesimidagi bandlik, unit ma’lumotlaridan hisoblanadi */
 const floorOccupancy = computed(() => {
@@ -41,29 +64,61 @@ const floorOccupancy = computed(() => {
   })
 })
 
-const buildingApplications = computed(() =>
-  APPLICATIONS.filter((a) => a.buildingName === building.value.name).slice(0, 4),
+/* --- Ijara arizalari: navbat bilan bitta reyestrdan o‘qiladi --- */
+
+const PENDING_LEASE: LeaseStatus[] = [
+  'YANGI',
+  'OPERATSIYA_TASDIQLADI',
+  'MOLIYA_TASDIQLADI',
+  'QORALAMA_TAYYOR',
+  'DIDOX_YUBORILDI',
+  'DIDOX_IMZOLANDI',
+]
+
+const buildingCases = computed(() =>
+  lease.cases
+    .filter((c) => c.buildingId === selected.value)
+    .slice()
+    .sort((a, b) => b.request.submittedAt.localeCompare(a.request.submittedAt)),
+)
+
+const applicationRows = computed(() =>
+  buildingCases.value.slice(0, 4).map((c) => ({
+    id: c.id,
+    code: c.code,
+    tenant: c.org.name,
+    unitCode: c.unitCode,
+    area: c.area,
+    type: c.request.type,
+    status: c.status,
+    submittedAt: c.request.submittedAt,
+  })),
+)
+
+const pendingApprovalRows = computed(() =>
+  buildingCases.value.filter((c) => PENDING_LEASE.includes(c.status)),
+)
+
+const pendingApprovals = computed(() => pendingApprovalRows.value.length)
+
+/* --- Servis arizalari: ish topshiriqlari ekrani bilan bitta nusxa --- */
+
+const services = useState<ServiceRequest[]>('service-requests', () =>
+  SERVICE_REQUESTS.map((r) => ({ ...r })),
 )
 
 const buildingServices = computed(() =>
-  SERVICE_REQUESTS.filter((s) => s.buildingName === building.value.name),
+  services.value.filter((s) => s.buildingName === building.value.name),
 )
 
 const openServices = computed(
   () => buildingServices.value.filter((s) => !['CLOSED', 'COMPLETED'].includes(s.status)).length,
 )
 
+/* --- Moliyaviy holat --- */
+
 const overdueInvoices = computed(
   () => INVOICES.filter((i) => i.buildingName === building.value.name && i.status === 'OVERDUE').length,
-)
-
-const pendingApprovals = computed(
-  () =>
-    APPLICATIONS.filter(
-      (a) =>
-        a.buildingName === building.value.name &&
-        ['SUBMITTED', 'BUILDING_REVIEW', 'FINANCE_REVIEW'].includes(a.status),
-    ).length,
 )
 
 /** Hisobot sanasi: ma’lumotlar mos keladigan davr */
@@ -88,21 +143,13 @@ const debtAlerts = computed(() =>
   ),
 )
 
-const pendingApprovalRows = computed(() =>
-  APPLICATIONS.filter(
-    (a) =>
-      a.buildingName === building.value.name &&
-      ['SUBMITTED', 'BUILDING_REVIEW', 'FINANCE_REVIEW'].includes(a.status),
-  ),
-)
-
 const problems = computed(() => [
   {
     label: 'Kechikkan to‘lovlar',
     count: overdueInvoices.value,
     tone: 'danger' as const,
     icon: 'warning',
-    to: '/billing/debts',
+    to: debtsTarget.value,
   },
   {
     label: 'Ochiq servis arizalari',
@@ -134,32 +181,20 @@ const PROBLEM_TONE = {
   violet: 'bg-info-50 text-info-600',
 }
 
-/** Har bir davr uchun oldingi nuqtalar koeffitsienti, oxirgisi joriy qiymat */
-const PERIOD_TREND: Record<string, { labels: string[]; factors: number[] }> = {
-  'may-2025': {
-    labels: ['Yanvar', 'Fevral', 'Mart', 'Aprel', 'May'],
-    factors: [0.871, 0.895, 0.93, 0.968, 1],
-  },
-  'apr-2025': {
-    labels: ['Dekabr', 'Yanvar', 'Fevral', 'Mart', 'Aprel'],
-    factors: [0.842, 0.871, 0.895, 0.93, 0.968],
-  },
-  'q2-2025': {
-    labels: ['Aprel', 'May', 'Iyun'],
-    factors: [0.968, 1, 1.03],
-  },
-}
+/* --- Tushum dinamikasi --- */
 
-const revenueLabels = computed(() => PERIOD_TREND[period.value]!.labels)
+const revenueLabels = computed(() => trendLabels(spanLength.value))
 
 const revenueSeries = computed(() => {
-  const current = building.value.monthlyRevenue / 1_000_000
+  const s = moneyScale(building.value.monthlyRevenue)
   return [
     {
-      label: 'Ijara tushumi, mln so‘m',
+      label: `Ijara tushumi, ${s.unit}`,
       tone: 'brand' as const,
       fill: true,
-      values: PERIOD_TREND[period.value]!.factors.map((f) => Math.round(current * f)),
+      values: trendWindow('revenue', spanLength.value).map(
+        (f) => +((building.value.monthlyRevenue / s.div) * f).toFixed(s.digits),
+      ),
     },
   ]
 })
@@ -169,7 +204,7 @@ const revenueSeries = computed(() => {
   <AppTopbar title="Boshqaruv paneli" :subtitle="building.name">
     <template #actions>
       <UiSelect v-model="selected" :options="buildingOptions" size="sm" class="w-56" />
-      <UiSelect v-model="period" :options="periods" size="sm" class="w-40" />
+      <UiSelect v-model="span" :options="TREND_SPANS" size="sm" class="w-40" />
       <UiButton variant="secondary" size="sm" :to="`/objects/${building.id}/3d`">
         <UiIcon name="cube" :size="16" />
         3D ko‘rinish
@@ -177,60 +212,60 @@ const revenueSeries = computed(() => {
     </template>
   </AppTopbar>
 
-  <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-6">
-    <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+  <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-4 sm:p-6">
+    <section class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
       <UiKpi
         label="Bandlik"
         :value="percent(building.occupancy)"
-        :delta="3.1"
+        :delta="trendDelta('occupancy')"
         icon="building"
         tone="brand"
-        :spark="[86, 88, 89, 91, building.occupancy]"
+        :spark="trendSpark('occupancy', building.occupancy)"
         :to="`/objects/${building.id}`"
       />
       <UiKpi
         label="Bo‘sh maydon"
         :value="num(building.vacantArea)"
         unit="m²"
-        :delta="-1.4"
+        :delta="trendDelta('vacantArea')"
         invert
         icon="layers"
         tone="ok"
-        :spark="[10800, 10400, 10100, 9800, building.vacantArea]"
+        :spark="trendSpark('vacantArea', building.vacantArea)"
         :to="`/objects/${building.id}`"
       />
       <UiKpi
         label="Oylik tushum"
         :value="sumShort(building.monthlyRevenue)"
-        :delta="9.2"
+        :delta="trendDelta('revenue')"
         icon="wallet"
         tone="violet"
-        :spark="[2980, 3060, 3180, 3310, Math.round(building.monthlyRevenue / 1_000_000)]"
-        to="/billing/invoices"
+        :spark="trendSpark('revenue', building.monthlyRevenue / 1_000_000)"
+        :to="invoicesTarget"
       />
       <UiKpi
         label="Qarzdorlik"
         :value="sumShort(building.debt)"
-        :delta="4.8"
+        :delta="trendDelta('debt')"
         invert
         icon="warning"
         tone="danger"
-        :spark="[14.2, 15.1, 16.4, 17.3, +(building.debt / 1_000_000).toFixed(1)]"
-        to="/billing/debts"
+        :spark="trendSpark('debt', building.debt / 1_000_000)"
+        :to="debtsTarget"
       />
       <UiKpi
         label="Ochiq servis arizalari"
         :value="String(openServices)"
-        :delta="-12"
+        :delta="trendDelta('service')"
         invert
         icon="wrench"
         tone="warn"
-        :spark="[9, 8, 7, 6, openServices]"
+        :spark="trendSpark('service', openServices)"
         to="/service-requests"
       />
     </section>
 
-    <section class="grid gap-5 xl:grid-cols-3">
+    <section class="grid gap-5 lg:grid-cols-2 xl:grid-cols-3">
       <!-- Bugungi muammolar -->
       <UiCard title="Diqqat talab qiladi" subtitle="Bugungi holat" flush>
         <ul class="divide-y divide-ink-100">
@@ -291,7 +326,13 @@ const revenueSeries = computed(() => {
       </UiCard>
 
       <!-- Tushum dinamikasi -->
-      <UiCard title="Tushum dinamikasi" subtitle="Oylar kesimida">
+      <UiCard title="Tushum dinamikasi" subtitle="Oxirgi nuqta: KPI kartadagi joriy qiymat">
+        <div class="flex items-baseline justify-between gap-3">
+          <p class="text-[13px] font-semibold text-ink-700">Oylik tushum</p>
+          <p class="tabular text-[13.5px] font-bold text-brand-600">
+            {{ sumShort(building.monthlyRevenue) }}
+          </p>
+        </div>
         <UiLine :labels="revenueLabels" :series="revenueSeries" :height="188" />
       </UiCard>
     </section>
@@ -346,11 +387,10 @@ const revenueSeries = computed(() => {
           { key: 'unitCode', label: 'Unit' },
           { key: 'area', label: 'Maydon', align: 'right', numeric: true },
           { key: 'type', label: 'Turi' },
-          { key: 'stage', label: 'Bosqich' },
           { key: 'status', label: 'Status' },
           { key: 'submittedAt', label: 'Yuborilgan' },
         ]"
-        :rows="buildingApplications"
+        :rows="applicationRows"
         :to="(row) => `/applications/${row.id}`"
         empty="Ushbu obyekt bo‘yicha ariza yo‘q"
       >
@@ -359,7 +399,7 @@ const revenueSeries = computed(() => {
         </template>
         <template #cell-area="{ value }">{{ num(Number(value), 2) }} m²</template>
         <template #cell-status="{ value }">
-          <UiStatus kind="application" :value="String(value)" size="sm" />
+          <UiStatus kind="lease" :value="String(value)" size="sm" />
         </template>
         <template #cell-submittedAt="{ value }">
           <span class="text-ink-500">{{ dateShort(String(value)) }}</span>
@@ -371,7 +411,7 @@ const revenueSeries = computed(() => {
     <section class="grid gap-5 lg:grid-cols-2">
       <UiCard title="Qarzdorlik ogohlantirishlari" subtitle="Muddati o‘tgan to‘lovlar" flush>
         <template #actions>
-          <UiButton variant="ghost" size="sm" to="/billing/debts">Barchasi</UiButton>
+          <UiButton variant="ghost" size="sm" :to="debtsTarget">Barchasi</UiButton>
         </template>
 
         <p v-if="!debtAlerts.length" class="px-5 py-10 text-center text-[13px] text-ink-500">
@@ -380,7 +420,7 @@ const revenueSeries = computed(() => {
 
         <ul v-else class="divide-y divide-ink-100">
           <li v-for="i in debtAlerts" :key="i.id" class="px-5 py-3.5">
-            <NuxtLink to="/billing/debts" class="group flex items-center gap-4">
+            <NuxtLink :to="debtsTarget" class="group flex items-center gap-4">
               <span
                 class="grid size-10 shrink-0 place-items-center rounded-[10px] bg-danger-50 text-danger-600"
               >
@@ -423,8 +463,8 @@ const revenueSeries = computed(() => {
         </p>
 
         <ul v-else class="divide-y divide-ink-100">
-          <li v-for="a in pendingApprovalRows" :key="a.id" class="px-5 py-3.5">
-            <NuxtLink :to="`/applications/${a.id}`" class="group flex items-center gap-4">
+          <li v-for="c in pendingApprovalRows" :key="c.id" class="px-5 py-3.5">
+            <NuxtLink :to="`/applications/${c.id}`" class="group flex items-center gap-4">
               <span
                 class="grid size-10 shrink-0 place-items-center rounded-[10px] bg-warn-50 text-warn-600"
               >
@@ -434,19 +474,25 @@ const revenueSeries = computed(() => {
                 <span
                   class="block truncate text-[13.5px] font-semibold text-ink-900 group-hover:text-brand-600"
                 >
-                  {{ a.type }} · {{ a.unitCode }}
+                  {{ c.code }} · {{ c.unitCode }}
                 </span>
                 <span class="block truncate text-[12px] text-ink-500">
-                  {{ a.tenant }} · {{ num(a.area, 2) }} m²
+                  {{ c.org.name }} · {{ num(c.area, 2) }} m²
                 </span>
               </span>
               <span class="shrink-0 text-right">
                 <span class="tabular block text-[13px] font-semibold text-ink-900">
-                  {{ sum(a.price) }}
+                  {{
+                    c.schedule.length
+                      ? sum(scheduleTotals(c.schedule).total)
+                      : `${sum(c.request.offerPrice)} / oy`
+                  }}
                 </span>
-                <span class="block text-[12px] text-ink-500">{{ dateShort(a.submittedAt) }}</span>
+                <span class="block text-[12px] text-ink-500">
+                  {{ dateShort(c.request.submittedAt) }}
+                </span>
               </span>
-              <UiIcon name="chevronRight" :size="16" class="shrink-0 text-ink-400" />
+              <UiStatus kind="lease" :value="c.status" size="sm" />
             </NuxtLink>
           </li>
         </ul>

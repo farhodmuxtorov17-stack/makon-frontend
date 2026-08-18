@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import AppTopbar from '~/components/layout/AppTopbar.vue'
-import { CONTRACTS, INVOICES } from '~/data/business'
+import { CONTRACTS, INVOICES, type Contract } from '~/data/business'
+import { docxBlob, fileSize, saveBlob, type DocxLine } from '~/utils/docx'
 import { dateLong, dateShort, num, sum } from '~/utils/format'
 
 const route = useRoute()
@@ -15,11 +16,17 @@ const actOpen = ref(false)
 const documentOpen = ref(false)
 const activeDocument = ref<{ name: string; size: string; type: string } | null>(null)
 
-const approvalStep = computed(
+/** Ichki kelishuv bosqichi. Imzo va faollashtirish Didox oqimida bo‘ladi. */
+const agreementStep = computed(
+  () => contract.value?.timeline.find((t) => t.label === 'Kelishildi') ?? null,
+)
+
+const signedStep = computed(
   () => contract.value?.timeline.find((t) => t.label === 'Imzolandi') ?? null,
 )
 
-const isApproved = computed(() => approvalStep.value?.done === true)
+const isAgreed = computed(() => agreementStep.value?.done === true)
+const isSigned = computed(() => signedStep.value?.done === true)
 
 const relatedInvoices = computed(() =>
   contract.value ? INVOICES.filter((i) => i.tenant === contract.value?.tenant) : [],
@@ -30,48 +37,125 @@ const relatedDebt = computed(() =>
 )
 
 const currentApprover = computed(() => auth.user?.fullName ?? 'Jahongir Alimov')
-const approveDate = computed(() => approvalStep.value?.date ?? '-')
+const approveDate = computed(() => agreementStep.value?.date ?? '-')
 const approver = computed(() =>
-  isApproved.value ? (approvalStep.value?.actor ?? '-') : currentApprover.value,
+  isAgreed.value ? (agreementStep.value?.actor ?? '-') : currentApprover.value,
 )
-const approveToday = '2025-05-19'
+
+/** Kelishuv sanasi haqiqiy soatdan olinadi */
+function todayIso() {
+  const d = new Date()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${d.getFullYear()}-${m}-${day}`
+}
 
 function openDocument(doc: { name: string; size: string; type: string }) {
   activeDocument.value = doc
   documentOpen.value = true
 }
 
+/** Shartnoma rekvizitlaridan hujjat matni */
+function contractHead(c: Contract, title: string): DocxLine[] {
+  return [
+    { text: 'Makon Property Group', style: 'subtitle' },
+    { text: title, style: 'title' },
+    { text: `${c.code} · ${dateShort(c.startsAt)}`, style: 'subtitle' },
+    { text: 'Tomonlar va obyekt', style: 'heading' },
+    { text: `Ijaraga beruvchi: Makon Property Group` },
+    { text: `Ijarachi: ${c.tenant}` },
+    { text: `Obyekt: ${c.buildingName}, ${c.unitCode}` },
+    { text: `Shartnoma turi: ${c.type}` },
+  ]
+}
+
+function documentLines(c: Contract, name: string): DocxLine[] {
+  return [
+    ...contractHead(c, name),
+    { text: 'Shartlar', style: 'heading' },
+    { text: `Boshlanish sanasi: ${dateLong(c.startsAt)}` },
+    {
+      text: `Tugash sanasi: ${c.endsAt === '-' ? 'muddatsiz' : dateLong(c.endsAt)}`,
+    },
+    { text: `Shartnoma miqdori: ${sum(c.amount)}` },
+    { text: `To‘lov shakli: ${c.paymentTerm}` },
+    { text: 'Bosqichlar', style: 'heading' },
+    ...c.timeline.map((t) => ({
+      text: `${t.label}: ${t.done ? `bajarildi, ${t.date === '-' ? 'sana belgilanmagan' : dateShort(t.date)}, ${t.actor}` : 'kutilmoqda'}`,
+    })),
+    { text: 'Ijaraga beruvchi: imzo va muhr', style: 'small' },
+    { text: 'Ijarachi: imzo va muhr', style: 'small' },
+  ]
+}
+
+/** MKON-2025-0158 → TSD-2025-0158 */
+function actCode(c: Contract) {
+  return `TSD-${c.code.replace(/^[A-Z]+-/, '')}`
+}
+
+function actLines(c: Contract): DocxLine[] {
+  return [
+    ...contractHead(c, 'Kelishuv dalolatnomasi'),
+    { text: 'Kelishuv qaydi', style: 'heading' },
+    { text: `Dalolatnoma raqami: ${actCode(c)}` },
+    { text: `Kelishuv sanasi: ${approveDate.value === '-' ? 'belgilanmagan' : dateLong(approveDate.value)}` },
+    { text: `Kelishuvni qayd etgan shaxs: ${approver.value}` },
+    { text: `Shartnoma miqdori: ${sum(c.amount)}` },
+    { text: `Joriy holat: ${c.status}` },
+    {
+      text: 'Hujjat ichki kelishuvni qayd etadi. Imzolash Didox orqali, tashqi xizmatda bajariladi.',
+    },
+    { text: 'Ijaraga beruvchi: imzo va muhr', style: 'small' },
+    { text: 'Ijarachi: imzo va muhr', style: 'small' },
+  ]
+}
+
+/** Brauzer saqlaydigan nusxa: nomi va haqiqiy hajmi */
+const documentOutput = computed(() => {
+  const c = contract.value
+  const d = activeDocument.value
+  if (!c || !d) return null
+  const base = d.name.replace(/\.[^.]+$/, '')
+  const blob = docxBlob(documentLines(c, base))
+  return { name: `${base}.docx`, size: fileSize(blob.size) }
+})
+
 function downloadDocument() {
-  if (activeDocument.value) {
-    banner.value = `${activeDocument.value.name} hujjati yuklab olindi.`
-  }
+  const c = contract.value
+  const d = activeDocument.value
+  if (!c || !d) return
+  const base = d.name.replace(/\.[^.]+$/, '')
+  const fileName = `${base}.docx`
+  saveBlob(docxBlob(documentLines(c, base)), fileName)
+  banner.value = `${fileName} fayli saqlandi.`
   documentOpen.value = false
 }
 
+function downloadAct() {
+  const c = contract.value
+  if (!c) return
+  const fileName = `${actCode(c)}.docx`
+  saveBlob(docxBlob(actLines(c)), fileName)
+  banner.value = `${fileName} fayli saqlandi.`
+  actOpen.value = false
+}
+
+/**
+ * Ichki kelishuv qaydi. Imzo va faollashtirish shartnoma kartasida emas,
+ * Didox oqimida bajariladi, shuning uchun bu yerda faqat kelishuv belgilanadi.
+ */
 function approveContract() {
   const c = contract.value
   if (!c) return
   const person = currentApprover.value
-  c.status = 'ACTIVE'
   const agreed = c.timeline.find((t) => t.label === 'Kelishildi')
   if (agreed && !agreed.done) {
     agreed.done = true
-    agreed.date = approveToday
-    agreed.actor = 'Nilufar Rahimova'
+    agreed.date = todayIso()
+    agreed.actor = person
   }
-  const approved = c.timeline.find((t) => t.label === 'Imzolandi')
-  if (approved) {
-    approved.done = true
-    approved.date = approveToday
-    approved.actor = person
-  }
-  const activated = c.timeline.find((t) => t.label === 'Faollashdi')
-  if (activated) {
-    activated.done = true
-    activated.date = approveToday
-    activated.actor = 'Tizim'
-  }
-  banner.value = `${c.code} shartnomasi ${person} tomonidan tasdiqlandi va faol holatga o‘tkazildi.`
+  if (c.status === 'DRAFT') c.status = 'REVIEW'
+  banner.value = `${c.code} shartnomasi bo‘yicha kelishuv ${person} nomiga qayd etildi. Imzolash Didox orqali davom etadi.`
   approveOpen.value = false
 }
 
@@ -103,7 +187,7 @@ const DOC_TONE: Record<string, string> = {
     </template>
   </AppTopbar>
 
-  <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-6">
+  <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-4 sm:p-6">
     <UiCard v-if="!contract" title="Shartnoma topilmadi">
       <p class="text-[13.5px] text-ink-600">
         So‘ralgan shartnoma reyestrda mavjud emas yoki arxivga o‘tkazilgan.
@@ -176,16 +260,16 @@ const DOC_TONE: Record<string, string> = {
                 <dd class="text-[13.5px] font-semibold text-ink-900">{{ contract.paymentTerm }}</dd>
               </div>
               <div class="flex items-baseline justify-between gap-6 py-3">
-                <dt class="text-[13px] text-ink-500">Tasdiqlagan shaxs</dt>
+                <dt class="text-[13px] text-ink-500">Kelishuvni qayd etgan shaxs</dt>
                 <dd class="text-right text-[13.5px] font-semibold text-ink-900">
-                  <template v-if="isApproved">
+                  <template v-if="isAgreed">
                     {{ approver }}
                     <span class="tabular block text-[12px] font-medium text-ink-500">
                       {{ dateShort(approveDate) }}
                     </span>
                   </template>
                   <span v-else class="text-[13px] font-medium text-ink-500">
-                    Tasdiqlash kutilmoqda
+                    Kelishuv kutilmoqda
                   </span>
                 </dd>
               </div>
@@ -272,7 +356,7 @@ const DOC_TONE: Record<string, string> = {
         </div>
 
         <div class="min-w-0 space-y-5">
-          <UiCard title="Shartnomani tasdiqlash" subtitle="Ichki tasdiqlash va faollashtirish">
+          <UiCard title="Ichki kelishuv" subtitle="Shartlarni kelishish qaydi">
             <div class="rounded-field bg-surface-sunken p-4">
               <div class="flex items-center justify-between gap-3">
                 <span class="text-[13px] text-ink-500">Joriy holat</span>
@@ -280,16 +364,23 @@ const DOC_TONE: Record<string, string> = {
               </div>
               <p class="mt-2 text-[12.5px] leading-relaxed text-ink-600">
                 {{
-                  isApproved
-                    ? `Shartnomani ${dateShort(approveDate)} sanasida ${approver} tasdiqlagan, hujjat tizimda faol.`
-                    : 'Shartnoma tasdiqlashni kutmoqda. Tasdiqlangach hujjat shartlari qulflanadi va shartnoma faol holatga o‘tadi.'
+                  isAgreed
+                    ? `Shartlar ${dateShort(approveDate)} sanasida ${approver} tomonidan kelishilgan deb qayd etilgan.`
+                    : 'Shartnoma shartlarni kelishishni kutmoqda. Kelishuv qayd etilgach hujjat imzolashga tayyorlanadi.'
+                }}
+              </p>
+              <p class="mt-2 text-[12.5px] leading-relaxed text-ink-600">
+                {{
+                  isSigned
+                    ? 'Hujjat Didox orqali imzolangan.'
+                    : 'Imzolash Didox orqali, tashqi xizmatda bajariladi. Imzolangan nusxa yuklangach shartnoma faollashadi.'
                 }}
               </p>
             </div>
 
-            <UiButton v-if="!isApproved" class="mt-4" size="lg" block @click="approveOpen = true">
+            <UiButton v-if="!isAgreed" class="mt-4" size="lg" block @click="approveOpen = true">
               <UiIcon name="check" :size="18" />
-              Shartnomani tasdiqlash
+              Kelishuvni qayd etish
             </UiButton>
 
             <UiButton
@@ -301,7 +392,7 @@ const DOC_TONE: Record<string, string> = {
               @click="actOpen = true"
             >
               <UiIcon name="doc" :size="18" />
-              Tasdiqlash dalolatnomasini ko‘rish
+              Kelishuv dalolatnomasini ko‘rish
             </UiButton>
           </UiCard>
 
@@ -349,13 +440,13 @@ const DOC_TONE: Record<string, string> = {
       <UiModal
         v-model="approveOpen"
         size="sm"
-        title="Shartnomani tasdiqlash"
+        title="Kelishuvni qayd etish"
         :subtitle="contract.code"
       >
         <p class="text-[13.5px] leading-relaxed text-ink-700">
-          Tasdiqlash tizim ichida qayd etiladi: dalolatnomaga tasdiqlagan shaxsning ismi va sana
-          yoziladi. Tasdiqlangandan so‘ng hujjat shartlari o‘zgartirilmaydi va shartnoma faol
-          holatga o‘tkaziladi.
+          Kelishuv faqat tizim ichida qayd etiladi: dalolatnomaga kelishuvni qayd etgan shaxsning
+          ismi va sana yoziladi. Hujjat imzolanmaydi va faollashtirilmaydi, imzolash Didox orqali
+          alohida bajariladi.
         </p>
         <dl class="mt-4 divide-y divide-ink-100 rounded-field bg-surface-sunken px-4">
           <div class="flex items-baseline justify-between gap-4 py-2.5">
@@ -363,13 +454,13 @@ const DOC_TONE: Record<string, string> = {
             <dd class="text-[13.5px] font-semibold text-ink-900">{{ contract.tenant }}</dd>
           </div>
           <div class="flex items-baseline justify-between gap-4 py-2.5">
-            <dt class="text-[13px] text-ink-500">Tasdiqlovchi</dt>
+            <dt class="text-[13px] text-ink-500">Kelishuvni qayd etuvchi</dt>
             <dd class="text-[13.5px] font-semibold text-ink-900">{{ currentApprover }}</dd>
           </div>
           <div class="flex items-baseline justify-between gap-4 py-2.5">
-            <dt class="text-[13px] text-ink-500">Tasdiqlash sanasi</dt>
+            <dt class="text-[13px] text-ink-500">Kelishuv sanasi</dt>
             <dd class="tabular text-[13.5px] font-semibold text-ink-900">
-              {{ dateShort(approveToday) }}
+              {{ dateShort(todayIso()) }}
             </dd>
           </div>
           <div class="flex items-baseline justify-between gap-4 py-2.5">
@@ -390,7 +481,7 @@ const DOC_TONE: Record<string, string> = {
           <UiButton variant="ghost" @click="approveOpen = false">Bekor qilish</UiButton>
           <UiButton variant="success" @click="approveContract">
             <UiIcon name="check" :size="16" />
-            Tasdiqlashni yakunlash
+            Kelishuvni qayd etish
           </UiButton>
         </template>
       </UiModal>
@@ -398,16 +489,16 @@ const DOC_TONE: Record<string, string> = {
       <UiModal
         v-model="actOpen"
         size="sm"
-        title="Tasdiqlash dalolatnomasi"
+        title="Kelishuv dalolatnomasi"
         :subtitle="contract.code"
       >
         <dl class="divide-y divide-ink-100">
           <div class="flex items-baseline justify-between gap-4 py-2.5">
-            <dt class="text-[13px] text-ink-500">Tasdiqlash sanasi</dt>
+            <dt class="text-[13px] text-ink-500">Kelishuv sanasi</dt>
             <dd class="text-[13.5px] font-semibold text-ink-900">{{ dateLong(approveDate) }}</dd>
           </div>
           <div class="flex items-baseline justify-between gap-4 py-2.5">
-            <dt class="text-[13px] text-ink-500">Tasdiqlovchi</dt>
+            <dt class="text-[13px] text-ink-500">Kelishuvni qayd etgan shaxs</dt>
             <dd class="text-[13.5px] font-semibold text-ink-900">{{ approver }}</dd>
           </div>
           <div class="flex items-baseline justify-between gap-4 py-2.5">
@@ -417,7 +508,7 @@ const DOC_TONE: Record<string, string> = {
           <div class="flex items-baseline justify-between gap-4 py-2.5">
             <dt class="text-[13px] text-ink-500">Dalolatnoma raqami</dt>
             <dd class="tabular text-[13.5px] font-semibold text-ink-900">
-              TSD-2025-{{ contract.code.slice(-4) }}
+              {{ actCode(contract) }}
             </dd>
           </div>
           <div class="flex items-baseline justify-between gap-4 py-2.5">
@@ -428,14 +519,7 @@ const DOC_TONE: Record<string, string> = {
 
         <template #footer>
           <UiButton variant="ghost" @click="actOpen = false">Yopish</UiButton>
-          <UiButton
-            @click="
-              () => {
-                actOpen = false
-                banner = `${contract?.code} tasdiqlash dalolatnomasi yuklab olindi.`
-              }
-            "
-          >
+          <UiButton @click="downloadAct">
             <UiIcon name="download" :size="16" />
             Yuklab olish
           </UiButton>
@@ -456,10 +540,9 @@ const DOC_TONE: Record<string, string> = {
             <UiIcon name="doc" :size="22" />
           </span>
           <div class="min-w-0">
-            <p class="truncate text-[14px] font-bold text-ink-900">{{ activeDocument.name }}</p>
+            <p class="truncate text-[14px] font-bold text-ink-900">{{ documentOutput?.name }}</p>
             <p class="mt-0.5 text-[12.5px] text-ink-500">
-              {{ activeDocument.size }} · {{ activeDocument.type.toUpperCase() }} ·
-              {{ contract.code }}
+              DOCX · {{ documentOutput?.size }} · {{ contract.code }}
             </p>
           </div>
         </div>

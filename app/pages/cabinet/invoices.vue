@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { TARIFF_LINES } from '~/data/business'
 import { unitById } from '~/data/units'
+import { docxBlob, saveBlob, type DocxLine } from '~/utils/docx'
 import { dateShort, num, sum } from '~/utils/format'
 
 const auth = useAuthStore()
@@ -238,11 +239,12 @@ const columns = [
 
 const detailOpen = ref(false)
 const printOpen = ref(false)
-const printSent = ref(false)
+const savedFile = ref('')
 const selected = ref<CabinetInvoice | null>(null)
 
 function openInvoice(row: Record<string, unknown>) {
   selected.value = MY_INVOICES.value.find((i) => i.id === row.id) ?? null
+  savedFile.value = ''
   detailOpen.value = true
 }
 
@@ -269,8 +271,51 @@ const lines = computed(() => {
 const linesTotal = computed(() => lines.value.reduce((a, l) => a + l.total, 0))
 
 function openPrint() {
-  printSent.value = false
   printOpen.value = true
+}
+
+/** Chop etish oynasidagi hujjatni brauzer chop etish oynasiga beradi */
+function printInvoice() {
+  if (import.meta.client) window.print()
+}
+
+/** Hisob-faktura matni Word hujjati sifatida yig‘iladi */
+function invoiceLines(inv: CabinetInvoice): DocxLine[] {
+  const rows: DocxLine[] = [
+    { text: 'Makon Property Group', style: 'subtitle' },
+    { text: 'Hisob-faktura', style: 'title' },
+    { text: `${inv.code} · ${inv.period}`, style: 'subtitle' },
+    { text: 'Rekvizitlar', style: 'heading' },
+    { text: `To‘lovchi: ${organization.value}` },
+    { text: `Obyekt: Green Business Center · Unit ${inv.unitCode}` },
+    { text: `Hisob davri: ${inv.period}` },
+    { text: `Berilgan sana: ${dateShort(inv.issuedAt)}` },
+    { text: `To‘lov muddati: ${dateShort(inv.dueAt)}` },
+    { text: 'Xizmatlar', style: 'heading' },
+  ]
+
+  for (const l of lines.value) {
+    rows.push({ text: `${l.service}: ${num(l.qty, 1)} ${l.unit} · ${sum(l.total)}` })
+  }
+
+  rows.push(
+    { text: 'Yakun', style: 'heading' },
+    { text: `To‘lov uchun jami: ${sum(linesTotal.value)}` },
+    { text: `To‘langan: ${sum(inv.paid)}` },
+    { text: `Qoldiq: ${sum(Math.max(inv.total - inv.paid, 0))}` },
+    { text: 'Ijaraga beruvchi: imzo va muhr', style: 'small' },
+    { text: 'Ijarachi: imzo va muhr', style: 'small' },
+  )
+
+  return rows
+}
+
+function downloadInvoice() {
+  const inv = selected.value
+  if (!inv) return
+  const fileName = `${inv.code}.docx`
+  saveBlob(docxBlob(invoiceLines(inv)), fileName)
+  savedFile.value = fileName
 }
 </script>
 
@@ -292,7 +337,7 @@ function openPrint() {
     </template>
   </AppTopbar>
 
-  <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-6">
+  <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-4 sm:p-6">
     <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <UiKpi label="Joriy oy to‘lovi" :value="num(currentTotal)" unit="so‘m" icon="wallet" tone="brand" />
       <UiKpi label="To‘langan (joriy oy)" :value="num(currentPaid)" unit="so‘m" icon="check" tone="ok" />
@@ -417,11 +462,20 @@ function openPrint() {
       </div>
     </div>
 
+    <p v-if="savedFile" class="mt-4 flex items-start gap-2 text-[13px] font-semibold text-ok-700">
+      <UiIcon name="check" :size="16" class="mt-px shrink-0" />
+      <span class="min-w-0">{{ savedFile }} fayli saqlandi.</span>
+    </p>
+
     <template #footer>
       <UiButton variant="ghost" @click="detailOpen = false">Yopish</UiButton>
-      <UiButton variant="secondary" @click="openPrint">
+      <UiButton variant="secondary" @click="downloadInvoice">
         <UiIcon name="download" :size="16" />
-        PDF yuklab olish
+        Yuklab olish
+      </UiButton>
+      <UiButton variant="secondary" @click="openPrint">
+        <UiIcon name="print" :size="16" />
+        Chop etish ko‘rinishi
       </UiButton>
     </template>
   </UiModal>
@@ -501,14 +555,13 @@ function openPrint() {
       </div>
     </div>
 
-    <p v-if="printSent" class="mt-4 flex items-center gap-2 text-[13px] font-semibold text-ok-700">
-      <UiIcon name="check" :size="16" />
-      Hujjat chop etishga tayyorlandi.
-    </p>
-
     <template #footer>
       <UiButton variant="ghost" @click="printOpen = false">Yopish</UiButton>
-      <UiButton :disabled="printSent" @click="printSent = true">
+      <UiButton variant="secondary" @click="downloadInvoice">
+        <UiIcon name="download" :size="16" />
+        Yuklab olish
+      </UiButton>
+      <UiButton @click="printInvoice">
         <UiIcon name="print" :size="16" />
         Chop etish
       </UiButton>

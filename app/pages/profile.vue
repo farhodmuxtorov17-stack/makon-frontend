@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import { ROLE_META } from '~/constants/roles'
-
 const auth = useAuthStore()
-const { locale, locales, setLocale } = useI18n()
+const { t, locales } = useI18n()
+const { roleLabel: roleName, roleCaption: roleNote } = useAppLabels()
 
-const roleLabel = computed(() => (auth.role ? ROLE_META[auth.role].label : '-'))
-const roleCaption = computed(() => (auth.role ? ROLE_META[auth.role].caption : ''))
+const roleLabel = computed(() => (auth.role ? roleName(auth.role) : '-'))
+const roleCaption = computed(() => (auth.role ? roleNote(auth.role) : ''))
 
 const initials = computed(() =>
   (auth.user?.fullName ?? '')
@@ -46,7 +45,7 @@ function resetForm() {
 function saveProfile() {
   errors.fullName = form.fullName.trim().length >= 4 ? '' : 'F.I.Sh. to‘liq kiritilishi kerak'
   errors.phone = form.phone.trim().length >= 9 ? '' : 'Telefon raqamini to‘liq kiriting'
-  errors.email = /.+@.+\..+/.test(form.email.trim()) ? '' : 'E-mail manzili noto‘g‘ri'
+  errors.email = /.+@.+\..+/.test(form.email.trim()) ? '' : 'E-pochta manzili noto‘g‘ri'
   if (errors.fullName || errors.phone || errors.email) return
   if (!auth.user) return
 
@@ -59,30 +58,40 @@ function saveProfile() {
 
 const passwordOpen = ref(false)
 const passwordForm = reactive({ current: '', next: '', repeat: '' })
-const passwordError = ref('')
+
+/** Har bir xabar o‘z maydoniga tushadi, aks holda xato boshqa qatorda ko‘rinadi */
+const passwordErrors = reactive({ current: '', next: '', repeat: '' })
+
+function clearPasswordErrors() {
+  passwordErrors.current = ''
+  passwordErrors.next = ''
+  passwordErrors.repeat = ''
+}
 
 function openPassword() {
   passwordForm.current = ''
   passwordForm.next = ''
   passwordForm.repeat = ''
-  passwordError.value = ''
+  clearPasswordErrors()
   passwordOpen.value = true
 }
 
 function submitPassword() {
+  clearPasswordErrors()
+
   if (!passwordForm.current.trim()) {
-    passwordError.value = 'Joriy parolni kiriting'
+    passwordErrors.current = 'Joriy parolni kiriting'
     return
   }
   if (passwordForm.next.trim().length < 8) {
-    passwordError.value = 'Yangi parol kamida 8 ta belgidan iborat bo‘lishi kerak'
+    passwordErrors.next = 'Yangi parol kamida 8 ta belgidan iborat bo‘lishi kerak'
     return
   }
   if (passwordForm.next !== passwordForm.repeat) {
-    passwordError.value = 'Yangi parol va tasdiqlash mos kelmadi'
+    passwordErrors.repeat = 'Yangi parol va tasdiqlash mos kelmadi'
     return
   }
-  passwordError.value = ''
+
   savedMessage.value = 'Parol muvaffaqiyatli yangilandi'
   passwordOpen.value = false
 }
@@ -128,15 +137,27 @@ function endSession(id: string) {
   savedMessage.value = 'Tanlangan seans tugatildi'
 }
 
+/**
+ * Til tanlovi sarlavhadagi tugma bilan bitta xotiradan o‘qiladi, shuning
+ * uchun bu yerdagi tanlov yangilashdan keyin ham saqlanadi.
+ */
+const { stored: storedLocale, pick: pickLocale } = useLocaleChoice()
+
 const language = computed({
-  get: () => String(locale.value),
-  set: (value: string) => setLocale(value as 'uz' | 'ru'),
+  get: () => String(storedLocale.value),
+  set: (value: string) => pickLocale(value),
 })
+
+/** Nomlar sarlavhadagi til tugmasi bilan bir xil kalitdan o‘qiladi */
+const LANGUAGE_LABEL: Record<string, string> = {
+  uz: 'shell.localeUz',
+  ru: 'shell.localeRu',
+}
 
 const languageOptions = computed(() =>
   (locales.value as Array<{ code: string; name: string }>).map((l) => ({
     value: l.code,
-    label: l.name,
+    label: LANGUAGE_LABEL[l.code] ? t(LANGUAGE_LABEL[l.code]!) : l.name,
   })),
 )
 
@@ -187,7 +208,7 @@ function toggleNotification(id: string) {
     </template>
   </AppTopbar>
 
-  <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-6">
+  <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-4 sm:p-6">
     <div
       v-if="savedMessage"
       class="flex items-center gap-3 rounded-card bg-ok-50 px-5 py-3.5 ring-1 ring-ok-100"
@@ -240,7 +261,7 @@ function toggleNotification(id: string) {
             <dd class="tabular text-[13px] font-semibold text-ink-900">{{ auth.user?.phone ?? '-' }}</dd>
           </div>
           <div class="flex items-center justify-between py-2.5">
-            <dt class="text-[12.5px] text-ink-500">E-mail</dt>
+            <dt class="text-[12.5px] text-ink-500">E-pochta</dt>
             <dd class="truncate text-[13px] font-semibold text-ink-900">{{ auth.user?.email ?? '-' }}</dd>
           </div>
         </dl>
@@ -282,7 +303,7 @@ function toggleNotification(id: string) {
             <UiInput v-model="form.phone" :invalid="!!errors.phone" placeholder="+998 90 000 00 00" />
           </UiField>
 
-          <UiField label="E-mail" required :error="errors.email">
+          <UiField label="E-pochta" required :error="errors.email">
             <UiInput
               v-model="form.email"
               type="email"
@@ -346,7 +367,7 @@ function toggleNotification(id: string) {
                 :disabled="s.current"
                 @click="endSession(s.id)"
               >
-                Sessiyani tugatish
+                Seansni tugatish
               </UiButton>
             </li>
             <li v-if="!sessions.length" class="px-4 py-8 text-center text-[13px] text-ink-500">
@@ -401,18 +422,28 @@ function toggleNotification(id: string) {
     size="sm"
   >
     <div class="space-y-4">
-      <UiField label="Joriy parol" required>
-        <UiInput v-model="passwordForm.current" type="password" placeholder="Joriy parol" />
+      <UiField label="Joriy parol" required :error="passwordErrors.current">
+        <UiInput
+          v-model="passwordForm.current"
+          type="password"
+          placeholder="Joriy parol"
+          :invalid="!!passwordErrors.current"
+        />
       </UiField>
-      <UiField label="Yangi parol" required>
-        <UiInput v-model="passwordForm.next" type="password" placeholder="Yangi parol" />
+      <UiField label="Yangi parol" required :error="passwordErrors.next">
+        <UiInput
+          v-model="passwordForm.next"
+          type="password"
+          placeholder="Yangi parol"
+          :invalid="!!passwordErrors.next"
+        />
       </UiField>
-      <UiField label="Yangi parolni tasdiqlash" required :error="passwordError">
+      <UiField label="Yangi parolni tasdiqlash" required :error="passwordErrors.repeat">
         <UiInput
           v-model="passwordForm.repeat"
           type="password"
           placeholder="Yangi parolni takrorlang"
-          :invalid="!!passwordError"
+          :invalid="!!passwordErrors.repeat"
         />
       </UiField>
 

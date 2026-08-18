@@ -142,7 +142,7 @@ const planOpen = ref(false)
     </template>
   </AppTopbar>
 
-  <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-6">
+  <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-4 sm:p-6">
     <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <UiKpi label="Unitlar soni" :value="String(myUnits.length)" unit="ta" icon="building" tone="brand" />
       <UiKpi label="Umumiy maydon" :value="num(totalArea, 2)" unit="m²" icon="layers" tone="ok" />
@@ -210,7 +210,7 @@ const planOpen = ref(false)
         <dl class="mt-3 grid grid-cols-3 gap-2 border-t border-ink-100 pt-3">
           <div>
             <dt class="text-[11.5px] text-ink-500">Maydon</dt>
-            <dd class="tabular mt-0.5 text-[13px] font-bold text-ink-900">{{ num(u.area, 1) }} m²</dd>
+            <dd class="tabular mt-0.5 text-[13px] font-bold text-ink-900">{{ area(u.area) }}</dd>
           </div>
           <div>
             <dt class="text-[11.5px] text-ink-500">Qavat</dt>

@@ -6,17 +6,25 @@ import {
   ROLE_RING_CLASSES,
   ROLE_TONE_CLASSES,
 } from '~/constants/roles'
-import { canAccess } from '~/constants/navigation'
+import {
+  ACCESS_AREAS,
+  baseLevel,
+  overrideKey,
+  type AreaKey,
+} from '~/constants/accessAreas'
 import { ROLES, type AccessLevel, type Capability, type Role } from '~/types/rbac'
 
 const SETTINGS_TABS = [
   { label: 'Foydalanuvchilar', to: '/settings/users', icon: 'users' },
   { label: 'Rollar va huquqlar', to: '/settings/roles', icon: 'shield' },
+  { label: 'Integratsiyalar', to: '/settings/integrations', icon: 'globe' },
   { label: 'Ma’lumotnomalar', to: '/settings/reference-data', icon: 'layers' },
   { label: 'Tizim sozlamalari', to: '/settings/system', icon: 'gear' },
   { label: 'Audit jurnali', to: '/settings/audit', icon: 'clipboard' },
 ]
 const CURRENT_TAB = '/settings/roles'
+
+const auth = useAuthStore()
 
 /** Amal huquqlarining interfeysdagi nomi */
 const CAPABILITY_LABELS: Record<Capability, string> = {
@@ -32,106 +40,8 @@ const CAPABILITY_LABELS: Record<Capability, string> = {
   'system.administer': 'Tizimni boshqarish',
 }
 
-type AreaKey =
-  | 'dashboard'
-  | 'objects'
-  | 'content'
-  | 'applications'
-  | 'contracts'
-  | 'billing'
-  | 'service'
-  | 'warehouse'
-  | 'meters'
-  | 'reports'
-  | 'settings'
-  | 'cabinet'
-
-interface AreaDef {
-  key: AreaKey
-  label: string
-  /** Bo‘limga tegishli marshrutlar, kirish huquqi shular bo‘yicha aniqlanadi */
-  prefixes: string[]
-  /** Shu bo‘limda yozuv (qaror) huquqini beruvchi amallar */
-  writes: Capability[]
-}
-
-const AREAS: AreaDef[] = [
-  {
-    key: 'dashboard',
-    label: 'Boshqaruv paneli',
-    prefixes: ['/dashboard/executive', '/dashboard/building'],
-    writes: [],
-  },
-  {
-    key: 'objects',
-    label: 'Obyektlar va unitlar',
-    prefixes: ['/objects'],
-    writes: ['unit.editTechnical', 'unit.editContent'],
-  },
-  {
-    key: 'content',
-    label: 'Kontent tayyorlash',
-    prefixes: ['/content'],
-    writes: ['unit.editContent'],
-  },
-  {
-    key: 'applications',
-    label: 'Arizalar',
-    prefixes: ['/applications'],
-    writes: ['application.decide'],
-  },
-  {
-    key: 'contracts',
-    label: 'Shartnomalar',
-    prefixes: ['/contracts'],
-    writes: ['contract.sign'],
-  },
-  {
-    key: 'billing',
-    label: 'Billing va to‘lovlar',
-    prefixes: ['/billing'],
-    writes: ['payment.confirm', 'invoice.create'],
-  },
-  {
-    key: 'service',
-    label: 'Servis va ish topshiriqlari',
-    prefixes: ['/service-requests', '/facility'],
-    writes: ['workorder.assign', 'workorder.execute'],
-  },
-  {
-    key: 'warehouse',
-    label: 'Ombor va material',
-    prefixes: ['/warehouse', '/facility/materials'],
-    writes: ['warehouse.issue'],
-  },
-  {
-    key: 'meters',
-    label: 'Hisoblagichlar',
-    prefixes: ['/meters'],
-    writes: ['unit.editTechnical'],
-  },
-  {
-    key: 'reports',
-    label: 'Hisobotlar',
-    prefixes: ['/reports'],
-    writes: [],
-  },
-  {
-    key: 'settings',
-    label: 'Sozlamalar va audit',
-    prefixes: ['/settings', '/settings/audit'],
-    writes: ['system.administer'],
-  },
-  {
-    key: 'cabinet',
-    label: 'Ijarachi kabineti',
-    prefixes: ['/cabinet'],
-    writes: ['contract.sign'],
-  },
-]
-
 /** Ustun sarlavhasi va izoh ro‘yxati uchun tayyor ko‘rinish */
-const AREA_VIEW = AREAS.map((a) => ({
+const AREA_VIEW = ACCESS_AREAS.map((a) => ({
   ...a,
   writeLabel: a.writes.length
     ? a.writes.map((c) => CAPABILITY_LABELS[c]).join(' · ')
@@ -163,23 +73,16 @@ const LEVEL_META: Record<AccessLevel, { label: string; badge: string; mark: stri
 type Matrix = Record<Role, Record<AreaKey, AccessLevel>>
 
 /**
- * Boshlang‘ich qiymat haqiqiy qoidalardan olinadi:
- * marshrut yopiq → «Yo‘q»; marshrut ochiq va shu bo‘limda yozuv huquqi bor →
- * «To‘liq»; marshrut ochiq, yozuv huquqi yo‘q → «Cheklangan».
+ * Joriy holat: asosiy qoida ustiga saqlangan o‘zgartirishlar qo‘yiladi.
+ * `ROLES` va `ACCESS_AREAS` barcha kalitlarni qamrab olgani uchun natija to‘liq.
  */
-function derive(role: Role, area: AreaDef): AccessLevel {
-  const reachable = area.prefixes.some((prefix) => canAccess(prefix, role))
-  if (!reachable) return 'none'
-  const caps = ROLE_CAPABILITIES[role]
-  return area.writes.some((c) => caps.includes(c)) ? 'full' : 'scoped'
-}
-
-// `ROLES` va `AREAS` barcha kalitlarni to‘liq qamrab olgani uchun natija to‘liq.
 function buildMatrix(): Matrix {
   const out = {} as Matrix
   for (const role of ROLES) {
     const row = {} as Record<AreaKey, AccessLevel>
-    for (const area of AREAS) row[area.key] = derive(role, area)
+    for (const area of ACCESS_AREAS) {
+      row[area.key] = auth.accessOverrides[overrideKey(role, area.key)] ?? baseLevel(role, area)
+    }
     out[role] = row
   }
   return out
@@ -189,7 +92,7 @@ function cloneMatrix(src: Matrix): Matrix {
   const out = {} as Matrix
   for (const role of ROLES) {
     const row = {} as Record<AreaKey, AccessLevel>
-    for (const area of AREAS) row[area.key] = src[role][area.key]
+    for (const area of ACCESS_AREAS) row[area.key] = src[role][area.key]
     out[role] = row
   }
   return out
@@ -211,7 +114,7 @@ const changes = computed(() => {
     to: AccessLevel
   }> = []
   for (const role of ROLES) {
-    for (const area of AREAS) {
+    for (const area of ACCESS_AREAS) {
       const from = baseline.value[role][area.key]
       const to = matrix.value[role][area.key]
       if (from !== to) list.push({ role, areaKey: area.key, areaLabel: area.label, from, to })
@@ -241,10 +144,23 @@ function restore() {
   flash.value = 'Matritsa saqlangan holatiga qaytarildi.'
 }
 
+/**
+ * Saqlash haqiqiy kuchga kiradi: asosiy qoidadan farq qiladigan kataklar
+ * seansga yoziladi va shu zahoti yon panel, marshrut hamda tugmalarga ta’sir
+ * qiladi. Super rahbarning sozlamalar bo‘limi yopilmaydi.
+ */
 function confirmSave() {
   const count = changes.value.length
+  const next: Record<string, AccessLevel> = {}
+  for (const role of ROLES) {
+    for (const area of ACCESS_AREAS) {
+      const level = matrix.value[role][area.key]
+      if (level !== baseLevel(role, area)) next[overrideKey(role, area.key)] = level
+    }
+  }
+  auth.applyAccessOverrides(next)
   baseline.value = cloneMatrix(matrix.value)
-  flash.value = `Ruxsatlar matritsasi saqlandi: ${count} ta katak yangilandi.`
+  flash.value = `Ruxsatlar matritsasi saqlandi: ${count} ta katak yangilandi va darhol kuchga kirdi.`
   saveOpen.value = false
 }
 
@@ -260,7 +176,7 @@ function toggleFocus(role: Role) {
 }
 
 function levelCount(role: Role, level: AccessLevel) {
-  return AREAS.filter((a) => matrix.value[role][a.key] === level).length
+  return ACCESS_AREAS.filter((a) => matrix.value[role][a.key] === level).length
 }
 
 function capabilitiesOf(role: Role) {

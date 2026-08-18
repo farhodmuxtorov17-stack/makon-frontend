@@ -10,6 +10,12 @@ import { dateShort, num, sum } from '~/utils/format'
 
 const auth = useAuthStore()
 
+/** Havola faqat ochiladigan bo‘lsa ko‘rsatiladi. Super rahbar hamma joyga kiradi. */
+function canOpen(path: string) {
+  if (!auth.role) return false
+  return auth.role === 'SUPER_HEAD' || auth.canRoute(path)
+}
+
 const requests = useState<ServiceRequest[]>('service-requests', () =>
   SERVICE_REQUESTS.map((r) => ({ ...r })),
 )
@@ -188,7 +194,12 @@ function submitRequest() {
     subtitle="Ish topshiriqlari bo‘yicha ombordan material so‘rash va nazorat"
   >
     <template #actions>
-      <UiButton variant="secondary" size="sm" to="/warehouse">
+      <UiButton
+        v-if="canOpen('/warehouse')"
+        variant="secondary"
+        size="sm"
+        to="/warehouse"
+      >
         <UiIcon name="box" :size="16" />
         Ombor qoldiqlari
       </UiButton>
@@ -199,7 +210,7 @@ function submitRequest() {
     </template>
   </AppTopbar>
 
-  <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-6">
+  <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-4 sm:p-6">
     <section class="grid gap-4 sm:grid-cols-3">
       <UiKpi
         label="Ko‘rsatilgan so‘rovlar"
@@ -318,11 +329,15 @@ function submitRequest() {
 
     <template #footer>
       <UiButton variant="ghost" @click="detail = null">Yopish</UiButton>
-      <UiButton v-if="detailOrder" variant="secondary" :to="`/service-requests/${detailOrder.id}`">
+      <UiButton
+        v-if="detailOrder && canOpen('/service-requests')"
+        variant="secondary"
+        :to="`/service-requests/${detailOrder.id}`"
+      >
         Ish topshirig‘i kartasi
         <UiIcon name="chevronRight" :size="15" />
       </UiButton>
-      <UiButton to="/warehouse">
+      <UiButton v-if="canOpen('/warehouse')" to="/warehouse">
         <UiIcon name="box" :size="16" />
         Omborda ko‘rish
       </UiButton>

@@ -1,26 +1,28 @@
 <script setup lang="ts">
 import { useStorage } from '@vueuse/core'
 import { BUILDINGS } from '~/data/buildings'
+import { CONTACT } from '~/constants/contacts'
 
 const route = useRoute()
+const { t } = useI18n()
 
 /** Sahifa butun ekranni egallasa (katalog qidiruvi), pastki blok chiqarilmaydi */
 const fullscreen = computed(() => route.meta.fullscreen === true)
 
 /** Sarlavhadagi ixcham menyu */
 const HEADER_NAV = [
-  { label: 'Katalog', to: '/catalog' },
-  { label: 'Obyekt joylash', to: '/register' },
+  { key: 'public.navCatalog', to: '/catalog' },
+  { key: 'public.navRegister', to: '/register' },
 ]
 
 const NAV = [
-  { label: 'Katalog', to: '/catalog' },
-  { label: 'Obyekt joylash', to: '/register' },
-  { label: 'Obyektlar', to: '/#obyektlar' },
-  { label: 'Xarita', to: '/#xarita' },
-  { label: 'Xizmatlar', to: '/#xizmatlar' },
-  { label: 'Sevimlilar', to: '/catalog?fav=1' },
-  { label: 'Yordam markazi', to: '/help' },
+  { key: 'public.navCatalog', to: '/catalog' },
+  { key: 'public.navRegister', to: '/register' },
+  { key: 'public.navObjects', to: '/#obyektlar' },
+  { key: 'public.navMap', to: '/#xarita' },
+  { key: 'public.navServices', to: '/#xizmatlar' },
+  { key: 'public.navFavourites', to: '/catalog?fav=1' },
+  { key: 'nav.help', to: '/help' },
 ]
 
 const favourites = useStorage<string[]>('makon.favourites', [])
@@ -29,46 +31,47 @@ const favourites = useStorage<string[]>('makon.favourites', [])
 const footerBuildings = [...BUILDINGS].sort((a, b) => b.gla - a.gla).slice(0, 6)
 
 const QUICK = [
-  { label: 'Bo‘sh joylar katalogi', to: '/catalog' },
-  { label: 'Obyektlar xaritasi', to: '/#xarita' },
-  { label: 'Xizmatlar', to: '/#xizmatlar' },
-  { label: 'Tizim haqida', to: '/#tizim' },
-  { label: 'Yangiliklar', to: '/#blog' },
+  { key: 'public.quickCatalog', to: '/catalog' },
+  { key: 'public.quickMap', to: '/#xarita' },
+  { key: 'public.quickServices', to: '/#xizmatlar' },
+  { key: 'public.quickSystem', to: '/#tizim' },
+  { key: 'public.quickBlog', to: '/#blog' },
 ]
 
 const CATEGORIES = [
-  { label: 'Biznes markazlar', to: '/catalog?type=biznes' },
-  { label: 'Savdo markazlar', to: '/catalog?type=savdo' },
-  { label: 'Ombor va logistika', to: '/catalog?type=ombor' },
-  { label: 'Turar joylar', to: '/catalog?type=turar' },
+  { key: 'public.categoryBiznes', to: '/catalog?type=biznes' },
+  { key: 'public.categorySavdo', to: '/catalog?type=savdo' },
+  { key: 'public.categoryOmbor', to: '/catalog?type=ombor' },
+  { key: 'public.categoryTurar', to: '/catalog?type=turar' },
 ]
 
-const CONTACTS = [
+/** Rekvizitlar `~/constants/contacts` dan: butun sayt bo‘yicha bitta manba */
+const CONTACTS = computed(() => [
   {
     d: 'M12 21s7-5.8 7-11a7 7 0 1 0-14 0c0 5.2 7 11 7 11zM12 12.6a2.6 2.6 0 1 0 0-5.2 2.6 2.6 0 0 0 0 5.2z',
-    label: 'Toshkent, Amir Temur ko‘chasi 88',
-    note: 'Bosh ofis, Green Business Center, 7-qavat',
+    label: CONTACT.address,
+    note: t('public.contactAddressNote'),
     href: '',
   },
   {
     d: 'M6.5 3.5h3l1.5 4-2 1.5a11 11 0 0 0 5 5l1.5-2 4 1.5v3a2 2 0 0 1-2 2A15.5 15.5 0 0 1 4.5 5.5a2 2 0 0 1 2-2z',
-    label: '+998 71 200 00 88',
-    note: 'Ijara va katalog bo‘yicha murojaatlar',
-    href: 'tel:+998712000088',
+    label: CONTACT.phone,
+    note: t('public.contactPhoneNote'),
+    href: CONTACT.phoneHref,
   },
   {
     d: 'M3.5 6.5h17v11h-17zM3.5 7l8.5 6 8.5-6',
-    label: 'info@makon.uz',
-    note: 'Hujjat va shartnoma masalalari',
-    href: 'mailto:info@makon.uz',
+    label: CONTACT.email,
+    note: t('public.contactEmailNote'),
+    href: CONTACT.emailHref,
   },
   {
     d: 'M12 20.5a8.5 8.5 0 1 0 0-17 8.5 8.5 0 0 0 0 17zM12 7.2V12l3 1.9',
-    label: 'Dushanba – shanba, 09:00 – 19:00',
-    note: 'Servis navbatchiligi 24/7 rejimida',
+    label: t('public.contactHours'),
+    note: t('public.contactHoursNote'),
     href: '',
   },
-]
+])
 
 const year = new Date().getFullYear()
 
@@ -172,11 +175,11 @@ onBeforeUnmount(() => {
         class="mx-auto flex max-w-[1360px] items-center gap-4 px-4 transition-[height] duration-200 ease-out lg:px-8"
         :class="scrolled ? 'h-[58px]' : 'h-[76px]'"
       >
-        <NuxtLink to="/" class="shrink-0" aria-label="MAKON bosh sahifa">
+        <NuxtLink to="/" class="shrink-0" :aria-label="t('public.homeAria')">
           <AppLogo :size="scrolled ? 'sm' : 'md'" />
         </NuxtLink>
 
-        <nav class="ml-3 hidden items-center gap-0.5 lg:flex" aria-label="Asosiy menyu">
+        <nav class="ml-3 hidden items-center gap-0.5 lg:flex" :aria-label="t('public.mainMenu')">
           <NuxtLink
             v-for="n in HEADER_NAV"
             :key="n.to"
@@ -189,7 +192,7 @@ onBeforeUnmount(() => {
             "
             :aria-current="isActive(n.to) ? 'page' : undefined"
           >
-            {{ n.label }}
+            {{ t(n.key) }}
           </NuxtLink>
         </nav>
 
@@ -197,7 +200,7 @@ onBeforeUnmount(() => {
           <NuxtLink
             to="/catalog?fav=1"
             class="relative grid size-10 place-items-center rounded-field text-ink-600 transition-colors duration-150 hover:bg-ink-100 hover:text-danger-500"
-            aria-label="Sevimli e’lonlar"
+            :aria-label="t('public.favouritesAria')"
           >
             <svg
               class="size-[19px]"
@@ -225,7 +228,7 @@ onBeforeUnmount(() => {
           <NuxtLink
             to="/help"
             class="hidden size-10 place-items-center rounded-field text-ink-600 transition-colors duration-150 hover:bg-ink-100 hover:text-ink-900 md:grid"
-            aria-label="Yordam markazi"
+            :aria-label="t('common.help')"
           >
             <UiIcon name="help" :size="19" />
           </NuxtLink>
@@ -233,12 +236,14 @@ onBeforeUnmount(() => {
           <NuxtLink
             to="/profile"
             class="hidden size-10 place-items-center rounded-field text-ink-600 transition-colors duration-150 hover:bg-ink-100 hover:text-ink-900 md:grid"
-            aria-label="Shaxsiy kabinet"
+            :aria-label="t('public.cabinetAria')"
           >
             <UiIcon name="user" :size="19" />
           </NuxtLink>
 
-          <UiButton size="sm" to="/login" class="ml-1 hidden md:inline-flex">Kirish</UiButton>
+          <UiButton size="sm" to="/login" class="ml-1 hidden md:inline-flex">
+            {{ t('common.signIn') }}
+          </UiButton>
 
           <button
             ref="menuToggle"
@@ -246,7 +251,7 @@ onBeforeUnmount(() => {
             class="grid size-10 place-items-center rounded-field text-ink-700 ring-1 ring-inset ring-ink-200 transition-colors duration-150 hover:bg-ink-100 hover:text-ink-900 active:bg-ink-200 lg:hidden"
             :aria-expanded="menuOpen"
             aria-controls="public-drawer"
-            aria-label="Menyuni ochish"
+            :aria-label="t('public.menuOpen')"
             @click="menuOpen = true"
           >
             <UiIcon name="filter" :size="20" />
@@ -274,7 +279,7 @@ onBeforeUnmount(() => {
             ref="drawer"
             role="dialog"
             aria-modal="true"
-            aria-label="Menyu"
+            :aria-label="t('public.menu')"
             class="scroll-slim absolute inset-y-0 right-0 flex w-[88%] max-w-[340px] flex-col overflow-y-auto bg-surface shadow-pop"
           >
             <div class="flex items-center justify-between gap-3 border-b border-ink-200 px-4 py-3.5">
@@ -282,14 +287,14 @@ onBeforeUnmount(() => {
               <button
                 type="button"
                 class="grid size-10 place-items-center rounded-field text-ink-500 transition-colors duration-150 hover:bg-ink-100 hover:text-ink-900"
-                aria-label="Menyuni yopish"
+                :aria-label="t('public.menuClose')"
                 @click="closeMenu"
               >
                 <UiIcon name="x" :size="20" />
               </button>
             </div>
 
-            <nav class="grid gap-1 p-4" aria-label="Mobil menyu">
+            <nav class="grid gap-1 p-4" :aria-label="t('public.mobileMenu')">
               <NuxtLink
                 v-for="n in NAV"
                 :key="n.to"
@@ -300,13 +305,15 @@ onBeforeUnmount(() => {
                 "
                 @click="closeMenu"
               >
-                {{ n.label }}
+                {{ t(n.key) }}
                 <UiIcon name="chevronRight" :size="16" class="text-ink-300" />
               </NuxtLink>
             </nav>
 
             <div class="border-t border-ink-200 px-4 py-4">
-              <p class="text-[11px] font-bold uppercase tracking-wide text-ink-500">Kategoriyalar</p>
+              <p class="text-[11px] font-bold uppercase tracking-wide text-ink-500">
+                {{ t('public.categories') }}
+              </p>
               <div class="mt-2.5 flex flex-wrap gap-2">
                 <NuxtLink
                   v-for="c in CATEGORIES"
@@ -315,7 +322,7 @@ onBeforeUnmount(() => {
                   class="rounded-pill bg-ink-100 px-3 py-1.5 text-[12.5px] font-semibold text-ink-700 transition-colors duration-150 hover:bg-brand-50 hover:text-brand-700"
                   @click="closeMenu"
                 >
-                  {{ c.label }}
+                  {{ t(c.key) }}
                 </NuxtLink>
               </div>
             </div>
@@ -323,16 +330,18 @@ onBeforeUnmount(() => {
             <div class="mt-auto border-t border-ink-200 p-4">
               <div class="grid gap-2.5">
                 <UiButton variant="secondary" to="/login" block @click="closeMenu">
-                  Kirish
+                  {{ t('common.signIn') }}
                 </UiButton>
-                <UiButton to="/login" block @click="closeMenu">Ro‘yxatdan o‘tish</UiButton>
+                <UiButton to="/register" block @click="closeMenu">
+                  {{ t('common.register') }}
+                </UiButton>
               </div>
               <div class="mt-4 flex items-center justify-between gap-3">
                 <a
-                  href="tel:+998712000088"
+                  :href="CONTACT.phoneHref"
                   class="text-[13px] font-semibold text-ink-600 transition-colors duration-150 hover:text-brand-600"
                 >
-                  +998 71 200 00 88
+                  {{ CONTACT.phone }}
                 </a>
                 <LocaleSwitch />
               </div>
@@ -355,9 +364,7 @@ onBeforeUnmount(() => {
           <div>
             <AppLogo mono class="text-white" />
             <p class="mt-4 max-w-[46ch] text-[13.5px] leading-relaxed text-ink-400">
-              MAKON: ko‘chmas mulk obyektlarini boshqarish va bo‘sh maydonlarni e’lon qilish
-              platformasi. Ofis, savdo, ombor va turar joy maydonlari yagona katalogda; ariza,
-              shartnoma va hisob-kitob jarayonlari yagona raqamli konturda yuritiladi.
+              {{ t('public.about') }}
             </p>
 
             <ul class="mt-6 space-y-3.5">
@@ -402,21 +409,21 @@ onBeforeUnmount(() => {
                 class="inline-flex items-center gap-2 rounded-pill bg-white/10 px-3.5 py-2 text-[12.5px] font-semibold text-white transition-colors duration-150 hover:bg-white/20"
               >
                 <UiIcon name="search" :size="15" />
-                Bo‘sh joy qidirish
+                {{ t('public.searchVacancy') }}
               </NuxtLink>
               <NuxtLink
                 to="/login"
                 class="inline-flex items-center gap-2 rounded-pill bg-brand-500 px-3.5 py-2 text-[12.5px] font-semibold text-white transition-colors duration-150 hover:bg-brand-600"
               >
                 <UiIcon name="shield" :size="15" />
-                Tizimga kirish
+                {{ t('common.signIn') }}
               </NuxtLink>
             </div>
           </div>
 
           <div>
             <h3 class="text-[11.5px] font-bold uppercase tracking-wide text-white">
-              Tezkor havolalar
+              {{ t('public.quickLinks') }}
             </h3>
             <ul class="mt-4 space-y-2.5">
               <li v-for="l in QUICK" :key="l.to">
@@ -424,7 +431,7 @@ onBeforeUnmount(() => {
                   :to="l.to"
                   class="text-[13.5px] text-ink-400 transition-colors duration-150 hover:text-white"
                 >
-                  {{ l.label }}
+                  {{ t(l.key) }}
                 </NuxtLink>
               </li>
             </ul>
@@ -432,7 +439,7 @@ onBeforeUnmount(() => {
 
           <div>
             <h3 class="text-[11.5px] font-bold uppercase tracking-wide text-white">
-              Katalog kategoriyalari
+              {{ t('public.catalogCategories') }}
             </h3>
             <ul class="mt-4 space-y-2.5">
               <li v-for="c in CATEGORIES" :key="c.to">
@@ -440,14 +447,16 @@ onBeforeUnmount(() => {
                   :to="c.to"
                   class="text-[13.5px] text-ink-400 transition-colors duration-150 hover:text-white"
                 >
-                  {{ c.label }}
+                  {{ t(c.key) }}
                 </NuxtLink>
               </li>
             </ul>
           </div>
 
           <div>
-            <h3 class="text-[11.5px] font-bold uppercase tracking-wide text-white">Obyektlar</h3>
+            <h3 class="text-[11.5px] font-bold uppercase tracking-wide text-white">
+              {{ t('public.objects') }}
+            </h3>
             <ul class="mt-4 space-y-2.5">
               <li v-for="b in footerBuildings" :key="b.id">
                 <NuxtLink
@@ -465,7 +474,7 @@ onBeforeUnmount(() => {
                   to="/catalog"
                   class="text-[13.5px] font-semibold text-ink-300 transition-colors duration-150 hover:text-white"
                 >
-                  Yana {{ BUILDINGS.length - footerBuildings.length }} ta obyekt
+                  {{ t('public.moreObjects', { count: BUILDINGS.length - footerBuildings.length }) }}
                 </NuxtLink>
               </li>
             </ul>
@@ -474,33 +483,29 @@ onBeforeUnmount(() => {
 
         <div class="mt-10 border-t border-white/10 pt-6">
           <p class="max-w-[92ch] text-[12px] leading-relaxed text-ink-500">
-            Katalogdagi maydonlar bo‘yicha yakuniy shartlar obyekt egasi bilan tuziladigan
-            shartnomada belgilanadi. Band unitlar bo‘yicha ijarachi va moliyaviy ma’lumotlar
-            ommaviy ko‘rinishda ochilmaydi.
+            {{ t('public.notice') }}
           </p>
 
           <div class="mt-4 flex flex-wrap items-center justify-between gap-4">
-            <p class="text-[12.5px] text-ink-500">
-              © {{ year }} MAKON. Barcha huquqlar himoyalangan.
-            </p>
+            <p class="text-[12.5px] text-ink-500">{{ t('public.rights', { year }) }}</p>
             <div class="flex flex-wrap items-center gap-5">
               <NuxtLink
                 to="/#tizim"
                 class="text-[12.5px] text-ink-500 transition-colors duration-150 hover:text-white"
               >
-                Platforma imkoniyatlari
+                {{ t('public.platform') }}
               </NuxtLink>
               <NuxtLink
                 to="/catalog"
                 class="text-[12.5px] text-ink-500 transition-colors duration-150 hover:text-white"
               >
-                Katalog
+                {{ t('public.navCatalog') }}
               </NuxtLink>
               <NuxtLink
                 to="/login"
                 class="text-[12.5px] font-semibold text-brand-400 transition-colors duration-150 hover:text-white"
               >
-                Tizimga kirish
+                {{ t('common.signIn') }}
               </NuxtLink>
             </div>
           </div>

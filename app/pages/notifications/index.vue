@@ -1,16 +1,16 @@
 <script setup lang="ts">
-import { NOTIFICATIONS, NOTIFICATION_CATEGORIES, type AppNotification } from '~/data/operations'
-import { canAccess } from '~/constants/navigation'
+import { NOTIFICATION_CATEGORIES, type AppNotification } from '~/data/operations'
 import { ROLE_META } from '~/constants/roles'
 
 const auth = useAuthStore()
 
-const items = ref<AppNotification[]>(NOTIFICATIONS.map((n) => ({ ...n })))
+/** Header qo‘ng‘irog‘i bilan bitta umumiy ro‘yxat */
+const { items, markRead, markAllRead } = useNotifications()
 
 function pick(...candidates: string[]) {
   const role = auth.role
   if (!role) return candidates[0]!
-  return candidates.find((c) => canAccess(c, role)) ?? ROLE_META[role].home
+  return candidates.find((c) => auth.canRoute(c)) ?? ROLE_META[role].home
 }
 
 interface DetailRow {
@@ -215,11 +215,7 @@ const selectedDetail = computed(() =>
 
 function select(n: AppNotification) {
   selectedId.value = n.id
-  n.read = true
-}
-
-function markAllRead() {
-  items.value.forEach((n) => (n.read = true))
+  markRead(n.id)
 }
 
 const channels = [
@@ -241,7 +237,7 @@ const channels = [
   },
   {
     id: 'email',
-    label: 'E-mail',
+    label: 'E-pochta',
     caption: 'Joriy bosqichda ulanmagan',
     icon: 'doc',
     tone: 'bg-ink-100 text-ink-500',
@@ -275,7 +271,7 @@ const channels = [
     </template>
   </AppTopbar>
 
-  <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-6">
+  <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-4 sm:p-6">
     <section class="grid gap-5 xl:grid-cols-[260px_minmax(0,1fr)_360px]">
       <UiCard flush>
         <div class="flex items-start gap-3 px-5 pt-5">

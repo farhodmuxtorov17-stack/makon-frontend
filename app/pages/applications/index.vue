@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { APPLICATION_QUEUE } from '~/constants/navigation'
 import { LEASE_STATUS } from '~/constants/statuses'
 import { scheduleTotals, type LeaseCase, type LeaseStatus } from '~/stores/lease'
 import { area, dateShort, sum, timeOf } from '~/utils/format'
@@ -8,31 +9,29 @@ const lease = useLeaseStore()
 
 lease.seed()
 
-/** Rolga qarab «mening vazifalarim» boshqa bosqichni bildiradi */
+/** Qaror huquqi bo‘lmagan rol navbatni faqat kuzatadi */
+const canDecide = computed(() => auth.can('application.decide'))
+
+/** «Mening vazifalarim» va yon menyudagi son bitta ro‘yxatdan o‘qiladi */
 const myStatuses = computed<LeaseStatus[]>(() => {
-  if (auth.role === 'BUILDING_MANAGER')
-    return ['YANGI', 'QORALAMA_TAYYOR', 'DIDOX_YUBORILDI', 'DIDOX_IMZOLANDI']
-  if (auth.role === 'ACCOUNTANT') return ['OPERATSIYA_TASDIQLADI', 'MOLIYA_TASDIQLADI']
-  return [
-    'YANGI',
-    'OPERATSIYA_TASDIQLADI',
-    'QORALAMA_TAYYOR',
-    'DIDOX_YUBORILDI',
-    'DIDOX_IMZOLANDI',
-  ]
+  if (!canDecide.value || !auth.role) return []
+  return APPLICATION_QUEUE[auth.role] ?? []
 })
 
-const rows = computed(() => lease.cases)
+/** Biriktirilgan binodan tashqaridagi ariza na ro‘yxatga, na sanoqqa kiradi */
+const rows = computed(() => lease.cases.filter((c) => auth.inScope(c.buildingId)))
 
 const mineRows = computed(() => rows.value.filter((c) => myStatuses.value.includes(c.status)))
 
-const scopeTab = ref('mine')
+const scopeTab = ref(canDecide.value ? 'mine' : 'all')
 const statusFilter = ref('all')
 const buildingFilter = ref('')
 const search = ref('')
 
 const scopeTabs = computed(() => [
-  { value: 'mine', label: 'Mening vazifalarim', count: mineRows.value.length },
+  ...(canDecide.value
+    ? [{ value: 'mine', label: 'Mening vazifalarim', count: mineRows.value.length }]
+    : []),
   { value: 'all', label: 'Barcha arizalar', count: rows.value.length },
 ])
 
@@ -122,6 +121,17 @@ const NEXT_STEP: Record<string, string> = {
   </AppTopbar>
 
   <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-4 sm:p-6">
+    <p
+      v-if="!canDecide"
+      class="flex items-start gap-3 rounded-card bg-ink-50 px-4 py-3 text-[13px] leading-relaxed text-ink-600 ring-1 ring-inset ring-ink-200"
+    >
+      <UiIcon name="eye" :size="17" class="mt-0.5 shrink-0 text-ink-500" />
+      <span>
+        Kuzatuv rejimi: ariza bo‘yicha qaror bino rahbari va buxgalterda, bu sahifada
+        yozuvlar faqat kuzatiladi.
+      </span>
+    </p>
+
     <div class="flex flex-wrap items-center justify-between gap-3">
       <UiTabs v-model="scopeTab" :tabs="scopeTabs" />
 
@@ -236,8 +246,12 @@ const NEXT_STEP: Record<string, string> = {
       <UiEmpty
         icon="clipboard"
         title="Ariza topilmadi"
-        description="Tanlangan filtrlar bo‘yicha yozuv yo‘q. Shartlarni kengaytiring yoki barcha arizalarni oching."
-        action-label="Barcha arizalar"
+        :description="
+          rows.length
+            ? 'Tanlangan filtrlar bo‘yicha yozuv yo‘q. Shartlarni kengaytiring yoki barcha arizalarni oching.'
+            : 'Sizga biriktirilgan obyektlar bo‘yicha ariza yozuvi yo‘q.'
+        "
+        :action-label="rows.length ? 'Barcha arizalar' : ''"
         @action="
           () => {
             scopeTab = 'all'

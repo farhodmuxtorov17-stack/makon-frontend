@@ -57,6 +57,12 @@ function activate(row: T) {
         </tr>
       </thead>
 
+      <!--
+        Bosiladigan qatorga role="button" berilmaydi: u qatorni jadval
+        daraxtidan uzib, katakchalarni ustun sarlavhasidan ajratib qo‘yadi.
+        Qator o‘z «row» rolida qoladi, klaviatura bilan ishlash esa
+        tabindex va Enter/Space orqali saqlanadi.
+      -->
       <tbody>
         <tr v-if="!rows.length">
           <td :colspan="columns.length" class="px-4 py-14 text-center text-ink-500">
@@ -69,7 +75,6 @@ function activate(row: T) {
           :key="String(row[rowKey])"
           class="border-b border-ink-100 transition-colors last:border-0 hover:bg-brand-50/40 focus-visible:bg-brand-50"
           :class="clickable ? 'cursor-pointer' : ''"
-          :role="clickable ? 'button' : undefined"
           :tabindex="clickable ? 0 : undefined"
           @click="clickable && activate(row)"
           @keydown.enter.prevent="clickable && activate(row)"

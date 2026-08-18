@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { CONTRACTS } from '~/data/business'
+import { docxBlob, fileSize, saveBlob, type DocxLine } from '~/utils/docx'
 import { dateShort, sum } from '~/utils/format'
 
 const auth = useAuthStore()
@@ -222,8 +223,8 @@ const columns = [
 
 const previewOpen = ref(false)
 const downloadOpen = ref(false)
-const downloadReady = ref(false)
 const selected = ref<CabinetDocument | null>(null)
+const savedFile = ref('')
 
 function openPreview(d: CabinetDocument) {
   selected.value = d
@@ -232,8 +233,70 @@ function openPreview(d: CabinetDocument) {
 
 function openDownload(d: CabinetDocument) {
   selected.value = d
-  downloadReady.value = false
+  savedFile.value = ''
   downloadOpen.value = true
+}
+
+/** Hujjat matni: reyestrdagi yozuv va shartnoma rekvizitlaridan yig‘iladi */
+function documentLines(d: CabinetDocument): DocxLine[] {
+  const lines: DocxLine[] = [
+    { text: 'Makon Property Group', style: 'subtitle' },
+    { text: d.name, style: 'title' },
+    { text: `${d.code} · ${dateShort(d.at)}`, style: 'subtitle' },
+    { text: 'Rekvizitlar', style: 'heading' },
+    { text: `Ijarachi: ${organization.value}` },
+    { text: 'Obyekt: Green Business Center' },
+    { text: `Unit: ${d.unitCode === 'Umumiy' ? 'Umumiy zonalar' : d.unitCode}` },
+    { text: `Kategoriya: ${d.category}` },
+    { text: `Hujjat raqami: ${d.code}` },
+    { text: `Sana: ${dateShort(d.at)}` },
+  ]
+
+  if (d.category === 'Shartnoma') {
+    lines.push(
+      { text: 'Shartnoma shartlari', style: 'heading' },
+      {
+        text: `Amal qilish muddati: ${dateShort(myContract.startsAt)} · ${dateShort(myContract.endsAt)}`,
+      },
+      { text: `Shartnoma summasi: ${sum(myContract.amount)}` },
+      { text: `To‘lov shakli: ${myContract.paymentTerm}` },
+    )
+  }
+
+  if (d.category === 'Hisob-faktura') {
+    lines.push(
+      { text: 'To‘lov shartlari', style: 'heading' },
+      { text: myContract.paymentTerm },
+    )
+  }
+
+  lines.push(
+    { text: 'Mazmuni', style: 'heading' },
+    { text: d.summary },
+    {
+      text: 'Hujjat tomonlar tomonidan tasdiqlangan va tizim arxivida saqlanadi.',
+    },
+    { text: 'Ijaraga beruvchi: imzo va muhr', style: 'small' },
+    { text: 'Ijarachi: imzo va muhr', style: 'small' },
+  )
+
+  return lines
+}
+
+/** Brauzer saqlaydigan nusxa: nomi va haqiqiy hajmi */
+const outputFile = computed(() => {
+  const d = selected.value
+  if (!d) return null
+  const blob = docxBlob(documentLines(d))
+  return { name: `${d.code}.docx`, size: fileSize(blob.size) }
+})
+
+function downloadDocument() {
+  const d = selected.value
+  if (!d) return
+  const fileName = `${d.code}.docx`
+  saveBlob(docxBlob(documentLines(d)), fileName)
+  savedFile.value = fileName
 }
 
 function docById(id: unknown) {
@@ -259,7 +322,7 @@ function docById(id: unknown) {
     </template>
   </AppTopbar>
 
-  <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-6">
+  <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-4 sm:p-6">
     <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <button
         v-for="t in categoryTabs.slice(1)"
@@ -331,7 +394,7 @@ function docById(id: unknown) {
           <span class="flex items-center justify-end gap-1.5">
             <button
               type="button"
-              class="grid size-9 place-items-center rounded-field text-ink-500 transition-colors hover:bg-ink-100 hover:text-ink-800"
+              class="grid size-11 place-items-center rounded-field text-ink-500 transition-colors hover:bg-ink-100 hover:text-ink-800 md:size-9"
               :aria-label="`${row.name}, ko‘rish`"
               @click.stop="openPreview(docById(row.id))"
             >
@@ -339,7 +402,7 @@ function docById(id: unknown) {
             </button>
             <button
               type="button"
-              class="grid size-9 place-items-center rounded-field text-brand-600 transition-colors hover:bg-brand-50"
+              class="grid size-11 place-items-center rounded-field text-brand-600 transition-colors hover:bg-brand-50 md:size-9"
               :aria-label="`${row.name}, yuklab olish`"
               @click.stop="openDownload(docById(row.id))"
             >
@@ -459,26 +522,26 @@ function docById(id: unknown) {
         </span>
         <span class="min-w-0">
           <span class="block truncate text-[13.5px] font-semibold text-ink-900">
-            {{ selected.code }}.{{ selected.format.toLowerCase() }}
+            {{ outputFile?.name }}
           </span>
           <span class="block text-[12px] text-ink-500">
-            {{ selected.format }} · {{ selected.size }} · {{ dateShort(selected.at) }}
+            DOCX · {{ outputFile?.size }} · {{ dateShort(selected.at) }}
           </span>
         </span>
       </div>
 
-      <p v-if="!downloadReady" class="text-[13px] text-ink-600">
-        Hujjat nusxasi tayyorlanadi va brauzeringiz orqali saqlanadi.
+      <p v-if="!savedFile" class="text-[13px] text-ink-600">
+        Hujjat nusxasi Word ko‘rinishida yig‘iladi va brauzeringiz orqali saqlanadi.
       </p>
-      <p v-else class="flex items-center gap-2 text-[13px] font-semibold text-ok-700">
-        <UiIcon name="check" :size="16" />
-        Hujjat yuklab olishga tayyor.
+      <p v-else class="flex items-start gap-2 text-[13px] font-semibold text-ok-700">
+        <UiIcon name="check" :size="16" class="mt-px shrink-0" />
+        <span class="min-w-0">{{ savedFile }} fayli saqlandi.</span>
       </p>
     </div>
 
     <template #footer>
       <UiButton variant="ghost" @click="downloadOpen = false">Yopish</UiButton>
-      <UiButton :disabled="downloadReady" @click="downloadReady = true">
+      <UiButton @click="downloadDocument">
         <UiIcon name="download" :size="16" />
         Yuklab olish
       </UiButton>

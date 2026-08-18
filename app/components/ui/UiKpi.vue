@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { NuxtLink } from '#components'
 /**
  * Ko‘rsatkich kartasi: gradientli ikonka maydoni, yirik qiymat, o‘zgarish
  * nishonchasi va karta qirralarigacha yetib boradigan dinamika chizig‘i.
@@ -84,14 +85,37 @@ const good = computed(() =>
 const sparkTone = computed<ChartTone>(() => (good.value === false ? 'danger' : props.tone))
 
 const hasSpark = computed(() => !!props.spark && props.spark.length > 1 && props.gauge === undefined)
+
+/**
+ * «37.58 mlrd so‘m» kabi qiymatda birlik raqamdan ajratiladi: aks holda besh
+ * ustunli qatorda (1440px da karta ichi 168px) satr o‘rtasidan sinadi va
+ * `leading-none` tufayli ikki qator bir-biriga tegib ketadi. Ajratish faqat
+ * qiymat sof sondan boshlanib, ortidan harf bilan boshlanuvchi birlik kelsa
+ * ishlaydi, shuning uchun «87%», «190 029» va «Urban Office MCHJ» kabi
+ * qiymatlar tegilmasdan qoladi.
+ */
+const VALUE_UNIT = /^([+\-−]?[\d.,\s]*\d)\s+(\p{L}.*)$/u
+
+const parts = computed(() => {
+  if (props.unit) return { value: props.value, unit: props.unit }
+  const match = VALUE_UNIT.exec(props.value.trim())
+  return match ? { value: match[1]!, unit: match[2]! } : { value: props.value, unit: props.unit }
+})
+
+/**
+ * Ildiz element. `resolveComponent('NuxtLink')` shablon ichida nomni topa
+ * olmasa satrni qaytaradi va DOM'ga `href`siz `<nuxtlink>` elementi tushadi:
+ * karta bosilmay qoladi. Komponentning o'zini bog'laganda bunday bo'lmaydi.
+ */
+const root = computed(() => (props.to ? NuxtLink : 'div'))
 </script>
 
 <template>
   <component
-    :is="to ? resolveComponent('NuxtLink') : 'div'"
+    :is="root"
     :to="to"
-    class="relative block overflow-hidden rounded-card bg-surface p-4 shadow-card ring-1 ring-ink-200/60 transition-all duration-200"
-    :class="[to ? 'hover:-translate-y-0.5 hover:shadow-panel hover:ring-brand-200' : '', hasSpark ? 'pb-5' : '']"
+    class="relative block overflow-hidden rounded-card bg-surface p-5 shadow-card ring-1 ring-ink-200/60 transition-all duration-200"
+    :class="[to ? 'hover:-translate-y-0.5 hover:shadow-panel hover:ring-brand-200' : '', hasSpark ? 'pb-6' : '']"
   >
     <span class="pointer-events-none absolute inset-0" :style="glowStyle" aria-hidden="true" />
 
@@ -117,9 +141,14 @@ const hasSpark = computed(() => !!props.spark && props.spark.length > 1 && props
 
       <div class="mt-2.5 flex items-end justify-between gap-3">
         <div class="min-w-0">
-          <p class="flex items-baseline gap-1.5">
-            <span class="tabular text-[26px] font-bold leading-none text-ink-900">{{ value }}</span>
-            <span v-if="unit" class="text-[13px] font-medium text-ink-500">{{ unit }}</span>
+          <p class="flex flex-wrap items-baseline gap-x-1.5 gap-y-1">
+            <span
+              class="tabular whitespace-nowrap text-[26px] font-bold leading-none text-ink-900"
+            >{{ parts.value }}</span>
+            <span
+              v-if="parts.unit"
+              class="text-[13px] font-medium text-ink-500"
+            >{{ parts.unit }}</span>
           </p>
 
           <span

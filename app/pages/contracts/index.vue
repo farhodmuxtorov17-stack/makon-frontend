@@ -5,7 +5,14 @@ import { CONTRACTS, type Contract } from '~/data/business'
 import { CONTRACT_STATUS } from '~/constants/statuses'
 import { dateShort, num, sum, sumShort } from '~/utils/format'
 
-const contracts = ref<Contract[]>([...CONTRACTS])
+const auth = useAuthStore()
+
+/** Reyestr faqat foydalanuvchi biriktirilgan obyektlar bilan cheklanadi */
+const scopedBuildings = computed(() => BUILDINGS.filter((b) => auth.inScope(b.id)))
+
+const contracts = ref<Contract[]>(
+  CONTRACTS.filter((c) => auth.inScope(c.buildingId)).map((c) => ({ ...c })),
+)
 
 const search = ref('')
 const type = ref('all')
@@ -39,10 +46,10 @@ const statusOptions = computed(() => [
   })),
 ])
 
-const buildingOptions = [
+const buildingOptions = computed(() => [
   { value: 'all', label: 'Barcha obyektlar' },
-  ...BUILDINGS.map((b) => ({ value: b.name, label: b.name })),
-]
+  ...scopedBuildings.value.map((b) => ({ value: b.name, label: b.name })),
+])
 
 const filtered = computed(() =>
   contracts.value.filter((c) => {
@@ -150,7 +157,7 @@ const seq = ref(Math.max(...CONTRACTS.map((c) => Number(c.code.slice(-4)))))
 const form = reactive({
   type: 'Ijara',
   tenant: '',
-  building: BUILDINGS[0]!.name,
+  building: scopedBuildings.value[0]?.name ?? BUILDINGS[0]!.name,
   unitCode: '',
   startsAt: '2025-06-01',
   endsAt: '2027-05-31',
@@ -169,7 +176,7 @@ const createValid = computed(() => form.tenant.trim().length > 2 && Number(form.
 function openCreate() {
   form.type = 'Ijara'
   form.tenant = ''
-  form.building = BUILDINGS[0]!.name
+  form.building = scopedBuildings.value[0]?.name ?? BUILDINGS[0]!.name
   form.unitCode = ''
   form.startsAt = '2025-06-01'
   form.endsAt = '2027-05-31'
@@ -187,7 +194,7 @@ function createContract() {
     code,
     type: form.type === 'Sotuv' ? 'Sotuv' : 'Ijara',
     tenant: form.tenant.trim(),
-    buildingId: BUILDINGS.find((b) => b.name === form.building)?.id ?? BUILDINGS[0]!.id,
+    buildingId: BUILDINGS.find((b) => b.name === form.building)?.id ?? scopedBuildings.value[0]?.id ?? BUILDINGS[0]!.id,
     buildingName: form.building,
     unitCode: form.unitCode.trim() || 'Unit -',
     startsAt: form.startsAt,
@@ -229,7 +236,7 @@ function createContract() {
     </template>
   </AppTopbar>
 
-  <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-6">
+  <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-4 sm:p-6">
     <div
       v-if="banner"
       class="flex items-center gap-3 rounded-card bg-ok-50 px-4 py-3 ring-1 ring-ok-100"
@@ -400,7 +407,7 @@ function createContract() {
         <UiField label="Obyekt" required>
           <UiSelect
             v-model="form.building"
-            :options="BUILDINGS.map((b) => ({ value: b.name, label: b.name }))"
+            :options="scopedBuildings.map((b) => ({ value: b.name, label: b.name }))"
           />
         </UiField>
         <UiField label="Unit">

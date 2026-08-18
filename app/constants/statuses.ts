@@ -29,25 +29,39 @@ export const UNIT_STATUS: Record<string, StatusDef> = {
   ARCHIVED: { label: 'Arxivlangan', tone: 'neutral', shape: 'square' },
 }
 
+/**
+ * Qavat rejasi va 3D navigator uchun yagona rang jadvali. Mijoz maketidagi
+ * legenda: bo‘sh yashil, ijarada ko‘k, sotilgan qizil, rezerv sariq, texnik
+ * va qolgan holatlar kulrang. Ekranlar shu jadvaldan o‘qiydi, shuning uchun
+ * bitta rang ikki xil ma’noni bildirib qolmaydi.
+ */
+export const UNIT_STATUS_COLOR: Record<string, string> = {
+  VACANT: '#16B99A',
+  RESERVED: '#FAA53F',
+  APPLICATION_IN_REVIEW: '#FAA53F',
+  RENTED: '#0256F7',
+  SOLD: '#F84448',
+  MAINTENANCE: '#8494AC',
+  DRAFT: '#8494AC',
+  HIDDEN: '#8494AC',
+  ARCHIVED: '#8494AC',
+}
+
+/**
+ * Bandlik shkalasi: uchta ekranda bir xil chegara va bir xil yozuv.
+ * Rang qoidasi `>= 90` yashil, `>= 84` ko‘k, qolgani sariq.
+ */
+export const OCCUPANCY_BANDS = [
+  { min: 90, labelKey: 'landing.occupancyHigh', label: '90% va yuqori', class: 'bg-ok-500' },
+  { min: 84, labelKey: 'landing.occupancyMid', label: '84% – 89%', class: 'bg-brand-500' },
+  { min: 0, labelKey: 'landing.occupancyLow', label: '84% dan past', class: 'bg-warn-500' },
+]
+
 export const LISTING_STATUS: Record<string, StatusDef> = {
   DRAFT: { label: 'Qoralama', tone: 'neutral', shape: 'square' },
   PUBLISHED: { label: 'E’lon qilingan', tone: 'ok', shape: 'check' },
   PAUSED: { label: 'To‘xtatilgan', tone: 'warn', shape: 'bar' },
   ARCHIVED: { label: 'Arxivlangan', tone: 'neutral', shape: 'square' },
-}
-
-export const APPLICATION_STATUS: Record<string, StatusDef> = {
-  DRAFT: { label: 'Qoralama', tone: 'neutral', shape: 'square' },
-  SUBMITTED: { label: 'Yuborilgan', tone: 'brand', shape: 'dot' },
-  BUILDING_REVIEW: { label: 'Bino ko‘rigida', tone: 'warn', shape: 'clock' },
-  FINANCE_REVIEW: { label: 'Moliya ko‘rigida', tone: 'warn', shape: 'clock' },
-  OFFER_SENT: { label: 'Taklif yuborilgan', tone: 'brand', shape: 'ring' },
-  OFFER_ACCEPTED: { label: 'Taklif qabul qilindi', tone: 'ok', shape: 'check' },
-  DOCUMENTS: { label: 'Hujjatlar', tone: 'brand', shape: 'bar' },
-  APPROVED: { label: 'Tasdiqlangan', tone: 'ok', shape: 'check' },
-  REJECTED: { label: 'Rad etilgan', tone: 'danger', shape: 'cross' },
-  CANCELLED: { label: 'Bekor qilingan', tone: 'neutral', shape: 'cross' },
-  COMPLETED: { label: 'Yakunlangan', tone: 'ok', shape: 'check' },
 }
 
 /**
@@ -67,7 +81,7 @@ export const LEASE_STATUS: Record<string, StatusDef> = {
 }
 
 export const CONTRACT_STATUS: Record<string, StatusDef> = {
-  DRAFT: { label: 'Loyiha', tone: 'neutral', shape: 'square' },
+  DRAFT: { label: 'Qoralama', tone: 'neutral', shape: 'square' },
   REVIEW: { label: 'Kelishilmoqda', tone: 'warn', shape: 'clock' },
   SIGNED: { label: 'Imzolangan', tone: 'brand', shape: 'check' },
   ACTIVE: { label: 'Faol', tone: 'ok', shape: 'check' },
@@ -111,7 +125,6 @@ export const MATERIAL_STATUS: Record<string, StatusDef> = {
 export const STATUS_REGISTRY = {
   unit: UNIT_STATUS,
   listing: LISTING_STATUS,
-  application: APPLICATION_STATUS,
   lease: LEASE_STATUS,
   contract: CONTRACT_STATUS,
   invoice: INVOICE_STATUS,
@@ -124,8 +137,8 @@ export type StatusKind = keyof typeof STATUS_REGISTRY
 export const TONE_BADGE: Record<Tone, string> = {
   neutral: 'bg-ink-100 text-ink-700 ring-ink-200',
   brand: 'bg-brand-50 text-brand-700 ring-brand-200',
-  ok: 'bg-ok-50 text-ok-700 ring-ok-100',
-  warn: 'bg-warn-50 text-warn-700 ring-warn-100',
+  ok: 'bg-ok-50 text-ok-800 ring-ok-100',
+  warn: 'bg-warn-50 text-warn-800 ring-warn-100',
   danger: 'bg-danger-50 text-danger-700 ring-danger-100',
   violet: 'bg-info-50 text-info-700 ring-info-100',
 }
