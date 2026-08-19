@@ -15,6 +15,15 @@ import { UNITS, type Unit } from '~/data/units'
 import { TONE_BADGE } from '~/constants/statuses'
 import { num, percent, sum, sumShort, todayIso } from '~/utils/format'
 
+/**
+ * Hisob-faktura chiqarish va davrni yopish moliyaviy amal. Bo'limni ko'rish
+ * huquqi buni bermaydi: super rahbar sahifani ochadi, lekin amalni buxgalter
+ * bajaradi. Ilgari tugmalar hammaga ko'rinardi va bosilganda hech nima
+ * bo'lmasdi.
+ */
+const auth = useAuthStore()
+const canIssue = computed(() => auth.can('invoice.create'))
+
 const { field, moduleCaption, moduleTitle, sectionLabel } = useAppLabels()
 
 const MONTHS = [
@@ -392,7 +401,7 @@ function createPeriod() {
         <UiIcon name="doc" :size="16" />
         Hisob-fakturalar
       </UiButton>
-      <UiButton size="sm" @click="createOpen = true">
+      <UiButton v-if="canIssue" size="sm" @click="createOpen = true">
         <UiIcon name="plus" :size="16" />
         Yangi davr
       </UiButton>
@@ -474,7 +483,8 @@ function createPeriod() {
           </span>
         </template>
         <template #cell-actions="{ row }">
-          <span class="inline-flex items-center justify-end gap-2">
+          <span v-if="!canIssue" class="text-[12px] text-ink-500">Faqat kuzatuv</span>
+          <span v-else class="inline-flex items-center justify-end gap-2">
             <UiButton
               variant="secondary"
               size="sm"
