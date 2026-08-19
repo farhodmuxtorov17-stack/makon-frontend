@@ -44,10 +44,10 @@ function downloadSigned() {
             <UiIcon name="external" :size="19" />
           </span>
           <div class="min-w-0">
-            <p class="text-[11.5px] font-semibold uppercase tracking-wide text-ink-500">
+            <p class="text-[12px] font-semibold uppercase tracking-wide text-ink-500">
               Didox: tashqi imzolash xizmati
             </p>
-            <p class="tabular mt-0.5 text-[15px] font-bold text-ink-900">{{ ticket.docNumber }}</p>
+            <p class="tabular mt-0.5 text-[16px] font-bold text-ink-900">{{ ticket.docNumber }}</p>
           </div>
         </div>
         <span
@@ -77,12 +77,12 @@ function downloadSigned() {
           :key="r.l"
           class="flex items-baseline justify-between gap-3 border-b border-ink-100 py-2.5 last:border-0"
         >
-          <dt class="text-[12.5px] text-ink-500">{{ r.l }}</dt>
+          <dt class="text-[13px] text-ink-500">{{ r.l }}</dt>
           <dd class="tabular min-w-0 text-right text-[13px] font-semibold text-ink-900">{{ r.v }}</dd>
         </div>
       </dl>
 
-      <p class="mt-4 flex items-start gap-2 rounded-field bg-white px-3.5 py-2.5 text-[12.5px] leading-relaxed text-ink-600 ring-1 ring-inset ring-ink-200">
+      <p class="mt-4 flex items-start gap-2 rounded-field bg-white px-3.5 py-2.5 text-[13px] leading-relaxed text-ink-600 ring-1 ring-inset ring-ink-200">
         <UiIcon name="info" :size="15" class="mt-px shrink-0 text-brand-600" />
         Imzolash Didox tomonida bajariladi, imzolovchini Didox o‘zi xabardor qiladi. MAKON
         faqat hujjat holatini kuzatadi va imzolangan nusxani qabul qiladi.
@@ -106,7 +106,7 @@ function downloadSigned() {
 
       <p
         v-if="downloaded"
-        class="mt-3 flex items-center gap-2 rounded-field bg-ok-50 px-3.5 py-2.5 text-[12.5px] font-semibold text-ok-700 ring-1 ring-inset ring-ok-100"
+        class="mt-3 flex items-center gap-2 rounded-field bg-ok-50 px-3.5 py-2.5 text-[13px] font-semibold text-ok-700 ring-1 ring-inset ring-ok-100"
       >
         <UiIcon name="check" :size="15" />
         {{ downloaded }} yuklab olindi, endi uni tizimga qaytadan yuklang
@@ -115,7 +115,7 @@ function downloadSigned() {
 
     <!-- Holat tarixi -->
     <div>
-      <p class="mb-2.5 text-[11.5px] font-semibold uppercase tracking-wide text-ink-500">
+      <p class="mb-2.5 text-[12px] font-semibold uppercase tracking-wide text-ink-500">
         Holat o‘zgarishi tarixi
       </p>
       <ol class="relative space-y-4 pl-8">
@@ -129,11 +129,11 @@ function downloadSigned() {
           >
             <UiIcon :name="STATE_ICON[h.state] ?? 'clock'" :size="14" />
           </span>
-          <p class="text-[13.5px] font-semibold text-ink-900">{{ h.state }}</p>
+          <p class="text-[14px] font-semibold text-ink-900">{{ h.state }}</p>
           <p class="tabular mt-0.5 text-[12px] text-ink-500">
             {{ dateShort(h.at) }} {{ timeOf(h.at) }}
           </p>
-          <p class="mt-0.5 text-[12.5px] leading-relaxed text-ink-600">{{ h.note }}</p>
+          <p class="mt-0.5 text-[13px] leading-relaxed text-ink-600">{{ h.note }}</p>
         </li>
       </ol>
     </div>

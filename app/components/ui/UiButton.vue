@@ -74,11 +74,9 @@ const classes = computed(() => [
   >
     <span
       v-if="busy"
-      class="absolute inline-flex size-4 animate-spin rounded-full border-2 border-current border-r-transparent"
+      class="inline-flex size-4 shrink-0 animate-spin rounded-full border-2 border-current border-r-transparent"
       aria-hidden="true"
     />
-    <span :class="busy ? 'invisible inline-flex items-center gap-inherit' : 'contents'">
-      <slot />
-    </span>
+    <slot />
   </button>
 </template>

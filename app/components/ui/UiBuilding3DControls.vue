@@ -137,7 +137,7 @@ const sectionNote = computed(() => {
           <div class="mt-2.5 space-y-2.5">
             <label class="block">
               <span
-                class="flex items-baseline justify-between gap-2 text-[11.5px] font-semibold text-ink-600"
+                class="flex items-baseline justify-between gap-2 text-[12px] font-semibold text-ink-600"
               >
                 Burilish
                 <span class="tabular text-[12px] font-bold text-ink-900">
@@ -158,7 +158,7 @@ const sectionNote = computed(() => {
 
             <label class="block">
               <span
-                class="flex items-baseline justify-between gap-2 text-[11.5px] font-semibold text-ink-600"
+                class="flex items-baseline justify-between gap-2 text-[12px] font-semibold text-ink-600"
               >
                 Nishab
                 <span class="tabular text-[12px] font-bold text-ink-900">
@@ -179,7 +179,7 @@ const sectionNote = computed(() => {
 
             <label class="block">
               <span
-                class="flex items-baseline justify-between gap-2 text-[11.5px] font-semibold text-ink-600"
+                class="flex items-baseline justify-between gap-2 text-[12px] font-semibold text-ink-600"
               >
                 Masshtab
                 <span class="tabular text-[12px] font-bold text-ink-900">
@@ -200,7 +200,7 @@ const sectionNote = computed(() => {
 
             <label class="block">
               <span
-                class="flex items-baseline justify-between gap-2 text-[11.5px] font-semibold text-ink-600"
+                class="flex items-baseline justify-between gap-2 text-[12px] font-semibold text-ink-600"
               >
                 Ajratish
                 <span class="tabular text-[12px] font-bold text-ink-900">
@@ -221,7 +221,7 @@ const sectionNote = computed(() => {
 
             <label class="block">
               <span
-                class="flex items-baseline justify-between gap-2 text-[11.5px] font-semibold text-ink-600"
+                class="flex items-baseline justify-between gap-2 text-[12px] font-semibold text-ink-600"
               >
                 Quyosh vaqti
                 <span class="tabular text-[12px] font-bold text-ink-900">{{ sunLabel }}</span>
@@ -264,7 +264,7 @@ const sectionNote = computed(() => {
               </button>
             </div>
 
-            <p class="text-[11.5px] leading-snug text-ink-500">{{ sunPhase }}</p>
+            <p class="text-[12px] leading-snug text-ink-500">{{ sunPhase }}</p>
           </div>
         </section>
 
@@ -298,7 +298,7 @@ const sectionNote = computed(() => {
             </button>
           </div>
 
-          <p class="mt-2 text-[11.5px] leading-snug text-ink-500">
+          <p class="mt-2 text-[12px] leading-snug text-ink-500">
             Qatlamlar faqat tanlangan qavat interyerida ishlaydi. Belgisi bor tugma yoqilgan,
             krestli tugma o‘chirilgan.
           </p>
@@ -316,7 +316,7 @@ const sectionNote = computed(() => {
 
           <div class="mt-2.5 space-y-2.5">
             <div>
-              <span class="text-[11.5px] font-semibold text-ink-600">Kesim tekisligi</span>
+              <span class="text-[12px] font-semibold text-ink-600">Kesim tekisligi</span>
               <div class="mt-1 flex flex-wrap gap-1.5" role="group" aria-label="Kesim o‘qi">
                 <button
                   v-for="a in AXES"
@@ -338,7 +338,7 @@ const sectionNote = computed(() => {
 
               <label class="mt-2 block">
                 <span
-                  class="flex items-baseline justify-between gap-2 text-[11.5px] font-semibold"
+                  class="flex items-baseline justify-between gap-2 text-[12px] font-semibold"
                   :class="state.sectionAxis === 'off' ? 'text-ink-400' : 'text-ink-600'"
                 >
                   Kesim o‘rni
@@ -358,11 +358,11 @@ const sectionNote = computed(() => {
                   @input="emit('patch', { sectionCut: num($event) })"
                 />
               </label>
-              <p class="mt-1 text-[11.5px] leading-snug text-ink-500">{{ sectionNote }}</p>
+              <p class="mt-1 text-[12px] leading-snug text-ink-500">{{ sectionNote }}</p>
             </div>
 
             <div class="border-t border-ink-100 pt-2.5">
-              <span class="text-[11.5px] font-semibold text-ink-600">O‘lchash</span>
+              <span class="text-[12px] font-semibold text-ink-600">O‘lchash</span>
               <div class="mt-1 flex flex-wrap gap-1.5">
                 <button
                   type="button"
@@ -387,7 +387,7 @@ const sectionNote = computed(() => {
                   Tozalash
                 </button>
               </div>
-              <p class="mt-1 text-[11.5px] leading-snug text-ink-500">{{ measureNote }}</p>
+              <p class="mt-1 text-[12px] leading-snug text-ink-500">{{ measureNote }}</p>
             </div>
           </div>
         </section>

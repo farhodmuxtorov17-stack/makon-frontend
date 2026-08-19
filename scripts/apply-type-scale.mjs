@@ -55,20 +55,11 @@ function snap(value) {
 const SKIP = new Set(['node_modules', '.nuxt', '.output', 'dist', '.git'])
 
 /**
- * Ayni paytda boshqa ish olib borilayotgan fayllar. Ular tugagach shkala
- * ularga ham qo'llanadi, aks holda ikki tomonlama tahrir bir-birini buzadi.
- * `--all` bayrog'i bilan istisnosiz ishlaydi.
+ * Istisno ro'yxati bo'sh: shkala butun ilovaga qo'llanadi. Ilgari bu yerda
+ * vaqtincha band fayllar turardi va ular tasodifan doimiy bo'lib qolgandi,
+ * natijada ijara jarayoni va 3D navigator eski o'lchamlarda qolib ketdi.
  */
-const RESERVED = process.argv.includes('--all')
-  ? []
-  : [
-      'app/components/lease/',
-      'app/pages/applications/',
-      'app/pages/contracts/',
-      'app/components/ui/UiBuilding3D.vue',
-      'app/components/ui/UiBuilding3DControls.vue',
-      'app/pages/objects/[id]/3d.vue',
-    ]
+const RESERVED = []
 
 const reserved = (file) => {
   const rel = relative(root, file).split('\\').join('/')

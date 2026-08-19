@@ -159,10 +159,22 @@ function confirmBackup() {
   backupOpen.value = false
 }
 
+/**
+ * Boshlang'ich holatga qaytarish. Ijara siklini yurgizganda tizim yangi
+ * shartnoma va hisob-faktura yaratadi, ular esa brauzer xotirasida saqlanib
+ * qoladi. Taqdimotdan oldin raqamlar tozalanishi kerak, aks holda ekranda
+ * oldingi sinovlardan qolgan qiymatlar ko'rinadi.
+ */
 function confirmRestore() {
   if (!restoreReady.value) return
-  pushAudit('Zaxiradan tiklash jarayoni ishga tushirildi', 'warn')
+  pushAudit('Tizim boshlang‘ich holatga qaytarildi', 'warn')
   restoreOpen.value = false
+  if (import.meta.client) {
+    for (const key of ['lease', 'makon.tour.seen', 'makon.favourites']) {
+      window.localStorage.removeItem(key)
+    }
+    window.location.reload()
+  }
 }
 
 const sessions = ref([
@@ -608,7 +620,7 @@ const TONE_DOT: Record<string, string> = {
       <template #footer>
         <UiButton variant="ghost" @click="restoreOpen = false">Bekor qilish</UiButton>
         <UiButton variant="danger" :disabled="!restoreReady" @click="confirmRestore">
-          Tiklashni boshlash
+          Boshlang‘ich holatga qaytarish
         </UiButton>
       </template>
     </UiModal>

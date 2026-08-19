@@ -38,9 +38,9 @@ const tiles = computed(() => {
       :key="t.label"
       class="rounded-field bg-surface-sunken px-4 py-3 ring-1 ring-inset ring-ink-200"
     >
-      <dt class="text-[11.5px] font-semibold uppercase tracking-wide text-ink-500">{{ t.label }}</dt>
+      <dt class="text-[12px] font-semibold uppercase tracking-wide text-ink-500">{{ t.label }}</dt>
       <dd class="tabular mt-1 text-[16px] font-bold leading-tight" :class="t.tone">{{ t.value }}</dd>
-      <dd v-if="t.hint" class="tabular mt-0.5 text-[11.5px] text-ink-500">{{ t.hint }}</dd>
+      <dd v-if="t.hint" class="tabular mt-0.5 text-[12px] text-ink-500">{{ t.hint }}</dd>
     </div>
   </dl>
 

@@ -503,7 +503,7 @@ async function copyValue(label: string, value: string) {
 
       <p
         v-if="needsUnit && item.status === 'YANGI'"
-        class="mt-4 flex items-start gap-2 rounded-field bg-warn-50 px-3.5 py-2.5 text-[12.5px] leading-relaxed text-warn-700 ring-1 ring-inset ring-warn-100"
+        class="mt-4 flex items-start gap-2 rounded-field bg-warn-50 px-3.5 py-2.5 text-[13px] leading-relaxed text-warn-700 ring-1 ring-inset ring-warn-100"
       >
         <UiIcon name="info" :size="15" class="mt-px shrink-0" />
         <span>
@@ -515,7 +515,7 @@ async function copyValue(label: string, value: string) {
 
       <p
         v-if="item.status === 'RAD_ETILDI' && item.rejectReason"
-        class="mt-4 flex items-start gap-2 rounded-field bg-danger-50 px-3.5 py-2.5 text-[12.5px] leading-relaxed text-danger-700 ring-1 ring-inset ring-danger-100"
+        class="mt-4 flex items-start gap-2 rounded-field bg-danger-50 px-3.5 py-2.5 text-[13px] leading-relaxed text-danger-700 ring-1 ring-inset ring-danger-100"
       >
         <UiIcon name="warning" :size="15" class="mt-px shrink-0" />
         Rad etish sababi: {{ item.rejectReason }}
@@ -575,12 +575,12 @@ async function copyValue(label: string, value: string) {
           <!-- Bog‘lanish bloki -->
           <div class="mt-5 rounded-field bg-surface-sunken p-4 ring-1 ring-inset ring-ink-200">
             <div class="flex flex-wrap items-center justify-between gap-3">
-              <p class="text-[11.5px] font-semibold uppercase tracking-wide text-ink-500">
+              <p class="text-[12px] font-semibold uppercase tracking-wide text-ink-500">
                 Bog‘lanish
               </p>
               <span
                 v-if="item.contactedAt"
-                class="inline-flex items-center gap-1.5 rounded-pill bg-ok-50 px-2.5 py-1 text-[11.5px] font-semibold text-ok-700 ring-1 ring-inset ring-ok-100"
+                class="inline-flex items-center gap-1.5 rounded-pill bg-ok-50 px-2.5 py-1 text-[12px] font-semibold text-ok-700 ring-1 ring-inset ring-ok-100"
               >
                 <UiIcon name="check" :size="12" />
                 Bog‘lanildi · {{ dateShort(item.contactedAt) }} {{ timeOf(item.contactedAt) }}
@@ -593,7 +593,7 @@ async function copyValue(label: string, value: string) {
                   <UiIcon name="user" :size="16" />
                 </span>
                 <span class="min-w-0">
-                  <span class="block text-[11.5px] text-ink-500">Vakil</span>
+                  <span class="block text-[12px] text-ink-500">Vakil</span>
                   <span class="block truncate text-[13px] font-semibold text-ink-900">
                     {{ item.org.director }}
                   </span>
@@ -607,7 +607,7 @@ async function copyValue(label: string, value: string) {
                   <UiIcon name="phone" :size="16" />
                 </span>
                 <span class="min-w-0">
-                  <span class="block text-[11.5px] text-ink-500">Telefon</span>
+                  <span class="block text-[12px] text-ink-500">Telefon</span>
                   <span class="tabular block truncate text-[13px] font-semibold text-brand-700">
                     {{ item.org.phone }}
                   </span>
@@ -621,7 +621,7 @@ async function copyValue(label: string, value: string) {
                   <UiIcon name="send" :size="16" />
                 </span>
                 <span class="min-w-0">
-                  <span class="block text-[11.5px] text-ink-500">E-pochta</span>
+                  <span class="block text-[12px] text-ink-500">E-pochta</span>
                   <span class="block truncate text-[13px] font-semibold text-brand-700">
                     {{ item.org.email }}
                   </span>
@@ -646,17 +646,17 @@ async function copyValue(label: string, value: string) {
             v-if="item.guest"
             class="mt-4 rounded-field bg-warn-50 p-4 ring-1 ring-inset ring-warn-100"
           >
-            <p class="flex items-start gap-2 text-[12.5px] font-semibold text-warn-700">
+            <p class="flex items-start gap-2 text-[13px] font-semibold text-warn-700">
               <UiIcon name="info" :size="15" class="mt-px shrink-0" />
               Mijozda hali hisob yo‘q: ariza ochiq forma orqali yuborilgan
             </p>
-            <p class="mt-1.5 text-[12.5px] leading-relaxed text-ink-600">
+            <p class="mt-1.5 text-[13px] leading-relaxed text-ink-600">
               Ariza yuborgan shaxs: {{ item.contactName }}. Telefon raqami bir martalik kod bilan
               tasdiqlangan.
             </p>
 
             <template v-if="item.accountInvitedAt">
-              <p class="mt-2.5 flex items-center gap-2 text-[12.5px] font-semibold text-ok-700">
+              <p class="mt-2.5 flex items-center gap-2 text-[13px] font-semibold text-ok-700">
                 <UiIcon name="check" :size="15" class="shrink-0" />
                 Kabinet ochish taklif qilindi: {{ dateShort(item.accountInvitedAt) }}
                 {{ timeOf(item.accountInvitedAt) }}
@@ -773,14 +773,14 @@ async function copyValue(label: string, value: string) {
               <UiIcon name="check" :size="17" />
               Arizani yopish
             </UiButton>
-            <p class="mt-2 text-[12.5px] leading-relaxed text-ink-500">
+            <p class="mt-2 text-[13px] leading-relaxed text-ink-500">
               Ariza yopilganda unit band qilinadi, shartnoma reyestrga tushadi va ijarachi kabineti
               uchun login bilan parol beriladi.
             </p>
 
             <p
               v-if="closeBlockers.length"
-              class="mt-2.5 flex items-start gap-2 rounded-field bg-warn-50 px-3.5 py-2.5 text-[12.5px] leading-relaxed text-warn-700 ring-1 ring-inset ring-warn-100"
+              class="mt-2.5 flex items-start gap-2 rounded-field bg-warn-50 px-3.5 py-2.5 text-[13px] leading-relaxed text-warn-700 ring-1 ring-inset ring-warn-100"
             >
               <UiIcon name="warning" :size="15" class="mt-px shrink-0" />
               <span>
@@ -808,7 +808,7 @@ async function copyValue(label: string, value: string) {
               :key="row.key"
               class="rounded-field bg-surface-sunken p-4 ring-1 ring-inset ring-ink-200"
             >
-              <p class="text-[11.5px] font-semibold uppercase tracking-wide text-ink-500">
+              <p class="text-[12px] font-semibold uppercase tracking-wide text-ink-500">
                 {{ row.label }}
               </p>
               <div class="mt-1.5 flex items-center gap-2">
@@ -830,7 +830,7 @@ async function copyValue(label: string, value: string) {
             </div>
           </div>
 
-          <p class="mt-3.5 flex items-start gap-2 rounded-field bg-brand-50 px-3.5 py-2.5 text-[12.5px] leading-relaxed text-brand-700 ring-1 ring-inset ring-brand-200">
+          <p class="mt-3.5 flex items-start gap-2 rounded-field bg-brand-50 px-3.5 py-2.5 text-[13px] leading-relaxed text-brand-700 ring-1 ring-inset ring-brand-200">
             <UiIcon name="info" :size="15" class="mt-px shrink-0" />
             <span>
               Kalit {{ dateShort(item.access.issuedAt) }} {{ timeOf(item.access.issuedAt) }} da
@@ -856,7 +856,7 @@ async function copyValue(label: string, value: string) {
         >
           <template v-if="needsUnit">
             <p
-              class="flex items-start gap-2 rounded-field bg-warn-50 px-3.5 py-2.5 text-[12.5px] leading-relaxed text-warn-700 ring-1 ring-inset ring-warn-100"
+              class="flex items-start gap-2 rounded-field bg-warn-50 px-3.5 py-2.5 text-[13px] leading-relaxed text-warn-700 ring-1 ring-inset ring-warn-100"
             >
               <UiIcon name="info" :size="15" class="mt-px shrink-0" />
               Mijoz ariza yuborganda maydon tanlamagan: u byudjet va muddatni ko‘rsatgan.
@@ -865,13 +865,13 @@ async function copyValue(label: string, value: string) {
 
             <dl class="mt-4 space-y-3">
               <div class="flex items-baseline justify-between gap-3">
-                <dt class="text-[12.5px] text-ink-500">Byudjet</dt>
+                <dt class="text-[13px] text-ink-500">Byudjet</dt>
                 <dd class="tabular text-[13px] font-semibold text-ink-900">
                   {{ sum(item.request.offerPrice) }} / oy
                 </dd>
               </div>
               <div class="flex items-baseline justify-between gap-3">
-                <dt class="text-[12.5px] text-ink-500">Muddat</dt>
+                <dt class="text-[13px] text-ink-500">Muddat</dt>
                 <dd class="tabular text-[13px] font-semibold text-ink-900">
                   {{ item.request.term }} oy
                 </dd>
@@ -898,7 +898,7 @@ async function copyValue(label: string, value: string) {
 
             <p
               v-else
-              class="mt-4 flex items-center justify-center gap-2 rounded-field bg-ink-100 px-3 py-2.5 text-[12.5px] font-semibold text-ink-600"
+              class="mt-4 flex items-center justify-center gap-2 rounded-field bg-ink-100 px-3 py-2.5 text-[13px] font-semibold text-ink-600"
             >
               <UiIcon name="eye" :size="15" />
               Maydonni Operator belgilaydi
@@ -908,42 +908,42 @@ async function copyValue(label: string, value: string) {
           <template v-else>
           <dl class="space-y-3">
             <div class="flex items-baseline justify-between gap-3">
-              <dt class="text-[12.5px] text-ink-500">Unit raqami</dt>
+              <dt class="text-[13px] text-ink-500">Unit raqami</dt>
               <dd class="text-[13px] font-semibold text-ink-900">{{ item.unitCode }}</dd>
             </div>
             <div class="flex items-baseline justify-between gap-3">
-              <dt class="text-[12.5px] text-ink-500">Maydon</dt>
+              <dt class="text-[13px] text-ink-500">Maydon</dt>
               <dd class="tabular text-[13px] font-semibold text-ink-900">{{ area(item.area) }}</dd>
             </div>
             <div class="flex items-baseline justify-between gap-3">
-              <dt class="text-[12.5px] text-ink-500">Qavat</dt>
+              <dt class="text-[13px] text-ink-500">Qavat</dt>
               <dd class="text-[13px] font-semibold text-ink-900">{{ item.floor }}-qavat</dd>
             </div>
             <div class="flex items-baseline justify-between gap-3">
-              <dt class="text-[12.5px] text-ink-500">Foydalanish turi</dt>
+              <dt class="text-[13px] text-ink-500">Foydalanish turi</dt>
               <dd class="text-[13px] font-semibold text-ink-900">{{ item.usage }}</dd>
             </div>
             <div v-if="unit" class="flex items-baseline justify-between gap-3">
-              <dt class="text-[12.5px] text-ink-500">Joriy holati</dt>
+              <dt class="text-[13px] text-ink-500">Joriy holati</dt>
               <dd><UiStatus kind="unit" :value="unit.status" size="sm" /></dd>
             </div>
             <div class="flex items-start justify-between gap-3">
-              <dt class="shrink-0 text-[12.5px] text-ink-500">Manzil</dt>
-              <dd class="min-w-0 text-right text-[12.5px] font-medium text-ink-700">
+              <dt class="shrink-0 text-[13px] text-ink-500">Manzil</dt>
+              <dd class="min-w-0 text-right text-[13px] font-medium text-ink-700">
                 {{ item.buildingAddress }}
               </dd>
             </div>
           </dl>
 
           <div v-if="unit?.equipment.length" class="mt-4 border-t border-ink-100 pt-4">
-            <p class="mb-2 text-[11.5px] font-semibold uppercase tracking-wide text-ink-500">
+            <p class="mb-2 text-[12px] font-semibold uppercase tracking-wide text-ink-500">
               Jihozlar
             </p>
             <ul class="space-y-1.5">
               <li
                 v-for="e in unit.equipment"
                 :key="e"
-                class="flex items-center gap-2 text-[12.5px] text-ink-700"
+                class="flex items-center gap-2 text-[13px] text-ink-700"
               >
                 <UiIcon name="check" :size="14" class="shrink-0 text-ok-500" />
                 {{ e }}
@@ -988,7 +988,7 @@ async function copyValue(label: string, value: string) {
           class="rounded-field bg-surface-sunken p-4 ring-1 ring-inset ring-ink-200"
         >
           <div class="flex items-center justify-between gap-3">
-            <span class="text-[11.5px] font-semibold uppercase tracking-wide text-ink-500">
+            <span class="text-[12px] font-semibold uppercase tracking-wide text-ink-500">
               {{ i + 1 }}-band
             </span>
             <button

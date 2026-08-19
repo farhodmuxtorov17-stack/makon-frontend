@@ -40,16 +40,16 @@ const STATUS_CLASS: Record<string, string> = {
       <table class="w-full min-w-[520px] border-collapse text-sm">
         <thead>
           <tr class="border-b border-ink-200 bg-surface-sunken">
-            <th scope="col" class="px-4 py-3 text-left text-[11.5px] font-semibold uppercase tracking-wide text-ink-500">
+            <th scope="col" class="px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-wide text-ink-500">
               Sana
             </th>
-            <th scope="col" class="px-4 py-3 text-left text-[11.5px] font-semibold uppercase tracking-wide text-ink-500">
+            <th scope="col" class="px-4 py-3 text-left text-[12px] font-semibold uppercase tracking-wide text-ink-500">
               Davr
             </th>
-            <th scope="col" class="px-4 py-3 text-right text-[11.5px] font-semibold uppercase tracking-wide text-ink-500">
+            <th scope="col" class="px-4 py-3 text-right text-[12px] font-semibold uppercase tracking-wide text-ink-500">
               Summa
             </th>
-            <th scope="col" class="px-4 py-3 text-right text-[11.5px] font-semibold uppercase tracking-wide text-ink-500">
+            <th scope="col" class="px-4 py-3 text-right text-[12px] font-semibold uppercase tracking-wide text-ink-500">
               Holat
             </th>
           </tr>
@@ -66,7 +66,7 @@ const STATUS_CLASS: Record<string, string> = {
             </td>
             <td class="px-4 py-3 text-[13px] text-ink-700">
               {{ r.label }}
-              <span v-if="r.kind === 'RENT' && r.service > 0" class="block text-[11.5px] text-ink-500">
+              <span v-if="r.kind === 'RENT' && r.service > 0" class="block text-[12px] text-ink-500">
                 Ijara {{ sum(r.rent) }} · servis {{ sum(r.service) }}
               </span>
             </td>
@@ -75,7 +75,7 @@ const STATUS_CLASS: Record<string, string> = {
             </td>
             <td class="px-4 py-3 text-right">
               <span
-                class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-pill px-2.5 py-1 text-[11.5px] font-semibold ring-1 ring-inset"
+                class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-pill px-2.5 py-1 text-[12px] font-semibold ring-1 ring-inset"
                 :class="STATUS_CLASS[r.status]"
               >
                 <UiIcon :name="r.status === 'PLANNED' ? 'clock' : 'check'" :size="12" />
@@ -91,7 +91,7 @@ const STATUS_CLASS: Record<string, string> = {
         -->
         <tfoot>
           <tr class="border-t border-ink-200 bg-surface-sunken">
-            <th scope="row" colspan="2" class="px-4 py-2.5 text-left text-[12.5px] font-semibold text-ink-600">
+            <th scope="row" colspan="2" class="px-4 py-2.5 text-left text-[13px] font-semibold text-ink-600">
               Ijara to‘lovlari ({{ totals.periods }} ta davr)
             </th>
             <td class="tabular px-4 py-2.5 text-right text-[13px] font-bold text-ink-900">
@@ -100,7 +100,7 @@ const STATUS_CLASS: Record<string, string> = {
             <td />
           </tr>
           <tr v-if="totals.deposit > 0" class="bg-surface-sunken">
-            <th scope="row" colspan="2" class="px-4 py-2.5 text-left text-[12.5px] font-semibold text-ink-600">
+            <th scope="row" colspan="2" class="px-4 py-2.5 text-left text-[13px] font-semibold text-ink-600">
               Kafolat depoziti
             </th>
             <td class="tabular px-4 py-2.5 text-right text-[13px] font-bold text-ink-900">
@@ -109,10 +109,10 @@ const STATUS_CLASS: Record<string, string> = {
             <td />
           </tr>
           <tr class="border-t border-ink-200 bg-surface-sunken">
-            <th scope="row" colspan="2" class="px-4 py-3 text-left text-[12.5px] font-semibold text-ink-700">
+            <th scope="row" colspan="2" class="px-4 py-3 text-left text-[13px] font-semibold text-ink-700">
               Shartnoma bo‘yicha jami
             </th>
-            <td class="tabular px-4 py-3 text-right text-[13.5px] font-extrabold text-brand-700">
+            <td class="tabular px-4 py-3 text-right text-[14px] font-extrabold text-brand-700">
               {{ sum(totals.total + totals.deposit) }}
             </td>
             <td />
@@ -132,7 +132,7 @@ const STATUS_CLASS: Record<string, string> = {
     <button
       v-if="hidden > 0"
       type="button"
-      class="mt-3 inline-flex min-h-10 items-center gap-1.5 rounded-field px-3 text-[12.5px] font-semibold text-brand-600 transition-colors duration-150 hover:bg-brand-50"
+      class="mt-3 inline-flex min-h-10 items-center gap-1.5 rounded-field px-3 text-[13px] font-semibold text-brand-600 transition-colors duration-150 hover:bg-brand-50"
       @click="expanded = !expanded"
     >
       <UiIcon :name="expanded ? 'chevronDown' : 'chevronRight'" :size="15" />

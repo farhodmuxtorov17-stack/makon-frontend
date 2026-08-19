@@ -246,7 +246,7 @@ function goApply() {
           <span class="grid size-14 place-items-center rounded-full bg-warn-50 text-warn-600">
             <UiIcon name="warning" :size="26" />
           </span>
-          <p class="text-[15px] font-bold text-ink-900">Obyekt mavjud emas</p>
+          <p class="text-[16px] font-bold text-ink-900">Obyekt mavjud emas</p>
           <p class="max-w-sm text-[13px] leading-relaxed text-ink-500">
             Havola eskirgan yoki obyekt sizga biriktirilmagan bo‘lishi mumkin.
           </p>
@@ -292,7 +292,7 @@ function goApply() {
             eager
           >
             <span
-              class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-ink-900/80 via-ink-900/20 to-transparent px-3 py-2 text-[11.5px] font-semibold text-white"
+              class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-ink-900/80 via-ink-900/20 to-transparent px-3 py-2 text-[12px] font-semibold text-white"
             >
               {{ building.buildYear }}-yil · {{ building.type }}
             </span>
@@ -300,11 +300,11 @@ function goApply() {
 
           <div class="min-w-0">
             <div class="flex flex-wrap items-center gap-2">
-              <h2 class="min-w-0 truncate text-[20px] font-bold text-ink-900 sm:text-[22px]">
+              <h2 class="min-w-0 truncate text-[22px] font-bold text-ink-900 sm:text-[22px]">
                 {{ building.name }}
               </h2>
               <span
-                class="rounded-pill bg-brand-50 px-2.5 py-0.5 text-[11.5px] font-semibold text-brand-700 ring-1 ring-inset ring-brand-200"
+                class="rounded-pill bg-brand-50 px-2.5 py-0.5 text-[12px] font-semibold text-brand-700 ring-1 ring-inset ring-brand-200"
               >
                 {{ building.buildingClass }}
               </span>
@@ -329,7 +329,7 @@ function goApply() {
                     >
                       {{ k.label }}
                     </span>
-                    <span class="tabular mt-1.5 block truncate text-[19px] font-bold leading-none text-ink-900">
+                    <span class="tabular mt-1.5 block truncate text-[18px] font-bold leading-none text-ink-900">
                       {{ k.value }}
                     </span>
                   </span>
@@ -337,7 +337,7 @@ function goApply() {
                     <UiIcon :name="k.icon" :size="15" />
                   </span>
                 </span>
-                <p class="mt-2 truncate text-[11.5px] text-ink-500">{{ k.note }}</p>
+                <p class="mt-2 truncate text-[12px] text-ink-500">{{ k.note }}</p>
               </div>
             </div>
           </div>
@@ -377,7 +377,7 @@ function goApply() {
                 />
                 <span class="min-w-0 flex-1 truncate font-medium">{{ c.label }}</span>
                 <span
-                  class="tabular shrink-0 rounded-pill bg-ink-100 px-2 py-0.5 text-[11.5px] font-semibold text-ink-700"
+                  class="tabular shrink-0 rounded-pill bg-ink-100 px-2 py-0.5 text-[12px] font-semibold text-ink-700"
                 >
                   {{ c.count }}
                 </span>
@@ -387,11 +387,11 @@ function goApply() {
 
           <UiCard v-if="currentFloor" title="Tanlangan qavat" flush>
             <div class="flex items-center justify-between gap-3">
-              <p class="tabular min-w-0 truncate text-[20px] font-bold text-ink-900">
+              <p class="tabular min-w-0 truncate text-[22px] font-bold text-ink-900">
                 {{ currentFloor.name }}
               </p>
               <span
-                class="shrink-0 rounded-pill px-2.5 py-1 text-[11.5px] font-semibold ring-1 ring-inset"
+                class="shrink-0 rounded-pill px-2.5 py-1 text-[12px] font-semibold ring-1 ring-inset"
                 :class="
                   currentFloor.total
                     ? 'bg-ok-50 text-ok-700 ring-ok-100'
@@ -404,19 +404,19 @@ function goApply() {
 
             <dl class="mt-4 divide-y divide-ink-100">
               <div class="flex items-center justify-between gap-4 py-2.5">
-                <dt class="text-[12.5px] text-ink-500">Jami maydon</dt>
+                <dt class="text-[13px] text-ink-500">Jami maydon</dt>
                 <dd class="tabular text-[13px] font-bold text-ink-900">
                   {{ currentFloor.total ? area(currentFloor.totalArea) : '-' }}
                 </dd>
               </div>
               <div class="flex items-center justify-between gap-4 py-2.5">
-                <dt class="text-[12.5px] text-ink-500">Bo‘sh maydon</dt>
+                <dt class="text-[13px] text-ink-500">Bo‘sh maydon</dt>
                 <dd class="tabular text-[13px] font-bold text-ok-600">
                   {{ currentFloor.total ? area(currentFloor.vacantArea) : '-' }}
                 </dd>
               </div>
               <div class="flex items-center justify-between gap-4 py-2.5">
-                <dt class="text-[12.5px] text-ink-500">Unitlar soni</dt>
+                <dt class="text-[13px] text-ink-500">Unitlar soni</dt>
                 <dd class="tabular text-[13px] font-bold text-ink-900">
                   {{ currentFloor.total }} ta
                 </dd>
@@ -453,7 +453,7 @@ function goApply() {
                   <span class="tabular block truncate text-[13px] font-bold text-ink-900">
                     {{ u.code }}
                   </span>
-                  <span class="tabular mt-0.5 block truncate text-[11.5px] text-ink-500">
+                  <span class="tabular mt-0.5 block truncate text-[12px] text-ink-500">
                     {{ area(u.area) }} · {{ u.usage }} · {{ u.rooms }} xona
                   </span>
                 </span>
@@ -493,31 +493,31 @@ function goApply() {
 
             <dl class="mt-4 divide-y divide-ink-100">
               <div class="flex items-start gap-4 py-2.5">
-                <dt class="w-[112px] shrink-0 text-[12.5px] text-ink-500">Maydoni</dt>
+                <dt class="w-[112px] shrink-0 text-[13px] text-ink-500">Maydoni</dt>
                 <dd class="tabular min-w-0 flex-1 text-[13px] font-bold text-ink-900">
                   {{ area(currentUnit.area) }}
                 </dd>
               </div>
               <div class="flex items-start gap-4 py-2.5">
-                <dt class="w-[112px] shrink-0 text-[12.5px] text-ink-500">Turi</dt>
+                <dt class="w-[112px] shrink-0 text-[13px] text-ink-500">Turi</dt>
                 <dd class="min-w-0 flex-1 text-[13px] font-semibold text-ink-900">
                   {{ currentUnit.usage }} · {{ currentUnit.rooms }} xona · {{ currentUnit.offer }}
                 </dd>
               </div>
               <div v-if="showFinance" class="flex items-start gap-4 py-2.5">
-                <dt class="w-[112px] shrink-0 text-[12.5px] text-ink-500">Ijarachi</dt>
+                <dt class="w-[112px] shrink-0 text-[13px] text-ink-500">Ijarachi</dt>
                 <dd class="min-w-0 flex-1 text-[13px] font-semibold text-ink-900">
                   {{ currentUnit.tenant ?? '-' }}
                 </dd>
               </div>
               <div v-if="showFinance" class="flex items-start gap-4 py-2.5">
-                <dt class="w-[112px] shrink-0 text-[12.5px] text-ink-500">Narxi</dt>
+                <dt class="w-[112px] shrink-0 text-[13px] text-ink-500">Narxi</dt>
                 <dd class="tabular min-w-0 flex-1 text-[13px] font-bold text-brand-600">
                   {{ num(currentUnit.price) }} {{ currentUnit.priceUnit }}
                 </dd>
               </div>
               <div v-if="showFinance" class="flex items-start gap-4 py-2.5">
-                <dt class="w-[112px] shrink-0 text-[12.5px] text-ink-500">Shartnoma</dt>
+                <dt class="w-[112px] shrink-0 text-[13px] text-ink-500">Shartnoma</dt>
                 <dd class="min-w-0 flex-1 text-[13px] font-semibold text-ink-800">
                   {{ contractLabel(currentUnit) }}
                 </dd>
@@ -528,7 +528,7 @@ function goApply() {
               <span
                 v-for="e in currentUnit.equipment"
                 :key="e"
-                class="rounded-pill bg-ink-100 px-2.5 py-1 text-[11.5px] font-medium text-ink-700"
+                class="rounded-pill bg-ink-100 px-2.5 py-1 text-[12px] font-medium text-ink-700"
               >
                 {{ e }}
               </span>
@@ -578,7 +578,7 @@ function goApply() {
   </template>
 
     <UiModal v-model="applyOpen" title="Ariza yuborish" size="sm">
-      <p class="text-[13.5px] leading-relaxed text-ink-600">
+      <p class="text-[14px] leading-relaxed text-ink-600">
         Ariza faqat ijarachi profilidan yuboriladi. Ichki rol bilan kirgan
         foydalanuvchi ariza yarata olmaydi, bu ijarachi tomonidagi amal.
       </p>

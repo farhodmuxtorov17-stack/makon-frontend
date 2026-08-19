@@ -13,8 +13,8 @@ defineProps<{ at: string; changes: ActivationChange[] }>()
           <UiIcon name="check" :size="20" />
         </span>
         <div>
-          <p class="text-[15px] font-bold text-ok-700">Ariza yopildi</p>
-          <p class="tabular text-[12.5px] text-ok-600">
+          <p class="text-[16px] font-bold text-ok-700">Ariza yopildi</p>
+          <p class="tabular text-[13px] text-ok-600">
             {{ dateShort(at) }} {{ timeOf(at) }}, amalga oshirilgan o‘zgarishlar
           </p>
         </div>
@@ -36,8 +36,8 @@ defineProps<{ at: string; changes: ActivationChange[] }>()
           <UiIcon :name="c.icon" :size="18" />
         </span>
         <span class="min-w-0">
-          <span class="block text-[13.5px] font-semibold text-ink-900">{{ c.label }}</span>
-          <span v-if="c.detail" class="mt-0.5 block text-[12.5px] leading-relaxed text-ink-600">
+          <span class="block text-[14px] font-semibold text-ink-900">{{ c.label }}</span>
+          <span v-if="c.detail" class="mt-0.5 block text-[13px] leading-relaxed text-ink-600">
             {{ c.detail }}
           </span>
         </span>

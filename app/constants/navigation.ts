@@ -28,6 +28,8 @@ export interface NavItem {
  * menyudagi son sahifadagi son bilan doim mos tushadi.
  */
 export const APPLICATION_QUEUE: Partial<Record<Role, LeaseStatus[]>> = {
+  // Bosh direktor butun jarayonni kuzatadi, shuning uchun barcha ochiq bosqichlar
+  SUPER_HEAD: ['YANGI', 'SHARTNOMA_TAYYOR', 'DIDOX_YUBORILDI', 'DIDOX_IMZOLANDI'],
   /*
    * Ijara zanjirini boshidan oxirigacha Operator olib boradi: arizani
    * tasdiqlaydi, shartnomani tahrirlaydi va Didoxga yuboradi, holatni

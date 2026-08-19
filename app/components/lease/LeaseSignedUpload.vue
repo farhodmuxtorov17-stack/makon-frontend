@@ -102,7 +102,7 @@ async function copyHash() {
       </div>
 
       <div class="mt-3 flex flex-wrap items-center gap-2 border-t border-ok-100 pt-3">
-        <span class="text-[11.5px] font-semibold uppercase tracking-wide text-ink-500">
+        <span class="text-[12px] font-semibold uppercase tracking-wide text-ink-500">
           Fayl SHA-256
         </span>
         <code class="tabular min-w-0 truncate rounded-[6px] bg-white px-2 py-1 text-[12px] text-ink-700">
@@ -140,7 +140,7 @@ async function copyHash() {
           <UiIcon :name="busy ? 'refresh' : 'upload'" :size="20" />
         </span>
         <span class="min-w-0">
-          <span class="block text-[13.5px] font-semibold text-ink-900">
+          <span class="block text-[14px] font-semibold text-ink-900">
             {{ busy ? 'Fayl o‘qilmoqda…' : 'Imzolangan hujjatni tanlash' }}
           </span>
           <span class="mt-0.5 block text-[12px] leading-relaxed text-ink-500">
@@ -161,7 +161,7 @@ async function copyHash() {
 
       <p
         v-if="error"
-        class="mt-2.5 flex items-start gap-2 rounded-field bg-danger-50 px-3.5 py-2.5 text-[12.5px] leading-relaxed text-danger-700 ring-1 ring-inset ring-danger-100"
+        class="mt-2.5 flex items-start gap-2 rounded-field bg-danger-50 px-3.5 py-2.5 text-[13px] leading-relaxed text-danger-700 ring-1 ring-inset ring-danger-100"
         role="alert"
       >
         <UiIcon name="warning" :size="15" class="mt-px shrink-0" />

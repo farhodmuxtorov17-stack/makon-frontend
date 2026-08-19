@@ -13,6 +13,17 @@ function navLabel(item: NavItem | NavChild) {
 }
 
 /**
+ * Ichki menyuli bo'lim faqat ochish tugmasi bo'lib qolardi va uning o'z
+ * sahifasiga menyudan yo'l yo'q edi. Endi bo'limning o'zi ro'yxatning
+ * birinchi qatori sifatida qo'shiladi.
+ */
+function childrenOf(item: NavItem): NavChild[] {
+  const list = item.children ?? []
+  if (list.some((c) => c.to === item.to)) return list
+  return [{ label: item.label, key: item.key, to: item.to }, ...list]
+}
+
+/**
  * Yon paneldagi bo‘limlar. Sozlamalarda bo‘lim yopilgan bo‘lsa, u yerdagi
  * yozuv ham yo‘qoladi: ochilmaydigan havola ko‘rinib turmaydi.
  */
@@ -165,7 +176,7 @@ watch(() => route.fullPath, hideHint)
               </button>
 
               <ul v-show="groupOpen(item)" class="mt-0.5 space-y-0.5 pl-[38px]">
-                <li v-for="child in item.children" :key="child.to">
+                <li v-for="child in childrenOf(item)" :key="child.to">
                   <NuxtLink
                     :to="child.to"
                     class="block rounded-[8px] px-3 py-2 text-[13px] font-medium transition-colors"

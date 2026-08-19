@@ -345,11 +345,11 @@ function createContract() {
         <template #cell-approval="{ row }">
           <template v-if="row.approval">
             <span class="block text-[13px] font-semibold text-ink-900">{{ row.approval }}</span>
-            <span class="tabular block text-[11.5px] text-ink-500">
+            <span class="tabular block text-[12px] text-ink-500">
               {{ dateShort(String(row.approvalDate)) }}
             </span>
           </template>
-          <span v-else class="text-[12.5px] text-ink-500">Tasdiqlash kutilmoqda</span>
+          <span v-else class="text-[13px] text-ink-500">Tasdiqlash kutilmoqda</span>
         </template>
       </UiTable>
 
@@ -386,7 +386,7 @@ function createContract() {
               <UiIcon :name="s.icon" :size="18" />
             </span>
             <span class="min-w-0 flex-1">
-              <span class="block truncate text-[13.5px] font-bold text-ink-900">{{ s.label }}</span>
+              <span class="block truncate text-[14px] font-bold text-ink-900">{{ s.label }}</span>
               <span class="block truncate text-[12px] text-ink-500">{{ s.caption }}</span>
             </span>
             <span class="tabular shrink-0 text-[13px] font-bold text-ink-700">{{ s.count }}</span>

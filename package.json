@@ -9,7 +9,8 @@
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
     "typecheck": "nuxt typecheck",
-    "check": "node scripts/check-sfc.mjs"
+    "check": "node scripts/check-sfc.mjs && node scripts/check-traces.mjs && vue-tsc --noEmit",
+    "scale": "node scripts/apply-type-scale.mjs"
   },
   "dependencies": {
     "@nuxtjs/i18n": "^10.6.0",

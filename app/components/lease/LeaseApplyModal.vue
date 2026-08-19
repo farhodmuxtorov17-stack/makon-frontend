@@ -177,15 +177,15 @@ watch(open, (isOpen) => {
         <span class="grid size-12 place-items-center rounded-full bg-ok-50 text-ok-700">
           <UiIcon name="check" :size="26" />
         </span>
-        <p class="mt-4 text-[11.5px] font-bold uppercase tracking-[0.08em] text-ink-500">
+        <p class="mt-4 text-[12px] font-bold uppercase tracking-[0.08em] text-ink-500">
           {{ t('apply.doneNumber') }}
         </p>
         <p
-          class="tabular mt-1.5 text-[30px] font-extrabold leading-none tracking-[-0.01em] text-brand-600"
+          class="tabular mt-1.5 text-[28px] font-extrabold leading-none tracking-[-0.01em] text-brand-600"
         >
           {{ createdCode }}
         </p>
-        <p class="mt-4 max-w-[42ch] text-[13.5px] leading-relaxed text-ink-600">
+        <p class="mt-4 max-w-[42ch] text-[14px] leading-relaxed text-ink-600">
           {{ t('apply.doneLead') }}
         </p>
       </div>
@@ -195,7 +195,7 @@ watch(open, (isOpen) => {
           <dt class="shrink-0 pt-px text-ink-400">
             <UiIcon name="contract" :size="17" />
           </dt>
-          <dd class="text-[13.5px] leading-relaxed text-ink-700">
+          <dd class="text-[14px] leading-relaxed text-ink-700">
             {{
               t('apply.doneSummary', {
                 org: orgName,
@@ -209,7 +209,7 @@ watch(open, (isOpen) => {
           <dt class="shrink-0 pt-px text-ink-400">
             <UiIcon name="phone" :size="17" />
           </dt>
-          <dd class="text-[13.5px] leading-relaxed text-ink-700">
+          <dd class="text-[14px] leading-relaxed text-ink-700">
             {{ t('apply.doneNext', { phone: phone }) }}
           </dd>
         </div>
@@ -304,7 +304,7 @@ watch(open, (isOpen) => {
       </div>
 
       <p
-        class="mt-5 flex items-start gap-2.5 rounded-field bg-surface-sunken p-3.5 text-[12.5px] leading-relaxed text-ink-600 ring-1 ring-inset ring-ink-200"
+        class="mt-5 flex items-start gap-2.5 rounded-field bg-surface-sunken p-3.5 text-[13px] leading-relaxed text-ink-600 ring-1 ring-inset ring-ink-200"
       >
         <UiIcon name="info" :size="15" class="mt-px shrink-0 text-ink-400" />
         {{ t('apply.legalNote') }}

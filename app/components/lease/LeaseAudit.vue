@@ -23,12 +23,12 @@ const ICON: Record<string, string> = {
       >
         <UiIcon :name="ICON[e.roleLabel] ?? 'clock'" :size="14" />
       </span>
-      <p class="text-[13.5px] font-semibold text-ink-900">{{ e.action }}</p>
+      <p class="text-[14px] font-semibold text-ink-900">{{ e.action }}</p>
       <p class="tabular mt-0.5 text-[12px] text-ink-500">
         {{ dateShort(e.at) }} {{ timeOf(e.at) }} · {{ e.actor }}
         <span class="text-ink-400">({{ e.roleLabel }})</span>
       </p>
-      <p v-if="e.detail" class="mt-1 text-[12.5px] leading-relaxed text-ink-600">{{ e.detail }}</p>
+      <p v-if="e.detail" class="mt-1 text-[13px] leading-relaxed text-ink-600">{{ e.detail }}</p>
     </li>
   </ol>
 

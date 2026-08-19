@@ -185,7 +185,7 @@ const NEXT_STEP: Record<string, string> = {
             <div class="flex flex-wrap items-center gap-2">
               <NuxtLink
                 :to="`/applications/${c.id}`"
-                class="rounded-[6px] text-[15px] font-bold text-ink-900 transition-colors hover:text-brand-600"
+                class="rounded-[6px] text-[16px] font-bold text-ink-900 transition-colors hover:text-brand-600"
               >
                 {{ c.code }}
               </NuxtLink>

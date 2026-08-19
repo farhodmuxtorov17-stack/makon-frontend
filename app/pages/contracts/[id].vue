@@ -227,7 +227,7 @@ const DOC_TONE: Record<string, string> = {
 
   <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-4 sm:p-6">
     <UiCard v-if="!contract" title="Shartnoma topilmadi">
-      <p class="text-[13.5px] text-ink-600">
+      <p class="text-[14px] text-ink-600">
         So‘ralgan shartnoma reyestrda mavjud emas yoki arxivga o‘tkazilgan.
       </p>
       <UiButton class="mt-4" to="/contracts">
@@ -263,27 +263,27 @@ const DOC_TONE: Record<string, string> = {
             <dl class="divide-y divide-ink-100">
               <div class="flex items-baseline justify-between gap-6 py-3">
                 <dt class="text-[13px] text-ink-500">Turi</dt>
-                <dd class="text-[13.5px] font-semibold text-ink-900">{{ contract.type }}</dd>
+                <dd class="text-[14px] font-semibold text-ink-900">{{ contract.type }}</dd>
               </div>
               <div class="flex items-baseline justify-between gap-6 py-3">
                 <dt class="text-[13px] text-ink-500">Yuridik shaxs / Ijarachi</dt>
-                <dd class="text-[13.5px] font-semibold text-ink-900">{{ contract.tenant }}</dd>
+                <dd class="text-[14px] font-semibold text-ink-900">{{ contract.tenant }}</dd>
               </div>
               <div class="flex items-baseline justify-between gap-6 py-3">
                 <dt class="text-[13px] text-ink-500">Obyekt</dt>
-                <dd class="text-right text-[13.5px] font-semibold text-ink-900">
+                <dd class="text-right text-[14px] font-semibold text-ink-900">
                   {{ contract.buildingName }}, {{ contract.unitCode }}
                 </dd>
               </div>
               <div class="flex items-baseline justify-between gap-6 py-3">
                 <dt class="text-[13px] text-ink-500">Boshlanish sanasi</dt>
-                <dd class="text-[13.5px] font-semibold text-ink-900">
+                <dd class="text-[14px] font-semibold text-ink-900">
                   {{ dateLong(contract.startsAt) }}
                 </dd>
               </div>
               <div class="flex items-baseline justify-between gap-6 py-3">
                 <dt class="text-[13px] text-ink-500">Tugash sanasi</dt>
-                <dd class="text-[13.5px] font-semibold text-ink-900">
+                <dd class="text-[14px] font-semibold text-ink-900">
                   {{ contract.endsAt === '-' ? 'Muddatsiz' : dateLong(contract.endsAt) }}
                 </dd>
               </div>
@@ -295,11 +295,11 @@ const DOC_TONE: Record<string, string> = {
               </div>
               <div class="flex items-baseline justify-between gap-6 py-3">
                 <dt class="text-[13px] text-ink-500">To‘lov shakli</dt>
-                <dd class="text-[13.5px] font-semibold text-ink-900">{{ contract.paymentTerm }}</dd>
+                <dd class="text-[14px] font-semibold text-ink-900">{{ contract.paymentTerm }}</dd>
               </div>
               <div class="flex items-baseline justify-between gap-6 py-3">
                 <dt class="text-[13px] text-ink-500">Kelishuvni qayd etgan shaxs</dt>
-                <dd class="text-right text-[13.5px] font-semibold text-ink-900">
+                <dd class="text-right text-[14px] font-semibold text-ink-900">
                   <template v-if="isAgreed">
                     {{ approver }}
                     <span class="tabular block text-[12px] font-medium text-ink-500">
@@ -336,7 +336,7 @@ const DOC_TONE: Record<string, string> = {
                   <UiIcon name="doc" :size="18" />
                 </span>
                 <span class="min-w-0 flex-1">
-                  <span class="block truncate text-[13.5px] font-semibold text-ink-900">
+                  <span class="block truncate text-[14px] font-semibold text-ink-900">
                     {{ d.name }}
                   </span>
                   <span class="block text-[12px] text-ink-500">
@@ -377,13 +377,13 @@ const DOC_TONE: Record<string, string> = {
                   />
                 </div>
                 <div class="min-w-0 flex-1 pt-1">
-                  <p class="text-[13.5px] font-bold text-ink-900">{{ t.label }}</p>
-                  <p class="mt-0.5 text-[12.5px] text-ink-500">
+                  <p class="text-[14px] font-bold text-ink-900">{{ t.label }}</p>
+                  <p class="mt-0.5 text-[13px] text-ink-500">
                     {{ t.date === '-' ? 'Sana belgilanmagan' : dateLong(t.date) }} · {{ t.actor }}
                   </p>
                 </div>
                 <span
-                  class="shrink-0 self-start rounded-pill px-2.5 py-1 text-[11.5px] font-semibold"
+                  class="shrink-0 self-start rounded-pill px-2.5 py-1 text-[12px] font-semibold"
                   :class="t.done ? 'bg-ok-50 text-ok-700' : 'bg-ink-100 text-ink-600'"
                 >
                   {{ t.done ? 'Bajarildi' : 'Kutilmoqda' }}
@@ -400,21 +400,21 @@ const DOC_TONE: Record<string, string> = {
                 <span class="text-[13px] text-ink-500">Joriy holat</span>
                 <UiStatus kind="contract" :value="contract.status" size="sm" />
               </div>
-              <p class="mt-2 text-[12.5px] leading-relaxed text-ink-600">
+              <p class="mt-2 text-[13px] leading-relaxed text-ink-600">
                 {{
                   isAgreed
                     ? `Shartlar ${dateShort(approveDate)} sanasida ${approver} tomonidan kelishilgan deb qayd etilgan.`
                     : 'Shartnoma shartlarni kelishishni kutmoqda. Kelishuv qayd etilgach hujjat imzolashga tayyorlanadi.'
                 }}
               </p>
-              <p class="mt-2 text-[12.5px] leading-relaxed text-ink-600">
+              <p class="mt-2 text-[13px] leading-relaxed text-ink-600">
                 {{
                   isSigned
                     ? 'Hujjat Didox orqali imzolangan.'
                     : 'Imzolash Didox orqali, tashqi xizmatda bajariladi. Imzolangan nusxa qaytgach shu yerda qayd etiladi.'
                 }}
               </p>
-              <p v-if="isActive" class="mt-2 text-[12.5px] leading-relaxed text-ok-700">
+              <p v-if="isActive" class="mt-2 text-[13px] leading-relaxed text-ok-700">
                 Shartnoma faollashtirilgan va reyestrda amalda deb ko‘rsatiladi.
               </p>
             </div>
@@ -451,7 +451,7 @@ const DOC_TONE: Record<string, string> = {
 
             <p
               v-else
-              class="mt-4 flex items-center justify-center gap-2 rounded-field bg-ink-100 px-3 py-2.5 text-[12.5px] font-semibold text-ink-600"
+              class="mt-4 flex items-center justify-center gap-2 rounded-field bg-ink-100 px-3 py-2.5 text-[13px] font-semibold text-ink-600"
             >
               <UiIcon name="eye" :size="15" />
               Faqat kuzatuv: shartnomani yuritish huquqi yo‘q
@@ -517,7 +517,7 @@ const DOC_TONE: Record<string, string> = {
         title="Kelishuvni qayd etish"
         :subtitle="contract.code"
       >
-        <p class="text-[13.5px] leading-relaxed text-ink-700">
+        <p class="text-[14px] leading-relaxed text-ink-700">
           Kelishuv faqat tizim ichida qayd etiladi: dalolatnomaga kelishuvni qayd etgan shaxsning
           ismi va sana yoziladi. Hujjat imzolanmaydi va faollashtirilmaydi, imzolash Didox orqali
           alohida bajariladi.
@@ -525,27 +525,27 @@ const DOC_TONE: Record<string, string> = {
         <dl class="mt-4 divide-y divide-ink-100 rounded-field bg-surface-sunken px-4">
           <div class="flex items-baseline justify-between gap-4 py-2.5">
             <dt class="text-[13px] text-ink-500">Tomon</dt>
-            <dd class="text-[13.5px] font-semibold text-ink-900">{{ contract.tenant }}</dd>
+            <dd class="text-[14px] font-semibold text-ink-900">{{ contract.tenant }}</dd>
           </div>
           <div class="flex items-baseline justify-between gap-4 py-2.5">
             <dt class="text-[13px] text-ink-500">Kelishuvni qayd etuvchi</dt>
-            <dd class="text-[13.5px] font-semibold text-ink-900">{{ currentApprover }}</dd>
+            <dd class="text-[14px] font-semibold text-ink-900">{{ currentApprover }}</dd>
           </div>
           <div class="flex items-baseline justify-between gap-4 py-2.5">
             <dt class="text-[13px] text-ink-500">Kelishuv sanasi</dt>
-            <dd class="tabular text-[13.5px] font-semibold text-ink-900">
+            <dd class="tabular text-[14px] font-semibold text-ink-900">
               {{ dateShort(todayIso()) }}
             </dd>
           </div>
           <div class="flex items-baseline justify-between gap-4 py-2.5">
             <dt class="text-[13px] text-ink-500">Miqdor</dt>
-            <dd class="tabular text-[13.5px] font-semibold text-ink-900">
+            <dd class="tabular text-[14px] font-semibold text-ink-900">
               {{ sum(contract.amount) }}
             </dd>
           </div>
           <div class="flex items-baseline justify-between gap-4 py-2.5">
             <dt class="text-[13px] text-ink-500">Amal qilish muddati</dt>
-            <dd class="text-[13.5px] font-semibold text-ink-900">
+            <dd class="text-[14px] font-semibold text-ink-900">
               {{ dateShort(contract.startsAt) }} · {{ contract.endsAt === '-' ? 'muddatsiz' : dateShort(contract.endsAt) }}
             </dd>
           </div>
@@ -569,19 +569,19 @@ const DOC_TONE: Record<string, string> = {
         <dl class="divide-y divide-ink-100">
           <div class="flex items-baseline justify-between gap-4 py-2.5">
             <dt class="text-[13px] text-ink-500">Kelishuv sanasi</dt>
-            <dd class="text-[13.5px] font-semibold text-ink-900">{{ dateLong(approveDate) }}</dd>
+            <dd class="text-[14px] font-semibold text-ink-900">{{ dateLong(approveDate) }}</dd>
           </div>
           <div class="flex items-baseline justify-between gap-4 py-2.5">
             <dt class="text-[13px] text-ink-500">Kelishuvni qayd etgan shaxs</dt>
-            <dd class="text-[13.5px] font-semibold text-ink-900">{{ approver }}</dd>
+            <dd class="text-[14px] font-semibold text-ink-900">{{ approver }}</dd>
           </div>
           <div class="flex items-baseline justify-between gap-4 py-2.5">
             <dt class="text-[13px] text-ink-500">Tomon</dt>
-            <dd class="text-[13.5px] font-semibold text-ink-900">{{ contract.tenant }}</dd>
+            <dd class="text-[14px] font-semibold text-ink-900">{{ contract.tenant }}</dd>
           </div>
           <div class="flex items-baseline justify-between gap-4 py-2.5">
             <dt class="text-[13px] text-ink-500">Dalolatnoma raqami</dt>
-            <dd class="tabular text-[13.5px] font-semibold text-ink-900">
+            <dd class="tabular text-[14px] font-semibold text-ink-900">
               {{ actCode(contract) }}
             </dd>
           </div>
@@ -615,7 +615,7 @@ const DOC_TONE: Record<string, string> = {
           </span>
           <div class="min-w-0">
             <p class="truncate text-[14px] font-bold text-ink-900">{{ documentOutput?.name }}</p>
-            <p class="mt-0.5 text-[12.5px] text-ink-500">
+            <p class="mt-0.5 text-[13px] text-ink-500">
               DOCX · {{ documentOutput?.size }} · {{ contract.code }}
             </p>
           </div>

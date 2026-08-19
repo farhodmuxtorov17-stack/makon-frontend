@@ -61,7 +61,7 @@ const steps = computed(() =>
 
     <p
       v-if="rejected"
-      class="mt-3 inline-flex items-center gap-2 rounded-field bg-danger-50 px-3 py-2 text-[12.5px] font-semibold text-danger-700 ring-1 ring-inset ring-danger-100"
+      class="mt-3 inline-flex items-center gap-2 rounded-field bg-danger-50 px-3 py-2 text-[13px] font-semibold text-danger-700 ring-1 ring-inset ring-danger-100"
     >
       <UiIcon name="x" :size="15" />
       Ariza rad etilgan: sikl to‘xtatildi

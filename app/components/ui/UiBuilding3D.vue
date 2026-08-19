@@ -80,6 +80,26 @@ interface Paint {
 interface FacePart {
   points: string
   fill: string
+  /** Fotosurat ustida turganda bandlik rangi shaffof bo‘yoq bo‘lib qoladi */
+  alpha: number
+}
+
+/**
+ * Fotosurat yopishtiriladigan tashqi yuz. Bitta yuzga bitta surat tushadi,
+ * qavatlar bo‘yicha takrorlanmaydi.
+ */
+interface PhotoFace {
+  f: number
+  /** Yuz silueti: yer ustidagi darajalar konturlarining birlashmasi */
+  d: string
+  /** Suratni yuz parallelogrammiga o‘tkazadigan affin matritsa */
+  m: string
+  x: number
+  y: number
+  w: number
+  h: number
+  /** Yuz yorug‘ligiga mos qorayish qatlamining shaffofligi */
+  dark: number
 }
 
 interface UnitShape {
@@ -250,6 +270,25 @@ const EXT_TONE: Record<string, string> = {
   apron: '#A8B4C4',
 }
 
+/**
+ * Fotosuratning fasad oynasi: surat kengligi va balandligining ulushida.
+ *
+ * Reyestrdagi suratlarda bino kadr o‘rtasida turadi, tepasida osmon, pastida
+ * yo‘l yoki maydoncha bo‘ladi. Devorga butun kadr emas, faqat shu oyna
+ * tushiriladi, aks holda fasadning ustida osmon, ostida asfalt paydo bo‘lardi.
+ * Chegaralar bino oilasi bo‘yicha tanlangan: minorada bino baland va tor,
+ * omborda esa uzun past tasma bo‘lib kadrning o‘rta qismini egallaydi.
+ */
+const PHOTO_CROP: Record<Family, { u0: number; u1: number; v0: number; v1: number }> = {
+  tower: { u0: 0.22, u1: 0.8, v0: 0.22, v1: 0.7 },
+  retail: { u0: 0.3, u1: 0.88, v0: 0.18, v1: 0.64 },
+  shed: { u0: 0.16, u1: 0.84, v0: 0.32, v1: 0.62 },
+  resi: { u0: 0.4, u1: 0.92, v0: 0.18, v1: 0.68 },
+}
+
+/** Surat chiziladigan mahalliy kadr tomoni: matritsa shu kadrni yuzga qo‘yadi */
+const PHOTO_BOX = 100
+
 /** Yorug‘lik yo‘nalishi qat’iy: har bir binoda soya bir xil o‘qiladi */
 const SUN = (() => {
   const az = (-36 * Math.PI) / 180
@@ -314,6 +353,24 @@ const allUnits = computed(() => unitsOfBuilding(props.building.id))
 const family = computed<Family>(() => FAMILY_OF[props.building.type] ?? 'tower')
 /** A klass: to‘liq shisha fasad. B va C: panjarali deraza va spandrel */
 const glazed = computed(() => /^\s*a/i.test(props.building.buildingClass))
+
+/**
+ * Binoning haqiqiy surati. Reyestrdagi nom bo‘sh bo‘lsa yoki fayl yuklanmasa
+ * `photoOk` o‘chadi va tashqi ko‘rinish avvalgi bo‘yoq bilan chiziladi.
+ */
+const photoSrc = computed(() =>
+  props.building.photo ? assetUrl(`img/${props.building.photo}-md.webp`) : '',
+)
+const photoOk = ref(true)
+
+// Bino almashsa yangi suratga qaytadan urinamiz, aks holda bir marta xato
+// bergan komponent boshqa hech qachon surat ko‘rsatmaydi
+watch(
+  () => props.building.photo,
+  () => {
+    photoOk.value = true
+  },
+)
 
 const levels = computed<LevelInfo[]>(() => {
   const b = props.building
@@ -1310,6 +1367,96 @@ const scene = computed(() => {
   const face4 = (ax: number, ay: number, bx: number, by: number, q0: number, q1: number) =>
     `M${px(ax, ay)} ${py(ax, ay, q1)}L${px(bx, by)} ${py(bx, by, q1)}L${px(bx, by)} ${py(bx, by, q0)}L${px(ax, ay)} ${py(ax, ay, q0)}Z`
 
+  /* ------------------------------------------------------------------
+     Tashqi ko‘rinish: haqiqiy fotosurat ko‘rinadigan vertikal yuzlarga.
+
+     Aksonometriyada yuz parallelogramm bo‘lgani uchun surat aniq affin
+     matritsa bilan tushadi. Uchta nuqta yetarli: yuqori chap P0, yuqori
+     o‘ng P1 va pastki chap P2. U = P1 − P0 va V = P2 − P0 vektorlari
+     mahalliy kadrning yon tomonlariga aylanadi.
+
+     Surat butun hajm uchun bir marta chiziladi: pastki chegara yer sathi,
+     yuqorisi esa stikning eng baland nuqtasi. Yer osti darajalari qirqib
+     tashlanadi, ular yer ostida turadi.
+     ------------------------------------------------------------------ */
+  const photo: PhotoFace[] = []
+  // Kesim va ajratilgan holatda surat chizilmaydi: u yerda hajm bo‘lingan
+  const usePhoto =
+    mode === 'occupancy' && photoOk.value && photoSrc.value !== '' && !isCut && !view.exploded
+  if (usePhoto) {
+    const crop = PHOTO_CROP[m.family]
+    // Kadrning qaysi qismi yuzga tushishi: oyna butun kadrga cho‘ziladi,
+    // ortiqcha chekkalar yuz konturidan tashqarida qolib qirqiladi
+    const iw = PHOTO_BOX / Math.max(crop.u1 - crop.u0, 0.05)
+    const ih = PHOTO_BOX / Math.max(crop.v1 - crop.v0, 0.05)
+    const hw = geo.w / 2
+    const hd = geo.d / 2
+    const ring: Array<[number, number]> = [
+      [-hw, -hd],
+      [hw, -hd],
+      [hw, hd],
+      [-hw, hd],
+    ]
+    // Eng yorug‘ yuz tayanch qilib olinadi: qorayish burilishdan qat’i nazar
+    // bir xil o‘qiladi, chunki quyosh yo‘nalishi qo‘zg‘almaydi
+    let bright = -1
+    for (const f of faceState) bright = Math.max(bright, f.amount)
+
+    for (let f = 0; f < 4; f++) {
+      const state = faceState[f]!
+      if (!state.visible) continue
+
+      // Siluet: har bir yer usti darajasi o‘z konturi bilan qo‘shiladi,
+      // shuning uchun pog‘onali turar joyda ham surat hajmdan chiqmaydi
+      const shell: string[] = []
+      for (let i = 0; i < m.levels.length; i++) {
+        const lg = m.levels[i]!
+        if (lg.under) continue
+        const ax0 = lg.ox - lg.w / 2
+        const ax1 = lg.ox + lg.w / 2
+        const ay0 = lg.oy - lg.d / 2
+        const ay1 = lg.oy + lg.d / 2
+        const c: Array<[number, number]> = [
+          [ax0, ay0],
+          [ax1, ay0],
+          [ax1, ay1],
+          [ax0, ay1],
+        ]
+        const a = c[f]!
+        const b = c[(f + 1) % 4]!
+        const q0 = zBase(i)
+        shell.push(face4(a[0], a[1], b[0], b[1], q0, q0 + lg.h))
+      }
+      if (!shell.length) continue
+
+      const a = ring[f]!
+      const b = ring[(f + 1) % 4]!
+      const p0x = px(a[0], a[1])
+      const p0y = py(a[0], a[1], m.topZ)
+      const p1x = px(b[0], b[1])
+      const p1y = py(b[0], b[1], m.topZ)
+      const p2x = px(a[0], a[1])
+      const p2y = py(a[0], a[1], 0)
+      const ux = (p1x - p0x) / PHOTO_BOX
+      const uy = (p1y - p0y) / PHOTO_BOX
+      const vx = (p2x - p0x) / PHOTO_BOX
+      const vy = (p2y - p0y) / PHOTO_BOX
+      const k5 = (n: number) => Math.round(n * 100000) / 100000
+
+      photo.push({
+        f,
+        d: shell.join(''),
+        m: `matrix(${k5(ux)},${k5(uy)},${k5(vx)},${k5(vy)},${p0x},${p0y})`,
+        x: r1(-crop.u0 * iw),
+        y: r1(-crop.v0 * ih),
+        w: r1(iw),
+        h: r1(ih),
+        dark: Math.round(clamp(0.05 + (bright - state.amount) * 2, 0, 0.38) * 1000) / 1000,
+      })
+    }
+  }
+  const photoOn = photo.length > 0
+
   const slabs: SlabView[] = []
 
   for (let i = 0; i < lv.length; i++) {
@@ -1374,6 +1521,16 @@ const scene = computed(() => {
       return `${pt(ax, ay, q1)} ${pt(bx, by, q1)} ${pt(bx, by, q0)} ${pt(ax, ay, q0)}`
     }
 
+    /*
+     * Fasad bo‘yog‘ining zichligi. Surat yopishtirilgan yer usti darajalarida
+     * bandlik rangi shaffof filtr bo‘lib qoladi: rang ham o‘qiladi, g‘isht,
+     * shisha va panel ham ko‘rinib turadi. Tanlangan qavatda filtr quyuqroq,
+     * shuning uchun u qo‘shni qavatlardan darrov ajralib turadi. Yer osti
+     * darajasida surat yo‘q, u yerda bo‘yoq to‘liq zichlikda qoladi.
+     */
+    const photoHere = photoOn && !lg.under
+    const partAlpha = photoHere ? (isSel ? 0.56 : 0.3) : 1
+
     // --- fasad tekisliklari
     const parts: FacePart[] = []
     if (mode !== 'wire') {
@@ -1390,19 +1547,25 @@ const scene = computed(() => {
               parts.push({
                 points: quad(a, b, z0, zTop, t, next),
                 fill: shade(mi.color, state.amount),
+                alpha: partAlpha,
               })
             }
             t = next
           }
         } else {
-          parts.push({ points: quad(a, b, z0, zTop, 0, 1), fill: shade(base, state.amount) })
+          parts.push({
+            points: quad(a, b, z0, zTop, 0, 1),
+            fill: shade(base, state.amount),
+            alpha: partAlpha,
+          })
         }
       }
     }
 
-    // --- fasad naqshi. Ko‘tarilgan va kesilgan darajalarda tafsilot kerak emas
+    // --- fasad naqshi. Ko‘tarilgan va kesilgan darajalarda tafsilot kerak
+    //     emas, surat yopishtirilgan yuzda esa deraza allaqachon suratda bor
     const skinItems: Paint[] = []
-    if (mode !== 'wire' && !cutFloor && !lg.under && !above) {
+    if (mode !== 'wire' && !cutFloor && !lg.under && !above && !photoHere) {
       const facadeAlpha = mode === 'occupancy' ? 0.46 : 0.74
       const rects = sk[i]!
       const groups = new Map<string, string[]>()
@@ -1704,6 +1867,7 @@ const scene = computed(() => {
 
   return {
     slabs,
+    photo,
     grid,
     plane,
     shadow,
@@ -1914,6 +2078,15 @@ function toggleLayer(key: keyof Layers) {
           <filter :id="`mkn-shadow-${building.id}`" x="-60%" y="-80%" width="240%" height="280%">
             <feGaussianBlur stdDeviation="9" />
           </filter>
+
+          <!-- Surat yuz konturidan chiqmasligi uchun qirqim -->
+          <clipPath
+            v-for="fc in scene.photo"
+            :id="`mkn-face-${building.id}-${fc.f}`"
+            :key="`cp${fc.f}`"
+          >
+            <path :d="fc.d" />
+          </clipPath>
         </defs>
 
         <!-- Yer sathi: to‘r va quyosh yo‘nalishidagi soya -->
@@ -1944,6 +2117,39 @@ function toggleLayer(key: keyof Layers) {
         >
           Yer sathi
         </text>
+
+        <!--
+          Binoning haqiqiy surati. Har bir ko‘rinadigan yuzga bitta surat
+          tushadi va butun hajmni qoplaydi, qavatlar bo‘yicha takrorlanmaydi.
+          Ustidagi qorayish qatlami yon yuzlarni ajratadi, aks holda hajm
+          yassi ko‘rinardi. Qavat bo‘yoqlari keyin, shaffof filtr bo‘lib
+          chiziladi, shuning uchun bandlik ma’lumoti yo‘qolmaydi.
+        -->
+        <g v-if="scene.photo.length" class="pointer-events-none">
+          <g
+            v-for="fc in scene.photo"
+            :key="`ph${fc.f}`"
+            :clip-path="`url(#mkn-face-${building.id}-${fc.f})`"
+          >
+            <image
+              :href="photoSrc"
+              :x="fc.x"
+              :y="fc.y"
+              :width="fc.w"
+              :height="fc.h"
+              :transform="fc.m"
+              preserveAspectRatio="none"
+              @error="photoOk = false"
+            />
+          </g>
+          <path
+            v-for="fc in scene.photo"
+            :key="`sh${fc.f}`"
+            :d="fc.d"
+            fill="#0B1220"
+            :fill-opacity="fc.dark"
+          />
+        </g>
 
         <!-- Plitalar pastdan yuqoriga chiziladi: kamera doim tepadan qaraydi -->
         <g
@@ -1976,6 +2182,7 @@ function toggleLayer(key: keyof Layers) {
               :key="pi"
               :points="p.points"
               :fill="p.fill"
+              :fill-opacity="p.alpha"
               stroke="#FFFFFF"
               stroke-width="0.6"
               stroke-opacity="0.4"
@@ -2212,7 +2419,7 @@ function toggleLayer(key: keyof Layers) {
             @pointerenter="hovered = l.floor"
             @pointerleave="hovered === l.floor ? (hovered = null) : null"
           >
-            <span class="tabular w-[18px] shrink-0 text-right text-[11.5px] font-bold">
+            <span class="tabular w-[18px] shrink-0 text-right text-[12px] font-bold">
               {{ l.short }}
             </span>
             <span
