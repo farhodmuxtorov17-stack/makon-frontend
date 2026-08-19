@@ -53,7 +53,7 @@ export const ROLE_META: Record<Role, RoleMeta> = {
   },
   CONTENT_OPERATOR: {
     code: 'CONTENT_OPERATOR',
-    label: 'Kontent operatori',
+    label: 'Operator',
     caption: 'Qavat rejalari va obyekt ma’lumotlari',
     level: 'Axborotlarni tayyorlash va to‘ldirish roli',
     scope: 'Biriktirilgan bino / qavat',

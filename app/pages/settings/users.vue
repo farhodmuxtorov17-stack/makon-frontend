@@ -172,7 +172,7 @@ const AREA_LABELS: Record<string, string> = {
   '/dashboard/executive': 'Boshqaruv paneli',
   '/dashboard/building': 'Obyekt paneli',
   '/objects': 'Obyektlar',
-  '/content': 'Kontent tayyorlash',
+  '/content': 'Operator ishi',
   '/applications': 'Arizalar',
   '/contracts': 'Shartnomalar',
   '/billing': 'Billing va nazorat',

@@ -74,7 +74,7 @@ const ACCOUNTS: Record<Role, SessionUser> = {
     role: 'CONTENT_OPERATOR',
     organization: 'Makon Property Group',
     buildingScope: ['b-01', 'b-02', 'b-05'],
-    position: 'Kontent operatori',
+    position: 'Operator',
     phone: '+998 90 789 01 23',
     email: 'm.yusupova@makon.uz',
     tin: '305 412 876',

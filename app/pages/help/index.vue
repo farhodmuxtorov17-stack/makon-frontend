@@ -181,7 +181,7 @@ const MANUALS = [
   { id: 'm-04', role: ROLE.facility, name: 'Pudratchi uchun qo‘llanma', at: '2026-07-21' },
   { id: 'm-06', role: ROLE.head, name: 'Super rahbar uchun qo‘llanma', at: '2026-07-21' },
   { id: 'm-07', role: ROLE.warehouse, name: 'Omborchi uchun qo‘llanma', at: '2026-07-21' },
-  { id: 'm-08', role: ROLE.content, name: 'Kontent operatori uchun qo‘llanma', at: '2026-07-21' },
+  { id: 'm-08', role: ROLE.content, name: 'Operator uchun qo‘llanma', at: '2026-07-21' },
   { id: 'm-05', role: ROLE.general, name: 'Tizim bo‘yicha umumiy qo‘llanma', at: '2026-08-06' },
 ]
 

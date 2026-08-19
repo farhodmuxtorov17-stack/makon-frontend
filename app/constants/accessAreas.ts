@@ -45,7 +45,7 @@ export const ACCESS_AREAS: AreaDef[] = [
   },
   {
     key: 'content',
-    label: 'Kontent tayyorlash',
+    label: 'Operator ishi',
     prefixes: ['/content'],
     writes: ['unit.editContent'],
   },
