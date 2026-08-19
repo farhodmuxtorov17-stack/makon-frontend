@@ -143,7 +143,7 @@ function downloadSigned() {
     v-else
     icon="external"
     title="Hujjat Didox’ga yuborilmagan"
-    description="Shartnoma qoralamasi tayyor bo‘lgach, bino rahbari uni Didox orqali imzolashga yuboradi."
+    description="Shartnoma tayyor bo‘lgach, operator uni Didox orqali imzolashga yuboradi."
     compact
   />
 </template>

@@ -163,8 +163,17 @@ export interface DidoxTicket {
   recipientTin: string
   state: DidoxState
   lastCheckedAt: string | null
+  /**
+   * Oxirgi holat o‘zgarishi vaqti, millisekundda. Didox tomonida holat
+   * darhol o‘zgarmaydi, shuning uchun ketma-ket bosilgan tekshiruv
+   * o‘zgarishsiz natija qaytaradi.
+   */
+  stateAt: number
   history: Array<{ state: DidoxState; at: string; note: string }>
 }
+
+/** Didox tomonida holat o‘zgarishi uchun kutiladigan eng qisqa vaqt */
+const DIDOX_STEP_MS = 15000
 
 export interface SignedDocument {
   fileName: string
@@ -1229,6 +1238,7 @@ export const useLeaseStore = defineStore('lease', {
         recipientTin: item.org.tin,
         state: 'Yuborilgan',
         lastCheckedAt: null,
+        stateAt: Date.now(),
         history: [
           {
             state: 'Yuborilgan',
@@ -1268,7 +1278,14 @@ export const useLeaseStore = defineStore('lease', {
       const i = DIDOX_FLOW.indexOf(ticket.state)
       const next = DIDOX_FLOW[i + 1]
 
-      if (!next) {
+      /*
+       * Holat oxirgi o‘zgarishdan keyin darhol siljimaydi: tashqi xizmatda
+       * hujjat ustida ish vaqt oladi. Shuning uchun ketma-ket bosilgan
+       * tekshiruv o‘zgarishsiz natija qaytaradi va sahifa aynan shuni yozadi.
+       */
+      const settled = Date.now() - (ticket.stateAt ?? 0) < DIDOX_STEP_MS
+
+      if (!next || settled) {
         this.syncDidoxStatus(item)
         this.log(item, {
           actor,
@@ -1285,6 +1302,7 @@ export const useLeaseStore = defineStore('lease', {
           : `Hujjat ikkala tomon tomonidan imzolandi va Didox’da yakunlandi`
 
       ticket.state = next
+      ticket.stateAt = Date.now()
       ticket.history.push({ state: next, at: stamp, note })
 
       this.log(item, {
@@ -1642,6 +1660,7 @@ export const useLeaseStore = defineStore('lease', {
         if (item.accountInvitedAt === undefined) item.accountInvitedAt = null
         if (item.access === undefined) item.access = null
         if (typeof item.contractEdits !== 'number') item.contractEdits = 0
+        if (item.didox && typeof item.didox.stateAt !== 'number') item.didox.stateAt = 0
 
         /*
          * Oldingi oqimdagi bosqichlar yangi bosqichlarga ko‘chiriladi: saqlangan

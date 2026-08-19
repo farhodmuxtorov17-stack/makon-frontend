@@ -261,7 +261,7 @@ const STEPS = [
             v-for="c in categories"
             :key="c.key"
             type="button"
-            class="tabular inline-flex min-h-[38px] items-center gap-1.5 rounded-pill bg-white/10 px-3.5 text-[12.5px] font-semibold text-white ring-1 ring-inset ring-white/20 transition-colors duration-150 hover:bg-white/20 active:bg-white/25"
+            class="tabular inline-flex min-h-[44px] items-center gap-1.5 rounded-pill bg-white/10 px-4 text-[12.5px] font-semibold text-white ring-1 ring-inset ring-white/20 transition-colors duration-150 hover:bg-white/20 active:bg-white/25"
             @click="goCategory(c.key)"
           >
             {{ c.label }}
@@ -410,7 +410,6 @@ const STEPS = [
               <div class="mt-auto pt-5">
                 <UiButton
                   variant="secondary"
-                  size="sm"
                   block
                   :to="`/catalog/${l.building.slug}?unit=${l.unit.id}`"
                 >

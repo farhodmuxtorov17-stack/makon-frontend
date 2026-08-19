@@ -68,9 +68,7 @@ const floorOccupancy = computed(() => {
 
 const PENDING_LEASE: LeaseStatus[] = [
   'YANGI',
-  'OPERATSIYA_TASDIQLADI',
-  'MOLIYA_TASDIQLADI',
-  'QORALAMA_TAYYOR',
+  'SHARTNOMA_TAYYOR',
   'DIDOX_YUBORILDI',
   'DIDOX_IMZOLANDI',
 ]

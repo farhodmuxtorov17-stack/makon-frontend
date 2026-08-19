@@ -3,7 +3,7 @@ import { buildingById } from '~/data/buildings'
 import { unitsOfBuilding, type Unit } from '~/data/units'
 import { area, num, percent } from '~/utils/format'
 
-type ViewMode = 'occupancy' | 'levels' | 'interior' | 'furnished' | 'wire'
+type ViewMode = 'occupancy' | 'interior' | 'wire'
 
 interface MixSlice {
   key: string
@@ -122,8 +122,6 @@ const floorRows = computed<FloorRow[]>(() => {
   })
 })
 
-/** Ro‘yxat yuqoridan pastga, yuqori qavat tepada turadi */
-const floorsDesc = computed(() => [...floorRows.value].reverse())
 const floorsWithPlan = computed(() => floorRows.value.filter((f) => f.total > 0))
 
 const currentFloor = computed(
@@ -336,66 +334,12 @@ function goApply() {
         </div>
       </UiCard>
 
-      <section
-        class="grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px] 2xl:grid-cols-[188px_minmax(0,1fr)_336px]"
-      >
-        <!-- Qavat ustuni faqat keng ekranda; undan pastda ko‘rinish ustidagi rels ishlaydi -->
-        <UiCard
-          class="hidden 2xl:block"
-          title="Qavatni tanlang"
-          :subtitle="`${floorsWithPlan.length} qavatda reja bor`"
-          flush
-          :padded="false"
-        >
-          <div class="scroll-slim max-h-[560px] overflow-y-auto px-2.5 pb-4">
-            <button
-              v-for="f in floorsDesc"
-              :key="f.floor"
-              type="button"
-              class="mb-1 flex w-full items-center gap-2 rounded-field px-2 py-2 text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500"
-              :class="
-                f.floor === selectedFloor
-                  ? 'bg-brand-50 ring-1 ring-inset ring-brand-300'
-                  : 'hover:bg-ink-50'
-              "
-              :aria-pressed="f.floor === selectedFloor"
-              @click="selectedFloor = f.floor"
-            >
-              <span
-                class="tabular grid size-8 shrink-0 place-items-center rounded-[8px] text-[12px] font-bold"
-                :class="
-                  f.floor === selectedFloor
-                    ? 'bg-brand-500 text-white'
-                    : f.underground
-                      ? 'bg-ink-100 text-ink-500'
-                      : 'bg-surface-sunken text-ink-700 ring-1 ring-inset ring-ink-200'
-                "
-              >
-                {{ f.short }}
-              </span>
-              <span class="min-w-0 flex-1">
-                <span class="block truncate text-[12.5px] font-semibold text-ink-900">
-                  {{ f.name }}
-                </span>
-                <span class="mt-1 flex h-1.5 w-full overflow-hidden rounded-pill bg-ink-100">
-                  <span
-                    v-for="m in f.mix"
-                    :key="m.key"
-                    class="h-full"
-                    :style="{ width: `${m.share * 100}%`, background: m.color }"
-                  />
-                </span>
-                <span class="tabular mt-1 block truncate text-[11px] text-ink-500">
-                  {{ f.total ? `${f.total} unit · ${f.occupancy}%` : 'Reja yo‘q' }}
-                </span>
-              </span>
-            </button>
-          </div>
-        </UiCard>
-
+      <!-- Qavat tanlash navigatorning o‘zidagi relsda: bitta boshqaruv,
+           ikkita ro‘yxat emas -->
+      <section class="grid gap-5 lg:grid-cols-[minmax(0,1fr)_336px]">
         <UiCard
           title="Hajmli ko‘rinish"
-          :subtitle="`${building.floors} qavat${building.undergroundFloors ? ` va ${building.undergroundFloors} yer osti darajasi` : ''} · geometriya bino yozuvidan hisoblanadi`"
+          :subtitle="`${building.floors} qavat${building.undergroundFloors ? ` va ${building.undergroundFloors} yer osti darajasi` : ''} · ${floorsWithPlan.length} qavatda reja bor`"
           flush
           :padded="false"
         >

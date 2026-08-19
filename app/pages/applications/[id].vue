@@ -101,10 +101,11 @@ const serviceTotal = computed(() =>
 // --- Rolga bog‘liq amallar -------------------------------------------------
 
 /**
- * Imzolash bosqichlari rolga emas, huquq va biriktirilgan binoga bog‘lanadi.
- * Tizimda bitta bino rahbari bo‘lgani uchun rolga bog‘lash qolgan binolardagi
- * arizalarni qoralama bosqichida abadiy ushlab qolar edi: `contract.manage`
- * huquqi bor har bir rol o‘z doirasidagi arizani oxirigacha olib boradi.
+ * Shartnoma bosqichlari aniq rolga emas, amal huquqiga va biriktirilgan
+ * binoga bog‘lanadi. Ilgari tekshiruv bitta rolga bog‘langani uchun o‘sha
+ * rolning binosidan tashqaridagi ariza shartnoma bosqichida abadiy qolib
+ * ketardi: endi `contract.manage` huquqi bor har bir rol o‘z doirasidagi
+ * arizani oxirigacha olib boradi.
  */
 const canSign = computed(
   () => Boolean(item.value) && auth.can('contract.manage') && auth.inScope(item.value!.buildingId),
@@ -460,7 +461,7 @@ async function copyValue(label: string, value: string) {
       </p>
     </UiCard>
 
-    <!-- Faollashtirish natijasi -->
+    <!-- Ariza yopilgandagi o‘zgarishlar -->
     <LeaseActivation
       v-if="item.activation"
       :at="item.activation.at"

@@ -189,23 +189,31 @@ const planOpen = ref(false)
     </section>
 
     <section v-if="view === 'cards'" class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+      <!--
+        `h-full` va `flex-col`: setkadagi kartochkalar bir qatorda bir xil
+        balandlikda turadi, pastdagi o‘lcham qatori esa `mt-auto` bilan
+        hamma joyda bir xil chiziqqa yopishadi.
+      -->
       <button
         v-for="u in myUnits"
         :key="u.id"
         type="button"
-        class="rounded-card bg-surface p-4 text-left shadow-card ring-1 transition-all hover:shadow-panel"
-        :class="u.id === selectedId ? 'ring-2 ring-brand-500' : 'ring-ink-200/60 hover:ring-brand-300'"
+        class="flex h-full flex-col rounded-card bg-surface p-4 text-left shadow-card ring-1 transition-shadow duration-150 hover:shadow-panel"
+        :class="u.id === selected?.id ? 'ring-2 ring-brand-500' : 'ring-ink-200/60'"
+        :aria-pressed="u.id === selected?.id"
         @click="select(u.id)"
       >
-        <div class="flex items-start justify-between gap-3">
-          <div class="min-w-0">
-            <p class="text-[16px] font-bold text-ink-900">Unit {{ u.code }}</p>
-            <p class="mt-0.5 truncate text-[12.5px] text-ink-500">
-              {{ buildingById(u.buildingId)?.name }}
-            </p>
-          </div>
+        <!-- Katalogdagi bilan bir xil qoida: holat nishonchasi doim yuqori chapda -->
+        <div class="flex items-center gap-2">
           <UiStatus kind="unit" :value="u.status" size="sm" />
         </div>
+
+        <p class="tabular mt-2.5 text-[17px] font-bold leading-tight text-ink-900">
+          Unit {{ u.code }}
+        </p>
+        <p class="mt-0.5 truncate text-[12.5px] text-ink-500">
+          {{ buildingById(u.buildingId)?.name }}
+        </p>
 
         <div class="mt-3 overflow-hidden rounded-field bg-surface-sunken p-2.5 ring-1 ring-ink-200">
           <svg viewBox="0 0 100 100" class="block h-24 w-full" role="img" aria-label="Qavat rejasi">
@@ -232,20 +240,18 @@ const planOpen = ref(false)
           </svg>
         </div>
 
-        <dl class="mt-3 grid grid-cols-3 gap-2 border-t border-ink-100 pt-3">
-          <div>
-            <dt class="text-[11.5px] text-ink-500">Maydon</dt>
-            <dd class="tabular mt-0.5 text-[13px] font-bold text-ink-900">{{ area(u.area) }}</dd>
-          </div>
-          <div>
-            <dt class="text-[11.5px] text-ink-500">Qavat</dt>
-            <dd class="tabular mt-0.5 text-[13px] font-bold text-ink-900">{{ u.floor }}</dd>
-          </div>
-          <div>
-            <dt class="text-[11.5px] text-ink-500">Xonalar</dt>
-            <dd class="tabular mt-0.5 text-[13px] font-bold text-ink-900">{{ u.rooms }}</dd>
-          </div>
-        </dl>
+        <!--
+          Pastki qator: maydon yetakchi raqam, qavat va xonalar undan
+          yengilroq ohangda yonida turadi.
+        -->
+        <div class="mt-auto flex items-end justify-between gap-3 border-t border-ink-100 pt-3">
+          <span class="tabular text-[17px] font-extrabold leading-none text-ink-900">
+            {{ area(u.area) }}
+          </span>
+          <span class="tabular text-[12.5px] text-ink-500">
+            {{ u.floor }}-qavat · {{ u.rooms }} xona
+          </span>
+        </div>
       </button>
     </section>
 

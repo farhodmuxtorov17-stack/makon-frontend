@@ -51,13 +51,11 @@ function totalOf(c: LeaseCase) {
 }
 
 const STAGE_HINT: Record<string, string> = {
-  YANGI: 'Ariza bino rahbari ko‘rigida',
-  OPERATSIYA_TASDIQLADI: 'Moliyaviy shartlar buxgalter ko‘rigida',
-  MOLIYA_TASDIQLADI: 'Shartnoma qoralamasi tayyorlanmoqda',
-  QORALAMA_TAYYOR: 'Shartnoma qoralamasi tayyor, Didox’ga yuborish kutilmoqda',
+  YANGI: 'Ariza operator ko‘rigida, u siz bilan bog‘lanadi',
+  SHARTNOMA_TAYYOR: 'Shartnoma tayyorlandi, Didox’ga yuborish kutilmoqda',
   DIDOX_YUBORILDI: 'Hujjat Didox’da imzolashingizni kutmoqda',
-  DIDOX_IMZOLANDI: 'Didox’da imzolandi, shartnoma faollashtirilmoqda',
-  FAOL: 'Shartnoma amalda: unit va to‘lov grafigi kabinetingizda',
+  DIDOX_IMZOLANDI: 'Didox’da imzolandi, ariza yopilmoqda',
+  FAOL: 'Ariza yopildi: unit va to‘lov grafigi kabinetingizda',
   RAD_ETILDI: 'Ariza rad etilgan',
 }
 </script>

@@ -719,7 +719,7 @@ watch(
           >
             <button
               type="button"
-              class="absolute right-2 top-2 grid size-9 place-items-center rounded-full bg-white/92 shadow-card backdrop-blur-sm transition-colors duration-150 after:absolute after:-inset-1 after:content-['']"
+              class="absolute right-2 top-2 grid size-9 place-items-center rounded-full bg-white/92 shadow-card backdrop-blur-sm transition-colors duration-150 after:absolute after:-inset-1.5 after:content-['']"
               :class="
                 favourites.includes(l.unit.id)
                   ? 'text-danger-500'

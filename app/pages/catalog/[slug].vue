@@ -50,10 +50,6 @@ const photos = computed(() =>
 
 const activePhoto = computed(() => photos.value[mainView.value] ?? photos.value[0])
 
-const interiorPhoto = computed(() =>
-  building.value?.gallery.includes('interior-office') ? 'interior-office' : (building.value?.photo ?? ''),
-)
-
 function stepPhoto(dir: number) {
   const n = photos.value.length
   if (n < 2) return
@@ -683,14 +679,9 @@ function goApply(unitId?: string) {
             <div class="flex items-center justify-between gap-3">
               <UiStatus kind="unit" :value="selected.status" size="sm" />
               <div class="flex items-center gap-2">
-                <span
-                  class="tabular rounded-[6px] bg-ink-100 px-2 text-[12px] font-bold leading-6 text-ink-700"
-                >
-                  {{ selected.code }}
-                </span>
                 <button
                   type="button"
-                  class="relative grid size-9 place-items-center rounded-full transition-colors duration-150 after:absolute after:-inset-1 after:content-['']"
+                  class="relative grid size-9 place-items-center rounded-full transition-colors duration-150 after:absolute after:-inset-1.5 after:content-['']"
                   :class="
                     favourites.includes(selected.id)
                       ? 'text-danger-500'
@@ -717,19 +708,12 @@ function goApply(unitId?: string) {
               </div>
             </div>
 
-            <h2 class="mt-2.5 text-[17px] font-bold">Unit {{ selected.code }}</h2>
-            <p class="mt-0.5 text-[12.5px] text-ink-500">
+            <h2 class="tabular mt-3 text-[19px] font-bold leading-tight">
+              Unit {{ selected.code }}
+            </h2>
+            <p class="mt-1 text-[12.5px] text-ink-500">
               {{ building.name }} · {{ selected.floor }}-qavat
             </p>
-
-            <UiPhoto
-              :name="interiorPhoto"
-              :alt="`${building.name}: Unit ${selected.code} ichki ko‘rinishi`"
-              ratio="aspect-[16/9]"
-              rounded="rounded-field"
-              sizes="(max-width: 1280px) 92vw, 340px"
-              class="mt-4"
-            />
 
             <template v-if="selected.status === 'VACANT' && priceInfo">
               <!-- Sahifadagi eng yirik raqam: kelishuv summasi -->

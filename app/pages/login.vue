@@ -314,7 +314,11 @@ function submit() {
     <!-- Kirish ustuni -->
     <div class="flex min-h-dvh flex-col px-5 py-7 sm:px-8 lg:px-12 lg:py-9">
       <header class="flex items-center justify-between gap-4">
-        <NuxtLink to="/" class="rounded-field" :aria-label="t('login.homeAria')">
+        <NuxtLink
+          to="/"
+          class="inline-flex min-h-[44px] items-center rounded-field"
+          :aria-label="t('login.homeAria')"
+        >
           <AppLogo />
         </NuxtLink>
         <LocaleSwitch />
@@ -372,7 +376,7 @@ function submit() {
                   </label>
                   <button
                     type="button"
-                    class="rounded-[6px] text-[12.5px] font-semibold text-brand-600 transition-colors hover:text-brand-700"
+                    class="-my-3.5 inline-flex min-h-[44px] items-center rounded-[6px] py-3.5 text-[12.5px] font-semibold text-brand-600 transition-colors hover:text-brand-700"
                     @click="resetOpen = true"
                   >
                     {{ t('login.forgotPassword') }}
@@ -396,7 +400,7 @@ function submit() {
                   />
                   <button
                     type="button"
-                    class="absolute inset-y-0 right-1 my-auto grid size-10 place-items-center rounded-[8px] text-ink-400 transition-colors hover:bg-ink-100 hover:text-ink-700"
+                    class="absolute inset-y-0 right-0.5 my-auto grid size-11 place-items-center rounded-[8px] text-ink-400 transition-colors hover:bg-ink-100 hover:text-ink-700"
                     :aria-label="showPassword ? t('login.hidePassword') : t('login.showPassword')"
                     :aria-pressed="showPassword"
                     @click="showPassword = !showPassword"
@@ -425,11 +429,11 @@ function submit() {
                 </p>
               </div>
 
-              <label class="flex w-fit cursor-pointer items-center gap-2.5 py-1">
+              <label class="flex min-h-[44px] w-fit cursor-pointer items-center gap-2.5">
                 <input
                   v-model="remember"
                   type="checkbox"
-                  class="size-4 shrink-0 cursor-pointer rounded-[4px] accent-brand-500"
+                  class="size-5 shrink-0 cursor-pointer rounded-[4px] accent-brand-500"
                 />
                 <span class="text-[13px] text-ink-600">{{ t('login.remember') }}</span>
               </label>
@@ -468,24 +472,21 @@ function submit() {
               <div class="mt-5 rounded-field bg-surface-sunken p-3.5 ring-1 ring-inset ring-ink-200">
                 <p class="text-[12.5px] font-semibold text-ink-700">{{ t('login.demoTitle') }}</p>
                 <p class="mt-1 text-[12px] leading-relaxed text-ink-500">{{ t('login.demoText') }}</p>
-                <dl class="mt-2.5 space-y-1.5">
-                  <div
+                <!-- Butun qator bosiladi: nishon 44px, rol va login yonma-yon -->
+                <div class="mt-3 grid gap-1.5 sm:grid-cols-2">
+                  <button
                     v-for="a in DEMO_ACCOUNTS"
                     :key="a.login"
-                    class="flex items-center justify-between gap-3 text-[12px]"
+                    type="button"
+                    class="flex min-h-[44px] flex-col justify-center rounded-[8px] bg-white px-3 py-1.5 text-left ring-1 ring-inset ring-ink-200 transition-colors hover:ring-brand-300 active:bg-brand-50"
+                    @click="fillDemo(a.login)"
                   >
-                    <dt class="min-w-0 truncate text-ink-600">{{ a.label }}</dt>
-                    <dd class="flex shrink-0 items-center gap-1.5">
-                      <button
-                        type="button"
-                        class="tabular rounded-[6px] bg-white px-2 py-0.5 font-semibold text-ink-800 ring-1 ring-ink-200 transition-colors hover:ring-brand-300"
-                        @click="fillDemo(a.login)"
-                      >
-                        {{ a.login }}
-                      </button>
-                    </dd>
-                  </div>
-                </dl>
+                    <span class="truncate text-[12px] font-semibold text-ink-800">
+                      {{ a.label }}
+                    </span>
+                    <span class="tabular truncate text-[11.5px] text-ink-500">{{ a.login }}</span>
+                  </button>
+                </div>
                 <p class="tabular mt-2.5 text-[12px] text-ink-600">
                   {{ t('login.demoPassword') }}
                   <span class="font-semibold text-ink-900">{{ DEMO_PASSWORD }}</span>
@@ -654,7 +655,7 @@ function submit() {
                     />
                     <button
                       type="button"
-                      class="absolute inset-y-0 right-1 my-auto grid size-10 place-items-center rounded-[8px] text-ink-400 transition-colors hover:bg-ink-100 hover:text-ink-700"
+                      class="absolute inset-y-0 right-0.5 my-auto grid size-11 place-items-center rounded-[8px] text-ink-400 transition-colors hover:bg-ink-100 hover:text-ink-700"
                       :aria-label="showKeyPassword ? t('login.hidePassword') : t('login.showPassword')"
                       :aria-pressed="showKeyPassword"
                       @click="showKeyPassword = !showKeyPassword"

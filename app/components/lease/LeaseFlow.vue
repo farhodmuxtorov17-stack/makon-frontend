@@ -5,13 +5,11 @@ import { LEASE_FLOW, type LeaseStatus } from '~/stores/lease'
 const props = defineProps<{ status: LeaseStatus }>()
 
 const SHORT: Record<string, string> = {
-  YANGI: 'Yangi',
-  OPERATSIYA_TASDIQLADI: 'Operatsiya',
-  MOLIYA_TASDIQLADI: 'Moliya',
-  QORALAMA_TAYYOR: 'Qoralama',
+  YANGI: 'Yangi ariza',
+  SHARTNOMA_TAYYOR: 'Shartnoma tayyor',
   DIDOX_YUBORILDI: 'Didox’ga yuborildi',
   DIDOX_IMZOLANDI: 'Didox’da imzolandi',
-  FAOL: 'Faol',
+  FAOL: 'Ariza yopildi',
 }
 
 const rejected = computed(() => props.status === 'RAD_ETILDI')

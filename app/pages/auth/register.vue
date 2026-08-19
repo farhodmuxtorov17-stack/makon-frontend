@@ -16,14 +16,7 @@ lease.seed()
 
 const MIN_PASSWORD = 8
 
-type AccountKind = 'individual' | 'company'
-
-const KINDS: Array<{ value: AccountKind; label: string; caption: string }> = [
-  { value: 'individual', label: 'Jismoniy shaxs', caption: 'Shaxsiy hisob' },
-  { value: 'company', label: 'Yuridik shaxs', caption: 'Tashkilot hisobi' },
-]
-
-const kind = ref<AccountKind>('individual')
+/* Tizimda ijarachi faqat yuridik shaxs bo‘ladi, shuning uchun hisob turi tanlanmaydi */
 const name = ref('')
 const email = ref('')
 const stirDigits = ref('')
@@ -82,9 +75,7 @@ const stirLabel = computed(() => {
   return [d.slice(0, 3), d.slice(3, 6), d.slice(6, 9)].filter(Boolean).join(' ')
 })
 
-const nameLabel = computed(() =>
-  kind.value === 'company' ? 'Kompaniya nomi' : 'Ism va familiya',
-)
+const nameLabel = 'Kompaniya nomi'
 
 const stepCaption = computed(() =>
   certificateOrg.value || guestCase.value
@@ -131,7 +122,7 @@ const strengthMeta = computed(() => STRENGTH_META[strength.value] ?? STRENGTH_ME
 
 const nameError = computed(() => {
   if (!submitted.value) return ''
-  if (!name.value.trim()) return `${nameLabel.value} kiritilmagan`
+  if (!name.value.trim()) return `${nameLabel} kiritilmagan`
   if (name.value.trim().length < 3) return 'Nom juda qisqa'
   return ''
 })
@@ -144,7 +135,7 @@ const emailError = computed(() => {
 })
 
 const stirError = computed(() => {
-  if (!submitted.value || kind.value !== 'company') return ''
+  if (!submitted.value) return ''
   if (!stirDigits.value) return 'STIR kiritilmagan'
   if (stirDigits.value.length !== 9) return 'STIR to‘qqiz xonali bo‘lishi kerak'
   return ''
@@ -196,13 +187,11 @@ onMounted(() => {
 
   if (org) {
     // Rekvizitlar kalit sertifikatidan keladi, foydalanuvchi faqat parol qo‘yadi.
-    kind.value = 'company'
     name.value = org.name
     email.value = org.email
     stirDigits.value = org.stir
   } else if (item) {
     const tin = onlyDigits(item.org.tin)
-    kind.value = tin.length === 9 ? 'company' : 'individual'
     name.value = item.org.name
     email.value = item.org.email
     stirDigits.value = tin
@@ -231,8 +220,8 @@ function submit() {
     if (account) {
       account.fullName = certificate.value?.holderName ?? item?.contactName ?? name.value.trim()
       account.organization =
-        kind.value === 'company' ? name.value.trim() : (item?.org.name ?? 'Jismoniy shaxs')
-      account.position = kind.value === 'company' ? 'Tashkilot rahbari' : 'Mulkdor'
+        name.value.trim() || (item?.org.name ?? '')
+      account.position = 'Tashkilot rahbari'
       account.phone = phoneLabel.value
       account.email = email.value.trim()
       account.tin = stirLabel.value
@@ -301,37 +290,6 @@ function submit() {
           </div>
 
           <form class="mt-6 space-y-4" novalidate @submit.prevent="submit">
-            <!-- Hisob turi -->
-            <div v-if="!locked">
-              <p class="mb-1.5 text-[13px] font-semibold text-ink-700">Hisob turi</p>
-              <div
-                role="radiogroup"
-                aria-label="Hisob turi"
-                class="grid grid-cols-2 gap-1 rounded-field bg-ink-100 p-1"
-              >
-                <button
-                  v-for="k in KINDS"
-                  :key="k.value"
-                  type="button"
-                  role="radio"
-                  :aria-checked="kind === k.value"
-                  class="rounded-[8px] px-3 py-2 text-center transition-colors"
-                  :class="
-                    kind === k.value ? 'bg-white shadow-card' : 'hover:bg-white/60'
-                  "
-                  @click="kind = k.value"
-                >
-                  <span
-                    class="block text-[14px] font-semibold"
-                    :class="kind === k.value ? 'text-brand-600' : 'text-ink-600'"
-                  >
-                    {{ k.label }}
-                  </span>
-                  <span class="block text-[12px] text-ink-500">{{ k.caption }}</span>
-                </button>
-              </div>
-            </div>
-
             <UiField
               :label="nameLabel"
               required
@@ -343,8 +301,8 @@ function submit() {
                 id="name"
                 v-model="name"
                 name="name"
-                :autocomplete="kind === 'company' ? 'organization' : 'name'"
-                :placeholder="kind === 'company' ? 'Urban Office MCHJ' : 'Dilshod Ergashev'"
+                autocomplete="organization"
+                placeholder="Urban Office MCHJ"
                 :invalid="Boolean(nameError)"
                 :readonly="locked"
               >
@@ -379,7 +337,6 @@ function submit() {
             </UiField>
 
             <UiField
-              v-if="kind === 'company'"
               label="STIR"
               required
               for="stir"

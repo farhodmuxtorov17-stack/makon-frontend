@@ -13,7 +13,7 @@ defineProps<{ at: string; changes: ActivationChange[] }>()
           <UiIcon name="check" :size="20" />
         </span>
         <div>
-          <p class="text-[15px] font-bold text-ok-700">Shartnoma faollashtirildi</p>
+          <p class="text-[15px] font-bold text-ok-700">Ariza yopildi</p>
           <p class="tabular text-[12.5px] text-ok-600">
             {{ dateShort(at) }} {{ timeOf(at) }}, amalga oshirilgan o‘zgarishlar
           </p>

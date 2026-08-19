@@ -16,7 +16,13 @@ const actOpen = ref(false)
 const documentOpen = ref(false)
 const activeDocument = ref<{ name: string; size: string; type: string } | null>(null)
 
-/** Ichki kelishuv bosqichi. Imzo va faollashtirish Didox oqimida bo‘ladi. */
+/**
+ * Reyestrdagi shartnoma bosqichlari. Ijara oqimidan kelgan shartnoma bu yerga
+ * allaqachon faol holatda tushadi; reyestrda qo‘lda ochilgan shartnoma esa shu
+ * sahifadagi amallar bilan bosqichma-bosqich yuritiladi. Ilgari bu yerda faqat
+ * kelishuv qaydi bor edi, shuning uchun yozuv «Qoralama» va «Kelishilmoqda»
+ * holatidan hech qachon chiqmasdi.
+ */
 const agreementStep = computed(
   () => contract.value?.timeline.find((t) => t.label === 'Kelishildi') ?? null,
 )
@@ -25,8 +31,18 @@ const signedStep = computed(
   () => contract.value?.timeline.find((t) => t.label === 'Imzolandi') ?? null,
 )
 
+const activeStep = computed(
+  () => contract.value?.timeline.find((t) => t.label === 'Faollashdi') ?? null,
+)
+
 const isAgreed = computed(() => agreementStep.value?.done === true)
 const isSigned = computed(() => signedStep.value?.done === true)
+const isActive = computed(() => activeStep.value?.done === true)
+
+/** Shartnomani yuritish huquqi: rolga emas, amal huquqiga bog‘langan */
+const canManage = computed(
+  () => Boolean(contract.value) && auth.can('contract.manage') && auth.inScope(contract.value!.buildingId),
+)
 
 const relatedInvoices = computed(() =>
   contract.value ? INVOICES.filter((i) => i.tenant === contract.value?.tenant) : [],
@@ -140,23 +156,45 @@ function downloadAct() {
   actOpen.value = false
 }
 
-/**
- * Ichki kelishuv qaydi. Imzo va faollashtirish shartnoma kartasida emas,
- * Didox oqimida bajariladi, shuning uchun bu yerda faqat kelishuv belgilanadi.
- */
+/** Bosqichni bajarilgan deb belgilaydi va mas’ul bilan sanani yozadi */
+function completeStep(label: string) {
+  const step = contract.value?.timeline.find((t) => t.label === label)
+  if (!step || step.done) return
+  step.done = true
+  step.date = todayIso()
+  step.actor = currentApprover.value
+}
+
+/** Ichki kelishuv qaydi: shartnoma kelishuv bosqichiga o‘tadi */
 function approveContract() {
   const c = contract.value
   if (!c) return
   const person = currentApprover.value
-  const agreed = c.timeline.find((t) => t.label === 'Kelishildi')
-  if (agreed && !agreed.done) {
-    agreed.done = true
-    agreed.date = todayIso()
-    agreed.actor = person
-  }
+  completeStep('Kelishildi')
   if (c.status === 'DRAFT') c.status = 'REVIEW'
   banner.value = `${c.code} shartnomasi bo‘yicha kelishuv ${person} nomiga qayd etildi. Imzolash Didox orqali davom etadi.`
   approveOpen.value = false
+}
+
+/**
+ * Imzolangan nusxa Didoxdan qaytgach shartnoma imzolangan deb belgilanadi.
+ * Imzo tizim ichida qo‘yilmaydi, bu yerda faqat natija qayd etiladi.
+ */
+function markSigned() {
+  const c = contract.value
+  if (!c || !isAgreed.value || isSigned.value) return
+  completeStep('Imzolandi')
+  c.status = 'SIGNED'
+  banner.value = `${c.code} shartnomasi imzolangan deb belgilandi. Endi uni faollashtirish mumkin.`
+}
+
+/** Faollashtirish: shartnoma reyestrda amaldagi hujjatga aylanadi */
+function activateContract() {
+  const c = contract.value
+  if (!c || !isSigned.value || isActive.value) return
+  completeStep('Faollashdi')
+  c.status = 'ACTIVE'
+  banner.value = `${c.code} shartnomasi faollashtirildi va reyestrda amalda deb ko‘rsatiladi.`
 }
 
 const DOC_TONE: Record<string, string> = {
@@ -356,7 +394,7 @@ const DOC_TONE: Record<string, string> = {
         </div>
 
         <div class="min-w-0 space-y-5">
-          <UiCard title="Ichki kelishuv" subtitle="Shartlarni kelishish qaydi">
+          <UiCard title="Shartnomani yuritish" subtitle="Kelishuv, imzo va faollashtirish qaydi">
             <div class="rounded-field bg-surface-sunken p-4">
               <div class="flex items-center justify-between gap-3">
                 <span class="text-[13px] text-ink-500">Joriy holat</span>
@@ -373,19 +411,55 @@ const DOC_TONE: Record<string, string> = {
                 {{
                   isSigned
                     ? 'Hujjat Didox orqali imzolangan.'
-                    : 'Imzolash Didox orqali, tashqi xizmatda bajariladi. Imzolangan nusxa yuklangach shartnoma faollashadi.'
+                    : 'Imzolash Didox orqali, tashqi xizmatda bajariladi. Imzolangan nusxa qaytgach shu yerda qayd etiladi.'
                 }}
+              </p>
+              <p v-if="isActive" class="mt-2 text-[12.5px] leading-relaxed text-ok-700">
+                Shartnoma faollashtirilgan va reyestrda amalda deb ko‘rsatiladi.
               </p>
             </div>
 
-            <UiButton v-if="!isAgreed" class="mt-4" size="lg" block @click="approveOpen = true">
-              <UiIcon name="check" :size="18" />
-              Kelishuvni qayd etish
-            </UiButton>
+            <template v-if="canManage">
+              <UiButton v-if="!isAgreed" class="mt-4" size="lg" block @click="approveOpen = true">
+                <UiIcon name="check" :size="18" />
+                Kelishuvni qayd etish
+              </UiButton>
+
+              <UiButton
+                v-else-if="!isSigned"
+                class="mt-4"
+                size="lg"
+                block
+                @click="markSigned"
+              >
+                <UiIcon name="edit" :size="18" />
+                Imzolangan deb belgilash
+              </UiButton>
+
+              <UiButton
+                v-else-if="!isActive"
+                class="mt-4"
+                size="lg"
+                variant="success"
+                block
+                @click="activateContract"
+              >
+                <UiIcon name="check" :size="18" />
+                Faollashtirish
+              </UiButton>
+            </template>
+
+            <p
+              v-else
+              class="mt-4 flex items-center justify-center gap-2 rounded-field bg-ink-100 px-3 py-2.5 text-[12.5px] font-semibold text-ink-600"
+            >
+              <UiIcon name="eye" :size="15" />
+              Faqat kuzatuv: shartnomani yuritish huquqi yo‘q
+            </p>
 
             <UiButton
-              v-else
-              class="mt-4"
+              v-if="isAgreed"
+              class="mt-3"
               size="lg"
               variant="secondary"
               block

@@ -54,12 +54,12 @@ export const ROLE_META: Record<Role, RoleMeta> = {
   CONTENT_OPERATOR: {
     code: 'CONTENT_OPERATOR',
     label: 'Operator',
-    caption: 'Qavat rejalari va obyekt ma’lumotlari',
-    level: 'Axborotlarni tayyorlash va to‘ldirish roli',
-    scope: 'Biriktirilgan bino / qavat',
-    limitation: 'Ijara va moliyaviy oqimlarga kira olmaydi',
+    caption: 'Arizalar, shartnomalar va obyekt ma’lumotlari',
+    level: 'Ijara jarayonini olib boruvchi rol',
+    scope: 'Biriktirilgan binolar',
+    limitation: 'To‘lovni tasdiqlamaydi va hisob-faktura chiqarmaydi',
     tone: 'rose',
-    home: '/content',
+    home: '/applications',
   },
   TENANT_OWNER: {
     code: 'TENANT_OWNER',

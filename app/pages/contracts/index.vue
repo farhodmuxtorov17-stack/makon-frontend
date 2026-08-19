@@ -3,7 +3,8 @@ import AppTopbar from '~/components/layout/AppTopbar.vue'
 import { BUILDINGS } from '~/data/buildings'
 import { CONTRACTS, type Contract } from '~/data/business'
 import { CONTRACT_STATUS } from '~/constants/statuses'
-import { dateShort, num, sum, sumShort } from '~/utils/format'
+import { nextContractCode } from '~/stores/lease'
+import { dateShort, monthShift, num, sum, sumShort, todayIso } from '~/utils/format'
 
 const auth = useAuthStore()
 
@@ -152,15 +153,27 @@ function applyStep(key: string) {
 }
 
 const createOpen = ref(false)
-const seq = ref(Math.max(...CONTRACTS.map((c) => Number(c.code.slice(-4)))))
+
+/*
+ * Boshlanish sanasi keyingi oyning birinchi kunidan, tugash sanasi undan
+ * yigirma to‘rt oy keyin. Ilgari bu yerda qotib qolgan 2025 yil turar edi va
+ * yangi shartnoma tizim kunidan orqada tug‘ilar edi.
+ */
+const defaultStart = monthShift(1)
+const defaultEnd = (() => {
+  const d = new Date(monthShift(25))
+  d.setDate(d.getDate() - 1)
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  return `${d.getFullYear()}-${m}-${String(d.getDate()).padStart(2, '0')}`
+})()
 
 const form = reactive({
   type: 'Ijara',
   tenant: '',
   building: scopedBuildings.value[0]?.name ?? BUILDINGS[0]!.name,
   unitCode: '',
-  startsAt: '2025-06-01',
-  endsAt: '2027-05-31',
+  startsAt: defaultStart,
+  endsAt: defaultEnd,
   amount: '',
   paymentTerm: 'Oylik oldindan to‘lov',
 })
@@ -178,8 +191,8 @@ function openCreate() {
   form.tenant = ''
   form.building = scopedBuildings.value[0]?.name ?? BUILDINGS[0]!.name
   form.unitCode = ''
-  form.startsAt = '2025-06-01'
-  form.endsAt = '2027-05-31'
+  form.startsAt = defaultStart
+  form.endsAt = defaultEnd
   form.amount = ''
   form.paymentTerm = 'Oylik oldindan to‘lov'
   createOpen.value = true
@@ -187,10 +200,10 @@ function openCreate() {
 
 function createContract() {
   if (!createValid.value) return
-  seq.value += 1
-  const code = `MKON-2025-0${seq.value}`
+  /* Raqam reyestrdagi eng katta qiymatdan, yil esa tizim kunidan olinadi */
+  const code = nextContractCode()
   const created: Contract = {
-    id: `c-0${seq.value}`,
+    id: `c-${code.slice(-4)}`,
     code,
     type: form.type === 'Sotuv' ? 'Sotuv' : 'Ijara',
     tenant: form.tenant.trim(),
@@ -204,7 +217,12 @@ function createContract() {
     paymentTerm: form.paymentTerm,
     documents: [{ name: 'Shartnoma loyihasi.pdf', size: '1.4 MB', type: 'pdf' }],
     timeline: [
-      { label: 'Yaratildi', date: '2025-05-19', actor: 'Nilufar Rahimova', done: true },
+      {
+        label: 'Yaratildi',
+        date: todayIso(),
+        actor: auth.user?.fullName ?? 'Xodim',
+        done: true,
+      },
       { label: 'Kelishildi', date: '-', actor: '-', done: false },
       { label: 'Imzolandi', date: '-', actor: '-', done: false },
       { label: 'Faollashdi', date: '-', actor: '-', done: false },

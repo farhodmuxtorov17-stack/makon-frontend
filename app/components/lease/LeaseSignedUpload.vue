@@ -173,7 +173,7 @@ async function copyHash() {
       v-else
       icon="doc"
       title="Imzolangan hujjat yuklanmagan"
-      description="Didox holati «Imzolangan» bo‘lgach, bino rahbari imzolangan nusxani tizimga yuklaydi."
+      description="Didox holati «Imzolangan» bo‘lgach, operator imzolangan nusxani tizimga yuklaydi."
       compact
     />
   </div>

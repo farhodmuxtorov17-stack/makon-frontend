@@ -28,14 +28,14 @@ export interface NavItem {
  * menyudagi son sahifadagi son bilan doim mos tushadi.
  */
 export const APPLICATION_QUEUE: Partial<Record<Role, LeaseStatus[]>> = {
-  BUILDING_MANAGER: ['YANGI', 'QORALAMA_TAYYOR', 'DIDOX_YUBORILDI', 'DIDOX_IMZOLANDI'],
-  // MOLIYA_TASDIQLADI ataylab kiritilmagan: `approveFinance` shu holatni
-  // qo‘yib, o‘sha zahoti `composeContract` ni chaqiradi va ariza
-  // QORALAMA_TAYYOR ga o‘tadi. Ya’ni bu bosqichda buxgalterda bosadigan
-  // tugma yo‘q, uni nishonchaga qo‘shish bajarib bo‘lmaydigan vazifani
-  // ko‘rsatgan bo‘lar edi. Agar kelajakda shu holatda qoladigan qaror
-  // qo‘shilsa, qiymat shu yerga qaytariladi.
-  ACCOUNTANT: ['OPERATSIYA_TASDIQLADI'],
+  /*
+   * Ijara zanjirini boshidan oxirigacha Operator olib boradi: arizani
+   * tasdiqlaydi, shartnomani tahrirlaydi va Didoxga yuboradi, holatni
+   * tekshiradi, imzolangan nusxani yuklaydi va arizani yopadi. Shuning uchun
+   * to‘rtala jonli bosqich ham uning navbatida turadi.
+   */
+  CONTENT_OPERATOR: ['YANGI', 'SHARTNOMA_TAYYOR', 'DIDOX_YUBORILDI', 'DIDOX_IMZOLANDI'],
+  BUILDING_MANAGER: ['YANGI', 'SHARTNOMA_TAYYOR', 'DIDOX_YUBORILDI', 'DIDOX_IMZOLANDI'],
 }
 
 /** Bo‘sh navbat nishonchasiz ko‘rsatiladi */
