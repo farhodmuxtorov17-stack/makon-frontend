@@ -984,7 +984,7 @@ const TREND_MONTHS = [
 
 /**
  * Hisobot davri tizim sanasidan olinadi, qo‘lda qotirilmaydi: grafik oynasi
- * doim joriy oyda tugaydi. `month` — noldan boshlanadigan indeks,
+ * doim joriy oyda tugaydi. `month`: noldan boshlanadigan indeks,
  * `TREND_MONTHS` bilan bir xil.
  */
 export const REPORT_PERIOD = currentReportPeriod()

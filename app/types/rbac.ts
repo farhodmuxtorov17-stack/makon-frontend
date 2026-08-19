@@ -23,7 +23,7 @@ export type AccessLevel = 'full' | 'scoped' | 'none'
  */
 export const CAPABILITIES = [
   'application.decide',
-  'contract.sign',
+  'contract.manage',
   'payment.confirm',
   'invoice.create',
   'workorder.assign',

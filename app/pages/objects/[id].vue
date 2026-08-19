@@ -23,7 +23,7 @@ watchEffect(() => {
 
 /** Ijara va moliya ma’lumoti faqat shu oqimda ishlaydigan rollarga ochiq */
 const showFinance = computed(
-  () => auth.can('application.decide') || auth.can('invoice.create') || auth.can('contract.sign'),
+  () => auth.can('application.decide') || auth.can('invoice.create') || auth.can('contract.manage'),
 )
 
 /** Pasportni tahrirlash: texnik ma’lumot yoki tizim ma’muriyati huquqi bilan */

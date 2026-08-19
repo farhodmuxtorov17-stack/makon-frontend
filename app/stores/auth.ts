@@ -126,7 +126,7 @@ export const useAuthStore = defineStore('auth', {
       if (!s.user) return false
       const role = s.user.role
       /*
-       * Bitta amal bir nechta bo‘limda uchraydi (masalan `contract.sign`
+       * Bitta amal bir nechta bo‘limda uchraydi (masalan `contract.manage`
        * shartnomalarda ham, kabinetda ham). Matritsada shulardan biri
        * o‘zgartirilgan bo‘lsa, o‘sha o‘zgartirishlar hal qiladi: kamida
        * bittasi «To‘liq» bo‘lsa huquq beriladi.

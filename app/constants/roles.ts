@@ -77,19 +77,26 @@ export const ROLE_META: Record<Role, RoleMeta> = {
  * Amal huquqlari: marshrutga kirish huquqidan alohida. Hujjatdagi «Cheklov»
  * ustuni aynan shu jadval orqali kuchga kiradi.
  */
+/*
+ * Huquqlar ijara jarayonining haqiqiy egalariga berilgan.
+ *
+ * Arizani Operator qabul qiladi, u bilan bog'lanadi va tasdiqlaydi; tasdiq
+ * bosilishi bilan shartnoma generatsiya qilinadi va Didoxga yuboriladi.
+ * Shuning uchun `application.decide` va `contract.manage` Operatorda.
+ *
+ * Imzo tizimda emas, Didoxda qo'yiladi. `contract.manage` shartnomani
+ * tayyorlash, tahrirlash, yuborish va imzolangan nusxani yuklashni bildiradi.
+ * Ijarachiga tizimda hech qanday yozuv huquqi berilmaydi: u ariza yuboradi va
+ * kabinetda o'z hujjatlarini ko'radi.
+ */
 export const ROLE_CAPABILITIES: Record<Role, Capability[]> = {
-  SUPER_HEAD: ['contract.sign', 'system.administer'],
-  BUILDING_MANAGER: [
-    'application.decide',
-    'contract.sign',
-    'workorder.assign',
-    'unit.editTechnical',
-  ],
-  ACCOUNTANT: ['application.decide', 'contract.sign', 'payment.confirm', 'invoice.create'],
+  SUPER_HEAD: ['application.decide', 'contract.manage', 'system.administer'],
+  BUILDING_MANAGER: ['application.decide', 'workorder.assign', 'unit.editTechnical'],
+  ACCOUNTANT: ['payment.confirm', 'invoice.create'],
   FACILITY: ['workorder.execute'],
   WAREHOUSE_OPERATOR: ['warehouse.issue'],
-  CONTENT_OPERATOR: ['unit.editContent'],
-  TENANT_OWNER: ['contract.sign'],
+  CONTENT_OPERATOR: ['application.decide', 'contract.manage', 'unit.editContent'],
+  TENANT_OWNER: [],
 }
 
 /**

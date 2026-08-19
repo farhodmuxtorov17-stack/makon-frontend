@@ -99,11 +99,37 @@ export const NAVIGATION: Record<Role, NavSection[]> = {
   SUPER_HEAD: [
     {
       items: [
-        { label: 'Boshqaruv paneli', key: 'nav.dashboardExecutive', to: '/dashboard/executive', icon: 'dashboard' },
+        {
+          label: 'Boshqaruv paneli',
+          key: 'nav.dashboardExecutive',
+          to: '/dashboard/executive',
+          icon: 'dashboard',
+          children: [
+            { label: 'Bino kesimida', key: 'nav.dashboardBuilding', to: '/dashboard/building' },
+          ],
+        },
         { label: 'Obyektlar', key: 'nav.objects', to: '/objects', icon: 'building' },
+        {
+          label: 'Arizalar',
+          key: 'nav.applications',
+          to: '/applications',
+          icon: 'clipboard',
+          get badge() {
+            return queueBadge(applicationQueue)
+          },
+        },
         { label: 'Shartnomalar', key: 'nav.contracts', to: '/contracts', icon: 'contract' },
         { label: 'Hisob-kitob va nazorat', key: 'nav.billing', to: '/billing/invoices', icon: 'wallet' },
-        { label: 'Servis va monitoring', key: 'nav.serviceMonitoring', to: '/service-requests', icon: 'wrench' },
+        {
+          label: 'Servis va monitoring',
+          key: 'nav.serviceMonitoring',
+          to: '/service-requests',
+          icon: 'wrench',
+          children: [
+            { label: 'Ish topshiriqlari', key: 'nav.workOrders', to: '/facility/work-orders' },
+            { label: 'Hisoblagichlar', key: 'nav.meters', to: '/meters' },
+          ],
+        },
         { label: 'Hisobotlar', key: 'nav.reports', to: '/reports', icon: 'chart' },
         { label: 'Sozlamalar', key: 'nav.settings', to: '/settings/users', icon: 'gear', children: SETTINGS_CHILDREN },
       ],
@@ -127,7 +153,16 @@ export const NAVIGATION: Record<Role, NavSection[]> = {
         },
         { label: 'Shartnomalar', key: 'nav.contracts', to: '/contracts', icon: 'contract' },
         { label: 'Servis arizalari', key: 'nav.serviceRequests', to: '/service-requests', icon: 'wrench' },
-        { label: 'Ish topshiriqlari', key: 'nav.workOrders', to: '/facility/work-orders', icon: 'tools' },
+        {
+          label: 'Ish topshiriqlari',
+          key: 'nav.workOrders',
+          to: '/facility/work-orders',
+          icon: 'tools',
+          // Material so'rovini bino rahbari tasdiqlaydi, shuning uchun havola menyuda
+          children: [
+            { label: 'Material so‘rovlari', key: 'nav.materials', to: '/facility/materials' },
+          ],
+        },
         { label: 'Hisoblagichlar', key: 'nav.meters', to: '/meters', icon: 'meter' },
         { label: 'Hisobotlar', key: 'nav.reports', to: '/reports', icon: 'chart' },
       ],
@@ -198,13 +233,32 @@ export const NAVIGATION: Record<Role, NavSection[]> = {
     { items: [HELP_ITEM] },
   ],
 
+  // Operator ijara jarayonini boshidan oxirigacha olib boradi, shuning uchun
+  // arizalar va shartnomalar uning menyusida birinchi turadi
   CONTENT_OPERATOR: [
     {
       items: [
-        { label: 'Kontent navbati', key: 'nav.contentQueue', to: '/content', icon: 'dashboard' },
+        {
+          label: 'Arizalar',
+          key: 'nav.applications',
+          to: '/applications',
+          icon: 'clipboard',
+          get badge() {
+            return queueBadge(applicationQueue)
+          },
+        },
+        { label: 'Shartnomalar', key: 'nav.contracts', to: '/contracts', icon: 'contract' },
         { label: 'Obyektlar', key: 'nav.objects', to: '/objects', icon: 'building' },
-        { label: 'Qavat rejalari', key: 'nav.floors', to: '/content/floors', icon: 'layers' },
-        { label: 'Unit atributlari', key: 'nav.unitAttributes', to: '/content/units', icon: 'grid' },
+        {
+          label: 'Kontent',
+          key: 'nav.contentQueue',
+          to: '/content',
+          icon: 'grid',
+          children: [
+            { label: 'Qavat rejalari', key: 'nav.floors', to: '/content/floors' },
+            { label: 'Unit atributlari', key: 'nav.unitAttributes', to: '/content/units' },
+          ],
+        },
       ],
     },
     { items: [HELP_ITEM] },
@@ -236,8 +290,15 @@ export const ROUTE_ACCESS: Array<{ prefix: string; roles: Role[] }> = [
   { prefix: '/objects', roles: ['SUPER_HEAD', 'BUILDING_MANAGER', 'CONTENT_OPERATOR'] },
   { prefix: '/content', roles: ['CONTENT_OPERATOR'] },
 
-  { prefix: '/applications', roles: ['SUPER_HEAD', 'BUILDING_MANAGER', 'ACCOUNTANT'] },
-  { prefix: '/contracts', roles: ['SUPER_HEAD', 'BUILDING_MANAGER', 'ACCOUNTANT'] },
+  // Arizani Operator yuritadi, rahbar va buxgalter kuzatadi
+  {
+    prefix: '/applications',
+    roles: ['SUPER_HEAD', 'CONTENT_OPERATOR', 'BUILDING_MANAGER', 'ACCOUNTANT'],
+  },
+  {
+    prefix: '/contracts',
+    roles: ['SUPER_HEAD', 'CONTENT_OPERATOR', 'BUILDING_MANAGER', 'ACCOUNTANT'],
+  },
   { prefix: '/billing', roles: ['SUPER_HEAD', 'ACCOUNTANT'] },
 
   { prefix: '/service-requests', roles: ['SUPER_HEAD', 'BUILDING_MANAGER', 'FACILITY'] },

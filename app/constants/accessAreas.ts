@@ -59,7 +59,7 @@ export const ACCESS_AREAS: AreaDef[] = [
     key: 'contracts',
     label: 'Shartnomalar',
     prefixes: ['/contracts'],
-    writes: ['contract.sign'],
+    writes: ['contract.manage'],
   },
   {
     key: 'billing',
@@ -98,10 +98,12 @@ export const ACCESS_AREAS: AreaDef[] = [
     writes: ['system.administer'],
   },
   {
+    // Ijarachi kabinetda hujjatlarini ko'radi va ariza yuboradi, tizimda
+    // hech nimani tasdiqlamaydi: imzo Didoxda qo'yiladi.
     key: 'cabinet',
     label: 'Ijarachi kabineti',
     prefixes: ['/cabinet'],
-    writes: ['contract.sign'],
+    writes: [],
   },
 ]
 

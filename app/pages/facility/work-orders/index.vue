@@ -787,7 +787,7 @@ function downloadAct() {
             <div class="flex items-baseline justify-between gap-3">
               <dt class="text-[12.5px] text-ink-500">Ish yakunlangan sana</dt>
               <dd class="tabular text-[13.5px] font-bold text-ink-900">
-                {{ actReady ? dateShort(actDate(selected)) : '—' }}
+                {{ actReady ? dateShort(actDate(selected)) : '-' }}
               </dd>
             </div>
           </dl>

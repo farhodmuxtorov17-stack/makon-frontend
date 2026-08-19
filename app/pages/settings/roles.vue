@@ -29,7 +29,7 @@ const auth = useAuthStore()
 /** Amal huquqlarining interfeysdagi nomi */
 const CAPABILITY_LABELS: Record<Capability, string> = {
   'application.decide': 'Ariza bo‘yicha qaror',
-  'contract.sign': 'Shartnoma imzolash',
+  'contract.manage': 'Shartnoma tayyorlash va yuborish',
   'payment.confirm': 'To‘lovni tasdiqlash',
   'invoice.create': 'Hisob-faktura chiqarish',
   'workorder.assign': 'Ish topshirig‘ini biriktirish',

@@ -18,7 +18,7 @@ const building = computed(() => {
 
 /** Ijarachi va narx ma’lumoti faqat ijara oqimida ishlaydigan rollarga ochiq */
 const showFinance = computed(
-  () => auth.can('application.decide') || auth.can('invoice.create') || auth.can('contract.sign'),
+  () => auth.can('application.decide') || auth.can('invoice.create') || auth.can('contract.manage'),
 )
 
 /** Arizalar moduli hamma rolga ochiq emas, havola shunga qarab ko‘rsatiladi */
@@ -36,7 +36,7 @@ const applyOpen = ref(false)
 
 /**
  * Reja ranglari umumiy jadvaldan olinadi. Ilgari bu sahifada o‘z jadvali
- * bor edi va «Sotilgan» binafsha, «Ta’mirda» qizil chiqardi — katalogda esa
+ * bor edi va «Sotilgan» binafsha, «Ta’mirda» qizil chiqardi: katalogda esa
  * «Sotilgan» qizil. Bitta rang ikki ekranda ikki xil statusni bildirardi.
  */
 const STATUS_FILL = UNIT_STATUS_COLOR

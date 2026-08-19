@@ -26,7 +26,7 @@ const { roleLabel } = useAppLabels()
 /**
  * Namoyish hisoblari. Parol shu yerda ochiq turadi, chunki bu frontend
  * prototipi: haqiqiy tekshiruv backend tomonida bo‘ladi. Muhimi, parol
- * TEKSHIRILADI — ilgari uzunligi yetarli bo‘lgan istalgan matn bilan
+ * TEKSHIRILADI: ilgari uzunligi yetarli bo‘lgan istalgan matn bilan
  * kirish mumkin edi va login maydonidagi nom rolni belgilardi.
  */
 const ACCOUNTS: Array<{ login: string; email: string; role: Role; password: string }> = [

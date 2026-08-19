@@ -9,7 +9,7 @@ import { monthTitle, todayIso } from '~/utils/format'
  * ekranlarida kod bo‘yicha qidiriladi), qolganlari reyestrdan hosil qilinadi.
  *
  * Qoidalar:
- *  - bitta kod — bitta unit, bitta ijarachi;
+ *  - bitta kod: bitta unit, bitta ijarachi;
  *  - unit `RENTED` bo‘lsa shartnoma `ACTIVE` va turi «Ijara»;
  *  - unit `SOLD` bo‘lsa shartnoma turi «Sotuv»;
  *  - `DRAFT`/`REVIEW` shartnoma unitni band qilmaydi, u faqat rezervda turadi
@@ -879,7 +879,7 @@ export const AGING = agingOf()
 // Hisoblagichli xizmatlarning miqdori qo‘lda yozilmaydi: u hisoblagich
 // ko‘rsatkichlari farqidan olinadi. Hisoblagichlar reyestri operatsion
 // ma’lumotlar faylida turadi va o‘zi shu fayldan hisob-fakturalarni o‘qiydi,
-// shuning uchun ro‘yxat parametr sifatida uzatiladi — ikki tomonlama import
+// shuning uchun ro‘yxat parametr sifatida uzatiladi: ikki tomonlama import
 // aylanma bog‘lanish hosil qilardi.
 
 /** Tarif jadvaliga miqdor beradigan hisoblagich ko‘rsatkichi */
@@ -932,7 +932,7 @@ export function serviceLinesFor(area: number): TariffLine[] {
 /**
  * Ijarachiga beriladigan kommunal qatorlar: hisoblagichli xizmatlar sarfdan,
  * qolganlari maydondan hisoblanadi, summa esa doim `tarif × miqdor` ga teng.
- * Binoda tegishli hisoblagich bo‘lmasa, qator umuman chiqmaydi — jadval
+ * Binoda tegishli hisoblagich bo‘lmasa, qator umuman chiqmaydi: jadval
  * hisoblagich ekranidagi ko‘rsatkich bilan bir xil raqamni beradi.
  */
 export function tariffLinesFor(
@@ -959,7 +959,7 @@ export function tariffLinesFor(
 
 /**
  * Standart xizmat qatorlari: namuna sifatida Green Business Center 501-uniti.
- * Hisoblagichli qatorlar bu ro‘yxatga kirmaydi — ular uchun `tariffLinesFor()`
+ * Hisoblagichli qatorlar bu ro‘yxatga kirmaydi: ular uchun `tariffLinesFor()`
  * ni hisoblagichlar ro‘yxati bilan chaqirish kerak.
  */
 export const TARIFF_LINES: TariffLine[] = serviceLinesFor(unitById('u-501')?.area ?? 0)

@@ -60,7 +60,7 @@ const building = computed(() => {
 
 /** Ijarachi va narx ma’lumoti faqat ijara oqimida ishlaydigan rollarga ochiq */
 const showFinance = computed(
-  () => auth.can('application.decide') || auth.can('invoice.create') || auth.can('contract.sign'),
+  () => auth.can('application.decide') || auth.can('invoice.create') || auth.can('contract.manage'),
 )
 
 // 0 hech qachon haqiqiy daraja emas (yer osti manfiy, yer usti 1 dan boshlanadi),

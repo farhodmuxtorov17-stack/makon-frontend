@@ -35,7 +35,7 @@ const MONTHS = [
 /**
  * Davr kaliti «2026-08» ko‘rinishida: shu ko‘rinishda u ham xronologik
  * saralanadi, ham hisob-faktura sanalari bilan to‘g‘ridan-to‘g‘ri
- * solishtiriladi. Ekranda ko‘rinadigan yorliq esa «Avgust 2026» — aynan shu
+ * solishtiriladi. Ekranda ko‘rinadigan yorliq esa «Avgust 2026»: aynan shu
  * matn hisob-faktura yozuvidagi `period` maydonida turadi.
  */
 function labelOfKey(key: string): string {
