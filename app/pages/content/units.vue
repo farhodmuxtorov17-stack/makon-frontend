@@ -454,7 +454,7 @@ function toneOf(pct: number) {
           <UiIcon :name="allVisibleSelected ? 'x' : 'check'" :size="15" />
           {{ allVisibleSelected ? 'Tanlovni bekor qilish' : 'Ko‘rinayotganlarni tanlash' }}
         </UiButton>
-        <span class="text-[12.5px] text-ink-500">
+        <span class="text-[13px] text-ink-500">
           Tanlangan: <b class="tabular text-ink-800">{{ selectedIds.length }}</b> ta unit
         </span>
         <UiButton
@@ -543,7 +543,7 @@ function toneOf(pct: number) {
                 :style="{ width: `${row.pct}%` }"
               />
             </span>
-            <span class="tabular text-[12.5px] font-bold text-ink-800">{{ percent(row.pct) }}</span>
+            <span class="tabular text-[13px] font-bold text-ink-800">{{ percent(row.pct) }}</span>
           </span>
         </template>
       </UiTable>
@@ -619,10 +619,10 @@ function toneOf(pct: number) {
             >
               <header class="flex items-start justify-between gap-4 border-b border-ink-200 px-5 py-4">
                 <div class="min-w-0">
-                  <h2 class="truncate text-[17px] font-bold text-ink-900">
+                  <h2 class="truncate text-[18px] font-bold text-ink-900">
                     Unit {{ panelUnit.code }}
                   </h2>
-                  <p class="truncate text-[12.5px] text-ink-500">
+                  <p class="truncate text-[13px] text-ink-500">
                     {{ buildingName(panelUnit.buildingId) }} · {{ floorName(panelUnit.floor) }}
                   </p>
                 </div>
@@ -674,7 +674,7 @@ function toneOf(pct: number) {
                     <li
                       v-for="c in panelChecks"
                       :key="c.key"
-                      class="flex items-center gap-2 rounded-field px-2.5 py-1.5 text-[12.5px] ring-1 ring-inset"
+                      class="flex items-center gap-2 rounded-field px-2.5 py-1.5 text-[13px] ring-1 ring-inset"
                       :class="
                         c.done
                           ? 'bg-ok-50/70 text-ok-700 ring-ok-100'
@@ -728,7 +728,7 @@ function toneOf(pct: number) {
                         </button>
                       </span>
                     </div>
-                    <p v-else class="text-[12.5px] text-ink-400">Jihozlar kiritilmagan</p>
+                    <p v-else class="text-[13px] text-ink-400">Jihozlar kiritilmagan</p>
 
                     <div class="mt-2.5 flex gap-2">
                       <UiInput
@@ -756,12 +756,12 @@ function toneOf(pct: number) {
                     </div>
                   </div>
 
-                  <p v-if="formError" class="text-[12.5px] font-medium text-danger-600">
+                  <p v-if="formError" class="text-[13px] font-medium text-danger-600">
                     {{ formError }}
                   </p>
                 </template>
 
-                <div v-else class="flex items-start gap-2.5 rounded-field bg-ink-50 px-3.5 py-3 text-[12.5px] text-ink-600 ring-1 ring-inset ring-ink-200">
+                <div v-else class="flex items-start gap-2.5 rounded-field bg-ink-50 px-3.5 py-3 text-[13px] text-ink-600 ring-1 ring-inset ring-ink-200">
                   <UiIcon name="lock" :size="16" class="mt-0.5 shrink-0 text-ink-400" />
                   <span>Atributlarni tahrirlash huquqi berilmagan, ma’lumot faqat ko‘rish uchun.</span>
                 </div>

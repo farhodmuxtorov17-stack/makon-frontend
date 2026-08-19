@@ -255,7 +255,7 @@ function resetFilters() {
               <UiIcon name="building" :size="18" />
             </span>
             <span class="min-w-0 flex-1">
-              <span class="block truncate text-[13.5px] font-bold text-ink-900">{{ b.name }}</span>
+              <span class="block truncate text-[14px] font-bold text-ink-900">{{ b.name }}</span>
               <span class="block truncate text-[12px] text-ink-500">{{ b.type }}</span>
             </span>
             <span class="tabular shrink-0 text-[13px] font-bold text-brand-600">
@@ -311,7 +311,7 @@ function resetFilters() {
       >
         <template #cell-buildingName="{ row }">
           <span class="min-w-0">
-            <span class="block truncate text-[13.5px] font-semibold text-brand-600">
+            <span class="block truncate text-[14px] font-semibold text-brand-600">
               {{ row.buildingName }}
             </span>
             <span class="tabular block truncate text-[12px] text-ink-500">{{ row.buildingCode }}</span>

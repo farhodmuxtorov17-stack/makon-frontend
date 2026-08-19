@@ -230,7 +230,7 @@ const TONE_DOT: Record<string, string> = {
   >
     <template #actions>
       <span
-        class="hidden items-center gap-2 rounded-pill bg-ok-50 px-3 py-1.5 text-[12.5px] font-semibold text-ok-700 ring-1 ring-inset ring-ok-100 lg:inline-flex"
+        class="hidden items-center gap-2 rounded-pill bg-ok-50 px-3 py-1.5 text-[13px] font-semibold text-ok-700 ring-1 ring-inset ring-ok-100 lg:inline-flex"
       >
         <UiIcon name="shield" :size="15" />
         Xavfsizlik darajasi: Yuqori
@@ -277,7 +277,7 @@ const TONE_DOT: Record<string, string> = {
       <div class="min-w-0 space-y-5">
         <div class="grid gap-5 lg:grid-cols-2 2xl:grid-cols-3">
           <UiCard title="Kompaniya profili" subtitle="Rasmiy rekvizitlar">
-            <p class="text-[15px] font-bold text-ink-900">{{ settings.company.name }}</p>
+            <p class="text-[16px] font-bold text-ink-900">{{ settings.company.name }}</p>
             <dl class="mt-3 space-y-2.5 text-[13px]">
               <div class="flex items-start justify-between gap-3">
                 <dt class="text-ink-500">STIR</dt>
@@ -315,11 +315,11 @@ const TONE_DOT: Record<string, string> = {
                   </span>
                   <span class="min-w-0 flex-1">
                     <span class="block truncate text-[13px] font-semibold text-ink-900">{{ r.label }}</span>
-                    <span class="block truncate text-[11.5px] text-ink-500">{{ r.caption }}</span>
+                    <span class="block truncate text-[12px] text-ink-500">{{ r.caption }}</span>
                   </span>
                   <span class="flex shrink-0 items-center gap-2">
                     <span
-                      class="text-[11.5px] font-semibold"
+                      class="text-[12px] font-semibold"
                       :class="r.value ? 'text-ok-700' : 'text-ink-500'"
                     >
                       {{ r.value ? 'Yoqilgan' : 'O‘chirilgan' }}
@@ -451,7 +451,7 @@ const TONE_DOT: Record<string, string> = {
                 class="flex items-center justify-between gap-3 rounded-field bg-ink-50 px-3 py-2.5 text-[13px] text-ink-500 ring-1 ring-inset ring-ink-200"
               >
                 <span>E-pochta / SMS / Telegram kanallari</span>
-                <span class="shrink-0 text-[11.5px] font-semibold">Joriy bosqichda ulanmagan</span>
+                <span class="shrink-0 text-[12px] font-semibold">Joriy bosqichda ulanmagan</span>
               </li>
             </ul>
 
@@ -475,9 +475,9 @@ const TONE_DOT: Record<string, string> = {
               <span class="grid size-9 place-items-center rounded-[10px]" :class="m.tone">
                 <UiIcon :name="m.icon" :size="18" />
               </span>
-              <p class="tabular mt-3 text-[24px] font-bold leading-none text-ink-900">{{ m.value }}</p>
-              <p class="mt-1.5 text-[12.5px] font-semibold text-ink-700">{{ m.label }}</p>
-              <p class="text-[11.5px] text-ink-500">{{ m.caption }}</p>
+              <p class="tabular mt-3 text-[22px] font-bold leading-none text-ink-900">{{ m.value }}</p>
+              <p class="mt-1.5 text-[13px] font-semibold text-ink-700">{{ m.label }}</p>
+              <p class="text-[12px] text-ink-500">{{ m.caption }}</p>
             </div>
           </div>
 
@@ -496,18 +496,18 @@ const TONE_DOT: Record<string, string> = {
               </span>
               <span class="min-w-0 flex-1">
                 <span class="block truncate text-[13px] font-semibold text-ink-900">{{ s.device }}</span>
-                <span class="block truncate text-[11.5px] text-ink-500">{{ s.place }} • {{ s.when }}</span>
+                <span class="block truncate text-[12px] text-ink-500">{{ s.place }} • {{ s.when }}</span>
               </span>
               <span
                 v-if="s.current"
-                class="shrink-0 rounded-pill bg-ok-50 px-2.5 py-1 text-[11.5px] font-semibold text-ok-700 ring-1 ring-inset ring-ok-100"
+                class="shrink-0 rounded-pill bg-ok-50 px-2.5 py-1 text-[12px] font-semibold text-ok-700 ring-1 ring-inset ring-ok-100"
               >
                 Joriy seans
               </span>
               <button
                 v-else
                 type="button"
-                class="shrink-0 rounded-[8px] px-2.5 py-1.5 text-[12.5px] font-semibold text-danger-600 transition-colors hover:bg-danger-50"
+                class="shrink-0 rounded-[8px] px-2.5 py-1.5 text-[13px] font-semibold text-danger-600 transition-colors hover:bg-danger-50"
                 @click="endSession(s.id)"
               >
                 Tugatish
@@ -537,10 +537,10 @@ const TONE_DOT: Record<string, string> = {
             <li v-for="e in audit" :key="e.id" class="flex items-start gap-3 px-5 py-3">
               <span class="mt-1.5 size-2 shrink-0 rounded-full" :class="TONE_DOT[e.tone]" />
               <span class="min-w-0 flex-1">
-                <span class="block text-[12.5px] font-semibold text-ink-900">{{ e.who }}</span>
+                <span class="block text-[13px] font-semibold text-ink-900">{{ e.who }}</span>
                 <span class="block text-[12px] leading-snug text-ink-600">{{ e.text }}</span>
               </span>
-              <span class="tabular shrink-0 text-[11.5px] text-ink-500">{{ e.when }}</span>
+              <span class="tabular shrink-0 text-[12px] text-ink-500">{{ e.when }}</span>
             </li>
           </ul>
         </UiCard>
@@ -574,7 +574,7 @@ const TONE_DOT: Record<string, string> = {
     </UiModal>
 
     <UiModal v-model="backupOpen" title="Zaxira nusxa yaratish" size="sm">
-      <p class="text-[13.5px] leading-relaxed text-ink-700">
+      <p class="text-[14px] leading-relaxed text-ink-700">
         Joriy ma’lumotlar bazasining to‘liq zaxira nusxasi yaratiladi va
         «{{ storageOptions.find((o) => o.value === settings.backup.storage)?.label }}» saqlash
         joyiga joylanadi.
@@ -591,7 +591,7 @@ const TONE_DOT: Record<string, string> = {
       subtitle="Bu amal joriy ma’lumotlarni zaxira nusxa bilan almashtiradi"
       size="sm"
     >
-      <p class="flex items-start gap-2 rounded-field bg-danger-50 px-3.5 py-3 text-[12.5px] text-danger-700">
+      <p class="flex items-start gap-2 rounded-field bg-danger-50 px-3.5 py-3 text-[13px] text-danger-700">
         <UiIcon name="warning" :size="16" class="mt-0.5 shrink-0" />
         Tiklash boshlangach joriy ma’lumotlar qaytarilmaydi. Amal audit jurnalida qayd etiladi.
       </p>
@@ -614,7 +614,7 @@ const TONE_DOT: Record<string, string> = {
     </UiModal>
 
     <UiModal v-model="closeAllOpen" title="Barcha sessiyalarni tugatish" size="sm">
-      <p class="text-[13.5px] leading-relaxed text-ink-700">
+      <p class="text-[14px] leading-relaxed text-ink-700">
         Joriy seansdan tashqari barcha ochiq seanslar yopiladi. Foydalanuvchilar qaytadan tizimga
         kirishlari kerak bo‘ladi.
       </p>
@@ -625,7 +625,7 @@ const TONE_DOT: Record<string, string> = {
     </UiModal>
 
     <UiModal v-model="saveOpen" title="O‘zgarishlarni saqlash" size="sm">
-      <p class="text-[13.5px] leading-relaxed text-ink-700">
+      <p class="text-[14px] leading-relaxed text-ink-700">
         Tizim sozlamalari, xavfsizlik siyosatlari va integratsiya parametrlari saqlanadi hamda
         audit jurnalida qayd etiladi.
       </p>

@@ -73,18 +73,20 @@ export const LISTING_STATUS: Record<string, StatusDef> = {
 }
 
 /**
- * Ijara sikli: unit tanlashdan faol shartnomagacha bo‘lgan yagona status
- * mashinasi. Ijarachi, bino rahbari va buxgalter ekranlari shu registrdan
- * o‘qiydi, shuning uchun uch rol bir xil nom va belgini ko‘radi.
+ * Ijara sikli: arizadan yopilgan arizagacha bo‘lgan yagona status mashinasi.
+ * Ijarachi, operator va buxgalter ekranlari shu registrdan o‘qiydi, shuning
+ * uchun uch rol bir xil nom va belgini ko‘radi.
+ *
+ * Bosqichlar buyurtmachi ta’rifiga mos: ariza kelgach operator uni tasdiqlaydi
+ * va shu zahoti shartnoma tuziladi, so‘ng hujjat Didox orqali imzolanadi va
+ * ariza yopiladi. Oraliq moliya tasdig‘i jarayonda yo‘q.
  */
 export const LEASE_STATUS: Record<string, StatusDef> = {
   YANGI: { label: 'Yangi ariza', tone: 'brand', shape: 'dot' },
-  OPERATSIYA_TASDIQLADI: { label: 'Operatsiya tasdiqladi', tone: 'warn', shape: 'clock' },
-  MOLIYA_TASDIQLADI: { label: 'Moliya tasdiqladi', tone: 'violet', shape: 'ring' },
-  QORALAMA_TAYYOR: { label: 'Qoralama tayyor', tone: 'brand', shape: 'square' },
+  SHARTNOMA_TAYYOR: { label: 'Shartnoma tayyorlandi', tone: 'violet', shape: 'square' },
   DIDOX_YUBORILDI: { label: 'Didox’ga yuborildi', tone: 'warn', shape: 'bar' },
   DIDOX_IMZOLANDI: { label: 'Didox’da imzolandi', tone: 'brand', shape: 'check' },
-  FAOL: { label: 'Faol', tone: 'ok', shape: 'check' },
+  FAOL: { label: 'Ariza yopildi', tone: 'ok', shape: 'check' },
   RAD_ETILDI: { label: 'Rad etilgan', tone: 'danger', shape: 'cross' },
 }
 

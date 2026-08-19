@@ -256,7 +256,7 @@ function capabilitiesOf(role: Role) {
       :padded="false"
     >
       <template #actions>
-        <span class="tabular text-[12.5px] font-semibold text-ink-500">
+        <span class="tabular text-[13px] font-semibold text-ink-500">
           {{ ROLES.length }} rol × {{ AREA_VIEW.length }} bo‘lim
         </span>
       </template>
@@ -301,7 +301,7 @@ function capabilitiesOf(role: Role) {
                     aria-hidden="true"
                   />
                   <span class="min-w-0">
-                    <span class="block text-[12.5px] font-semibold leading-snug text-ink-900">
+                    <span class="block text-[13px] font-semibold leading-snug text-ink-900">
                       {{ ROLE_META[role].label }}
                     </span>
                     <span class="mt-1 block text-[11px] font-normal leading-snug text-ink-500">
@@ -372,14 +372,14 @@ function capabilitiesOf(role: Role) {
       <div class="px-5 py-4">
         <p class="text-[13px] font-semibold text-ink-700">Belgilar izohi</p>
         <ul class="mt-2.5 space-y-2">
-          <li class="flex items-start gap-2 text-[12.5px] text-ink-600">
+          <li class="flex items-start gap-2 text-[13px] text-ink-600">
             <svg class="mt-px size-5 shrink-0 text-ok-600" viewBox="0 0 20 20" fill="none" aria-hidden="true">
               <circle cx="10" cy="10" r="8.4" fill="currentColor" opacity=".16" />
               <path d="m5.8 10.4 2.9 2.9 5.6-6.4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
             <span><b class="font-semibold text-ink-800">To‘liq</b>, {{ LEVEL_META.full.desc }}</span>
           </li>
-          <li class="flex items-start gap-2 text-[12.5px] text-ink-600">
+          <li class="flex items-start gap-2 text-[13px] text-ink-600">
             <svg class="mt-px size-5 shrink-0 text-warn-600" viewBox="0 0 20 20" fill="none" aria-hidden="true">
               <circle cx="10" cy="10" r="7.2" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-dasharray="3.4 3.2" />
               <circle cx="10" cy="10" r="2.4" fill="currentColor" />
@@ -388,7 +388,7 @@ function capabilitiesOf(role: Role) {
               <b class="font-semibold text-ink-800">Cheklangan</b>, {{ LEVEL_META.scoped.desc }}
             </span>
           </li>
-          <li class="flex items-start gap-2 text-[12.5px] text-ink-600">
+          <li class="flex items-start gap-2 text-[13px] text-ink-600">
             <svg class="mt-px size-5 shrink-0 text-ink-400" viewBox="0 0 20 20" fill="none" aria-hidden="true">
               <path d="M6 6l8 8M14 6l-8 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
             </svg>
@@ -430,14 +430,14 @@ function capabilitiesOf(role: Role) {
           >
             {{ ROLE_META[role].label }}
           </span>
-          <span class="tabular shrink-0 text-[12.5px] font-semibold text-ink-500">
+          <span class="tabular shrink-0 text-[13px] font-semibold text-ink-500">
             {{ USER_COUNT[role] }} ta foydalanuvchi
           </span>
         </div>
 
         <p class="mt-2.5 text-[13px] leading-relaxed text-ink-600">{{ ROLE_META[role].caption }}</p>
 
-        <dl class="mt-3.5 space-y-2.5 border-t border-ink-100 pt-3.5 text-[12.5px]">
+        <dl class="mt-3.5 space-y-2.5 border-t border-ink-100 pt-3.5 text-[13px]">
           <div class="flex items-start justify-between gap-3">
             <dt class="shrink-0 text-ink-500">Daraja</dt>
             <dd class="text-right font-semibold text-ink-900">{{ ROLE_META[role].level }}</dd>
@@ -467,7 +467,7 @@ function capabilitiesOf(role: Role) {
         </dl>
 
         <div
-          class="mt-3.5 flex items-start gap-2 rounded-field bg-warn-50 px-3 py-2.5 text-[12.5px] leading-relaxed text-warn-700 ring-1 ring-inset ring-warn-100"
+          class="mt-3.5 flex items-start gap-2 rounded-field bg-warn-50 px-3 py-2.5 text-[13px] leading-relaxed text-warn-700 ring-1 ring-inset ring-warn-100"
         >
           <UiIcon name="lock" :size="15" class="mt-0.5 shrink-0" />
           <span class="min-w-0">
@@ -482,7 +482,7 @@ function capabilitiesOf(role: Role) {
           <li
             v-for="c in capabilitiesOf(role)"
             :key="c.code"
-            class="inline-flex items-center gap-1.5 rounded-pill bg-ink-100 px-2.5 py-1 text-[11.5px] font-semibold text-ink-700 ring-1 ring-inset ring-ink-200"
+            class="inline-flex items-center gap-1.5 rounded-pill bg-ink-100 px-2.5 py-1 text-[12px] font-semibold text-ink-700 ring-1 ring-inset ring-ink-200"
           >
             <UiIcon name="key" :size="12" class="shrink-0 text-ink-500" />
             {{ c.label }}
@@ -498,7 +498,7 @@ function capabilitiesOf(role: Role) {
       </UiCard>
     </section>
 
-    <p class="tabular text-[12.5px] text-ink-500">
+    <p class="tabular text-[13px] text-ink-500">
       Jami {{ ROLES.length }} ta rol va {{ totalUsers }} ta foydalanuvchi hisobi.
     </p>
 
@@ -508,7 +508,7 @@ function capabilitiesOf(role: Role) {
       subtitle="Quyidagi ruxsat o‘zgarishlari tasdiqlanadi"
       size="lg"
     >
-      <p v-if="!changes.length" class="text-[13.5px] text-ink-600">O‘zgarish topilmadi.</p>
+      <p v-if="!changes.length" class="text-[14px] text-ink-600">O‘zgarish topilmadi.</p>
 
       <ul v-else class="scroll-slim max-h-[50vh] divide-y divide-ink-100 overflow-y-auto">
         <li
@@ -522,18 +522,18 @@ function capabilitiesOf(role: Role) {
           >
             {{ ROLE_META[c.role].label }}
           </span>
-          <span class="min-w-0 flex-1 truncate text-[13.5px] font-semibold text-ink-900">
+          <span class="min-w-0 flex-1 truncate text-[14px] font-semibold text-ink-900">
             {{ c.areaLabel }}
           </span>
           <span
-            class="inline-flex items-center rounded-pill px-2.5 py-1 text-[11.5px] font-semibold ring-1 ring-inset"
+            class="inline-flex items-center rounded-pill px-2.5 py-1 text-[12px] font-semibold ring-1 ring-inset"
             :class="LEVEL_META[c.from].badge"
           >
             {{ LEVEL_META[c.from].label }}
           </span>
           <UiIcon name="arrowRight" :size="15" class="text-ink-400" />
           <span
-            class="inline-flex items-center rounded-pill px-2.5 py-1 text-[11.5px] font-semibold ring-1 ring-inset"
+            class="inline-flex items-center rounded-pill px-2.5 py-1 text-[12px] font-semibold ring-1 ring-inset"
             :class="LEVEL_META[c.to].badge"
           >
             {{ LEVEL_META[c.to].label }}
@@ -542,7 +542,7 @@ function capabilitiesOf(role: Role) {
       </ul>
 
       <p
-        class="mt-4 flex items-start gap-2 rounded-field bg-warn-50 px-3.5 py-3 text-[12.5px] text-warn-700"
+        class="mt-4 flex items-start gap-2 rounded-field bg-warn-50 px-3.5 py-3 text-[13px] text-warn-700"
       >
         <UiIcon name="warning" :size="16" class="mt-0.5 shrink-0" />
         O‘zgarishlar barcha faol seanslarga darhol qo‘llanadi va audit jurnalida qayd etiladi.

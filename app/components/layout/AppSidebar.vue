@@ -127,7 +127,7 @@ watch(() => route.fullPath, hideHint)
 
         <p
           v-if="section.title && !rail"
-          class="mb-2 px-3 text-[10px] font-bold uppercase tracking-wider text-ink-500"
+          class="mb-2 px-3 text-[11px] font-bold uppercase tracking-wider text-ink-500"
         >
           {{ section.title }}
         </p>
@@ -145,7 +145,7 @@ watch(() => route.fullPath, hideHint)
             <template v-if="item.children && !rail">
               <button
                 type="button"
-                class="flex w-full items-center gap-3 rounded-field px-3 py-2.5 text-left text-[13.5px] font-semibold transition-colors"
+                class="flex w-full items-center gap-3 rounded-field px-3 py-2.5 text-left text-[14px] font-semibold transition-colors"
                 :class="
                   isActive(item)
                     ? 'bg-brand-50 text-brand-700'
@@ -189,7 +189,7 @@ watch(() => route.fullPath, hideHint)
               :class="[
                 rail
                   ? 'mx-auto size-11 justify-center'
-                  : 'gap-3 px-3 py-2.5 text-[13.5px]',
+                  : 'gap-3 px-3 py-2.5 text-[14px]',
                 isActive(item)
                   ? 'bg-brand-500 text-white shadow-brand'
                   : 'text-ink-600 hover:bg-ink-100 hover:text-ink-900',
@@ -241,7 +241,7 @@ watch(() => route.fullPath, hideHint)
         class="flex items-center gap-3 rounded-panel bg-gradient-to-br from-brand-50 to-brand-100/70 p-3.5 ring-1 ring-inset ring-brand-100 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-card hover:ring-brand-300"
       >
         <span class="min-w-0 flex-1">
-          <span class="block text-[12.5px] font-semibold text-ink-900">
+          <span class="block text-[13px] font-semibold text-ink-900">
             {{ t('shell.helpCard') }}
           </span>
           <span class="tabular mt-0.5 block text-[14px] font-bold text-brand-700">
@@ -267,7 +267,7 @@ watch(() => route.fullPath, hideHint)
       :style="{ top: `${hint.top}px` }"
     >
       <div class="max-w-[220px] rounded-field bg-ink-900 px-3 py-2 shadow-pop">
-        <p class="whitespace-nowrap text-[12.5px] font-semibold leading-[26px] text-white">
+        <p class="whitespace-nowrap text-[13px] font-semibold leading-[26px] text-white">
           {{ navLabel(hint.item) }}
         </p>
       </div>

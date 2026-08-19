@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { useStorage } from '@vueuse/core'
-import { BUILDINGS } from '~/data/buildings'
 import { CONTACT } from '~/constants/contacts'
 
 const route = useRoute()
@@ -9,37 +8,34 @@ const { t } = useI18n()
 /** Sahifa butun ekranni egallasa (katalog qidiruvi), pastki blok chiqarilmaydi */
 const fullscreen = computed(() => route.meta.fullscreen === true)
 
-/** Sarlavhadagi ixcham menyu */
+/** Sarlavhada ikkita havola: katalog va obyektlar, boshqasi pastki blokda */
 const HEADER_NAV = [
   { key: 'public.navCatalog', to: '/catalog' },
-  { key: 'public.navRegister', to: '/register' },
+  { key: 'public.navObjects', to: '/#obyektlar' },
 ]
 
+/** Mobil menyuda to‘liq ro‘yxat */
 const NAV = [
   { key: 'public.navCatalog', to: '/catalog' },
-  { key: 'public.navRegister', to: '/register' },
   { key: 'public.navObjects', to: '/#obyektlar' },
-  { key: 'public.navMap', to: '/#xarita' },
-  { key: 'public.navServices', to: '/#xizmatlar' },
   { key: 'public.navFavourites', to: '/catalog?fav=1' },
+  { key: 'public.navRegister', to: '/register' },
   { key: 'nav.help', to: '/help' },
 ]
 
 const favourites = useStorage<string[]>('makon.favourites', [])
 
-/** Pastki blokda eng yirik obyektlar, qolganlari katalog orqali ochiladi */
-const footerBuildings = [...BUILDINGS].sort((a, b) => b.gla - a.gla).slice(0, 6)
-
 const QUICK = [
   { key: 'public.quickCatalog', to: '/catalog' },
-  { key: 'public.quickMap', to: '/#xarita' },
-  { key: 'public.quickServices', to: '/#xizmatlar' },
-  { key: 'public.quickSystem', to: '/#tizim' },
-  { key: 'public.quickBlog', to: '/#blog' },
+  { key: 'public.quickMap', to: '/#obyektlar' },
+  { key: 'public.quickFavourites', to: '/catalog?fav=1' },
+  { key: 'public.navRegister', to: '/register' },
+  { key: 'public.quickHelp', to: '/help' },
 ]
 
 const CATEGORIES = [
   { key: 'public.categoryBiznes', to: '/catalog?type=biznes' },
+  { key: 'public.categoryOfis', to: '/catalog?type=ofis' },
   { key: 'public.categorySavdo', to: '/catalog?type=savdo' },
   { key: 'public.categoryOmbor', to: '/catalog?type=ombor' },
   { key: 'public.categoryTurar', to: '/catalog?type=turar' },
@@ -56,7 +52,7 @@ const CONTACTS = computed(() => [
   {
     d: 'M6.5 3.5h3l1.5 4-2 1.5a11 11 0 0 0 5 5l1.5-2 4 1.5v3a2 2 0 0 1-2 2A15.5 15.5 0 0 1 4.5 5.5a2 2 0 0 1 2-2z',
     label: CONTACT.phone,
-    note: t('public.contactPhoneNote'),
+    note: t('public.contactHours'),
     href: CONTACT.phoneHref,
   },
   {
@@ -64,12 +60,6 @@ const CONTACTS = computed(() => [
     label: CONTACT.email,
     note: t('public.contactEmailNote'),
     href: CONTACT.emailHref,
-  },
-  {
-    d: 'M12 20.5a8.5 8.5 0 1 0 0-17 8.5 8.5 0 0 0 0 17zM12 7.2V12l3 1.9',
-    label: t('public.contactHours'),
-    note: t('public.contactHoursNote'),
-    href: '',
   },
 ])
 
@@ -85,6 +75,8 @@ const scrolled = ref(false)
 function onScroll() {
   scrolled.value = window.scrollY > 40
 }
+
+// --- Mobil menyu -----------------------------------------------------------
 
 const menuOpen = ref(false)
 const drawer = ref<HTMLElement | null>(null)
@@ -160,6 +152,21 @@ onBeforeUnmount(() => {
   window.removeEventListener('keydown', onKeydown)
   document.body.style.overflow = ''
 })
+
+// --- Ariza oynasi ----------------------------------------------------------
+
+/**
+ * Oyna maket ichida bir nusxada turadi, holati esa `useState` orqali umumiy.
+ * Shu sababli ariza istalgan sahifadan, shu jumladan sarlavhadan ochiladi.
+ */
+const applyOpen = useState<boolean>('makon.apply.open', () => false)
+const applyUnit = useState<string>('makon.apply.unit', () => '')
+
+function openApply() {
+  applyUnit.value = ''
+  applyOpen.value = true
+  menuOpen.value = false
+}
 </script>
 
 <template>
@@ -172,14 +179,14 @@ onBeforeUnmount(() => {
       :class="scrolled ? 'border-ink-200 shadow-card' : 'border-ink-200/60'"
     >
       <div
-        class="mx-auto flex max-w-[1360px] items-center gap-4 px-4 transition-[height] duration-200 ease-out lg:px-8"
-        :class="scrolled ? 'h-[58px]' : 'h-[76px]'"
+        class="mx-auto flex max-w-[1200px] items-center gap-4 px-4 transition-[height] duration-200 ease-out lg:px-8"
+        :class="scrolled ? 'h-[60px]' : 'h-[72px]'"
       >
         <NuxtLink to="/" class="shrink-0" :aria-label="t('public.homeAria')">
           <AppLogo :size="scrolled ? 'sm' : 'md'" />
         </NuxtLink>
 
-        <nav class="ml-3 hidden items-center gap-0.5 lg:flex" :aria-label="t('public.mainMenu')">
+        <nav class="ml-4 hidden items-center gap-0.5 lg:flex" :aria-label="t('public.mainMenu')">
           <NuxtLink
             v-for="n in HEADER_NAV"
             :key="n.to"
@@ -199,7 +206,7 @@ onBeforeUnmount(() => {
         <div class="ml-auto flex items-center gap-1.5">
           <NuxtLink
             to="/catalog?fav=1"
-            class="relative grid size-10 place-items-center rounded-field text-ink-600 transition-colors duration-150 hover:bg-ink-100 hover:text-danger-500"
+            class="relative grid size-11 place-items-center rounded-field text-ink-600 transition-colors duration-150 hover:bg-ink-100 hover:text-danger-500"
             :aria-label="t('public.favouritesAria')"
           >
             <svg
@@ -217,7 +224,7 @@ onBeforeUnmount(() => {
             </svg>
             <span
               v-if="favourites.length"
-              class="tabular absolute right-0.5 top-0.5 min-w-[16px] rounded-full bg-danger-500 px-1 text-center text-[10px] font-bold leading-4 text-white"
+              class="tabular absolute right-1 top-1 min-w-[16px] rounded-full bg-danger-500 px-1 text-center text-[10px] font-bold leading-4 text-white"
             >
               {{ favourites.length }}
             </span>
@@ -226,29 +233,20 @@ onBeforeUnmount(() => {
           <LocaleSwitch class="hidden md:block" />
 
           <NuxtLink
-            to="/help"
-            class="hidden size-10 place-items-center rounded-field text-ink-600 transition-colors duration-150 hover:bg-ink-100 hover:text-ink-900 md:grid"
-            :aria-label="t('common.help')"
+            to="/login"
+            class="hidden min-h-[44px] items-center rounded-field px-3 text-[13.5px] font-semibold text-ink-700 transition-colors duration-150 hover:bg-ink-100 hover:text-ink-900 md:inline-flex"
           >
-            <UiIcon name="help" :size="19" />
-          </NuxtLink>
-
-          <NuxtLink
-            to="/profile"
-            class="hidden size-10 place-items-center rounded-field text-ink-600 transition-colors duration-150 hover:bg-ink-100 hover:text-ink-900 md:grid"
-            :aria-label="t('public.cabinetAria')"
-          >
-            <UiIcon name="user" :size="19" />
-          </NuxtLink>
-
-          <UiButton size="sm" to="/login" class="ml-1 hidden md:inline-flex">
             {{ t('common.signIn') }}
+          </NuxtLink>
+
+          <UiButton size="sm" class="ml-1 hidden md:inline-flex" @click="openApply">
+            {{ t('apply.cta') }}
           </UiButton>
 
           <button
             ref="menuToggle"
             type="button"
-            class="grid size-10 place-items-center rounded-field text-ink-700 ring-1 ring-inset ring-ink-200 transition-colors duration-150 hover:bg-ink-100 hover:text-ink-900 active:bg-ink-200 lg:hidden"
+            class="grid size-11 place-items-center rounded-field text-ink-700 ring-1 ring-inset ring-ink-200 transition-colors duration-150 hover:bg-ink-100 hover:text-ink-900 active:bg-ink-200 lg:hidden"
             :aria-expanded="menuOpen"
             aria-controls="public-drawer"
             :aria-label="t('public.menuOpen')"
@@ -286,7 +284,7 @@ onBeforeUnmount(() => {
               <AppLogo size="sm" />
               <button
                 type="button"
-                class="grid size-10 place-items-center rounded-field text-ink-500 transition-colors duration-150 hover:bg-ink-100 hover:text-ink-900"
+                class="grid size-11 place-items-center rounded-field text-ink-500 transition-colors duration-150 hover:bg-ink-100 hover:text-ink-900"
                 :aria-label="t('public.menuClose')"
                 @click="closeMenu"
               >
@@ -299,7 +297,7 @@ onBeforeUnmount(() => {
                 v-for="n in NAV"
                 :key="n.to"
                 :to="n.to"
-                class="flex items-center justify-between rounded-field px-3.5 py-3 text-[14.5px] font-semibold transition-colors duration-150"
+                class="flex min-h-[44px] items-center justify-between rounded-field px-3.5 py-3 text-[14.5px] font-semibold transition-colors duration-150"
                 :class="
                   isActive(n.to) ? 'bg-brand-50 text-brand-700' : 'text-ink-700 hover:bg-ink-100'
                 "
@@ -311,7 +309,7 @@ onBeforeUnmount(() => {
             </nav>
 
             <div class="border-t border-ink-200 px-4 py-4">
-              <p class="text-[11px] font-bold uppercase tracking-wide text-ink-500">
+              <p class="text-[11px] font-bold uppercase tracking-[0.09em] text-ink-500">
                 {{ t('public.categories') }}
               </p>
               <div class="mt-2.5 flex flex-wrap gap-2">
@@ -319,7 +317,7 @@ onBeforeUnmount(() => {
                   v-for="c in CATEGORIES"
                   :key="c.to"
                   :to="c.to"
-                  class="rounded-pill bg-ink-100 px-3 py-1.5 text-[12.5px] font-semibold text-ink-700 transition-colors duration-150 hover:bg-brand-50 hover:text-brand-700"
+                  class="inline-flex min-h-[38px] items-center rounded-pill bg-ink-100 px-3.5 text-[12.5px] font-semibold text-ink-700 transition-colors duration-150 hover:bg-brand-50 hover:text-brand-700"
                   @click="closeMenu"
                 >
                   {{ t(c.key) }}
@@ -329,11 +327,11 @@ onBeforeUnmount(() => {
 
             <div class="mt-auto border-t border-ink-200 p-4">
               <div class="grid gap-2.5">
+                <UiButton block @click="openApply">
+                  {{ t('apply.cta') }}
+                </UiButton>
                 <UiButton variant="secondary" to="/login" block @click="closeMenu">
                   {{ t('common.signIn') }}
-                </UiButton>
-                <UiButton to="/register" block @click="closeMenu">
-                  {{ t('common.register') }}
                 </UiButton>
               </div>
               <div class="mt-4 flex items-center justify-between gap-3">
@@ -359,15 +357,15 @@ onBeforeUnmount(() => {
       class="mt-auto border-t border-ink-200 bg-ink-900"
       :class="fullscreen ? 'lg:hidden' : ''"
     >
-      <div class="mx-auto max-w-[1360px] px-4 py-12 lg:px-8 lg:py-14">
-        <div class="grid gap-10 lg:grid-cols-[minmax(0,1.5fr)_repeat(3,minmax(0,1fr))]">
+      <div class="mx-auto max-w-[1200px] px-4 py-14 lg:px-8 lg:py-16">
+        <div class="grid gap-10 lg:grid-cols-[minmax(0,1.6fr)_repeat(2,minmax(0,1fr))]">
           <div>
             <AppLogo mono class="text-white" />
             <p class="mt-4 max-w-[46ch] text-[13.5px] leading-relaxed text-ink-400">
               {{ t('public.about') }}
             </p>
 
-            <ul class="mt-6 space-y-3.5">
+            <ul class="mt-7 space-y-3.5">
               <li v-for="c in CONTACTS" :key="c.label" class="flex gap-3">
                 <span
                   class="mt-0.5 grid size-8 shrink-0 place-items-center rounded-field bg-white/10 text-brand-400"
@@ -402,27 +400,10 @@ onBeforeUnmount(() => {
                 </span>
               </li>
             </ul>
-
-            <div class="mt-6 flex flex-wrap gap-2">
-              <NuxtLink
-                to="/catalog"
-                class="inline-flex items-center gap-2 rounded-pill bg-white/10 px-3.5 py-2 text-[12.5px] font-semibold text-white transition-colors duration-150 hover:bg-white/20"
-              >
-                <UiIcon name="search" :size="15" />
-                {{ t('public.searchVacancy') }}
-              </NuxtLink>
-              <NuxtLink
-                to="/login"
-                class="inline-flex items-center gap-2 rounded-pill bg-brand-500 px-3.5 py-2 text-[12.5px] font-semibold text-white transition-colors duration-150 hover:bg-brand-600"
-              >
-                <UiIcon name="shield" :size="15" />
-                {{ t('common.signIn') }}
-              </NuxtLink>
-            </div>
           </div>
 
           <div>
-            <h3 class="text-[11.5px] font-bold uppercase tracking-wide text-white">
+            <h3 class="text-[11.5px] font-bold uppercase tracking-[0.09em] text-white">
               {{ t('public.quickLinks') }}
             </h3>
             <ul class="mt-4 space-y-2.5">
@@ -438,7 +419,7 @@ onBeforeUnmount(() => {
           </div>
 
           <div>
-            <h3 class="text-[11.5px] font-bold uppercase tracking-wide text-white">
+            <h3 class="text-[11.5px] font-bold uppercase tracking-[0.09em] text-white">
               {{ t('public.catalogCategories') }}
             </h3>
             <ul class="mt-4 space-y-2.5">
@@ -451,66 +432,45 @@ onBeforeUnmount(() => {
                 </NuxtLink>
               </li>
             </ul>
-          </div>
 
-          <div>
-            <h3 class="text-[11.5px] font-bold uppercase tracking-wide text-white">
-              {{ t('public.objects') }}
-            </h3>
-            <ul class="mt-4 space-y-2.5">
-              <li v-for="b in footerBuildings" :key="b.id">
-                <NuxtLink
-                  :to="`/catalog/${b.slug}`"
-                  class="group block text-[13.5px] text-ink-400 transition-colors duration-150 hover:text-white"
-                >
-                  {{ b.name }}
-                  <span class="block text-[12px] text-ink-600 group-hover:text-ink-500">
-                    {{ b.district }}
-                  </span>
-                </NuxtLink>
-              </li>
-              <li>
-                <NuxtLink
-                  to="/catalog"
-                  class="text-[13.5px] font-semibold text-ink-300 transition-colors duration-150 hover:text-white"
-                >
-                  {{ t('public.moreObjects', { count: BUILDINGS.length - footerBuildings.length }) }}
-                </NuxtLink>
-              </li>
-            </ul>
+            <div class="mt-7 flex flex-wrap gap-2.5">
+              <button
+                type="button"
+                class="inline-flex min-h-[40px] items-center gap-2 rounded-pill bg-brand-500 px-4 text-[12.5px] font-semibold text-white transition-colors duration-150 hover:bg-brand-600"
+                @click="openApply"
+              >
+                <UiIcon name="send" :size="15" />
+                {{ t('apply.cta') }}
+              </button>
+              <NuxtLink
+                to="/catalog"
+                class="inline-flex min-h-[40px] items-center gap-2 rounded-pill bg-white/10 px-4 text-[12.5px] font-semibold text-white transition-colors duration-150 hover:bg-white/20"
+              >
+                <UiIcon name="search" :size="15" />
+                {{ t('public.searchVacancy') }}
+              </NuxtLink>
+            </div>
           </div>
         </div>
 
-        <div class="mt-10 border-t border-white/10 pt-6">
+        <div class="mt-12 border-t border-white/10 pt-6">
           <p class="max-w-[92ch] text-[12px] leading-relaxed text-ink-500">
             {{ t('public.notice') }}
           </p>
 
           <div class="mt-4 flex flex-wrap items-center justify-between gap-4">
             <p class="text-[12.5px] text-ink-500">{{ t('public.rights', { year }) }}</p>
-            <div class="flex flex-wrap items-center gap-5">
-              <NuxtLink
-                to="/#tizim"
-                class="text-[12.5px] text-ink-500 transition-colors duration-150 hover:text-white"
-              >
-                {{ t('public.platform') }}
-              </NuxtLink>
-              <NuxtLink
-                to="/catalog"
-                class="text-[12.5px] text-ink-500 transition-colors duration-150 hover:text-white"
-              >
-                {{ t('public.navCatalog') }}
-              </NuxtLink>
-              <NuxtLink
-                to="/login"
-                class="text-[12.5px] font-semibold text-brand-400 transition-colors duration-150 hover:text-white"
-              >
-                {{ t('common.signIn') }}
-              </NuxtLink>
-            </div>
+            <NuxtLink
+              to="/login"
+              class="text-[12.5px] font-semibold text-brand-400 transition-colors duration-150 hover:text-white"
+            >
+              {{ t('common.signIn') }}
+            </NuxtLink>
           </div>
         </div>
       </div>
     </footer>
+
+    <LeaseApplyModal />
   </div>
 </template>

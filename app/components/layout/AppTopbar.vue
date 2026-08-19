@@ -213,10 +213,10 @@ function signOut() {
         <div class="hidden shrink-0 items-center gap-2 pr-0.5 sm:flex">
           <span class="sr-only">{{ t('shell.weatherOf', { city: weather.city }) }}</span>
           <UiIcon :name="weather.icon" :size="19" :class="weatherTone" />
-          <span class="tabular text-[13.5px] font-semibold text-ink-800">
+          <span class="tabular text-[14px] font-semibold text-ink-800">
             {{ weather.tempC }}°
           </span>
-          <span class="text-[12.5px] leading-tight text-ink-500 max-xl:sr-only">
+          <span class="text-[13px] leading-tight text-ink-500 max-xl:sr-only">
             {{ weather.label }}
             <span class="block text-[11px]" aria-hidden="true">{{ weather.city }}</span>
           </span>
@@ -241,10 +241,10 @@ function signOut() {
             <span class="hidden text-[11px] font-semibold uppercase tracking-wide text-ink-500 xl:block">
               1 USD
             </span>
-            <span class="tabular text-[13.5px] font-semibold text-ink-800">
+            <span class="tabular text-[14px] font-semibold text-ink-800">
               {{ money(usd.rate) }}
             </span>
-            <span class="flex items-center gap-0.5 text-[11.5px] font-semibold" :class="diffTone(usd.diff)">
+            <span class="flex items-center gap-0.5 text-[12px] font-semibold" :class="diffTone(usd.diff)">
               <UiIcon :name="diffIcon(usd.diff)" :size="12" />
               <span class="tabular">{{ signedDiff(usd.diff) }}</span>
             </span>
@@ -264,7 +264,7 @@ function signOut() {
             >
               <div class="flex items-center justify-between gap-3 border-b border-ink-100 px-4 py-3">
                 <p class="text-[13px] font-semibold text-ink-900">{{ t('shell.ratesTitle') }}</p>
-                <p class="tabular text-[11.5px] text-ink-500">{{ usd.date }}</p>
+                <p class="tabular text-[12px] text-ink-500">{{ usd.date }}</p>
               </div>
 
               <ul class="divide-y divide-ink-100">
@@ -278,7 +278,7 @@ function signOut() {
                   >
                     {{ r.code }}
                   </span>
-                  <span class="min-w-0 flex-1 truncate text-[12.5px] text-ink-600">
+                  <span class="min-w-0 flex-1 truncate text-[13px] text-ink-600">
                     {{ CURRENCY_KEY[r.code] ? t(CURRENCY_KEY[r.code]!) : r.label }}
                   </span>
                   <span class="shrink-0 text-right">
@@ -296,7 +296,7 @@ function signOut() {
                 </li>
               </ul>
 
-              <p class="bg-surface-sunken px-4 py-2.5 text-[11.5px] leading-snug text-ink-500">
+              <p class="bg-surface-sunken px-4 py-2.5 text-[12px] leading-snug text-ink-500">
                 {{ t('shell.ratesSource') }}
               </p>
             </div>
@@ -323,7 +323,7 @@ function signOut() {
             <UiIcon name="bell" :size="20" />
             <span
               v-if="unread"
-              class="tabular absolute right-1 top-1 grid h-[17px] min-w-[17px] place-items-center rounded-full bg-danger-500 px-1 text-[10px] font-bold text-white ring-2 ring-surface"
+              class="tabular absolute right-1 top-1 grid h-[17px] min-w-[17px] place-items-center rounded-full bg-danger-500 px-1 text-[11px] font-bold text-white ring-2 ring-surface"
             >
               {{ unread }}
             </span>
@@ -340,7 +340,7 @@ function signOut() {
               class="absolute right-0 top-full z-30 mt-2 w-[336px] max-w-[calc(100vw-2rem)] overflow-hidden rounded-panel bg-surface shadow-pop ring-1 ring-ink-200"
             >
               <div class="flex items-center justify-between gap-3 border-b border-ink-100 px-4 py-3">
-                <p class="text-[13.5px] font-semibold text-ink-900">
+                <p class="text-[14px] font-semibold text-ink-900">
                   {{ t('common.notifications') }}
                 </p>
                 <span
@@ -349,7 +349,7 @@ function signOut() {
                 >
                   {{ t('shell.notificationsNew', { count: unread }) }}
                 </span>
-                <span v-else class="text-[11.5px] text-ink-500">
+                <span v-else class="text-[12px] text-ink-500">
                   {{ t('shell.notificationsNone') }}
                 </span>
               </div>
@@ -374,7 +374,7 @@ function signOut() {
                       >
                         {{ n.title }}
                       </span>
-                      <span class="mt-0.5 block truncate text-[11.5px] text-ink-500">
+                      <span class="mt-0.5 block truncate text-[12px] text-ink-500">
                         {{ n.category }} · {{ n.at }}
                       </span>
                     </span>
@@ -391,7 +391,7 @@ function signOut() {
                 <span class="mx-auto grid size-11 place-items-center rounded-full bg-ink-100 text-ink-400">
                   <UiIcon name="bell" :size="20" />
                 </span>
-                <p class="mt-2.5 text-[12.5px] text-ink-500">
+                <p class="mt-2.5 text-[13px] text-ink-500">
                   {{ t('shell.notificationsEmpty') }}
                 </p>
               </div>
@@ -463,13 +463,13 @@ function signOut() {
                   ring
                 />
                 <div class="min-w-0 flex-1">
-                  <p class="truncate text-[13.5px] font-semibold text-ink-900">
+                  <p class="truncate text-[14px] font-semibold text-ink-900">
                     {{ auth.user?.fullName }}
                   </p>
                   <p class="truncate text-[12px] text-ink-500">{{ auth.user?.position }}</p>
                   <span
                     v-if="auth.roleMeta"
-                    class="mt-1.5 inline-flex rounded-pill px-2 py-0.5 text-[10.5px] font-bold uppercase tracking-wide ring-1 ring-inset"
+                    class="mt-1.5 inline-flex rounded-pill px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide ring-1 ring-inset"
                     :class="ROLE_TONE_CLASSES[auth.roleMeta.tone]"
                   >
                     {{ roleLabel(auth.role) }}

@@ -279,8 +279,8 @@ const channels = [
             <UiIcon name="bell" :size="20" />
           </span>
           <div class="min-w-0">
-            <h3 class="text-[15px] font-semibold text-ink-900">Bildirishnomalar</h3>
-            <p class="mt-0.5 text-[12.5px] leading-snug text-ink-500">
+            <h3 class="text-[16px] font-semibold text-ink-900">Bildirishnomalar</h3>
+            <p class="mt-0.5 text-[13px] leading-snug text-ink-500">
               Barcha muhim xabarlar va o‘zgarishlar bir joyda
             </p>
           </div>
@@ -299,7 +299,7 @@ const channels = [
               @click="category = c.label"
             >
               <UiIcon :name="CATEGORY_ICON[c.label] ?? 'bell'" :size="18" />
-              <span class="flex-1 truncate text-[13.5px] font-semibold">{{ c.label }}</span>
+              <span class="flex-1 truncate text-[14px] font-semibold">{{ c.label }}</span>
               <span
                 class="tabular grid min-w-6 place-items-center rounded-pill px-1.5 py-0.5 text-[11px] font-bold"
                 :class="category === c.label ? 'bg-white text-brand-700' : 'bg-ink-100 text-ink-600'"
@@ -317,7 +317,7 @@ const channels = [
           >
             <UiIcon name="gear" :size="18" />
             <span class="min-w-0 flex-1">
-              <span class="block text-[13.5px] font-semibold">Sozlamalar</span>
+              <span class="block text-[14px] font-semibold">Sozlamalar</span>
               <span class="block truncate text-[12px] text-ink-500">
                 Bildirishnoma sozlamalarini o‘zgartirish
               </span>
@@ -358,13 +358,13 @@ const channels = [
               <span class="min-w-0 flex-1">
                 <span class="flex items-center gap-2">
                   <span
-                    class="truncate text-[13.5px]"
+                    class="truncate text-[14px]"
                     :class="n.read ? 'font-medium text-ink-700' : 'font-bold text-ink-900'"
                   >
                     {{ n.title }}
                   </span>
                 </span>
-                <span class="mt-0.5 block truncate text-[12.5px] text-ink-500">{{ n.body }}</span>
+                <span class="mt-0.5 block truncate text-[13px] text-ink-500">{{ n.body }}</span>
               </span>
 
               <span class="flex shrink-0 flex-col items-end gap-1.5">
@@ -375,7 +375,7 @@ const channels = [
                   {{ n.category }}
                 </span>
                 <span class="flex items-center gap-2">
-                  <span class="tabular text-[11.5px] text-ink-500">{{ n.at }}</span>
+                  <span class="tabular text-[12px] text-ink-500">{{ n.at }}</span>
                   <span
                     class="size-2 rounded-full"
                     :class="n.read ? 'bg-ink-300' : 'bg-brand-500'"
@@ -386,13 +386,13 @@ const channels = [
             </button>
           </li>
 
-          <li v-if="!filtered.length" class="px-5 py-16 text-center text-[13.5px] text-ink-500">
+          <li v-if="!filtered.length" class="px-5 py-16 text-center text-[14px] text-ink-500">
             Tanlangan filtr bo‘yicha xabar topilmadi
           </li>
         </ul>
 
         <div class="flex items-center justify-between border-t border-ink-100 px-5 py-3.5">
-          <p class="text-[12.5px] text-ink-500">
+          <p class="text-[13px] text-ink-500">
             Jami: <b class="text-ink-800">{{ filtered.length }}</b> ta bildirishnoma
           </p>
           <UiButton variant="ghost" size="sm" :disabled="!unreadTotal" @click="markAllRead">
@@ -411,8 +411,8 @@ const channels = [
               <UiIcon :name="selected.icon" :size="22" />
             </span>
             <div class="min-w-0 flex-1">
-              <h3 class="text-[15px] font-bold text-ink-900">{{ selected.title }}</h3>
-              <p class="mt-0.5 text-[12.5px] text-ink-500">
+              <h3 class="text-[16px] font-bold text-ink-900">{{ selected.title }}</h3>
+              <p class="mt-0.5 text-[13px] text-ink-500">
                 {{ selected.category }} · {{ selected.at }}
               </p>
             </div>
@@ -424,7 +424,7 @@ const channels = [
             </span>
           </div>
 
-          <p class="mt-4 text-[13.5px] leading-relaxed text-ink-700">{{ selected.body }}</p>
+          <p class="mt-4 text-[14px] leading-relaxed text-ink-700">{{ selected.body }}</p>
 
           <div v-if="selectedDetail" class="mt-4">
             <p class="mb-2 text-[13px] font-semibold text-ink-700">Tafsilotlar</p>
@@ -434,7 +434,7 @@ const channels = [
                 :key="r.label"
                 class="flex items-center justify-between gap-3 px-4 py-2.5"
               >
-                <dt class="text-[12.5px] text-ink-500">{{ r.label }}</dt>
+                <dt class="text-[13px] text-ink-500">{{ r.label }}</dt>
                 <dd
                   class="tabular text-right text-[13px] font-semibold"
                   :class="
@@ -471,7 +471,7 @@ const channels = [
           </div>
         </div>
 
-        <p v-else class="px-5 py-20 text-center text-[13.5px] text-ink-500">
+        <p v-else class="px-5 py-20 text-center text-[14px] text-ink-500">
           Tafsilotlarni ko‘rish uchun bildirishnomani tanlang
         </p>
       </UiCard>
@@ -488,7 +488,7 @@ const channels = [
           <UiIcon :name="c.icon" :size="20" />
         </span>
         <span class="min-w-0 flex-1">
-          <span class="block truncate text-[13.5px] font-semibold text-ink-900">{{ c.label }}</span>
+          <span class="block truncate text-[14px] font-semibold text-ink-900">{{ c.label }}</span>
           <span class="block truncate text-[12px] text-ink-500">{{ c.caption }}</span>
         </span>
         <span

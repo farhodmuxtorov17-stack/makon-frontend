@@ -464,7 +464,7 @@ function downloadInvoice() {
           @row-click="openInvoice"
         >
           <template #cell-code="{ row }">
-            <span class="text-[13.5px] font-semibold text-ink-900">{{ row.code }}</span>
+            <span class="text-[14px] font-semibold text-ink-900">{{ row.code }}</span>
           </template>
           <template #cell-unitCode="{ value }">{{ value }}</template>
           <template #cell-issuedAt="{ value }">
@@ -493,15 +493,15 @@ function downloadInvoice() {
       <div class="grid gap-3 sm:grid-cols-3">
         <div class="rounded-field p-3.5 ring-1 ring-ink-200">
           <p class="text-[12px] text-ink-500">Umumiy summa</p>
-          <p class="tabular mt-1 text-[17px] font-bold text-ink-900">{{ num(selected.total) }} so‘m</p>
+          <p class="tabular mt-1 text-[18px] font-bold text-ink-900">{{ num(selected.total) }} so‘m</p>
         </div>
         <div class="rounded-field p-3.5 ring-1 ring-ink-200">
           <p class="text-[12px] text-ink-500">To‘langan</p>
-          <p class="tabular mt-1 text-[17px] font-bold text-ok-700">{{ num(selected.paid) }} so‘m</p>
+          <p class="tabular mt-1 text-[18px] font-bold text-ok-700">{{ num(selected.paid) }} so‘m</p>
         </div>
         <div class="rounded-field p-3.5 ring-1 ring-ink-200">
           <p class="text-[12px] text-ink-500">Qoldiq</p>
-          <p class="tabular mt-1 text-[17px] font-bold text-ink-900">
+          <p class="tabular mt-1 text-[18px] font-bold text-ink-900">
             {{ num(selected.total - selected.paid) }} so‘m
           </p>
         </div>
@@ -509,29 +509,29 @@ function downloadInvoice() {
 
       <div class="flex flex-wrap items-center gap-3">
         <UiStatus kind="invoice" :value="isOverdue(selected) ? 'OVERDUE' : selected.status" />
-        <span class="text-[12.5px] text-ink-500">
+        <span class="text-[13px] text-ink-500">
           Berilgan: {{ dateShort(selected.issuedAt) }} · Muddati: {{ dateShort(selected.dueAt) }}
         </span>
       </div>
 
       <div class="grid gap-3 sm:grid-cols-2">
         <div class="rounded-field bg-surface-sunken p-4 ring-1 ring-ink-200">
-          <p class="text-[11.5px] font-semibold uppercase tracking-wide text-ink-500">
+          <p class="text-[12px] font-semibold uppercase tracking-wide text-ink-500">
             Yetkazib beruvchi
           </p>
           <dl class="mt-2 space-y-1">
             <div v-for="r in partyRows(landlord)" :key="`l-${r.label}`" class="flex gap-2">
               <dt class="w-28 shrink-0 text-[12px] text-ink-500">{{ r.label }}</dt>
-              <dd class="min-w-0 flex-1 text-[12.5px] font-semibold text-ink-900">{{ r.value }}</dd>
+              <dd class="min-w-0 flex-1 text-[13px] font-semibold text-ink-900">{{ r.value }}</dd>
             </div>
           </dl>
         </div>
         <div class="rounded-field bg-surface-sunken p-4 ring-1 ring-ink-200">
-          <p class="text-[11.5px] font-semibold uppercase tracking-wide text-ink-500">Xaridor</p>
+          <p class="text-[12px] font-semibold uppercase tracking-wide text-ink-500">Xaridor</p>
           <dl class="mt-2 space-y-1">
             <div v-for="r in partyRows(buyer)" :key="`b-${r.label}`" class="flex gap-2">
               <dt class="w-28 shrink-0 text-[12px] text-ink-500">{{ r.label }}</dt>
-              <dd class="min-w-0 flex-1 text-[12.5px] font-semibold text-ink-900">{{ r.value }}</dd>
+              <dd class="min-w-0 flex-1 text-[13px] font-semibold text-ink-900">{{ r.value }}</dd>
             </div>
           </dl>
         </div>
@@ -539,17 +539,17 @@ function downloadInvoice() {
 
       <dl class="grid gap-3 rounded-field p-4 ring-1 ring-ink-200 sm:grid-cols-3">
         <div>
-          <dt class="text-[11.5px] uppercase tracking-wide text-ink-500">Obyekt</dt>
+          <dt class="text-[12px] uppercase tracking-wide text-ink-500">Obyekt</dt>
           <dd class="text-[13px] font-semibold text-ink-900">
             {{ selectedBuilding }} · {{ selected.unitCode }}
           </dd>
         </div>
         <div>
-          <dt class="text-[11.5px] uppercase tracking-wide text-ink-500">Hisob davri</dt>
+          <dt class="text-[12px] uppercase tracking-wide text-ink-500">Hisob davri</dt>
           <dd class="text-[13px] font-semibold text-ink-900">{{ selected.period }}</dd>
         </div>
         <div>
-          <dt class="text-[11.5px] uppercase tracking-wide text-ink-500">Shartnoma</dt>
+          <dt class="text-[12px] uppercase tracking-wide text-ink-500">Shartnoma</dt>
           <dd class="text-[13px] font-semibold text-ink-900">
             {{ selectedContract?.code ?? 'Biriktirilmagan' }}
           </dd>
@@ -590,7 +590,7 @@ function downloadInvoice() {
               <td class="tabular px-4 py-2.5 text-right font-semibold text-ink-900">{{ num(l.total) }}</td>
             </tr>
             <tr class="border-b border-ink-100">
-              <td colspan="5" class="px-4 py-2 text-right text-[12.5px] text-ink-600">
+              <td colspan="5" class="px-4 py-2 text-right text-[13px] text-ink-600">
                 QQS siz jami
               </td>
               <td class="tabular px-4 py-2 text-right text-[13px] font-semibold text-ink-800">
@@ -598,7 +598,7 @@ function downloadInvoice() {
               </td>
             </tr>
             <tr class="border-b border-ink-100">
-              <td colspan="5" class="px-4 py-2 text-right text-[12.5px] text-ink-600">
+              <td colspan="5" class="px-4 py-2 text-right text-[13px] text-ink-600">
                 QQS ({{ VAT_RATE }}%)
               </td>
               <td class="tabular px-4 py-2 text-right text-[13px] font-semibold text-ink-800">
@@ -609,7 +609,7 @@ function downloadInvoice() {
               <td colspan="5" class="px-4 py-3 text-right text-[13px] font-semibold text-ink-700">
                 Jami to‘lov
               </td>
-              <td class="tabular px-4 py-3 text-right text-[15px] font-bold text-ink-900">
+              <td class="tabular px-4 py-3 text-right text-[16px] font-bold text-ink-900">
                 {{ num(linesTotal) }}
               </td>
             </tr>
@@ -650,7 +650,7 @@ function downloadInvoice() {
           <p class="text-[12px] text-ink-500">{{ landlord.address }}</p>
         </div>
         <div class="text-right">
-          <p class="text-[15px] font-bold text-ink-900">Hisob-faktura</p>
+          <p class="text-[16px] font-bold text-ink-900">Hisob-faktura</p>
           <p class="tabular text-[13px] font-semibold text-ink-700">{{ selected.code }}</p>
           <p class="tabular text-[12px] text-ink-500">Sana: {{ dateShort(selected.issuedAt) }}</p>
         </div>
@@ -658,20 +658,20 @@ function downloadInvoice() {
 
       <div class="grid gap-4 border-b border-ink-200 py-4 sm:grid-cols-2">
         <div>
-          <p class="text-[11.5px] uppercase tracking-wide text-ink-500">Yetkazib beruvchi</p>
+          <p class="text-[12px] uppercase tracking-wide text-ink-500">Yetkazib beruvchi</p>
           <dl class="mt-1.5 space-y-0.5">
             <div v-for="r in partyRows(landlord)" :key="`pl-${r.label}`" class="flex gap-2">
               <dt class="w-28 shrink-0 text-[12px] text-ink-500">{{ r.label }}</dt>
-              <dd class="min-w-0 flex-1 text-[12.5px] font-semibold text-ink-900">{{ r.value }}</dd>
+              <dd class="min-w-0 flex-1 text-[13px] font-semibold text-ink-900">{{ r.value }}</dd>
             </div>
           </dl>
         </div>
         <div>
-          <p class="text-[11.5px] uppercase tracking-wide text-ink-500">Xaridor</p>
+          <p class="text-[12px] uppercase tracking-wide text-ink-500">Xaridor</p>
           <dl class="mt-1.5 space-y-0.5">
             <div v-for="r in partyRows(buyer)" :key="`pb-${r.label}`" class="flex gap-2">
               <dt class="w-28 shrink-0 text-[12px] text-ink-500">{{ r.label }}</dt>
-              <dd class="min-w-0 flex-1 text-[12.5px] font-semibold text-ink-900">{{ r.value }}</dd>
+              <dd class="min-w-0 flex-1 text-[13px] font-semibold text-ink-900">{{ r.value }}</dd>
             </div>
           </dl>
         </div>
@@ -679,17 +679,17 @@ function downloadInvoice() {
 
       <dl class="grid gap-3 border-b border-ink-200 py-4 sm:grid-cols-3">
         <div>
-          <dt class="text-[11.5px] uppercase tracking-wide text-ink-500">Obyekt</dt>
+          <dt class="text-[12px] uppercase tracking-wide text-ink-500">Obyekt</dt>
           <dd class="text-[13px] font-semibold text-ink-900">
             {{ selectedBuilding }} · {{ selected.unitCode }}
           </dd>
         </div>
         <div>
-          <dt class="text-[11.5px] uppercase tracking-wide text-ink-500">Hisob davri</dt>
+          <dt class="text-[12px] uppercase tracking-wide text-ink-500">Hisob davri</dt>
           <dd class="text-[13px] font-semibold text-ink-900">{{ selected.period }}</dd>
         </div>
         <div>
-          <dt class="text-[11.5px] uppercase tracking-wide text-ink-500">To‘lov muddati</dt>
+          <dt class="text-[12px] uppercase tracking-wide text-ink-500">To‘lov muddati</dt>
           <dd class="tabular text-[13px] font-semibold text-ink-900">{{ dateShort(selected.dueAt) }}</dd>
         </div>
       </dl>
@@ -715,13 +715,13 @@ function downloadInvoice() {
 
       <dl class="mt-4 space-y-1.5 border-t border-ink-200 pt-4">
         <div class="flex items-center justify-end gap-6">
-          <dt class="text-[12.5px] text-ink-600">QQS siz jami</dt>
+          <dt class="text-[13px] text-ink-600">QQS siz jami</dt>
           <dd class="tabular w-40 text-right text-[13px] font-semibold text-ink-800">
             {{ sum(linesNet) }}
           </dd>
         </div>
         <div class="flex items-center justify-end gap-6">
-          <dt class="text-[12.5px] text-ink-600">QQS ({{ VAT_RATE }}%)</dt>
+          <dt class="text-[13px] text-ink-600">QQS ({{ VAT_RATE }}%)</dt>
           <dd class="tabular w-40 text-right text-[13px] font-semibold text-ink-800">
             {{ sum(linesVat) }}
           </dd>

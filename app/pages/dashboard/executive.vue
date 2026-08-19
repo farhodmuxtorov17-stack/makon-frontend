@@ -266,7 +266,7 @@ const mapLegend = OCCUPANCY_BANDS.map((b) => ({ label: b.label, class: b.class }
         <div>
           <div class="flex items-baseline justify-between gap-3">
             <p class="text-[13px] font-semibold text-ink-700">Ijara tushumi</p>
-            <p class="tabular text-[13.5px] font-bold text-brand-600">
+            <p class="tabular text-[14px] font-bold text-brand-600">
               {{ sumShort(totals.revenue) }}
             </p>
           </div>
@@ -276,7 +276,7 @@ const mapLegend = OCCUPANCY_BANDS.map((b) => ({ label: b.label, class: b.class }
         <div class="mt-5 border-t border-ink-100 pt-4">
           <div class="flex items-baseline justify-between gap-3">
             <p class="text-[13px] font-semibold text-ink-700">Qarzdorlik</p>
-            <p class="tabular text-[13.5px] font-bold text-danger-600">
+            <p class="tabular text-[14px] font-bold text-danger-600">
               {{ sumShort(totals.debt) }}
             </p>
           </div>
@@ -301,7 +301,7 @@ const mapLegend = OCCUPANCY_BANDS.map((b) => ({ label: b.label, class: b.class }
           :to="`/objects/${b.id}`"
           class="group rounded-field p-4 ring-1 ring-ink-200 transition-all hover:shadow-card hover:ring-brand-300"
         >
-          <p class="truncate text-[13.5px] font-bold text-ink-900 group-hover:text-brand-600">
+          <p class="truncate text-[14px] font-bold text-ink-900 group-hover:text-brand-600">
             {{ b.name }}
           </p>
           <p class="mt-0.5 truncate text-[12px] text-ink-500">{{ b.district }}</p>
@@ -327,14 +327,14 @@ const mapLegend = OCCUPANCY_BANDS.map((b) => ({ label: b.label, class: b.class }
 
             <div class="flex items-baseline justify-between">
               <span class="text-[12px] text-ink-500">Bo‘sh</span>
-              <span class="tabular text-[12.5px] font-semibold text-ink-700">
+              <span class="tabular text-[13px] font-semibold text-ink-700">
                 {{ percent(100 - b.occupancy) }}
               </span>
             </div>
 
             <div class="flex items-baseline justify-between">
               <span class="text-[12px] text-ink-500">Qarzdorlik</span>
-              <span class="tabular text-[12.5px] font-semibold text-danger-600">
+              <span class="tabular text-[13px] font-semibold text-danger-600">
                 {{ sumShort(b.debt) }}
               </span>
             </div>
@@ -364,7 +364,7 @@ const mapLegend = OCCUPANCY_BANDS.map((b) => ({ label: b.label, class: b.class }
               </span>
               <span class="min-w-0 flex-1">
                 <span
-                  class="block truncate text-[13.5px] font-semibold text-ink-900 group-hover:text-brand-600"
+                  class="block truncate text-[14px] font-semibold text-ink-900 group-hover:text-brand-600"
                 >
                   {{ d.tenant }}
                 </span>
@@ -373,7 +373,7 @@ const mapLegend = OCCUPANCY_BANDS.map((b) => ({ label: b.label, class: b.class }
                 </span>
               </span>
               <span class="shrink-0 text-right">
-                <span class="tabular block text-[13.5px] font-bold text-danger-600">
+                <span class="tabular block text-[14px] font-bold text-danger-600">
                   {{ sumShort(d.outstanding) }}
                 </span>
                 <span class="block text-[12px] text-ink-500">
@@ -403,7 +403,7 @@ const mapLegend = OCCUPANCY_BANDS.map((b) => ({ label: b.label, class: b.class }
               </span>
               <span class="min-w-0 flex-1">
                 <span
-                  class="block truncate text-[13.5px] font-semibold text-ink-900 group-hover:text-brand-600"
+                  class="block truncate text-[14px] font-semibold text-ink-900 group-hover:text-brand-600"
                 >
                   {{ c.code }} · {{ c.unitCode }}
                 </span>

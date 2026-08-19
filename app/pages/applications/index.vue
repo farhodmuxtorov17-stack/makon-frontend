@@ -39,9 +39,7 @@ const scoped = computed(() => (scopeTab.value === 'mine' ? mineRows.value : rows
 
 const PENDING: LeaseStatus[] = [
   'YANGI',
-  'OPERATSIYA_TASDIQLADI',
-  'MOLIYA_TASDIQLADI',
-  'QORALAMA_TAYYOR',
+  'SHARTNOMA_TAYYOR',
   'DIDOX_YUBORILDI',
   'DIDOX_IMZOLANDI',
 ]
@@ -54,8 +52,8 @@ const statusChips = computed(() => [
     count: scoped.value.filter((c) => PENDING.includes(c.status)).length,
   },
   {
-    value: 'active',
-    label: 'Faol',
+    value: 'closed',
+    label: 'Yopilgan',
     count: scoped.value.filter((c) => c.status === 'FAOL').length,
   },
   {
@@ -74,7 +72,7 @@ const filtered = computed(() =>
   scoped.value.filter((c) => {
     if (buildingFilter.value && c.buildingName !== buildingFilter.value) return false
     if (statusFilter.value === 'pending' && !PENDING.includes(c.status)) return false
-    if (statusFilter.value === 'active' && c.status !== 'FAOL') return false
+    if (statusFilter.value === 'closed' && c.status !== 'FAOL') return false
     if (statusFilter.value === 'rejected' && c.status !== 'RAD_ETILDI') return false
 
     const q = search.value.trim().toLowerCase()
@@ -96,13 +94,11 @@ function amount(c: LeaseCase) {
 }
 
 const NEXT_STEP: Record<string, string> = {
-  YANGI: 'Bino rahbari shartlarni kelishadi va tasdiqlaydi',
-  OPERATSIYA_TASDIQLADI: 'Buxgalter moliyaviy shartlarni tasdiqlaydi',
-  MOLIYA_TASDIQLADI: 'Tizim shartnoma qoralamasini tuzmoqda',
-  QORALAMA_TAYYOR: 'Hujjat Didox orqali yuboriladi',
-  DIDOX_YUBORILDI: 'Didox holati tekshiriladi',
-  DIDOX_IMZOLANDI: 'Imzolangan fayl yuklanadi va shartnoma faollashtiriladi',
-  FAOL: 'Shartnoma amalda',
+  YANGI: 'Operator bog‘lanadi, shartlarni kelishadi va arizani tasdiqlaydi',
+  SHARTNOMA_TAYYOR: 'Operator shartnomani tahrirlaydi va Didox orqali yuboradi',
+  DIDOX_YUBORILDI: 'Operator Didoxdagi holatni tekshiradi',
+  DIDOX_IMZOLANDI: 'Imzolangan nusxa yuklanadi va ariza yopiladi',
+  FAOL: 'Ariza yopilgan, shartnoma amalda',
   RAD_ETILDI: 'Sikl to‘xtatilgan',
 }
 </script>
@@ -110,7 +106,7 @@ const NEXT_STEP: Record<string, string> = {
 <template>
   <AppTopbar
     title="Arizalar navbati"
-    subtitle="Ijara sikli: unit tanlashdan faol shartnomagacha"
+    subtitle="Ijara sikli: arizadan yopilgan arizagacha"
   >
     <template #actions>
       <UiButton variant="secondary" size="sm" to="/contracts">
@@ -127,8 +123,8 @@ const NEXT_STEP: Record<string, string> = {
     >
       <UiIcon name="eye" :size="17" class="mt-0.5 shrink-0 text-ink-500" />
       <span>
-        Kuzatuv rejimi: ariza bo‘yicha qaror bino rahbari va buxgalterda, bu sahifada
-        yozuvlar faqat kuzatiladi.
+        Kuzatuv rejimi: ariza bo‘yicha qaror operatorda, bu sahifada yozuvlar faqat
+        kuzatiladi.
       </span>
     </p>
 

@@ -54,11 +54,11 @@ const initials = computed(() =>
 )
 
 const SIZES: Record<string, { box: string; text: string; px: number }> = {
-  xs: { box: 'size-7', text: 'text-[10px]', px: 28 },
+  xs: { box: 'size-7', text: 'text-[11px]', px: 28 },
   sm: { box: 'size-9', text: 'text-[12px]', px: 36 },
   md: { box: 'size-10', text: 'text-[13px]', px: 40 },
-  lg: { box: 'size-14', text: 'text-[17px]', px: 56 },
-  xl: { box: 'size-20', text: 'text-[24px]', px: 80 },
+  lg: { box: 'size-14', text: 'text-[18px]', px: 56 },
+  xl: { box: 'size-20', text: 'text-[22px]', px: 80 },
 }
 
 const dims = computed(() => SIZES[props.size] ?? SIZES.md!)

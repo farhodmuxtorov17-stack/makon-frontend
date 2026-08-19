@@ -343,14 +343,14 @@ const agingSlices = computed(() =>
                   <UiIcon name="warning" :size="18" />
                 </span>
                 <span class="min-w-0 flex-1">
-                  <span class="block truncate text-[13.5px] font-semibold text-ink-900">
+                  <span class="block truncate text-[14px] font-semibold text-ink-900">
                     {{ d.tenant }}
                   </span>
                   <span class="block truncate text-[12px] text-ink-500">
                     {{ d.buildingName }} · {{ bucketMeta(d.agingBucket).bucket }}
                   </span>
                 </span>
-                <span class="tabular shrink-0 text-[13.5px] font-bold text-danger-600">
+                <span class="tabular shrink-0 text-[14px] font-bold text-danger-600">
                   {{ sumShort(d.balance) }}
                 </span>
               </button>
@@ -378,13 +378,13 @@ const agingSlices = computed(() =>
       <ul class="mt-5 divide-y divide-ink-100 border-t border-ink-100">
         <li v-for="h in history" :key="h.id" class="flex items-center gap-4 py-3.5">
           <span class="min-w-0 flex-1">
-            <span class="block text-[13.5px] font-semibold text-ink-900">{{ h.code }}</span>
+            <span class="block text-[14px] font-semibold text-ink-900">{{ h.code }}</span>
             <span class="block text-[12px] text-ink-500">
               {{ h.period }} · muddati {{ dateShort(h.dueAt) }}
             </span>
           </span>
           <span class="shrink-0 text-right">
-            <span class="tabular block text-[13.5px] font-bold text-ink-900">{{ sum(h.total) }}</span>
+            <span class="tabular block text-[14px] font-bold text-ink-900">{{ sum(h.total) }}</span>
             <span class="tabular block text-[12px] text-ok-600">
               to‘langan {{ sum(h.paid) }}
             </span>
@@ -418,7 +418,7 @@ const agingSlices = computed(() =>
             <UiIcon name="doc" :size="18" />
           </span>
           <span class="min-w-0 flex-1">
-            <span class="block text-[13.5px] font-semibold text-ink-900">Word hujjat</span>
+            <span class="block text-[14px] font-semibold text-ink-900">Word hujjat</span>
             <span class="block text-[12px] text-ink-500">Chop etish uchun tayyor ko‘rinish</span>
           </span>
           <UiIcon name="chevronRight" :size="16" class="text-ink-400" />
@@ -433,7 +433,7 @@ const agingSlices = computed(() =>
             <UiIcon name="layers" :size="18" />
           </span>
           <span class="min-w-0 flex-1">
-            <span class="block text-[13.5px] font-semibold text-ink-900">CSV jadval</span>
+            <span class="block text-[14px] font-semibold text-ink-900">CSV jadval</span>
             <span class="block text-[12px] text-ink-500">Qo‘shimcha hisob-kitob uchun</span>
           </span>
           <UiIcon name="chevronRight" :size="16" class="text-ink-400" />

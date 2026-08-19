@@ -776,7 +776,7 @@ onMounted(() => {
           </span>
           <span class="tabular text-[22px] font-bold leading-none text-ink-900">{{ t.count }}</span>
         </div>
-        <p class="mt-3 text-[13.5px] font-semibold text-ink-900">{{ t.label }}</p>
+        <p class="mt-3 text-[14px] font-semibold text-ink-900">{{ t.label }}</p>
         <p class="mt-0.5 text-[12px] text-ink-500">Kategoriya bo‘yicha filtrlash</p>
       </button>
     </section>
@@ -819,7 +819,7 @@ onMounted(() => {
                 <UiIcon name="doc" :size="17" />
               </span>
               <span class="min-w-0">
-                <span class="block truncate text-[13.5px] font-semibold text-ink-900">{{ row.name }}</span>
+                <span class="block truncate text-[14px] font-semibold text-ink-900">{{ row.name }}</span>
                 <span class="tabular block truncate text-[12px] text-ink-500">{{ row.code }}</span>
               </span>
             </span>
@@ -833,7 +833,7 @@ onMounted(() => {
             <span class="text-[13px]">{{ value === 'Umumiy' ? 'Umumiy' : `Unit ${value}` }}</span>
           </template>
           <template #cell-format="{ value }">
-            <span class="tabular text-[12.5px] font-semibold text-ink-700">{{ value }}</span>
+            <span class="tabular text-[13px] font-semibold text-ink-700">{{ value }}</span>
           </template>
           <template #cell-at="{ value }">
             <span class="tabular text-[13px]">{{ dateShort(String(value)) }}</span>
@@ -878,8 +878,8 @@ onMounted(() => {
             <p class="text-[12px] text-ink-500">{{ landlord.address }}</p>
           </div>
           <div class="text-right">
-            <p class="text-[15px] font-bold text-ink-900">{{ selected.name }}</p>
-            <p class="tabular text-[12.5px] font-semibold text-ink-600">{{ selected.code }}</p>
+            <p class="text-[16px] font-bold text-ink-900">{{ selected.name }}</p>
+            <p class="tabular text-[13px] font-semibold text-ink-600">{{ selected.code }}</p>
             <p class="tabular text-[12px] text-ink-500">{{ dateShort(selected.at) }}</p>
           </div>
         </div>
@@ -909,7 +909,7 @@ onMounted(() => {
         </div>
 
         <div v-else-if="previewTable.length" class="scroll-slim overflow-x-auto pt-4">
-          <table class="w-full min-w-max border-collapse text-[12.5px]">
+          <table class="w-full min-w-max border-collapse text-[13px]">
             <tbody>
               <tr
                 v-for="(r, i) in previewTable"
@@ -966,7 +966,7 @@ onMounted(() => {
           <UiIcon name="doc" :size="24" />
         </span>
         <span class="min-w-0">
-          <span class="block truncate text-[13.5px] font-semibold text-ink-900">
+          <span class="block truncate text-[14px] font-semibold text-ink-900">
             {{ outputFile?.name }}
           </span>
           <span class="block text-[12px] text-ink-500">

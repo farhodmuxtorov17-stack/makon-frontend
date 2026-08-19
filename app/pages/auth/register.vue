@@ -282,10 +282,10 @@ function submit() {
             </p>
           </div>
 
-          <h1 class="mt-5 font-display text-[26px] font-extrabold leading-tight">
+          <h1 class="mt-5 font-display text-[28px] font-extrabold leading-tight">
             Hisobni to‘ldiring
           </h1>
-          <p class="mt-2 text-[13.5px] leading-relaxed text-ink-500">{{ intro }}</p>
+          <p class="mt-2 text-[14px] leading-relaxed text-ink-500">{{ intro }}</p>
 
           <!-- Ariza asosida ochilayotgan kabinet -->
           <div
@@ -293,7 +293,7 @@ function submit() {
             class="mt-4 flex items-start gap-3 rounded-field bg-brand-50 p-3.5 ring-1 ring-inset ring-brand-100"
           >
             <UiIcon name="clipboard" :size="18" class="mt-px shrink-0 text-brand-600" />
-            <p class="text-[12.5px] leading-relaxed text-ink-700">
+            <p class="text-[13px] leading-relaxed text-ink-700">
               <span class="font-semibold text-ink-900">{{ guestCase.code }}</span>
               arizasi kabinetga bog‘lanadi: {{ guestCase.buildingName }}, Unit
               {{ guestCase.unitCode }}.
@@ -322,12 +322,12 @@ function submit() {
                   @click="kind = k.value"
                 >
                   <span
-                    class="block text-[13.5px] font-semibold"
+                    class="block text-[14px] font-semibold"
                     :class="kind === k.value ? 'text-brand-600' : 'text-ink-600'"
                   >
                     {{ k.label }}
                   </span>
-                  <span class="block text-[11.5px] text-ink-500">{{ k.caption }}</span>
+                  <span class="block text-[12px] text-ink-500">{{ k.caption }}</span>
                 </button>
               </div>
             </div>
@@ -643,7 +643,7 @@ function submit() {
             >
               <UiIcon :name="f.icon" :size="18" />
             </span>
-            <span class="text-[13.5px] text-white/85">{{ f.text }}</span>
+            <span class="text-[14px] text-white/85">{{ f.text }}</span>
           </li>
         </ul>
       </div>
@@ -685,8 +685,8 @@ function submit() {
             {{ i + 1 }}
           </span>
           <span>
-            <span class="block text-[13.5px] font-semibold text-ink-900">{{ t.title }}</span>
-            <span class="block text-[12.5px] leading-relaxed text-ink-600">{{ t.text }}</span>
+            <span class="block text-[14px] font-semibold text-ink-900">{{ t.title }}</span>
+            <span class="block text-[13px] leading-relaxed text-ink-600">{{ t.text }}</span>
           </span>
         </li>
       </ol>

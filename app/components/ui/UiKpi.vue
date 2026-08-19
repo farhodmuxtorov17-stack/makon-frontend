@@ -129,7 +129,7 @@ const root = computed(() => (props.to ? NuxtLink : 'div'))
 
     <div class="relative">
       <div class="flex items-start justify-between gap-3">
-        <p class="text-[12.5px] font-medium leading-snug text-ink-500">{{ label }}</p>
+        <p class="text-[13px] font-medium leading-snug text-ink-500">{{ label }}</p>
         <span
           v-if="icon"
           class="grid size-9 shrink-0 place-items-center rounded-[10px] ring-1 ring-inset ring-white/60"
@@ -143,7 +143,7 @@ const root = computed(() => (props.to ? NuxtLink : 'div'))
         <div class="min-w-0">
           <p class="flex flex-wrap items-baseline gap-x-1.5 gap-y-1">
             <span
-              class="tabular whitespace-nowrap text-[26px] font-bold leading-none text-ink-900"
+              class="tabular whitespace-nowrap text-[28px] font-bold leading-none text-ink-900"
             >{{ parts.value }}</span>
             <span
               v-if="parts.unit"

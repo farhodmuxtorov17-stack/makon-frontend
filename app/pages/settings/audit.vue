@@ -465,7 +465,7 @@ function confirmExport() {
     </nav>
 
     <div
-      class="flex items-start gap-2.5 rounded-card bg-brand-50 px-4 py-3 text-[12.5px] leading-relaxed text-brand-800"
+      class="flex items-start gap-2.5 rounded-card bg-brand-50 px-4 py-3 text-[13px] leading-relaxed text-brand-800"
     >
       <UiIcon name="lock" :size="17" class="mt-0.5 shrink-0 text-brand-600" />
       <span>
@@ -513,7 +513,7 @@ function confirmExport() {
         </UiField>
       </div>
 
-      <div class="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-ink-100 pt-4 text-[12.5px]">
+      <div class="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-ink-100 pt-4 text-[13px]">
         <span class="tabular font-semibold text-ink-700">Topildi: {{ filtered.length }} ta yozuv</span>
         <span class="inline-flex items-center gap-1.5 text-ok-700">
           <UiIcon name="check" :size="14" />
@@ -537,12 +537,12 @@ function confirmExport() {
           <span class="tabular block text-[13px] font-semibold text-ink-900">
             {{ dateShort(row.date) }}
           </span>
-          <span class="tabular block text-[11.5px] text-ink-500">{{ row.time }}</span>
+          <span class="tabular block text-[12px] text-ink-500">{{ row.time }}</span>
         </template>
 
         <template #cell-user="{ row }">
           <span class="block text-[13px] font-semibold text-ink-900">{{ row.user }}</span>
-          <span class="tabular block text-[11.5px] text-ink-500">{{ row.id }}</span>
+          <span class="tabular block text-[12px] text-ink-500">{{ row.id }}</span>
         </template>
 
         <template #cell-role="{ row }">
@@ -583,7 +583,7 @@ function confirmExport() {
         </template>
 
         <template #cell-ip="{ row }">
-          <span class="tabular text-[12.5px] text-ink-600">{{ row.ip }}</span>
+          <span class="tabular text-[13px] text-ink-600">{{ row.ip }}</span>
         </template>
       </UiTable>
     </UiCard>
@@ -598,7 +598,7 @@ function confirmExport() {
         <dl class="grid gap-4 sm:grid-cols-2">
           <div>
             <dt class="text-[12px] text-ink-500">Foydalanuvchi</dt>
-            <dd class="mt-1 text-[13.5px] font-semibold text-ink-900">{{ selected.user }}</dd>
+            <dd class="mt-1 text-[14px] font-semibold text-ink-900">{{ selected.user }}</dd>
           </div>
           <div>
             <dt class="text-[12px] text-ink-500">Rol</dt>
@@ -613,17 +613,17 @@ function confirmExport() {
           </div>
           <div>
             <dt class="text-[12px] text-ink-500">Modul va amal</dt>
-            <dd class="mt-1 text-[13.5px] font-semibold text-ink-900">
+            <dd class="mt-1 text-[14px] font-semibold text-ink-900">
               {{ selected.module }} • {{ selected.action }}
             </dd>
           </div>
           <div>
             <dt class="text-[12px] text-ink-500">Obyekt</dt>
-            <dd class="mt-1 text-[13.5px] font-semibold text-ink-900">{{ selected.object }}</dd>
+            <dd class="mt-1 text-[14px] font-semibold text-ink-900">{{ selected.object }}</dd>
           </div>
           <div>
             <dt class="text-[12px] text-ink-500">IP manzil</dt>
-            <dd class="tabular mt-1 text-[13.5px] font-semibold text-ink-900">{{ selected.ip }}</dd>
+            <dd class="tabular mt-1 text-[14px] font-semibold text-ink-900">{{ selected.ip }}</dd>
           </div>
           <div>
             <dt class="text-[12px] text-ink-500">Natija</dt>
@@ -656,19 +656,19 @@ function confirmExport() {
 
           <ul v-else class="mt-2.5 space-y-2.5">
             <li v-for="d in selected.diff" :key="d.field" class="rounded-field ring-1 ring-ink-200">
-              <p class="border-b border-ink-100 px-4 py-2 text-[12.5px] font-semibold text-ink-700">
+              <p class="border-b border-ink-100 px-4 py-2 text-[13px] font-semibold text-ink-700">
                 {{ d.field }}
               </p>
               <div class="grid gap-px bg-ink-100 sm:grid-cols-2">
                 <div class="bg-danger-50 px-4 py-3">
-                  <p class="flex items-center gap-1.5 text-[11.5px] font-semibold text-danger-700">
+                  <p class="flex items-center gap-1.5 text-[12px] font-semibold text-danger-700">
                     <UiIcon name="arrowDown" :size="13" />
                     Oldingi qiymat
                   </p>
                   <p class="mt-1 text-[13px] text-ink-800">{{ d.before }}</p>
                 </div>
                 <div class="bg-ok-50 px-4 py-3">
-                  <p class="flex items-center gap-1.5 text-[11.5px] font-semibold text-ok-700">
+                  <p class="flex items-center gap-1.5 text-[12px] font-semibold text-ok-700">
                     <UiIcon name="arrowUp" :size="13" />
                     Yangi qiymat
                   </p>
@@ -696,7 +696,7 @@ function confirmExport() {
     </UiModal>
 
     <UiModal v-model="exportOpen" title="Audit jurnalini eksport qilish" size="sm">
-      <p class="text-[13.5px] leading-relaxed text-ink-700">
+      <p class="text-[14px] leading-relaxed text-ink-700">
         Joriy filtr bo‘yicha {{ filtered.length }} ta yozuv eksport qilinadi
         ({{ dateShort(fromDate) }} – {{ dateShort(toDate) }}).
       </p>

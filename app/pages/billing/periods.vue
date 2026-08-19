@@ -521,7 +521,7 @@ function createPeriod() {
       :subtitle="target ? `${target.label} hisob davri` : ''"
     >
       <div v-if="target" class="space-y-4">
-        <p class="text-[13.5px] leading-relaxed text-ink-700">
+        <p class="text-[14px] leading-relaxed text-ink-700">
           <template v-if="confirmMode === 'generate'">
             Ushbu davrda amalda bo‘lgan <b>{{ num(target.contracts) }} ta</b> faol ijara shartnomasi
             bo‘yicha hujjat tekshiriladi. Hisob-fakturasi yo‘q
@@ -537,13 +537,13 @@ function createPeriod() {
         <dl class="divide-y divide-ink-100 rounded-field bg-surface-sunken px-4">
           <div class="flex items-baseline justify-between gap-4 py-2.5">
             <dt class="text-[13px] text-ink-500">Faol shartnomalar</dt>
-            <dd class="tabular text-[13.5px] font-semibold text-ink-900">
+            <dd class="tabular text-[14px] font-semibold text-ink-900">
               {{ num(target.contracts) }} ta
             </dd>
           </div>
           <div class="flex items-baseline justify-between gap-4 py-2.5">
             <dt class="text-[13px] text-ink-500">Joriy hisob-faktura soni</dt>
-            <dd class="tabular text-[13.5px] font-semibold text-ink-900">
+            <dd class="tabular text-[14px] font-semibold text-ink-900">
               {{ num(target.invoices) }} ta
             </dd>
           </div>
@@ -553,7 +553,7 @@ function createPeriod() {
           >
             <dt class="text-[13px] text-ink-500">Shakllantiriladi</dt>
             <dd
-              class="tabular text-[13.5px] font-semibold"
+              class="tabular text-[14px] font-semibold"
               :class="target.pending ? 'text-brand-600' : 'text-ink-400'"
             >
               {{ num(target.pending) }} ta
@@ -561,7 +561,7 @@ function createPeriod() {
           </div>
           <div class="flex items-baseline justify-between gap-4 py-2.5">
             <dt class="text-[13px] text-ink-500">Joriy summa</dt>
-            <dd class="tabular text-[13.5px] font-semibold text-ink-900">{{ sum(target.total) }}</dd>
+            <dd class="tabular text-[14px] font-semibold text-ink-900">{{ sum(target.total) }}</dd>
           </div>
         </dl>
       </div>
@@ -602,19 +602,19 @@ function createPeriod() {
         <dl class="grid gap-4 sm:grid-cols-3">
           <div class="rounded-field bg-surface-sunken p-3.5">
             <dt class="text-[12px] text-ink-500">Faol shartnomalar</dt>
-            <dd class="tabular mt-1 text-[15px] font-bold text-ink-900">
+            <dd class="tabular mt-1 text-[16px] font-bold text-ink-900">
               {{ num(detail.contracts) }} ta
             </dd>
           </div>
           <div class="rounded-field bg-surface-sunken p-3.5">
             <dt class="text-[12px] text-ink-500">Hisob-fakturalar</dt>
-            <dd class="tabular mt-1 text-[15px] font-bold text-ink-900">
+            <dd class="tabular mt-1 text-[16px] font-bold text-ink-900">
               {{ num(detail.invoices) }} ta
             </dd>
           </div>
           <div class="rounded-field bg-surface-sunken p-3.5">
             <dt class="text-[12px] text-ink-500">Jami summa</dt>
-            <dd class="tabular mt-1 text-[15px] font-bold text-ink-900">{{ sum(detail.total) }}</dd>
+            <dd class="tabular mt-1 text-[16px] font-bold text-ink-900">{{ sum(detail.total) }}</dd>
           </div>
         </dl>
       </div>

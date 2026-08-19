@@ -539,8 +539,8 @@ function confirmAction() {
               <UiIcon :name="row.icon" :size="18" />
             </span>
             <span class="min-w-0">
-              <span class="block truncate text-[13.5px] font-semibold text-ink-900">{{ row.name }}</span>
-              <span class="tabular block text-[11.5px] text-ink-500">
+              <span class="block truncate text-[14px] font-semibold text-ink-900">{{ row.name }}</span>
+              <span class="tabular block text-[12px] text-ink-500">
                 {{ row.records.length }} ta yozuv
               </span>
             </span>
@@ -587,13 +587,13 @@ function confirmAction() {
 
         <template #cell-updatedAt="{ row }">
           <span class="tabular block text-[13px] text-ink-700">{{ row.updatedAt }}</span>
-          <span class="block text-[11.5px] text-ink-500">{{ row.updatedBy }}</span>
+          <span class="block text-[12px] text-ink-500">{{ row.updatedBy }}</span>
         </template>
 
         <template #cell-actions="{ row }">
           <button
             type="button"
-            class="inline-flex items-center gap-1.5 rounded-[8px] px-2.5 py-1.5 text-[12.5px] font-semibold text-brand-600 transition-colors hover:bg-brand-50"
+            class="inline-flex items-center gap-1.5 rounded-[8px] px-2.5 py-1.5 text-[13px] font-semibold text-brand-600 transition-colors hover:bg-brand-50"
             @click.stop="openPanel(row)"
           >
             <UiIcon name="edit" :size="15" />
@@ -608,37 +608,37 @@ function confirmAction() {
         <dl class="grid gap-4 sm:grid-cols-3 xl:grid-cols-5">
           <div class="rounded-field p-4 ring-1 ring-ink-200">
             <dt class="text-[12px] text-ink-500">Jami ma’lumotnomalar</dt>
-            <dd class="tabular mt-1.5 text-[24px] font-bold leading-none text-ink-900">
+            <dd class="tabular mt-1.5 text-[22px] font-bold leading-none text-ink-900">
               {{ stats.total }}
             </dd>
           </div>
           <div class="rounded-field p-4 ring-1 ring-ink-200">
             <dt class="text-[12px] text-ink-500">Faol yozuvlar</dt>
-            <dd class="tabular mt-1.5 text-[24px] font-bold leading-none text-ok-600">
+            <dd class="tabular mt-1.5 text-[22px] font-bold leading-none text-ok-600">
               {{ stats.activeRecords }}
             </dd>
           </div>
           <div class="rounded-field p-4 ring-1 ring-ink-200">
             <dt class="text-[12px] text-ink-500">Yangi qo‘shilgan</dt>
-            <dd class="tabular mt-1.5 text-[24px] font-bold leading-none text-brand-600">
+            <dd class="tabular mt-1.5 text-[22px] font-bold leading-none text-brand-600">
               {{ addedCount }}
             </dd>
           </div>
           <div class="rounded-field p-4 ring-1 ring-ink-200">
             <dt class="text-[12px] text-ink-500">O‘zgartirilgan</dt>
-            <dd class="tabular mt-1.5 text-[24px] font-bold leading-none text-info-600">
+            <dd class="tabular mt-1.5 text-[22px] font-bold leading-none text-info-600">
               {{ changedCount }}
             </dd>
           </div>
           <div class="rounded-field p-4 ring-1 ring-ink-200">
             <dt class="text-[12px] text-ink-500">Arxivlangan</dt>
-            <dd class="tabular mt-1.5 text-[24px] font-bold leading-none text-ink-700">
+            <dd class="tabular mt-1.5 text-[22px] font-bold leading-none text-ink-700">
               {{ stats.archived }}
             </dd>
           </div>
         </dl>
 
-        <p v-if="actionResult" class="mt-4 flex items-center gap-2 rounded-field bg-brand-50 px-3.5 py-2.5 text-[12.5px] text-brand-800">
+        <p v-if="actionResult" class="mt-4 flex items-center gap-2 rounded-field bg-brand-50 px-3.5 py-2.5 text-[13px] text-brand-800">
           <UiIcon name="info" :size="16" />
           {{ actionResult }}
         </p>
@@ -773,7 +773,7 @@ function confirmAction() {
                   </ul>
                   <p
                     v-if="actionResult"
-                    class="mt-2.5 flex items-start gap-2 rounded-field bg-brand-50 px-3.5 py-2.5 text-[12.5px] text-brand-800"
+                    class="mt-2.5 flex items-start gap-2 rounded-field bg-brand-50 px-3.5 py-2.5 text-[13px] text-brand-800"
                   >
                     <UiIcon name="info" :size="16" class="mt-0.5 shrink-0" />
                     {{ actionResult }}
@@ -804,7 +804,7 @@ function confirmAction() {
                     :key="r.code"
                     class="flex items-center gap-3 px-4 py-2.5"
                   >
-                    <span class="tabular shrink-0 rounded-[6px] bg-ink-100 px-2 py-1 text-[11.5px] font-semibold text-ink-700">
+                    <span class="tabular shrink-0 rounded-[6px] bg-ink-100 px-2 py-1 text-[12px] font-semibold text-ink-700">
                       {{ r.code }}
                     </span>
                     <span class="min-w-0 flex-1 truncate text-[13px] text-ink-800">{{ r.label }}</span>
@@ -864,7 +864,7 @@ function confirmAction() {
     </UiModal>
 
     <UiModal v-model="actionOpen" :title="actionInfo.title" size="sm">
-      <p class="text-[13.5px] leading-relaxed text-ink-700">{{ actionInfo.text }}</p>
+      <p class="text-[14px] leading-relaxed text-ink-700">{{ actionInfo.text }}</p>
       <template #footer>
         <UiButton variant="ghost" @click="actionOpen = false">Bekor qilish</UiButton>
         <UiButton @click="confirmAction">{{ actionInfo.confirmLabel }}</UiButton>
@@ -877,7 +877,7 @@ function confirmAction() {
       subtitle="Arxivlangan ma’lumotnoma yangi yozuvlarda tanlanmaydi"
       size="sm"
     >
-      <p class="text-[13.5px] leading-relaxed text-ink-700">
+      <p class="text-[14px] leading-relaxed text-ink-700">
         «{{ draft.name }}» ({{ draft.code }}) arxivga o‘tkaziladi. Mavjud yozuvlar saqlanadi, ammo
         ma’lumotnoma yangi shakllarni to‘ldirishda ko‘rinmaydi.
       </p>

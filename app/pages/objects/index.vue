@@ -490,7 +490,7 @@ function submitCreate() {
               class="size-11 shrink-0"
             />
             <span class="min-w-0">
-              <span class="block truncate text-[13.5px] font-semibold text-brand-600">
+              <span class="block truncate text-[14px] font-semibold text-brand-600">
                 {{ row.name }}
               </span>
               <span class="block truncate text-[12px] text-ink-500">{{ row.meta }}</span>
@@ -603,12 +603,12 @@ function submitCreate() {
             <span class="grid size-9 place-items-center rounded-[9px] bg-brand-50 text-brand-600">
               <UiIcon :name="step.icon" :size="18" />
             </span>
-            <span class="text-[13.5px] font-bold text-ink-900">{{ step.title }}</span>
+            <span class="text-[14px] font-bold text-ink-900">{{ step.title }}</span>
             <span class="tabular ml-auto text-[12px] font-semibold text-ink-400">
               0{{ i + 1 }}
             </span>
           </div>
-          <p class="mt-2.5 text-[12.5px] leading-snug text-ink-500">{{ step.text }}</p>
+          <p class="mt-2.5 text-[13px] leading-snug text-ink-500">{{ step.text }}</p>
         </div>
       </div>
     </UiCard>
@@ -638,7 +638,7 @@ function submitCreate() {
             <UiIcon :name="f.icon" :size="18" />
           </span>
           <span class="min-w-0 flex-1">
-            <span class="block text-[13.5px] font-semibold text-ink-900">{{ f.label }}</span>
+            <span class="block text-[14px] font-semibold text-ink-900">{{ f.label }}</span>
             <span class="block text-[12px] text-ink-500">{{ f.hint }}</span>
           </span>
           <UiIcon
@@ -660,7 +660,7 @@ function submitCreate() {
             ]"
             :key="s.value"
             type="button"
-            class="rounded-pill px-3.5 py-1.5 text-[12.5px] font-semibold ring-1 ring-inset transition-colors"
+            class="rounded-pill px-3.5 py-1.5 text-[13px] font-semibold ring-1 ring-inset transition-colors"
             :class="
               exportScope === s.value
                 ? 'bg-brand-500 text-white ring-brand-500'

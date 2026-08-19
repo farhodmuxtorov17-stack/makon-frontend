@@ -100,7 +100,7 @@ function choose(code: LocaleCode) {
             @click="choose(l.code)"
           >
             <span
-              class="grid size-6 shrink-0 place-items-center rounded-[6px] text-[10.5px] font-bold"
+              class="grid size-6 shrink-0 place-items-center rounded-[6px] text-[11px] font-bold"
               :class="l.code === stored ? 'bg-brand-500 text-white' : 'bg-ink-100 text-ink-600'"
             >
               {{ l.short }}

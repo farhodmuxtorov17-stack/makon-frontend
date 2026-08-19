@@ -17,7 +17,7 @@ withDefaults(
 const uid = `makon-${useId()}`
 
 const MARK = { sm: 'size-7', md: 'size-9', lg: 'size-11' }
-const WORD = { sm: 'text-[15px]', md: 'text-[19px]', lg: 'text-[23px]' }
+const WORD = { sm: 'text-[16px]', md: 'text-[18px]', lg: 'text-[22px]' }
 const GAP = { sm: 'gap-2', md: 'gap-2.5', lg: 'gap-3' }
 
 /** Monogramma konturi: ikki minora va ular orasidagi o‘yiq */

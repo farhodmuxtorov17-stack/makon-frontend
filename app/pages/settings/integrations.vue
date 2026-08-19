@@ -531,7 +531,7 @@ const activeHooks = computed(() => webhooks.value.filter((w) => w.active).length
   >
     <template #actions>
       <span
-        class="hidden items-center gap-2 rounded-pill bg-brand-50 px-3 py-1.5 text-[12.5px] font-semibold text-brand-700 ring-1 ring-inset ring-brand-200 lg:inline-flex"
+        class="hidden items-center gap-2 rounded-pill bg-brand-50 px-3 py-1.5 text-[13px] font-semibold text-brand-700 ring-1 ring-inset ring-brand-200 lg:inline-flex"
       >
         <UiIcon name="globe" :size="15" />
         {{ connectedCount }} / {{ integrations.length }} ulangan
@@ -622,7 +622,7 @@ const activeHooks = computed(() => webhooks.value.filter((w) => w.active).length
           >
             <UiIcon :name="item.icon" :size="19" />
           </span>
-          <dl class="min-w-0 flex-1 space-y-2 text-[12.5px]">
+          <dl class="min-w-0 flex-1 space-y-2 text-[13px]">
             <div class="flex items-start justify-between gap-3">
               <dt class="shrink-0 text-ink-500">Endpoint</dt>
               <dd class="tabular min-w-0 truncate text-right font-semibold text-ink-900">
@@ -658,7 +658,7 @@ const activeHooks = computed(() => webhooks.value.filter((w) => w.active).length
           <li
             v-for="s in checks[item.id]!.steps"
             :key="s.label"
-            class="flex items-center gap-2 text-[12.5px]"
+            class="flex items-center gap-2 text-[13px]"
             :class="
               s.state === 'done'
                 ? 'text-ok-700'
@@ -687,7 +687,7 @@ const activeHooks = computed(() => webhooks.value.filter((w) => w.active).length
 
         <p
           v-if="checks[item.id] && checks[item.id]!.phase !== 'running' && checks[item.id]!.message"
-          class="mt-3 flex items-start gap-2 rounded-field px-3 py-2.5 text-[12.5px]"
+          class="mt-3 flex items-start gap-2 rounded-field px-3 py-2.5 text-[13px]"
           :class="
             checks[item.id]!.phase === 'fail'
               ? 'bg-danger-50 text-danger-700'
@@ -704,7 +704,7 @@ const activeHooks = computed(() => webhooks.value.filter((w) => w.active).length
 
         <p
           v-else-if="item.status === 'ERROR' && !checks[item.id]"
-          class="mt-3 flex items-start gap-2 rounded-field bg-danger-50 px-3 py-2.5 text-[12.5px] text-danger-700"
+          class="mt-3 flex items-start gap-2 rounded-field bg-danger-50 px-3 py-2.5 text-[13px] text-danger-700"
         >
           <UiIcon name="warning" :size="15" class="mt-0.5 shrink-0" />
           {{ item.failReason }}
@@ -736,7 +736,7 @@ const activeHooks = computed(() => webhooks.value.filter((w) => w.active).length
             {{ item.enabled ? 'O‘chirib qo‘yish' : 'Yoqish' }}
           </UiButton>
 
-          <p v-if="!item.enabled" class="text-center text-[11.5px] text-ink-500">
+          <p v-if="!item.enabled" class="text-center text-[12px] text-ink-500">
             Integratsiya o‘chirilgan: tekshirish uchun avval yoqing
           </p>
         </div>
@@ -830,7 +830,7 @@ const activeHooks = computed(() => webhooks.value.filter((w) => w.active).length
         </template>
       </UiTable>
 
-      <div class="border-t border-ink-200 bg-surface-sunken px-5 py-3.5 text-[12.5px] text-ink-600">
+      <div class="border-t border-ink-200 bg-surface-sunken px-5 py-3.5 text-[13px] text-ink-600">
         Kalitning to‘liq qiymati faqat yaratilgan paytda bir marta ko‘rsatiladi, keyin esa
         prefiks ko‘rinishida saqlanadi.
       </div>
@@ -853,7 +853,7 @@ const activeHooks = computed(() => webhooks.value.filter((w) => w.active).length
             </span>
 
             <span class="min-w-0 flex-1">
-              <span class="tabular block truncate text-[13.5px] font-semibold text-ink-900">
+              <span class="tabular block truncate text-[14px] font-semibold text-ink-900">
                 {{ w.url }}
               </span>
               <span class="block truncate text-[12px] text-ink-500">Hodisa: {{ w.event }}</span>
@@ -880,7 +880,7 @@ const activeHooks = computed(() => webhooks.value.filter((w) => w.active).length
 
             <span
               v-if="w.lastCode"
-              class="tabular shrink-0 rounded-pill bg-ink-100 px-2.5 py-1 text-[11.5px] font-semibold text-ink-700"
+              class="tabular shrink-0 rounded-pill bg-ink-100 px-2.5 py-1 text-[12px] font-semibold text-ink-700"
             >
               HTTP {{ w.lastCode }}
             </span>
@@ -919,7 +919,7 @@ const activeHooks = computed(() => webhooks.value.filter((w) => w.active).length
               "
             >
               <span
-                class="inline-flex items-center gap-1.5 text-[12.5px] font-semibold"
+                class="inline-flex items-center gap-1.5 text-[13px] font-semibold"
                 :class="
                   probes[w.id]!.phase === 'sending'
                     ? 'text-ink-600'
@@ -959,7 +959,7 @@ const activeHooks = computed(() => webhooks.value.filter((w) => w.active).length
         </li>
       </ul>
 
-      <div class="border-t border-ink-200 bg-surface-sunken px-5 py-3.5 text-[12.5px] text-ink-600">
+      <div class="border-t border-ink-200 bg-surface-sunken px-5 py-3.5 text-[13px] text-ink-600">
         Sinov so‘rovi kanalning javob kodi va kechikishini tekshiradi, haqiqiy hodisa
         yaratilmaydi.
       </div>
@@ -1011,7 +1011,7 @@ const activeHooks = computed(() => webhooks.value.filter((w) => w.active).length
         </UiField>
       </div>
 
-      <p v-if="configError" class="text-[12.5px] font-medium text-danger-600">{{ configError }}</p>
+      <p v-if="configError" class="text-[13px] font-medium text-danger-600">{{ configError }}</p>
     </div>
 
     <template #footer>
@@ -1028,7 +1028,7 @@ const activeHooks = computed(() => webhooks.value.filter((w) => w.active).length
     :title="toggleTarget?.enabled ? 'Integratsiyani o‘chirib qo‘yish' : 'Integratsiyani yoqish'"
     size="sm"
   >
-    <p class="text-[13.5px] leading-relaxed text-ink-700">
+    <p class="text-[14px] leading-relaxed text-ink-700">
       <template v-if="toggleTarget?.enabled">
         «{{ toggleTarget?.name }}» kanali o‘chiriladi: ushbu xizmat orqali ma’lumot almashinuvi
         to‘xtaydi va holat «Ulanmagan» ga o‘tadi.
@@ -1059,7 +1059,7 @@ const activeHooks = computed(() => webhooks.value.filter((w) => w.active).length
       <UiField label="Amal doirasi" required>
         <UiSelect v-model="newKeyScope" :options="SCOPE_OPTIONS" />
       </UiField>
-      <p class="rounded-field bg-surface-sunken px-3.5 py-3 text-[12.5px] text-ink-600">
+      <p class="rounded-field bg-surface-sunken px-3.5 py-3 text-[13px] text-ink-600">
         Kalit prefiksi <b class="text-ink-900">mk_live</b> bo‘ladi va reyestrda faqat niqoblangan
         ko‘rinishda saqlanadi.
       </p>
@@ -1097,7 +1097,7 @@ const activeHooks = computed(() => webhooks.value.filter((w) => w.active).length
         </UiButton>
       </div>
 
-      <p class="flex items-start gap-2 rounded-field bg-warn-50 px-3.5 py-3 text-[12.5px] text-warn-700">
+      <p class="flex items-start gap-2 rounded-field bg-warn-50 px-3.5 py-3 text-[13px] text-warn-700">
         <UiIcon name="warning" :size="16" class="mt-0.5 shrink-0" />
         Oyna yopilgach kalit qiymati qayta ko‘rsatilmaydi. Yo‘qotilgan kalitni bekor qilib, yangisini
         yaratish kerak bo‘ladi.
@@ -1110,7 +1110,7 @@ const activeHooks = computed(() => webhooks.value.filter((w) => w.active).length
   </UiModal>
 
   <UiModal v-model="revokeOpen" title="Kalitni bekor qilish" size="sm">
-    <p class="text-[13.5px] leading-relaxed text-ink-700">
+    <p class="text-[14px] leading-relaxed text-ink-700">
       «{{ revokeTarget?.name }}» kaliti bekor qilinadi va u orqali kelayotgan barcha so‘rovlar rad
       etiladi. Amalni qaytarib bo‘lmaydi.
     </p>

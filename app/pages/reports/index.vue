@@ -9,6 +9,23 @@ const auth = useAuthStore()
 /** Hisobot faqat foydalanuvchining ko‘rish sohasidagi obyektlarni qamraydi */
 const scopedBuildings = computed(() => BUILDINGS.filter((b) => auth.inScope(b.id)))
 
+/**
+ * Hisobotlar bitta uzun ustunda joylashgani uchun sahifa balandligi to‘rt
+ * ekrandan oshib ketardi va birinchi marta kirgan foydalanuvchi nimani
+ * qidirayotganini yo‘qotardi. Endi bloklar mavzu bo‘yicha ajratilgan:
+ * har bir bo‘lim bitta ekranga sig‘adi.
+ */
+const REPORT_TABS = [
+  { key: 'umumiy', label: 'Umumiy', caption: 'Asosiy ko‘rsatkichlar va obyektlar kesimi' },
+  { key: 'moliya', label: 'Moliya', caption: 'Tushum dinamikasi va qarzdorlik' },
+  { key: 'bandlik', label: 'Bandlik', caption: 'Band va bo‘sh maydon, taqqoslama' },
+  { key: 'servis', label: 'Servis', caption: 'SLA va kommunal sarf' },
+  { key: 'hujjat', label: 'Hujjatlar', caption: 'Tayyor shablonlar bo‘yicha yuklab olish' },
+]
+
+const tab = ref('umumiy')
+const activeTab = computed(() => REPORT_TABS.find((t) => t.key === tab.value) ?? REPORT_TABS[0]!)
+
 const MONTHS = ['Yan', 'Fev', 'Mar', 'Apr', 'May', 'Iyun', 'Iyul', 'Avg', 'Sen', 'Okt', 'Noy', 'Dek']
 
 // Hisobot davri bugun tugaydi: kelajakdagi oy uchun hisobot bo‘lmaydi
@@ -449,7 +466,7 @@ function confirmExport() {
                 />
                 <span class="min-w-0 flex-1">
                   <span class="block truncate text-[13px] font-medium text-ink-800">{{ b.name }}</span>
-                  <span class="block truncate text-[11.5px] text-ink-500">{{ b.type }}</span>
+                  <span class="block truncate text-[12px] text-ink-500">{{ b.type }}</span>
                 </span>
               </label>
             </div>
@@ -469,7 +486,7 @@ function confirmExport() {
         </div>
       </div>
 
-      <p v-if="filterChanged" class="mt-3 flex items-center gap-2 text-[12.5px] font-medium text-warn-700">
+      <p v-if="filterChanged" class="mt-3 flex items-center gap-2 text-[13px] font-medium text-warn-700">
         <UiIcon name="info" :size="15" />
         Filtrlar o‘zgartirildi: natijalarni yangilash uchun «Filtrlarni qo‘llash» tugmasini bosing.
       </p>
@@ -490,7 +507,7 @@ function confirmExport() {
       />
 
       <p
-        class="flex min-w-0 flex-1 items-center gap-2 rounded-field bg-brand-50 px-3.5 py-2.5 text-[12.5px] text-brand-800"
+        class="flex min-w-0 flex-1 items-center gap-2 rounded-field bg-brand-50 px-3.5 py-2.5 text-[13px] text-brand-800"
       >
         <UiIcon name="info" :size="16" class="text-brand-600" />
         <span v-if="mode === 'portfolio'">
@@ -504,7 +521,7 @@ function confirmExport() {
 
     <div
       v-if="!totals.count"
-      class="flex items-center gap-3 rounded-card bg-surface p-5 text-[13.5px] text-ink-600 shadow-card ring-1 ring-ink-200/60"
+      class="flex items-center gap-3 rounded-card bg-surface p-5 text-[14px] text-ink-600 shadow-card ring-1 ring-ink-200/60"
     >
       <UiIcon name="warning" :size="20" class="text-warn-500" />
       Tanlangan filtrlarga mos obyekt topilmadi. Filtrlarni kengaytiring yoki «Tozalash» tugmasini bosing.
@@ -565,7 +582,27 @@ function confirmExport() {
       />
     </section>
 
+    <nav class="flex flex-wrap gap-2" aria-label="Hisobot bo‘limlari">
+      <button
+        v-for="t in REPORT_TABS"
+        :key="t.key"
+        type="button"
+        class="h-11 rounded-field px-4 text-[13px] font-semibold ring-1 ring-inset transition-colors md:h-9"
+        :class="
+          tab === t.key
+            ? 'bg-brand-500 text-white ring-brand-500'
+            : 'bg-white text-ink-600 ring-ink-200 hover:ring-ink-300'
+        "
+        :aria-pressed="tab === t.key"
+        @click="tab = t.key"
+      >
+        {{ t.label }}
+      </button>
+      <p class="ml-auto self-center text-[12px] text-ink-500">{{ activeTab.caption }}</p>
+    </nav>
+
     <UiCard
+      v-show="tab === 'umumiy'"
       title="Obyektlar kesimidagi hisobot"
       :subtitle="`${periodLabel} • qatorni bosib bitta obyekt rejimiga o‘ting`"
       flush
@@ -584,7 +621,7 @@ function confirmExport() {
         @row-click="onRowClick"
       >
         <template #cell-name="{ row }">
-          <span class="block text-[13.5px]" :class="row.total ? 'font-bold text-ink-900' : 'font-semibold text-ink-900'">
+          <span class="block text-[14px]" :class="row.total ? 'font-bold text-ink-900' : 'font-semibold text-ink-900'">
             {{ row.name }}
           </span>
           <span class="block text-[12px] text-ink-500">{{ row.district }}</span>
@@ -629,11 +666,17 @@ function confirmExport() {
       </UiTable>
     </UiCard>
 
-    <section class="grid gap-5 xl:grid-cols-2">
-      <UiCard title="Bandlik va vacancy tahlili" subtitle="Band va bo‘sh maydon, m²">
+    <section v-show="tab === 'bandlik'" class="grid gap-5 xl:grid-cols-2">
+      <UiCard title="Bandlik va bo‘sh maydon tahlili" subtitle="Band va bo‘sh maydon, m²">
         <UiBars :labels="months" :series="occupancySeries" stacked :height="220" unit="m²" />
       </UiCard>
 
+      <UiCard title="Asosiy ko‘rsatkichlar taqqoslamasi" subtitle="Bandlik, SLA va to‘lovlar yig‘ilishi, %">
+        <UiLine :labels="months" :series="compareSeries" :height="212" />
+      </UiCard>
+    </section>
+
+    <section v-show="tab === 'moliya'" class="grid gap-5 xl:grid-cols-2">
       <UiCard title="Ijara tushumi dinamikasi" subtitle="Oylar kesimida, mlrd so‘m">
         <UiBars :labels="months" :series="revenueSeries" :height="220" unit="mlrd so‘m" />
       </UiCard>
@@ -641,7 +684,9 @@ function confirmExport() {
       <UiCard title="Qarzdorlik tahlili" subtitle="Kunlar kesimida taqsimot, mln so‘m">
         <UiBars :labels="months" :series="debtSeries" stacked :height="220" unit="mln so‘m" />
       </UiCard>
+    </section>
 
+    <section v-show="tab === 'servis'" class="grid gap-5 xl:grid-cols-2">
       <UiCard title="Servis SLA" subtitle="Arizalar bajarilishi bo‘yicha ulush">
         <UiDonut
           :slices="slaSlices"
@@ -661,15 +706,12 @@ function confirmExport() {
         </dl>
       </UiCard>
 
-      <UiCard title="Asosiy ko‘rsatkichlar taqqoslamasi" subtitle="Bandlik, SLA va to‘lovlar yig‘ilishi, %">
-        <UiLine :labels="months" :series="compareSeries" :height="212" />
-      </UiCard>
     </section>
 
-    <UiCard title="Tezkor hisobotlar" subtitle="Tayyor shablonlar bo‘yicha yuklab olish" flush>
+    <UiCard v-show="tab === 'hujjat'" title="Tezkor hisobotlar" subtitle="Tayyor shablonlar bo‘yicha yuklab olish" flush>
       <p
         v-if="lastExport"
-        class="mx-5 mb-3 flex items-start gap-2 rounded-field bg-ok-50 px-3.5 py-2.5 text-[12.5px] text-ok-700"
+        class="mx-5 mb-3 flex items-start gap-2 rounded-field bg-ok-50 px-3.5 py-2.5 text-[13px] text-ok-700"
       >
         <UiIcon name="check" :size="16" class="mt-0.5 shrink-0" />
         <span>
@@ -684,7 +726,7 @@ function confirmExport() {
             <UiIcon :name="r.icon" :size="18" />
           </span>
           <span class="min-w-0 flex-1">
-            <span class="block truncate text-[13.5px] font-semibold text-ink-900">{{ r.title }}</span>
+            <span class="block truncate text-[14px] font-semibold text-ink-900">{{ r.title }}</span>
             <span class="block truncate text-[12px] text-ink-500">{{ r.caption }}</span>
           </span>
           <span class="flex shrink-0 gap-2">
@@ -701,7 +743,7 @@ function confirmExport() {
       subtitle="Yuklab olishdan oldin hisobot parametrlarini tasdiqlang"
       size="sm"
     >
-      <dl class="space-y-3 text-[13.5px]">
+      <dl class="space-y-3 text-[14px]">
         <div class="flex items-start justify-between gap-4">
           <dt class="text-ink-500">Hisobot</dt>
           <dd class="text-right font-semibold text-ink-900">{{ exportTitle }}</dd>

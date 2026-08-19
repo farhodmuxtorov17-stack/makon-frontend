@@ -437,22 +437,22 @@ const actLineRows = computed(() =>
           <dl class="grid gap-4 sm:grid-cols-3">
             <div class="rounded-field p-3.5 ring-1 ring-ink-200">
               <dt class="text-[12px] text-ink-500">Mas’ul shaxs</dt>
-              <dd class="mt-1 text-[13.5px] font-semibold text-ink-900">{{ session.owner }}</dd>
+              <dd class="mt-1 text-[14px] font-semibold text-ink-900">{{ session.owner }}</dd>
             </div>
             <div class="rounded-field p-3.5 ring-1 ring-ink-200">
               <dt class="text-[12px] text-ink-500">Ombor</dt>
-              <dd class="mt-1 text-[13.5px] font-semibold text-ink-900">{{ session.warehouse }}</dd>
+              <dd class="mt-1 text-[14px] font-semibold text-ink-900">{{ session.warehouse }}</dd>
             </div>
             <div class="rounded-field p-3.5 ring-1 ring-ink-200">
               <dt class="text-[12px] text-ink-500">Sanoq sanasi</dt>
-              <dd class="tabular mt-1 text-[13.5px] font-semibold text-ink-900">
+              <dd class="tabular mt-1 text-[14px] font-semibold text-ink-900">
                 {{ dateShort(session.date) }}
               </dd>
             </div>
           </dl>
 
           <div class="mt-4">
-            <div class="flex items-center justify-between gap-3 text-[12.5px]">
+            <div class="flex items-center justify-between gap-3 text-[13px]">
               <span class="text-ink-500">Sanoq bajarilishi</span>
               <span class="tabular font-semibold text-ink-900">
                 {{ countedCount }} / {{ sessionItems.length }} pozitsiya
@@ -470,13 +470,13 @@ const actLineRows = computed(() =>
         <UiCard title="Joriy natija" subtitle="Sanoq davomida jonli hisoblanadi">
           <dl class="space-y-3">
             <div class="flex items-baseline justify-between gap-3 border-b border-ink-100 pb-3">
-              <dt class="text-[12.5px] text-ink-500">Sanalgan pozitsiyalar</dt>
+              <dt class="text-[13px] text-ink-500">Sanalgan pozitsiyalar</dt>
               <dd class="tabular text-[14px] font-bold text-ink-900">
                 {{ countedCount }} / {{ sessionItems.length }}
               </dd>
             </div>
             <div class="flex items-baseline justify-between gap-3 border-b border-ink-100 pb-3">
-              <dt class="flex items-center gap-1.5 text-[12.5px] text-ink-500">
+              <dt class="flex items-center gap-1.5 text-[13px] text-ink-500">
                 <UiIcon name="arrowUp" :size="13" class="text-info-600" />
                 Ortiqcha
               </dt>
@@ -485,7 +485,7 @@ const actLineRows = computed(() =>
               </dd>
             </div>
             <div class="flex items-baseline justify-between gap-3 border-b border-ink-100 pb-3">
-              <dt class="flex items-center gap-1.5 text-[12.5px] text-ink-500">
+              <dt class="flex items-center gap-1.5 text-[13px] text-ink-500">
                 <UiIcon name="arrowDown" :size="13" class="text-danger-600" />
                 Kamomad
               </dt>
@@ -494,9 +494,9 @@ const actLineRows = computed(() =>
               </dd>
             </div>
             <div class="flex items-baseline justify-between gap-3">
-              <dt class="text-[12.5px] text-ink-500">Umumiy farq qiymati</dt>
+              <dt class="text-[13px] text-ink-500">Umumiy farq qiymati</dt>
               <dd
-                class="tabular text-[15px] font-bold"
+                class="tabular text-[16px] font-bold"
                 :class="
                   valueDiff > 0 ? 'text-info-700' : valueDiff < 0 ? 'text-danger-700' : 'text-ink-900'
                 "
@@ -630,7 +630,7 @@ const actLineRows = computed(() =>
         <span class="grid size-14 shrink-0 place-items-center rounded-panel bg-brand-50 text-brand-600">
           <UiIcon name="clipboard" :size="26" />
         </span>
-        <p class="min-w-0 flex-1 text-[13.5px] leading-relaxed text-ink-600">
+        <p class="min-w-0 flex-1 text-[14px] leading-relaxed text-ink-600">
           Seans ochilgach sahifa sanoq rejimiga o‘tadi: tanlangan ombordagi har bir pozitsiya
           bo‘yicha hisobdagi miqdor va sanalgan miqdor solishtiriladi, farqlar jonli hisoblanadi va
           yakunda akt rasmiylashtiriladi.
@@ -641,7 +641,7 @@ const actLineRows = computed(() =>
         </UiButton>
         <span
           v-else
-          class="shrink-0 rounded-pill bg-ink-100 px-3 py-1.5 text-[12.5px] font-semibold text-ink-600 ring-1 ring-inset ring-ink-200"
+          class="shrink-0 rounded-pill bg-ink-100 px-3 py-1.5 text-[13px] font-semibold text-ink-600 ring-1 ring-inset ring-ink-200"
         >
           Sanoqni faqat omborchi boshlaydi
         </span>
@@ -722,7 +722,7 @@ const actLineRows = computed(() =>
         <UiSelect v-model="startOwner" :options="OWNERS" />
       </UiField>
 
-      <p class="rounded-field bg-surface-sunken px-3.5 py-3 text-[12.5px] text-ink-600">
+      <p class="rounded-field bg-surface-sunken px-3.5 py-3 text-[13px] text-ink-600">
         Tanlangan omborda
         <b class="text-ink-900">
           {{ stock.filter((i) => i.warehouse === startWarehouse).length }} ta
@@ -749,7 +749,7 @@ const actLineRows = computed(() =>
     <div class="space-y-4">
       <p
         v-if="countedCount < sessionItems.length"
-        class="flex items-start gap-2 rounded-field bg-warn-50 px-3.5 py-3 text-[12.5px] text-warn-700"
+        class="flex items-start gap-2 rounded-field bg-warn-50 px-3.5 py-3 text-[13px] text-warn-700"
       >
         <UiIcon name="warning" :size="16" class="mt-0.5 shrink-0" />
         {{ sessionItems.length - countedCount }} ta pozitsiya sanalmadi, ular hisobdagi miqdor
@@ -765,7 +765,7 @@ const actLineRows = computed(() =>
         <ul class="scroll-slim max-h-64 divide-y divide-ink-100 overflow-y-auto">
           <li v-for="d in discrepancies" :key="d.id" class="flex items-center gap-3 px-4 py-3">
             <span class="min-w-0 flex-1">
-              <span class="block truncate text-[13.5px] font-semibold text-ink-900">{{ d.name }}</span>
+              <span class="block truncate text-[14px] font-semibold text-ink-900">{{ d.name }}</span>
               <span class="tabular block text-[12px] text-ink-500">
                 {{ d.code }} · hisobda {{ num(d.expected) }} {{ d.unit }} · sanaldi
                 {{ num(d.fact) }} {{ d.unit }}
@@ -791,7 +791,7 @@ const actLineRows = computed(() =>
 
       <p
         v-else
-        class="flex items-start gap-2 rounded-field bg-ok-50 px-3.5 py-3 text-[12.5px] text-ok-700"
+        class="flex items-start gap-2 rounded-field bg-ok-50 px-3.5 py-3 text-[13px] text-ok-700"
       >
         <UiIcon name="check" :size="16" class="mt-0.5 shrink-0" />
         Farq aniqlanmadi: sanalgan miqdorlar hisobdagi qoldiqqa to‘liq mos keldi.
@@ -799,7 +799,7 @@ const actLineRows = computed(() =>
 
       <div class="flex flex-wrap items-center justify-between gap-2 rounded-field bg-surface-sunken px-4 py-3">
         <span class="text-[13px] font-semibold text-ink-700">Umumiy farq qiymati</span>
-        <span class="tabular text-[15px] font-bold text-ink-900">
+        <span class="tabular text-[16px] font-bold text-ink-900">
           {{ valueDiff > 0 ? '+' : '' }}{{ sum(valueDiff) }}
         </span>
       </div>
@@ -820,7 +820,7 @@ const actLineRows = computed(() =>
     subtitle="Kiritilgan sanoq natijalari saqlanmaydi"
     size="sm"
   >
-    <p class="text-[13.5px] leading-relaxed text-ink-700">
+    <p class="text-[14px] leading-relaxed text-ink-700">
       Joriy seans yopiladi va kiritilgan barcha miqdorlar o‘chiriladi. Ombor qoldig‘i
       o‘zgarishsiz qoladi.
     </p>
@@ -840,7 +840,7 @@ const actLineRows = computed(() =>
       <div class="rounded-field bg-white p-5 ring-1 ring-ink-200 sm:p-6">
         <div class="flex flex-wrap items-start justify-between gap-4 border-b border-ink-200 pb-4">
           <div class="min-w-0">
-            <p class="text-[17px] font-bold text-ink-900">Inventarizatsiya akti</p>
+            <p class="text-[18px] font-bold text-ink-900">Inventarizatsiya akti</p>
             <p class="tabular mt-1 text-[13px] text-ink-500">
               {{ act.code }} · {{ dateShort(act.date) }}
             </p>
@@ -850,21 +850,21 @@ const actLineRows = computed(() =>
 
         <dl class="mt-4 grid gap-x-6 gap-y-3 sm:grid-cols-2">
           <div class="flex justify-between gap-3 border-b border-ink-100 pb-2">
-            <dt class="text-[12.5px] text-ink-500">Ombor</dt>
+            <dt class="text-[13px] text-ink-500">Ombor</dt>
             <dd class="text-right text-[13px] font-semibold text-ink-900">{{ act.warehouse }}</dd>
           </div>
           <div class="flex justify-between gap-3 border-b border-ink-100 pb-2">
-            <dt class="text-[12.5px] text-ink-500">Mas’ul shaxs</dt>
+            <dt class="text-[13px] text-ink-500">Mas’ul shaxs</dt>
             <dd class="text-right text-[13px] font-semibold text-ink-900">{{ act.owner }}</dd>
           </div>
           <div class="flex justify-between gap-3 border-b border-ink-100 pb-2">
-            <dt class="text-[12.5px] text-ink-500">Sanalgan pozitsiyalar</dt>
+            <dt class="text-[13px] text-ink-500">Sanalgan pozitsiyalar</dt>
             <dd class="tabular text-right text-[13px] font-semibold text-ink-900">
               {{ act.positions }} ta
             </dd>
           </div>
           <div class="flex justify-between gap-3 border-b border-ink-100 pb-2">
-            <dt class="text-[12.5px] text-ink-500">Farq aniqlangan pozitsiyalar</dt>
+            <dt class="text-[13px] text-ink-500">Farq aniqlangan pozitsiyalar</dt>
             <dd class="tabular text-right text-[13px] font-semibold text-ink-900">
               {{ act.positions - act.matched }} ta
             </dd>
@@ -875,22 +875,22 @@ const actLineRows = computed(() =>
           <table class="w-full min-w-max border-collapse text-sm">
             <thead>
               <tr class="border-b border-ink-200 bg-surface-sunken">
-                <th class="px-3 py-2 text-left text-[11.5px] font-semibold uppercase tracking-wide text-ink-500">
+                <th class="px-3 py-2 text-left text-[12px] font-semibold uppercase tracking-wide text-ink-500">
                   №
                 </th>
-                <th class="px-3 py-2 text-left text-[11.5px] font-semibold uppercase tracking-wide text-ink-500">
+                <th class="px-3 py-2 text-left text-[12px] font-semibold uppercase tracking-wide text-ink-500">
                   Nomi
                 </th>
-                <th class="px-3 py-2 text-right text-[11.5px] font-semibold uppercase tracking-wide text-ink-500">
+                <th class="px-3 py-2 text-right text-[12px] font-semibold uppercase tracking-wide text-ink-500">
                   Hisobda
                 </th>
-                <th class="px-3 py-2 text-right text-[11.5px] font-semibold uppercase tracking-wide text-ink-500">
+                <th class="px-3 py-2 text-right text-[12px] font-semibold uppercase tracking-wide text-ink-500">
                   Sanaldi
                 </th>
-                <th class="px-3 py-2 text-right text-[11.5px] font-semibold uppercase tracking-wide text-ink-500">
+                <th class="px-3 py-2 text-right text-[12px] font-semibold uppercase tracking-wide text-ink-500">
                   Farq
                 </th>
-                <th class="px-3 py-2 text-right text-[11.5px] font-semibold uppercase tracking-wide text-ink-500">
+                <th class="px-3 py-2 text-right text-[12px] font-semibold uppercase tracking-wide text-ink-500">
                   Farq qiymati
                 </th>
               </tr>
@@ -915,7 +915,7 @@ const actLineRows = computed(() =>
                   "
                 >
                   {{ l.diff > 0 ? '+' : '' }}{{ num(l.diff) }}
-                  <span class="ml-1 text-[11.5px] font-medium">
+                  <span class="ml-1 text-[12px] font-medium">
                     {{ l.diff > 0 ? 'ortiqcha' : l.diff < 0 ? 'kamomad' : 'mos' }}
                   </span>
                 </td>
@@ -951,13 +951,13 @@ const actLineRows = computed(() =>
         <div class="mt-6 grid gap-6 sm:grid-cols-2">
           <div>
             <p class="text-[12px] text-ink-500">Sanoqni o‘tkazdi</p>
-            <p class="mt-6 border-t border-ink-300 pt-1.5 text-[12.5px] text-ink-600">
+            <p class="mt-6 border-t border-ink-300 pt-1.5 text-[13px] text-ink-600">
               {{ act.owner }}
             </p>
           </div>
           <div>
             <p class="text-[12px] text-ink-500">Tasdiqladi</p>
-            <p class="mt-6 border-t border-ink-300 pt-1.5 text-[12.5px] text-ink-600">
+            <p class="mt-6 border-t border-ink-300 pt-1.5 text-[13px] text-ink-600">
               {{ auth.user?.fullName ?? 'Ombor mas’uli' }}
             </p>
           </div>

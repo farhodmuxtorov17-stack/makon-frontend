@@ -383,7 +383,7 @@ const currentPeriodTitle = computed(() => monthTitle(TODAY))
       <span class="grid size-9 shrink-0 place-items-center rounded-[10px] bg-ok-500 text-white">
         <UiIcon name="check" :size="18" />
       </span>
-      <p class="min-w-0 flex-1 text-[13.5px] text-ok-700">
+      <p class="min-w-0 flex-1 text-[14px] text-ok-700">
         <b>{{ createdCode }}</b> raqamli servis arizangiz qabul qilindi va bino xizmatiga yuborildi.
       </p>
       <button
@@ -459,45 +459,45 @@ const currentPeriodTitle = computed(() => monthTitle(TODAY))
                     {{ myUnit.code }}
                   </text>
                 </svg>
-                <p class="mt-2 text-center text-[11.5px] text-ink-500">
+                <p class="mt-2 text-center text-[12px] text-ink-500">
                   {{ myUnit.floor }}-qavat rejasi
                 </p>
               </div>
 
               <div class="mt-3.5 flex items-center gap-2.5">
-                <h4 class="text-[19px] font-bold text-ink-900">Unit {{ myUnit.code }}</h4>
+                <h4 class="text-[18px] font-bold text-ink-900">Unit {{ myUnit.code }}</h4>
                 <UiStatus kind="unit" :value="myUnit.status" size="sm" />
               </div>
               <p class="mt-1 text-[13px] text-ink-600">{{ myUnit.tenant ?? organization }}</p>
-              <p class="text-[12.5px] text-ink-500">
+              <p class="text-[13px] text-ink-500">
                 {{ myBuilding?.name }} · {{ myUnit.floor }}-qavat, {{ myUnit.rooms }} xona
               </p>
 
               <dl class="mt-3 divide-y divide-ink-100 border-t border-ink-100">
                 <div class="flex items-center justify-between py-2">
-                  <dt class="text-[12.5px] text-ink-500">Umumiy maydon</dt>
+                  <dt class="text-[13px] text-ink-500">Umumiy maydon</dt>
                   <dd class="tabular text-[13px] font-bold text-ink-900">{{ area(myUnit.area) }}</dd>
                 </div>
                 <div class="flex items-center justify-between py-2">
-                  <dt class="text-[12.5px] text-ink-500">Shartnoma</dt>
+                  <dt class="text-[13px] text-ink-500">Shartnoma</dt>
                   <dd class="tabular text-[13px] font-bold text-ink-900">
                     {{ myContract?.code ?? 'Biriktirilmagan' }}
                   </dd>
                 </div>
                 <div class="flex items-center justify-between py-2">
-                  <dt class="text-[12.5px] text-ink-500">Ijara boshlangan sana</dt>
+                  <dt class="text-[13px] text-ink-500">Ijara boshlangan sana</dt>
                   <dd class="tabular text-[13px] font-bold text-ink-900">
                     {{ myContract ? dateShort(myContract.startsAt) : '-' }}
                   </dd>
                 </div>
                 <div class="flex items-center justify-between py-2">
-                  <dt class="text-[12.5px] text-ink-500">Shartnoma yakunlanish sanasi</dt>
+                  <dt class="text-[13px] text-ink-500">Shartnoma yakunlanish sanasi</dt>
                   <dd class="tabular text-[13px] font-bold text-ink-900">
                     {{ myContract ? dateShort(myContract.endsAt) : '-' }}
                   </dd>
                 </div>
                 <div class="flex items-center justify-between py-2">
-                  <dt class="text-[12.5px] text-ink-500">Shartnoma holati</dt>
+                  <dt class="text-[13px] text-ink-500">Shartnoma holati</dt>
                   <dd>
                     <UiStatus v-if="myContract" kind="contract" :value="myContract.status" size="sm" />
                     <span v-else class="text-[13px] text-ink-500">-</span>
@@ -557,7 +557,7 @@ const currentPeriodTitle = computed(() => monthTitle(TODAY))
 
             <div class="grid gap-3 sm:grid-cols-2">
               <div class="rounded-field p-4 ring-1 ring-ink-200">
-                <p class="text-[12.5px] text-ink-500">
+                <p class="text-[13px] text-ink-500">
                   {{ currentInvoice ? `${currentInvoice.period} davri hisobi` : 'Joriy davr hisobi' }}
                 </p>
                 <p class="tabular mt-1.5 text-[22px] font-bold leading-none text-ink-900">
@@ -582,7 +582,7 @@ const currentPeriodTitle = computed(() => monthTitle(TODAY))
               </div>
 
               <div class="rounded-field p-4 ring-1 ring-ink-200">
-                <p class="text-[12.5px] text-ink-500">Qarzdorlik summasi</p>
+                <p class="text-[13px] text-ink-500">Qarzdorlik summasi</p>
                 <p class="tabular mt-1.5 text-[22px] font-bold leading-none text-ink-900">
                   {{ num(debtTotal) }}
                   <span class="text-[13px] font-medium text-ink-500">so‘m</span>
@@ -660,7 +660,7 @@ const currentPeriodTitle = computed(() => monthTitle(TODAY))
                   <UiIcon :name="CATEGORY_ICON[r.category] ?? 'wrench'" :size="18" />
                 </span>
                 <span class="min-w-0 flex-1">
-                  <span class="block truncate text-[13.5px] font-semibold text-ink-900">
+                  <span class="block truncate text-[14px] font-semibold text-ink-900">
                     {{ r.title }}
                   </span>
                   <span class="block truncate text-[12px] text-ink-500">
@@ -688,7 +688,7 @@ const currentPeriodTitle = computed(() => monthTitle(TODAY))
             >
               <UiIcon name="image" :size="18" class="shrink-0 text-ink-400" />
               <span class="min-w-0">
-                <span class="block truncate text-[12.5px] font-semibold leading-tight text-ink-800">
+                <span class="block truncate text-[13px] font-semibold leading-tight text-ink-800">
                   Rasm qo‘shish
                 </span>
                 <span class="block truncate text-[11px] leading-tight text-ink-500">
@@ -713,7 +713,7 @@ const currentPeriodTitle = computed(() => monthTitle(TODAY))
                 <UiIcon name="doc" :size="18" />
               </span>
               <span class="min-w-0 flex-1">
-                <span class="block truncate text-[13.5px] font-semibold text-ink-900">{{ d.name }}</span>
+                <span class="block truncate text-[14px] font-semibold text-ink-900">{{ d.name }}</span>
                 <span class="tabular block truncate text-[12px] text-ink-500">
                   {{ d.code }} · {{ dateShort(d.at) }}
                 </span>
@@ -752,7 +752,7 @@ const currentPeriodTitle = computed(() => monthTitle(TODAY))
               </span>
               <span class="min-w-0 flex-1">
                 <span class="block text-[12px] text-ink-500">{{ m.label }} ({{ m.unit }})</span>
-                <span class="tabular block text-[15px] font-bold text-ink-900">
+                <span class="tabular block text-[16px] font-bold text-ink-900">
                   {{ num(m.last, 2) }} {{ m.unit }}
                 </span>
                 <span class="tabular block text-[12px] text-ink-500">
@@ -763,7 +763,7 @@ const currentPeriodTitle = computed(() => monthTitle(TODAY))
                 <span class="tabular block text-[13px] font-bold text-brand-600">
                   +{{ num(m.last - m.previous, 2) }}
                 </span>
-                <span class="tabular block text-[11.5px] text-ink-500">
+                <span class="tabular block text-[12px] text-ink-500">
                   {{ dateShort(MONTH_LAST_READ) }}
                 </span>
               </span>
@@ -806,25 +806,25 @@ const currentPeriodTitle = computed(() => monthTitle(TODAY))
         <span class="min-w-0">{{ requestNotice }}</span>
       </p>
 
-      <p class="text-[13.5px] leading-relaxed text-ink-700">{{ selectedRequest.description }}</p>
+      <p class="text-[14px] leading-relaxed text-ink-700">{{ selectedRequest.description }}</p>
 
       <dl class="divide-y divide-ink-100 rounded-field ring-1 ring-ink-200">
         <div class="flex items-center justify-between px-4 py-2.5">
-          <dt class="text-[12.5px] text-ink-500">Unit</dt>
+          <dt class="text-[13px] text-ink-500">Unit</dt>
           <dd class="text-[13px] font-semibold text-ink-900">{{ selectedRequest.unitCode }}</dd>
         </div>
         <div class="flex items-center justify-between px-4 py-2.5">
-          <dt class="text-[12.5px] text-ink-500">Yaratilgan</dt>
+          <dt class="text-[13px] text-ink-500">Yaratilgan</dt>
           <dd class="tabular text-[13px] font-semibold text-ink-900">{{ selectedRequest.createdAt }}</dd>
         </div>
         <div class="flex items-center justify-between px-4 py-2.5">
-          <dt class="text-[12.5px] text-ink-500">Bajarilish muddati</dt>
+          <dt class="text-[13px] text-ink-500">Bajarilish muddati</dt>
           <dd class="tabular text-[13px] font-semibold text-ink-900">
             {{ dateShort(selectedRequest.dueAt) }}
           </dd>
         </div>
         <div class="flex items-center justify-between px-4 py-2.5">
-          <dt class="text-[12.5px] text-ink-500">Mas’ul xodim</dt>
+          <dt class="text-[13px] text-ink-500">Mas’ul xodim</dt>
           <dd class="text-[13px] font-semibold text-ink-900">
             {{ selectedRequest.assignee ?? 'Biriktirilmagan' }}
           </dd>
@@ -832,7 +832,7 @@ const currentPeriodTitle = computed(() => monthTitle(TODAY))
       </dl>
 
       <div v-if="selectedRequest.attachments?.length">
-        <p class="mb-1.5 text-[12.5px] text-ink-500">Biriktirilgan rasmlar</p>
+        <p class="mb-1.5 text-[13px] text-ink-500">Biriktirilgan rasmlar</p>
         <ul class="flex flex-wrap gap-2">
           <li
             v-for="a in selectedRequest.attachments"
@@ -847,7 +847,7 @@ const currentPeriodTitle = computed(() => monthTitle(TODAY))
 
       <div>
         <div class="mb-1.5 flex items-center justify-between">
-          <span class="text-[12.5px] text-ink-500">Bajarilish darajasi</span>
+          <span class="text-[13px] text-ink-500">Bajarilish darajasi</span>
           <span class="tabular text-[13px] font-bold text-ink-900">{{ selectedRequest.progress }}%</span>
         </div>
         <div class="h-2 overflow-hidden rounded-pill bg-ink-100">
@@ -857,7 +857,7 @@ const currentPeriodTitle = computed(() => monthTitle(TODAY))
 
       <p
         v-if="canDecideRequest"
-        class="flex items-start gap-2 rounded-field bg-info-50 px-3.5 py-2.5 text-[12.5px] leading-snug text-info-700"
+        class="flex items-start gap-2 rounded-field bg-info-50 px-3.5 py-2.5 text-[13px] leading-snug text-info-700"
       >
         <UiIcon name="info" :size="15" class="mt-px shrink-0" />
         <span class="min-w-0">
@@ -932,7 +932,7 @@ const currentPeriodTitle = computed(() => monthTitle(TODAY))
               class="flex items-center gap-2.5 rounded-field px-3 py-2 ring-1 ring-ink-200"
             >
               <UiIcon name="image" :size="16" class="shrink-0 text-brand-600" />
-              <span class="min-w-0 flex-1 truncate text-[12.5px] text-ink-700">
+              <span class="min-w-0 flex-1 truncate text-[13px] text-ink-700">
                 {{ a.name }}
                 <span class="tabular text-ink-500">· {{ fileSize(a.size) }}</span>
               </span>
@@ -963,7 +963,7 @@ const currentPeriodTitle = computed(() => monthTitle(TODAY))
             <UiIcon name="image" :size="18" class="shrink-0 text-ink-400" />
             <span class="min-w-0">
               <span class="block text-[13px] font-semibold text-ink-800">Rasm biriktirish</span>
-              <span class="block text-[11.5px] text-ink-500">
+              <span class="block text-[12px] text-ink-500">
                 Biriktirilgan: {{ attachments.length }} ta
               </span>
             </span>

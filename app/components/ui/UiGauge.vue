@@ -137,10 +137,10 @@ const summary = computed(
 
     <div class="pointer-events-none absolute inset-0 grid place-content-center place-items-center text-center">
       <p class="flex items-baseline justify-center gap-0.5">
-        <span class="tabular text-[19px] font-bold leading-none text-ink-900">{{ text }}</span>
+        <span class="tabular text-[18px] font-bold leading-none text-ink-900">{{ text }}</span>
         <span v-if="unit" class="text-[11px] font-semibold text-ink-500">{{ unit }}</span>
       </p>
-      <span v-if="caption" class="mt-1 line-clamp-2 max-w-[5.5rem] text-[10.5px] leading-tight text-ink-500">
+      <span v-if="caption" class="mt-1 line-clamp-2 max-w-[5.5rem] text-[11px] leading-tight text-ink-500">
         {{ caption }}
       </span>
     </div>

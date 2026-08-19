@@ -134,7 +134,7 @@ const corners = (r: PlanRect): Array<[number, number]> => [
 ]
 
 /**
- * Unitlarni ikki yo‘lakka taqsimlaydi. Maqsad — ikkala yo‘lak uzunligi
+ * Unitlarni ikki yo‘lakka taqsimlaydi. Maqsad: ikkala yo‘lak uzunligi
  * imkon qadar teng bo‘lishi, shunda qavat simmetrik ko‘rinadi. Katta
  * maydonlar navbat bilan joylanadi, bu esa haqiqiy loyihalashga yaqin.
  */
@@ -296,7 +296,7 @@ function windowOpenings(windows: PlanWindow[], wallOuter: number): PlanRect[] {
 /**
  * Halqa reja: unitlar perimetr bo‘ylab to‘rt tomonda joylashadi, o‘rtada
  * aylanma koridor va xizmat yadrosi turadi. Katta qavatlar aynan shunday
- * loyihalanadi — ikki tomonlama koridor 2000 m² li qavatni 100 metrga
+ * loyihalanadi: ikki tomonlama koridor 2000 m² li qavatni 100 metrga
  * cho‘zib yuborardi, halqa esa uni ixcham qoldiradi.
  *
  * Har bir tomon o‘z chuqurligiga ega: chuqurlik shu tomondagi maydonlar
@@ -438,7 +438,7 @@ function buildRingPlan(
  *
  * Tuzilma: tashqi devor → yuqori yo‘lak → koridor → pastki yo‘lak → tashqi
  * devor. Xizmat yadrosi yuqori yo‘lakning o‘rtasida turadi, koridor esa
- * uning oldidan uzilmasdan o‘tadi — haqiqiy ikki tomonlama koridorli
+ * uning oldidan uzilmasdan o‘tadi: haqiqiy ikki tomonlama koridorli
  * qavat aynan shunday tashkil qilinadi.
  *
  * Geometriya maydondan KELIB CHIQADI: yo‘lak chuqurligi tanlanadi, unit

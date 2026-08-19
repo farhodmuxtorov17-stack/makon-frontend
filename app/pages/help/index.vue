@@ -599,7 +599,7 @@ const systemServices = [
       <span class="grid size-9 shrink-0 place-items-center rounded-[10px] bg-ok-500 text-white">
         <UiIcon name="check" :size="18" />
       </span>
-      <p class="min-w-0 flex-1 text-[13.5px] text-ok-700">
+      <p class="min-w-0 flex-1 text-[14px] text-ok-700">
         <b>#{{ createdCode }}</b> raqamli murojaatingiz qabul qilindi. Javob kabinetdagi
         bildirishnomalar orqali yuboriladi.
       </p>
@@ -618,8 +618,8 @@ const systemServices = [
         <UiCard>
           <div class="flex flex-wrap items-start justify-between gap-4">
             <div class="min-w-0">
-              <h2 class="text-[19px] font-bold text-ink-900">Yordam markaziga xush kelibsiz</h2>
-              <p class="mt-1 text-[13.5px] text-ink-500">
+              <h2 class="text-[18px] font-bold text-ink-900">Yordam markaziga xush kelibsiz</h2>
+              <p class="mt-1 text-[14px] text-ink-500">
                 Savolingiz bormi? Javobni qidiring yoki murojaat yuboring.
               </p>
             </div>
@@ -638,7 +638,7 @@ const systemServices = [
             </div>
           </div>
 
-          <p v-if="searchNote" class="mt-3 text-[12.5px] font-medium text-brand-700">
+          <p v-if="searchNote" class="mt-3 text-[13px] font-medium text-brand-700">
             {{ searchNote }}
           </p>
 
@@ -656,13 +656,13 @@ const systemServices = [
               <span class="grid size-10 place-items-center rounded-[10px]" :class="r.tone">
                 <UiIcon :name="r.icon" :size="19" />
               </span>
-              <span class="mt-3 block text-[13.5px] font-bold text-ink-900">{{ r.value }}</span>
+              <span class="mt-3 block text-[14px] font-bold text-ink-900">{{ r.value }}</span>
               <span class="mt-0.5 block text-[12px] leading-snug text-ink-500">{{ r.caption }}</span>
             </button>
           </div>
 
           <div v-if="roleFilter !== 'all'" class="mt-3 flex items-center gap-2">
-            <span class="text-[12.5px] text-ink-500">Faol saralash:</span>
+            <span class="text-[13px] text-ink-500">Faol saralash:</span>
             <button
               type="button"
               class="inline-flex items-center gap-1.5 rounded-pill bg-brand-50 px-2.5 py-1 text-[12px] font-semibold text-brand-700 transition-colors hover:bg-brand-100"
@@ -691,7 +691,7 @@ const systemServices = [
                     :class="openFaq === f.id ? 'rotate-90 text-brand-600' : ''"
                   />
                   <span
-                    class="min-w-0 flex-1 text-[13.5px]"
+                    class="min-w-0 flex-1 text-[14px]"
                     :class="openFaq === f.id ? 'font-bold text-brand-700' : 'font-medium text-ink-800'"
                   >
                     {{ f.question }}
@@ -720,7 +720,7 @@ const systemServices = [
                   <UiIcon name="doc" :size="18" />
                 </span>
                 <span class="min-w-0 flex-1">
-                  <span class="block truncate text-[13.5px] font-semibold text-ink-900">{{ m.name }}</span>
+                  <span class="block truncate text-[14px] font-semibold text-ink-900">{{ m.name }}</span>
                   <span class="block truncate text-[12px] text-ink-500">
                     {{ m.role }} · {{ dateShort(m.at) }}
                   </span>
@@ -760,11 +760,11 @@ const systemServices = [
               <span class="tabular text-[13px] font-semibold text-ink-900">#{{ value }}</span>
             </template>
             <template #cell-subject="{ value }">
-              <span class="text-[13.5px] text-ink-800">{{ value }}</span>
+              <span class="text-[14px] text-ink-800">{{ value }}</span>
             </template>
             <template #cell-priority="{ value }">
               <span
-                class="rounded-pill px-2.5 py-1 text-[11.5px] font-semibold"
+                class="rounded-pill px-2.5 py-1 text-[12px] font-semibold"
                 :class="PRIORITY_CLASS[String(value)]"
               >
                 {{ value }}
@@ -842,8 +842,8 @@ const systemServices = [
                 <UiIcon :name="c.icon" :size="18" />
               </span>
               <span class="min-w-0 flex-1">
-                <span class="block truncate text-[13.5px] font-semibold text-ink-900">{{ c.title }}</span>
-                <span class="tabular block truncate text-[12.5px] text-brand-600">{{ c.value }}</span>
+                <span class="block truncate text-[14px] font-semibold text-ink-900">{{ c.title }}</span>
+                <span class="tabular block truncate text-[13px] text-brand-600">{{ c.value }}</span>
               </span>
               <UiIcon name="chevronRight" :size="16" class="shrink-0 text-ink-400" />
             </button>
@@ -864,7 +864,7 @@ const systemServices = [
           </div>
 
           <div class="mt-3 flex items-center justify-between">
-            <p class="text-[12.5px] text-ink-500">Oxirgi yangilanish: bugun, 10:30</p>
+            <p class="text-[13px] text-ink-500">Oxirgi yangilanish: bugun, 10:30</p>
             <UiButton variant="ghost" size="sm" @click="statusOpen = true">Batafsil</UiButton>
           </div>
         </UiCard>
@@ -884,7 +884,7 @@ const systemServices = [
           <UiIcon name="doc" :size="24" />
         </span>
         <span class="min-w-0">
-          <span class="block truncate text-[13.5px] font-semibold text-ink-900">
+          <span class="block truncate text-[14px] font-semibold text-ink-900">
             {{ manualOutput?.name }}
           </span>
           <span class="block text-[12px] text-ink-500">
@@ -930,19 +930,19 @@ const systemServices = [
         </span>
       </div>
 
-      <p class="text-[13.5px] leading-relaxed text-ink-700">{{ selectedTicket.description }}</p>
+      <p class="text-[14px] leading-relaxed text-ink-700">{{ selectedTicket.description }}</p>
 
       <dl class="divide-y divide-ink-100 rounded-field ring-1 ring-ink-200">
         <div class="flex items-center justify-between px-4 py-2.5">
-          <dt class="text-[12.5px] text-ink-500">Murojaat raqami</dt>
+          <dt class="text-[13px] text-ink-500">Murojaat raqami</dt>
           <dd class="tabular text-[13px] font-semibold text-ink-900">#{{ selectedTicket.code }}</dd>
         </div>
         <div class="flex items-center justify-between px-4 py-2.5">
-          <dt class="text-[12.5px] text-ink-500">Yaratilgan sana</dt>
+          <dt class="text-[13px] text-ink-500">Yaratilgan sana</dt>
           <dd class="tabular text-[13px] font-semibold text-ink-900">{{ selectedTicket.createdAt }}</dd>
         </div>
         <div class="flex items-center justify-between px-4 py-2.5">
-          <dt class="text-[12.5px] text-ink-500">Murojaat egasi</dt>
+          <dt class="text-[13px] text-ink-500">Murojaat egasi</dt>
           <dd class="text-[13px] font-semibold text-ink-900">
             {{ auth.user?.fullName ?? 'Dilshod Ergashev' }}
           </dd>
@@ -1013,8 +1013,8 @@ const systemServices = [
   >
     <div v-if="supportChannel" class="space-y-4">
       <div class="rounded-field bg-surface-sunken p-4 ring-1 ring-ink-200">
-        <p class="tabular text-[17px] font-bold text-ink-900">{{ supportChannel.value }}</p>
-        <p class="mt-1 text-[12.5px] text-ink-500">{{ supportChannel.caption }}</p>
+        <p class="tabular text-[18px] font-bold text-ink-900">{{ supportChannel.value }}</p>
+        <p class="mt-1 text-[13px] text-ink-500">{{ supportChannel.caption }}</p>
       </div>
 
       <p v-if="!supportLink" class="text-[13px] leading-relaxed text-ink-600">
@@ -1059,7 +1059,7 @@ const systemServices = [
       <li v-for="s in systemServices" :key="s.label" class="flex items-center justify-between px-4 py-3">
         <span class="text-[13px] font-medium text-ink-800">{{ s.label }}</span>
         <span
-          class="inline-flex items-center gap-1.5 rounded-pill bg-ok-50 px-2.5 py-1 text-[11.5px] font-semibold text-ok-700 ring-1 ring-inset ring-ok-100"
+          class="inline-flex items-center gap-1.5 rounded-pill bg-ok-50 px-2.5 py-1 text-[12px] font-semibold text-ok-700 ring-1 ring-inset ring-ok-100"
         >
           <UiIcon name="check" :size="12" />
           {{ s.state }}
@@ -1067,7 +1067,7 @@ const systemServices = [
       </li>
     </ul>
 
-    <p class="mt-4 text-[12.5px] text-ink-500">Oxirgi yangilanish: bugun, 10:30</p>
+    <p class="mt-4 text-[13px] text-ink-500">Oxirgi yangilanish: bugun, 10:30</p>
 
     <template #footer>
       <UiButton variant="ghost" @click="statusOpen = false">Yopish</UiButton>

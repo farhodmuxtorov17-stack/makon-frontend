@@ -346,7 +346,7 @@ function goApply() {
           <span class="grid size-14 place-items-center rounded-full bg-warn-50 text-warn-600">
             <UiIcon name="warning" :size="26" />
           </span>
-          <p class="text-[15px] font-bold text-ink-900">Obyekt mavjud emas</p>
+          <p class="text-[16px] font-bold text-ink-900">Obyekt mavjud emas</p>
           <p class="max-w-sm text-[13px] leading-relaxed text-ink-500">
             Havola eskirgan yoki obyekt sizga biriktirilmagan bo‘lishi mumkin.
           </p>
@@ -900,7 +900,7 @@ function goApply() {
 
             <dl class="mt-4 divide-y divide-ink-100">
               <div class="flex items-start gap-4 py-2.5">
-                <dt class="flex w-[128px] shrink-0 items-center gap-2 text-[12.5px] text-ink-500">
+                <dt class="flex w-[128px] shrink-0 items-center gap-2 text-[13px] text-ink-500">
                   <UiIcon name="layers" :size="15" />
                   Maydoni
                 </dt>
@@ -909,7 +909,7 @@ function goApply() {
                 </dd>
               </div>
               <div class="flex items-start gap-4 py-2.5">
-                <dt class="flex w-[128px] shrink-0 items-center gap-2 text-[12.5px] text-ink-500">
+                <dt class="flex w-[128px] shrink-0 items-center gap-2 text-[13px] text-ink-500">
                   <UiIcon name="box" :size="15" />
                   Turi
                 </dt>
@@ -918,7 +918,7 @@ function goApply() {
                 </dd>
               </div>
               <div v-if="showFinance" class="flex items-start gap-4 py-2.5">
-                <dt class="flex w-[128px] shrink-0 items-center gap-2 text-[12.5px] text-ink-500">
+                <dt class="flex w-[128px] shrink-0 items-center gap-2 text-[13px] text-ink-500">
                   <UiIcon name="user" :size="15" />
                   Ijarachi / Xaridor
                 </dt>
@@ -927,7 +927,7 @@ function goApply() {
                 </dd>
               </div>
               <div v-if="showFinance" class="flex items-start gap-4 py-2.5">
-                <dt class="flex w-[128px] shrink-0 items-center gap-2 text-[12.5px] text-ink-500">
+                <dt class="flex w-[128px] shrink-0 items-center gap-2 text-[13px] text-ink-500">
                   <UiIcon name="wallet" :size="15" />
                   Narxi
                 </dt>
@@ -936,7 +936,7 @@ function goApply() {
                 </dd>
               </div>
               <div class="flex items-start gap-4 py-2.5">
-                <dt class="flex w-[128px] shrink-0 items-center gap-2 text-[12.5px] text-ink-500">
+                <dt class="flex w-[128px] shrink-0 items-center gap-2 text-[13px] text-ink-500">
                   <UiIcon name="wrench" :size="15" />
                   Jihozlar
                 </dt>
@@ -945,7 +945,7 @@ function goApply() {
                     <span
                       v-for="e in selected.equipment"
                       :key="e"
-                      class="rounded-pill bg-ink-100 px-2.5 py-0.5 text-[11.5px] font-medium text-ink-700"
+                      class="rounded-pill bg-ink-100 px-2.5 py-0.5 text-[12px] font-medium text-ink-700"
                     >
                       {{ e }}
                     </span>
@@ -953,7 +953,7 @@ function goApply() {
                 </dd>
               </div>
               <div v-if="showFinance" class="flex items-start gap-4 py-2.5">
-                <dt class="flex w-[128px] shrink-0 items-center gap-2 text-[12.5px] text-ink-500">
+                <dt class="flex w-[128px] shrink-0 items-center gap-2 text-[13px] text-ink-500">
                   <UiIcon name="clipboard" :size="15" />
                   Shartnoma holati
                 </dt>
@@ -965,7 +965,7 @@ function goApply() {
                 </dd>
               </div>
               <div class="flex items-start gap-4 py-2.5">
-                <dt class="flex w-[128px] shrink-0 items-center gap-2 text-[12.5px] text-ink-500">
+                <dt class="flex w-[128px] shrink-0 items-center gap-2 text-[13px] text-ink-500">
                   <UiIcon name="doc" :size="15" />
                   Taklif turi
                 </dt>
@@ -1058,37 +1058,37 @@ function goApply() {
 
           <dl class="divide-y divide-ink-100">
             <div class="flex items-center justify-between gap-4 py-2.5">
-              <dt class="text-[12.5px] text-ink-500">Holati</dt>
+              <dt class="text-[13px] text-ink-500">Holati</dt>
               <dd><UiStatus kind="unit" :value="selected.status" size="sm" /></dd>
             </div>
             <div class="flex items-center justify-between gap-4 py-2.5">
-              <dt class="text-[12.5px] text-ink-500">Maydoni</dt>
+              <dt class="text-[13px] text-ink-500">Maydoni</dt>
               <dd class="tabular text-[13px] font-bold text-ink-900">{{ area(selected.area) }}</dd>
             </div>
             <div class="flex items-center justify-between gap-4 py-2.5">
-              <dt class="text-[12.5px] text-ink-500">Xonalar</dt>
+              <dt class="text-[13px] text-ink-500">Xonalar</dt>
               <dd class="tabular text-[13px] font-semibold text-ink-900">{{ selected.rooms }}</dd>
             </div>
             <div class="flex items-center justify-between gap-4 py-2.5">
-              <dt class="text-[12.5px] text-ink-500">Turi</dt>
+              <dt class="text-[13px] text-ink-500">Turi</dt>
               <dd class="text-[13px] font-semibold text-ink-900">{{ selected.usage }}</dd>
             </div>
             <div class="flex items-center justify-between gap-4 py-2.5">
-              <dt class="text-[12.5px] text-ink-500">Taklif</dt>
+              <dt class="text-[13px] text-ink-500">Taklif</dt>
               <dd class="text-[13px] font-semibold text-ink-900">{{ selected.offer }}</dd>
             </div>
             <div v-if="showFinance" class="flex items-center justify-between gap-4 py-2.5">
-              <dt class="text-[12.5px] text-ink-500">Narxi</dt>
+              <dt class="text-[13px] text-ink-500">Narxi</dt>
               <dd class="tabular text-[13px] font-bold text-brand-600">
                 {{ num(selected.price) }} {{ selected.priceUnit }}
               </dd>
             </div>
             <div v-if="showFinance" class="flex items-center justify-between gap-4 py-2.5">
-              <dt class="text-[12.5px] text-ink-500">Ijarachi / Xaridor</dt>
+              <dt class="text-[13px] text-ink-500">Ijarachi / Xaridor</dt>
               <dd class="text-[13px] font-semibold text-ink-900">{{ selected.tenant ?? '-' }}</dd>
             </div>
             <div v-if="showFinance" class="flex items-start justify-between gap-4 py-2.5">
-              <dt class="text-[12.5px] text-ink-500">Shartnoma</dt>
+              <dt class="text-[13px] text-ink-500">Shartnoma</dt>
               <dd class="max-w-[60%] text-right text-[13px] font-semibold text-ink-900">
                 {{ contractLabel(selected) }}
               </dd>
@@ -1102,7 +1102,7 @@ function goApply() {
             <span
               v-for="e in selected.equipment"
               :key="e"
-              class="inline-flex items-center gap-2 rounded-pill bg-ok-50 px-3 py-1.5 text-[12.5px] font-medium text-ok-700 ring-1 ring-inset ring-ok-100"
+              class="inline-flex items-center gap-2 rounded-pill bg-ok-50 px-3 py-1.5 text-[13px] font-medium text-ok-700 ring-1 ring-inset ring-ok-100"
             >
               <UiIcon name="check" :size="14" />
               {{ e }}
@@ -1127,7 +1127,7 @@ function goApply() {
       >
         <div class="flex gap-3 rounded-field bg-brand-50 p-4 ring-1 ring-inset ring-brand-100">
           <UiIcon name="info" :size="20" class="mt-0.5 shrink-0 text-brand-600" />
-          <p class="text-[13.5px] leading-relaxed text-ink-700">
+          <p class="text-[14px] leading-relaxed text-ink-700">
             Ijaraga olish arizasini tashkilot vakili o‘zining shaxsiy kabinetidan yuboradi.
             Ariza kelib tushishi bilan u sizning arizalar navbatingizda paydo bo‘ladi va
             kommersiya taklifini shu yerda tuzasiz.

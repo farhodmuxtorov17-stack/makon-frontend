@@ -288,7 +288,7 @@ function saveReading() {
         <span class="grid size-9 shrink-0 place-items-center rounded-[10px] bg-ok-500 text-white">
           <UiIcon name="check" :size="18" />
         </span>
-        <p class="min-w-0 flex-1 text-[13.5px] text-ok-700">{{ savedMessage }}</p>
+        <p class="min-w-0 flex-1 text-[14px] text-ok-700">{{ savedMessage }}</p>
         <button
           type="button"
           class="rounded-lg p-1.5 text-ok-700 transition-colors hover:bg-ok-100"
@@ -317,8 +317,8 @@ function saveReading() {
             </span>
           </div>
 
-          <p class="mt-3 text-[12.5px] text-ink-500">{{ m.type }} ({{ m.unit }})</p>
-          <p class="tabular mt-1 text-[24px] font-bold leading-none text-ink-900">
+          <p class="mt-3 text-[13px] text-ink-500">{{ m.type }} ({{ m.unit }})</p>
+          <p class="tabular mt-1 text-[22px] font-bold leading-none text-ink-900">
             {{ num(m.lastReading, 2) }}
           </p>
           <p class="tabular mt-1.5 text-[12px] text-ink-500">
@@ -350,31 +350,31 @@ function saveReading() {
         <UiCard :title="`${selected.type} hisoblagichi`" subtitle="Pasport ma’lumotlari">
           <dl class="divide-y divide-ink-100">
             <div class="flex items-center justify-between py-2.5">
-              <dt class="text-[12.5px] text-ink-500">Hisoblagich raqami</dt>
+              <dt class="text-[13px] text-ink-500">Hisoblagich raqami</dt>
               <dd class="tabular text-[13px] font-semibold text-ink-900">{{ selected.code }}</dd>
             </div>
             <div class="flex items-center justify-between py-2.5">
-              <dt class="text-[12.5px] text-ink-500">Zavod raqami</dt>
+              <dt class="text-[13px] text-ink-500">Zavod raqami</dt>
               <dd class="tabular text-[13px] font-semibold text-ink-900">{{ selected.serial }}</dd>
             </div>
             <div class="flex items-center justify-between py-2.5">
-              <dt class="text-[12.5px] text-ink-500">Joylashuvi</dt>
+              <dt class="text-[13px] text-ink-500">Joylashuvi</dt>
               <dd class="text-[13px] font-semibold text-ink-900">{{ locationOf(selected) }}</dd>
             </div>
             <div class="flex items-center justify-between py-2.5">
-              <dt class="text-[12.5px] text-ink-500">Joriy sarf</dt>
+              <dt class="text-[13px] text-ink-500">Joriy sarf</dt>
               <dd class="tabular text-[13px] font-bold text-brand-600">
                 {{ num(consumption(selected), 2) }} {{ selected.unit }}
               </dd>
             </div>
             <div class="flex items-center justify-between py-2.5">
-              <dt class="text-[12.5px] text-ink-500">Keyingi tekshiruv</dt>
+              <dt class="text-[13px] text-ink-500">Keyingi tekshiruv</dt>
               <dd class="tabular text-[13px] font-semibold text-ink-900">
                 {{ dateShort(selected.verifyAt) }}
               </dd>
             </div>
             <div class="flex items-center justify-between py-2.5">
-              <dt class="text-[12.5px] text-ink-500">Holat</dt>
+              <dt class="text-[13px] text-ink-500">Holat</dt>
               <dd>
                 <span
                   class="inline-flex items-center gap-1.5 rounded-pill bg-ok-50 px-2.5 py-1 text-[11px] font-semibold text-ok-700 ring-1 ring-inset ring-ok-100"
@@ -391,7 +391,7 @@ function saveReading() {
       <UiCard title="Barcha hisoblagichlar" subtitle="Ko‘rsatkichlar va davr sarfi" flush>
         <UiTable :columns="columns" :rows="rows" @row-click="(row) => (selectedId = String(row.id))">
           <template #cell-code="{ row }">
-            <span class="tabular text-[13.5px] font-semibold text-ink-900">{{ row.code }}</span>
+            <span class="tabular text-[14px] font-semibold text-ink-900">{{ row.code }}</span>
           </template>
           <template #cell-previousReading="{ row }">
             {{ num(Number(row.previousReading), 2) }} {{ row.unit }}
@@ -449,14 +449,14 @@ function saveReading() {
           <p class="tabular mt-1 text-[16px] font-bold text-ink-900">
             {{ num(entryMeter.lastReading, 2) }} {{ entryMeter.unit }}
           </p>
-          <p class="tabular mt-0.5 text-[11.5px] text-ink-500">{{ dateShort(entryMeter.readAt) }}</p>
+          <p class="tabular mt-0.5 text-[12px] text-ink-500">{{ dateShort(entryMeter.readAt) }}</p>
         </div>
         <div class="rounded-field bg-surface-sunken p-3.5 ring-1 ring-ink-200">
           <p class="text-[12px] text-ink-500">Oldingi davr</p>
           <p class="tabular mt-1 text-[16px] font-bold text-ink-900">
             {{ num(entryMeter.previousReading, 2) }} {{ entryMeter.unit }}
           </p>
-          <p class="tabular mt-0.5 text-[11.5px] text-ink-500">
+          <p class="tabular mt-0.5 text-[12px] text-ink-500">
             Sarf: {{ num(consumption(entryMeter), 2) }} {{ entryMeter.unit }}
           </p>
         </div>

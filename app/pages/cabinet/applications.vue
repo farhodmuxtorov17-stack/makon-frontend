@@ -89,7 +89,7 @@ const STAGE_HINT: Record<string, string> = {
       <span class="grid size-9 shrink-0 place-items-center rounded-[10px] bg-ok-500 text-white">
         <UiIcon name="check" :size="18" />
       </span>
-      <p class="min-w-0 flex-1 text-[13.5px] text-ok-700">
+      <p class="min-w-0 flex-1 text-[14px] text-ok-700">
         <b>{{ createdCase.code }}</b> raqamli arizangiz qabul qilindi va
         {{ createdCase.buildingName }} rahbariga yuborildi.
       </p>
@@ -114,8 +114,8 @@ const STAGE_HINT: Record<string, string> = {
             <UiIcon name="external" :size="20" />
           </span>
           <div class="min-w-0">
-            <p class="text-[15px] font-bold text-warn-700">Didox’da imzolash kutilmoqda</p>
-            <p class="text-[12.5px] text-ink-600">
+            <p class="text-[16px] font-bold text-warn-700">Didox’da imzolash kutilmoqda</p>
+            <p class="text-[13px] text-ink-600">
               Hujjat Didox platformasiga yuborilgan, imzolash o‘sha yerda bajariladi
             </p>
           </div>
@@ -133,7 +133,7 @@ const STAGE_HINT: Record<string, string> = {
             @click="selectedId = c.id"
           >
             <span class="min-w-0 flex-1">
-              <span class="block text-[13.5px] font-bold text-ink-900">
+              <span class="block text-[14px] font-bold text-ink-900">
                 {{ c.contract?.code ?? c.code }}
               </span>
               <span class="block truncate text-[12px] text-ink-500">
@@ -180,7 +180,7 @@ const STAGE_HINT: Record<string, string> = {
           <span class="tabular mt-2.5 block text-[13px] font-bold text-brand-700">
             {{ sum(totalOf(c)) }}
           </span>
-          <span class="mt-1 block text-[11.5px] leading-snug text-ink-500">
+          <span class="mt-1 block text-[12px] leading-snug text-ink-500">
             {{ STAGE_HINT[c.status] }}
           </span>
         </button>
@@ -191,7 +191,7 @@ const STAGE_HINT: Record<string, string> = {
         <UiCard>
           <div class="flex flex-wrap items-start justify-between gap-3">
             <div class="min-w-0">
-              <h2 class="text-[17px] font-bold text-ink-900">{{ selected.code }}</h2>
+              <h2 class="text-[18px] font-bold text-ink-900">{{ selected.code }}</h2>
               <p class="mt-0.5 text-[13px] text-ink-600">
                 {{ selected.buildingName }} · Unit {{ selected.unitCode }} ·
                 {{ area(selected.area) }} · {{ selected.floor }}-qavat
@@ -213,7 +213,7 @@ const STAGE_HINT: Record<string, string> = {
           </div>
 
           <p
-            class="mt-4 flex items-start gap-2 rounded-field px-3.5 py-2.5 text-[12.5px] leading-relaxed ring-1 ring-inset"
+            class="mt-4 flex items-start gap-2 rounded-field px-3.5 py-2.5 text-[13px] leading-relaxed ring-1 ring-inset"
             :class="
               selected.status === 'RAD_ETILDI'
                 ? 'bg-danger-50 text-danger-700 ring-danger-100'

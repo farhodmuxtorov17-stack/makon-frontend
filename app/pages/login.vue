@@ -733,47 +733,6 @@ function submit() {
               </p>
             </div>
           </template>
-
-          <!-- Ijarachilar uchun yo‘l -->
-          <div
-            class="mt-7 flex flex-wrap items-center justify-between gap-3 rounded-panel bg-surface-sunken p-4 ring-1 ring-inset ring-ink-200"
-          >
-            <div class="flex min-w-0 items-center gap-3">
-              <span
-                class="grid size-10 shrink-0 place-items-center rounded-[12px] bg-brand-50 text-brand-600"
-              >
-                <UiIcon name="user" :size="20" />
-              </span>
-              <div class="min-w-0">
-                <p class="text-[13.5px] font-semibold text-ink-900">{{ t('login.tenantTitle') }}</p>
-                <p class="text-[12.5px] text-ink-500">{{ t('login.tenantText') }}</p>
-              </div>
-            </div>
-            <UiButton to="/register" variant="secondary" size="sm">
-              {{ t('login.tenantAction') }}
-              <UiIcon name="arrowRight" :size="16" />
-            </UiButton>
-          </div>
-
-          <div
-            class="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-panel bg-surface-sunken p-4 ring-1 ring-inset ring-ink-200"
-          >
-            <div class="flex min-w-0 items-center gap-3">
-              <span
-                class="grid size-10 shrink-0 place-items-center rounded-[12px] bg-ok-50 text-ok-600"
-              >
-                <UiIcon name="send" :size="20" />
-              </span>
-              <div class="min-w-0">
-                <p class="text-[13.5px] font-semibold text-ink-900">{{ t('login.applyTitle') }}</p>
-                <p class="text-[12.5px] text-ink-500">{{ t('login.applyText') }}</p>
-              </div>
-            </div>
-            <UiButton to="/ariza" variant="secondary" size="sm">
-              {{ t('login.applyAction') }}
-              <UiIcon name="arrowRight" :size="16" />
-            </UiButton>
-          </div>
         </div>
       </main>
 

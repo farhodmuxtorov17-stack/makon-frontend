@@ -215,10 +215,10 @@ const stepCaption = computed(() =>
             </p>
           </div>
 
-          <h1 class="mt-5 font-display text-[26px] font-extrabold leading-tight">
+          <h1 class="mt-5 font-display text-[28px] font-extrabold leading-tight">
             Ro‘yxatdan o‘tish
           </h1>
-          <p class="mt-2 text-[13.5px] leading-relaxed text-ink-500">
+          <p class="mt-2 text-[14px] leading-relaxed text-ink-500">
             <template v-if="path === 'phone'">
               Raqamingizni kiriting: bir martalik kod shu raqamga bog‘langan Telegram akkauntiga
               yuboriladi.
@@ -271,7 +271,7 @@ const stepCaption = computed(() =>
               class="mt-4 flex gap-3 rounded-field bg-brand-50 p-3.5 ring-1 ring-inset ring-brand-100"
             >
               <UiIcon name="send" :size="18" class="mt-px shrink-0 text-brand-600" />
-              <p class="text-[12.5px] leading-relaxed text-ink-700">
+              <p class="text-[13px] leading-relaxed text-ink-700">
                 Kod SMS orqali emas, aynan shu raqamga bog‘langan
                 <span class="font-semibold text-ink-900">Telegram</span> akkauntiga xabar sifatida
                 keladi. Kod besh daqiqa amal qiladi.
@@ -355,7 +355,7 @@ const stepCaption = computed(() =>
             <!-- Tasdiqlangan tashkilot kartasi -->
             <template v-else-if="confirmed && selected && selectedOrg">
               <p
-                class="flex items-center gap-2 rounded-field bg-ok-50 p-3.5 text-[12.5px] font-semibold text-ok-700 ring-1 ring-inset ring-ok-100"
+                class="flex items-center gap-2 rounded-field bg-ok-50 p-3.5 text-[13px] font-semibold text-ok-700 ring-1 ring-inset ring-ok-100"
               >
                 <UiIcon name="check" :size="16" class="shrink-0" />
                 Sertifikat amalda, tashkilot reyestrda topildi
@@ -365,7 +365,7 @@ const stepCaption = computed(() =>
                 <p class="text-[11px] font-semibold uppercase tracking-wide text-ink-500">
                   Tashkilot ma’lumotlari
                 </p>
-                <p class="mt-1.5 text-[15px] font-extrabold leading-snug text-ink-900">
+                <p class="mt-1.5 text-[16px] font-extrabold leading-snug text-ink-900">
                   {{ selectedOrg.name }}
                 </p>
 
@@ -414,7 +414,7 @@ const stepCaption = computed(() =>
                 class="flex gap-3 rounded-field bg-brand-50 p-3.5 ring-1 ring-inset ring-brand-100"
               >
                 <UiIcon name="send" :size="18" class="mt-px shrink-0 text-brand-600" />
-                <p class="text-[12.5px] leading-relaxed text-ink-700">
+                <p class="text-[13px] leading-relaxed text-ink-700">
                   Tasdiqlagach, bir martalik kod
                   <span class="tabular font-semibold text-ink-900">{{ selectedOrg.phone }}</span>
                   raqamiga bog‘langan Telegram akkauntiga yuboriladi.
@@ -484,10 +484,10 @@ const stepCaption = computed(() =>
                   >
                     <span class="flex items-start justify-between gap-3">
                       <span class="min-w-0">
-                        <span class="block truncate text-[13.5px] font-bold text-ink-900">
+                        <span class="block truncate text-[14px] font-bold text-ink-900">
                           {{ c.holderName }}
                         </span>
-                        <span class="mt-0.5 block truncate text-[12.5px] text-ink-600">
+                        <span class="mt-0.5 block truncate text-[13px] text-ink-600">
                           {{ orgOf(c)?.name ?? 'Tashkilot reyestrda topilmadi' }}
                         </span>
                       </span>
@@ -547,7 +547,7 @@ const stepCaption = computed(() =>
 
             <p
               v-else
-              class="flex items-start gap-2 rounded-field bg-surface-sunken p-3.5 text-[12.5px] leading-relaxed text-ink-600 ring-1 ring-inset ring-ink-200"
+              class="flex items-start gap-2 rounded-field bg-surface-sunken p-3.5 text-[13px] leading-relaxed text-ink-600 ring-1 ring-inset ring-ink-200"
             >
               <UiIcon name="info" :size="15" class="mt-px shrink-0 text-ink-400" />
               Kalit do‘konini o‘qing: tashkilot nomi, STIR, rahbar va manzil sertifikatdan
@@ -611,7 +611,7 @@ const stepCaption = computed(() =>
             >
               <UiIcon :name="f.icon" :size="18" />
             </span>
-            <span class="text-[13.5px] text-white/85">{{ f.text }}</span>
+            <span class="text-[14px] text-white/85">{{ f.text }}</span>
           </li>
         </ul>
       </div>

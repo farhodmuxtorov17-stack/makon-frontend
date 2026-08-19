@@ -82,7 +82,7 @@ const CONTACTS = [
 
 <template>
   <div class="mx-auto w-full max-w-[900px] px-4 py-8 lg:px-8 lg:py-12">
-    <nav class="flex flex-wrap items-center gap-1.5 text-[12.5px] text-ink-500" aria-label="Yo‘l">
+    <nav class="flex flex-wrap items-center gap-1.5 text-[13px] text-ink-500" aria-label="Yo‘l">
       <NuxtLink to="/" class="rounded-[6px] hover:text-brand-600">Bosh sahifa</NuxtLink>
       <span aria-hidden="true">/</span>
       <NuxtLink to="/ariza" class="rounded-[6px] hover:text-brand-600">Ariza</NuxtLink>
@@ -103,7 +103,7 @@ const CONTACTS = [
           <h1 class="mt-4 font-display text-[22px] font-extrabold text-ink-900">
             Ariza topilmadi
           </h1>
-          <p class="mx-auto mt-2 max-w-[52ch] text-[13.5px] leading-relaxed text-ink-600">
+          <p class="mx-auto mt-2 max-w-[52ch] text-[14px] leading-relaxed text-ink-600">
             <span class="tabular font-semibold text-ink-900">{{ code }}</span>
             raqamli ariza tizimda yo‘q. Havolani to‘liq nusxalaganingizni tekshiring yoki yangi
             ariza yuboring.
@@ -129,7 +129,7 @@ const CONTACTS = [
         <h1 class="mt-4 font-display text-[22px] font-extrabold leading-tight text-ink-900">
           Arizani ochish
         </h1>
-        <p class="mt-2 text-[13.5px] leading-relaxed text-ink-600">
+        <p class="mt-2 text-[14px] leading-relaxed text-ink-600">
           <span class="tabular font-semibold text-ink-900">{{ code }}</span>
           arizasi topildi. Ma’lumotlarni ko‘rish uchun arizada ko‘rsatilgan telefon raqamining
           oxirgi to‘rt raqamini kiriting.
@@ -181,10 +181,10 @@ const CONTACTS = [
         <p class="text-[11px] font-semibold uppercase tracking-wide text-brand-600">
           Ariza holati
         </p>
-        <h1 class="tabular mt-2 font-display text-[26px] font-extrabold leading-tight text-ink-900">
+        <h1 class="tabular mt-2 font-display text-[28px] font-extrabold leading-tight text-ink-900">
           {{ item.code }}
         </h1>
-        <p class="mt-1.5 text-[13.5px] text-ink-600">
+        <p class="mt-1.5 text-[14px] text-ink-600">
           {{ item.buildingName }}, Unit {{ item.unitCode }}, {{ item.floor }}-qavat
         </p>
       </header>
@@ -195,7 +195,7 @@ const CONTACTS = [
           <span class="rounded-pill bg-ink-100 px-2.5 py-1 text-[12px] font-semibold text-ink-700">
             {{ item.request.type }}
           </span>
-          <span class="tabular text-[12.5px] text-ink-500">
+          <span class="tabular text-[13px] text-ink-500">
             Yuborilgan: {{ dateShort(item.request.submittedAt) }}
             {{ timeOf(item.request.submittedAt) }}
           </span>
@@ -207,7 +207,7 @@ const CONTACTS = [
 
         <p
           v-if="stageHint"
-          class="mt-4 flex items-start gap-2 rounded-field bg-surface-sunken px-3.5 py-2.5 text-[12.5px] leading-relaxed text-ink-700 ring-1 ring-inset ring-ink-200"
+          class="mt-4 flex items-start gap-2 rounded-field bg-surface-sunken px-3.5 py-2.5 text-[13px] leading-relaxed text-ink-700 ring-1 ring-inset ring-ink-200"
         >
           <UiIcon name="info" :size="15" class="mt-px shrink-0 text-brand-600" />
           <span>
@@ -218,7 +218,7 @@ const CONTACTS = [
 
         <p
           v-if="item.status === 'RAD_ETILDI' && item.rejectReason"
-          class="mt-3 flex items-start gap-2 rounded-field bg-danger-50 px-3.5 py-2.5 text-[12.5px] leading-relaxed text-danger-700 ring-1 ring-inset ring-danger-100"
+          class="mt-3 flex items-start gap-2 rounded-field bg-danger-50 px-3.5 py-2.5 text-[13px] leading-relaxed text-danger-700 ring-1 ring-inset ring-danger-100"
         >
           <UiIcon name="warning" :size="15" class="mt-px shrink-0" />
           Rad etish sababi: {{ item.rejectReason }}
@@ -226,7 +226,7 @@ const CONTACTS = [
 
         <p
           v-if="item.contactedAt"
-          class="mt-3 flex items-center gap-2 text-[12.5px] font-medium text-ok-700"
+          class="mt-3 flex items-center gap-2 text-[13px] font-medium text-ok-700"
         >
           <UiIcon name="check" :size="15" class="shrink-0" />
           Operator siz bilan bog‘landi: {{ dateShort(item.contactedAt) }}
@@ -251,30 +251,30 @@ const CONTACTS = [
         <UiCard title="So‘rovingiz shartlari" icon="clipboard">
           <dl class="space-y-3">
             <div class="flex items-baseline justify-between gap-3">
-              <dt class="text-[12.5px] text-ink-500">Taklif narxi (oylik)</dt>
-              <dd class="tabular text-[13.5px] font-bold text-ink-900">
+              <dt class="text-[13px] text-ink-500">Taklif narxi (oylik)</dt>
+              <dd class="tabular text-[14px] font-bold text-ink-900">
                 {{ sum(item.request.offerPrice) }}
               </dd>
             </div>
             <div class="flex items-baseline justify-between gap-3">
-              <dt class="text-[12.5px] text-ink-500">Muddat</dt>
-              <dd class="tabular text-[13.5px] font-bold text-ink-900">
+              <dt class="text-[13px] text-ink-500">Muddat</dt>
+              <dd class="tabular text-[14px] font-bold text-ink-900">
                 {{ item.request.term }} oy
               </dd>
             </div>
             <div class="flex items-baseline justify-between gap-3">
-              <dt class="text-[12.5px] text-ink-500">Boshlanish sanasi</dt>
-              <dd class="tabular text-[13.5px] font-bold text-ink-900">
+              <dt class="text-[13px] text-ink-500">Boshlanish sanasi</dt>
+              <dd class="tabular text-[14px] font-bold text-ink-900">
                 {{ dateShort(item.request.startDate) }}
               </dd>
             </div>
             <div class="flex items-baseline justify-between gap-3">
-              <dt class="text-[12.5px] text-ink-500">Maydon</dt>
-              <dd class="tabular text-[13.5px] font-bold text-ink-900">{{ area(item.area) }}</dd>
+              <dt class="text-[13px] text-ink-500">Maydon</dt>
+              <dd class="tabular text-[14px] font-bold text-ink-900">{{ area(item.area) }}</dd>
             </div>
             <div v-if="item.request.note" class="border-t border-ink-100 pt-3">
-              <dt class="text-[12.5px] text-ink-500">Izohingiz</dt>
-              <dd class="mt-1.5 rounded-field bg-surface-sunken p-3 text-[12.5px] leading-relaxed text-ink-700">
+              <dt class="text-[13px] text-ink-500">Izohingiz</dt>
+              <dd class="mt-1.5 rounded-field bg-surface-sunken p-3 text-[13px] leading-relaxed text-ink-700">
                 {{ item.request.note }}
               </dd>
             </div>
@@ -296,7 +296,7 @@ const CONTACTS = [
                   <UiIcon :name="c.icon" :size="16" />
                 </span>
                 <span class="min-w-0">
-                  <span class="block text-[11.5px] text-ink-500">{{ c.label }}</span>
+                  <span class="block text-[12px] text-ink-500">{{ c.label }}</span>
                   <span class="block break-words text-[13px] font-semibold text-ink-900">
                     {{ c.value }}
                   </span>

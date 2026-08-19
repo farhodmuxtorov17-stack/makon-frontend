@@ -338,7 +338,7 @@ function toggleStatus(id: string) {
           <span class="flex items-center gap-3">
             <UiAvatar :user-id="row.id" :full-name="row.fullName" :role="row.role" size="sm" />
             <span class="min-w-0">
-              <span class="block truncate text-[13.5px] font-semibold text-ink-900">
+              <span class="block truncate text-[14px] font-semibold text-ink-900">
                 {{ row.fullName }}
               </span>
               <span class="block truncate text-[12px] text-ink-500">{{ row.position }}</span>
@@ -408,10 +408,10 @@ function toggleStatus(id: string) {
               {{ users.filter((u) => u.role === r).length }} ta
             </span>
           </div>
-          <p class="mt-2 text-[12.5px] leading-relaxed text-ink-600">{{ ROLE_META[r].caption }}</p>
+          <p class="mt-2 text-[13px] leading-relaxed text-ink-600">{{ ROLE_META[r].caption }}</p>
           <button
             type="button"
-            class="mt-3 inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-brand-600 transition-colors hover:text-brand-700"
+            class="mt-3 inline-flex items-center gap-1.5 text-[13px] font-semibold text-brand-600 transition-colors hover:text-brand-700"
             @click="roleFilter = r"
           >
             Shu roldagilarni ko‘rsatish
@@ -457,7 +457,7 @@ function toggleStatus(id: string) {
             <div class="flex items-center gap-3.5 border-b border-ink-100 px-6 py-4">
               <UiAvatar :user-id="draft.id" :full-name="draft.fullName" :role="draft.role" size="lg" ring />
               <div class="min-w-0">
-                <p class="truncate text-[15px] font-bold text-ink-900">{{ draft.fullName }}</p>
+                <p class="truncate text-[16px] font-bold text-ink-900">{{ draft.fullName }}</p>
                 <div class="mt-1.5 flex flex-wrap items-center gap-2">
                   <span
                     class="inline-flex items-center rounded-pill px-2.5 py-1 text-xs font-semibold ring-1 ring-inset"
@@ -509,7 +509,7 @@ function toggleStatus(id: string) {
                     />
                   </UiField>
                   <p
-                    class="mt-2 flex items-start gap-2 rounded-field bg-warn-50 px-3 py-2.5 text-[12.5px] leading-relaxed text-warn-700 ring-1 ring-inset ring-warn-100"
+                    class="mt-2 flex items-start gap-2 rounded-field bg-warn-50 px-3 py-2.5 text-[13px] leading-relaxed text-warn-700 ring-1 ring-inset ring-warn-100"
                   >
                     <UiIcon name="lock" :size="15" class="mt-0.5 shrink-0" />
                     <span class="min-w-0">
@@ -538,7 +538,7 @@ function toggleStatus(id: string) {
                         @change="setScopeAll(true)"
                       />
                       <span>
-                        <span class="block text-[13.5px] font-semibold text-ink-900">
+                        <span class="block text-[14px] font-semibold text-ink-900">
                           Barcha obyektlar ({{ BUILDINGS.length }}/{{ BUILDINGS.length }})
                         </span>
                         <span class="block text-[12px] text-ink-500">
@@ -558,7 +558,7 @@ function toggleStatus(id: string) {
                         @change="setScopeAll(false)"
                       />
                       <span>
-                        <span class="block text-[13.5px] font-semibold text-ink-900">Tanlangan obyekt</span>
+                        <span class="block text-[14px] font-semibold text-ink-900">Tanlangan obyekt</span>
                         <span class="block text-[12px] text-ink-500">
                           Faqat belgilangan obyektlar ma’lumotlari ko‘rinadi
                         </span>
@@ -586,13 +586,13 @@ function toggleStatus(id: string) {
                           <span class="block truncate text-[13px] font-semibold text-ink-900">
                             {{ b.name }}
                           </span>
-                          <span class="block truncate text-[11.5px] text-ink-500">
+                          <span class="block truncate text-[12px] text-ink-500">
                             {{ b.city }}, {{ b.district }}
                           </span>
                         </span>
                         <span
                           v-if="draft.buildings.includes(b.id)"
-                          class="shrink-0 text-[11.5px] font-semibold text-brand-600"
+                          class="shrink-0 text-[12px] font-semibold text-brand-600"
                         >
                           Biriktirildi
                         </span>
@@ -614,7 +614,7 @@ function toggleStatus(id: string) {
                     <li
                       v-for="a in roleAreas"
                       :key="a.prefix"
-                      class="flex items-center gap-2 rounded-[8px] px-2.5 py-1.5 text-[12.5px]"
+                      class="flex items-center gap-2 rounded-[8px] px-2.5 py-1.5 text-[13px]"
                       :class="a.allowed ? 'bg-ok-50 text-ok-700' : 'bg-ink-100 text-ink-500'"
                     >
                       <UiIcon :name="a.allowed ? 'check' : 'x'" :size="14" />
@@ -623,7 +623,7 @@ function toggleStatus(id: string) {
                   </ul>
                   <NuxtLink
                     to="/settings/roles"
-                    class="mt-3 inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-brand-600 hover:text-brand-700"
+                    class="mt-3 inline-flex items-center gap-1.5 text-[13px] font-semibold text-brand-600 hover:text-brand-700"
                   >
                     Ruxsatlar matritsasini ochish
                     <UiIcon name="arrowRight" :size="14" />
@@ -639,7 +639,7 @@ function toggleStatus(id: string) {
                     @click="draft.status = draft.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE'"
                   >
                     <span>
-                      <span class="block text-[13.5px] font-semibold text-ink-900">Hisob holati</span>
+                      <span class="block text-[14px] font-semibold text-ink-900">Hisob holati</span>
                       <span class="block text-[12px] text-ink-500">
                         Nofaol hisob tizimga kira olmaydi
                       </span>
@@ -661,7 +661,7 @@ function toggleStatus(id: string) {
                     class="flex w-full items-center justify-between gap-3 rounded-field px-4 py-3 text-left ring-1 ring-inset ring-ink-200 transition-colors hover:ring-ink-300"
                     @click="draft.notifyInApp = !draft.notifyInApp"
                   >
-                    <span class="text-[13.5px] font-semibold text-ink-900">Tizim ichidagi bildirishnomalar</span>
+                    <span class="text-[14px] font-semibold text-ink-900">Tizim ichidagi bildirishnomalar</span>
                     <span
                       class="inline-flex h-6 w-11 shrink-0 items-center rounded-pill p-0.5 transition-colors"
                       :class="draft.notifyInApp ? 'bg-brand-500' : 'bg-ink-300'"
@@ -679,7 +679,7 @@ function toggleStatus(id: string) {
                     @click="draft.notifyDigest = !draft.notifyDigest"
                   >
                     <span>
-                      <span class="block text-[13.5px] font-semibold text-ink-900">Kunlik hisobot xulosasi</span>
+                      <span class="block text-[14px] font-semibold text-ink-900">Kunlik hisobot xulosasi</span>
                       <span class="block text-[12px] text-ink-500">Tizim ichida ko‘rsatiladi</span>
                     </span>
                     <span

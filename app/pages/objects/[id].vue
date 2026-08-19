@@ -275,7 +275,7 @@ function submitPdf() {
             <UiIcon name="warning" :size="26" />
           </span>
           <div>
-            <p class="text-[15px] font-bold text-ink-900">Bunday obyekt reyestrda yo‘q</p>
+            <p class="text-[16px] font-bold text-ink-900">Bunday obyekt reyestrda yo‘q</p>
             <p class="mt-1 text-[13px] text-ink-500">
               Havola eskirgan yoki obyekt sizga biriktirilmagan bo‘lishi mumkin. Reyestrga
               qaytib, kerakli obyektni tanlang.
@@ -394,7 +394,7 @@ function submitPdf() {
                 class="pointer-events-none absolute inset-0 bg-gradient-to-t from-ink-900/70 via-ink-900/10 to-transparent"
               />
               <span class="absolute bottom-3 left-3.5 right-3.5">
-                <span class="block text-[15px] font-semibold text-white drop-shadow">
+                <span class="block text-[16px] font-semibold text-white drop-shadow">
                   {{ building.name }}
                 </span>
                 <span class="block text-[12px] text-white/85">
@@ -421,7 +421,7 @@ function submitPdf() {
 
           <dl class="mt-4 divide-y divide-ink-100">
             <div v-for="row in spec" :key="row.label" class="flex gap-4 py-2.5">
-              <dt class="w-[124px] shrink-0 text-[12.5px] text-ink-500">{{ row.label }}</dt>
+              <dt class="w-[124px] shrink-0 text-[13px] text-ink-500">{{ row.label }}</dt>
               <dd
                 class="min-w-0 flex-1 text-[13px] font-semibold"
                 :class="[
@@ -438,7 +438,7 @@ function submitPdf() {
             </div>
 
             <div class="flex items-center gap-4 py-3">
-              <dt class="w-[124px] shrink-0 text-[12.5px] text-ink-500">Mas’ul rahbar</dt>
+              <dt class="w-[124px] shrink-0 text-[13px] text-ink-500">Mas’ul rahbar</dt>
               <dd class="flex min-w-0 flex-1 items-center gap-2.5">
                 <span
                   class="grid size-9 shrink-0 place-items-center rounded-full bg-brand-50 text-brand-600"
@@ -464,7 +464,7 @@ function submitPdf() {
               <span
                 v-for="a in building.amenities"
                 :key="a"
-                class="inline-flex items-center gap-2 rounded-pill bg-ok-50 px-3 py-1.5 text-[12.5px] font-medium text-ok-700 ring-1 ring-inset ring-ok-100"
+                class="inline-flex items-center gap-2 rounded-pill bg-ok-50 px-3 py-1.5 text-[13px] font-medium text-ok-700 ring-1 ring-inset ring-ok-100"
               >
                 <UiIcon name="check" :size="14" />
                 {{ a }}
@@ -475,7 +475,7 @@ function submitPdf() {
               <span
                 v-for="e in building.equipment"
                 :key="e"
-                class="inline-flex items-center gap-2 rounded-pill bg-ink-100 px-3 py-1.5 text-[12.5px] font-medium text-ink-700"
+                class="inline-flex items-center gap-2 rounded-pill bg-ink-100 px-3 py-1.5 text-[13px] font-medium text-ink-700"
               >
                 <UiIcon name="wrench" :size="14" />
                 {{ e }}
@@ -632,13 +632,13 @@ function submitPdf() {
               <UiIcon name="check" :size="14" />
             </span>
             <span class="min-w-0 flex-1">
-              <span class="block text-[13.5px] font-semibold text-ink-900">{{ s.label }}</span>
+              <span class="block text-[14px] font-semibold text-ink-900">{{ s.label }}</span>
               <span class="block text-[12px] text-ink-500">{{ s.hint }}</span>
             </span>
           </button>
         </div>
 
-        <p class="mt-4 text-[12.5px] text-ink-500">
+        <p class="mt-4 text-[13px] text-ink-500">
           Hujjat {{ building.name }} obyekti bo‘yicha {{ pdfSections.length }} ta bo‘limdan
           shakllantiriladi. Umumiy maydon: {{ area(building.gla) }}<template v-if="showFinance">,
           oylik tushum: {{ sum(building.monthlyRevenue) }}</template>.

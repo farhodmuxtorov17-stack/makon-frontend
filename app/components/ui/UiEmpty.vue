@@ -41,7 +41,7 @@ const TONE: Record<string, string> = {
       <UiIcon :name="icon" :size="compact ? 22 : 28" />
     </span>
 
-    <p class="mt-4 text-[15px] font-semibold text-ink-900">{{ title }}</p>
+    <p class="mt-4 text-[16px] font-semibold text-ink-900">{{ title }}</p>
     <p v-if="description" class="mt-1.5 max-w-sm text-[13px] leading-relaxed text-ink-500">
       {{ description }}
     </p>

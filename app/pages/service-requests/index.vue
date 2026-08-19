@@ -630,14 +630,14 @@ function submitRequest() {
       </UiTable>
 
       <div v-else class="space-y-3 p-5">
-        <p class="text-[12.5px] text-ink-500">
+        <p class="text-[13px] text-ink-500">
           Kartani faqat keyingi bosqich ustuniga va faqat shu amal huquqi bo‘lsa ko‘chirish mumkin.
           Karta ustiga bosilsa ariza tafsiloti ochiladi.
         </p>
 
         <p
           v-if="dropError"
-          class="rounded-field bg-danger-50 px-4 py-2.5 text-[12.5px] font-medium text-danger-700 ring-1 ring-inset ring-danger-100"
+          class="rounded-field bg-danger-50 px-4 py-2.5 text-[13px] font-medium text-danger-700 ring-1 ring-inset ring-danger-100"
           role="status"
         >
           {{ dropError }}
@@ -656,7 +656,7 @@ function submitRequest() {
             <div class="mb-3 flex items-center gap-2 px-1">
               <span class="size-2 rounded-full" :class="col.dot" />
               <span class="flex-1 truncate text-[13px] font-bold text-ink-900">{{ col.label }}</span>
-              <span class="tabular rounded-pill bg-white px-2 py-0.5 text-[11.5px] font-bold text-ink-600 ring-1 ring-ink-200">
+              <span class="tabular rounded-pill bg-white px-2 py-0.5 text-[12px] font-bold text-ink-600 ring-1 ring-ink-200">
                 {{ col.items.length }}
               </span>
             </div>
@@ -683,7 +683,7 @@ function submitRequest() {
                   <span class="tabular text-[12px] font-bold text-brand-600">{{ r.code }}</span>
                   <UiIcon name="dots" :size="14" class="text-ink-300" />
                 </div>
-                <p class="mt-1.5 text-[13.5px] font-semibold leading-snug text-ink-900">
+                <p class="mt-1.5 text-[14px] font-semibold leading-snug text-ink-900">
                   {{ r.title }}
                 </p>
                 <p class="mt-1 truncate text-[12px] text-ink-500">
@@ -710,13 +710,13 @@ function submitRequest() {
                     :style="{ width: `${Math.max(r.progress, 3)}%` }"
                   />
                 </div>
-                <div class="mt-1.5 flex items-center justify-between text-[11.5px] text-ink-500">
+                <div class="mt-1.5 flex items-center justify-between text-[12px] text-ink-500">
                   <span>{{ r.assignee ?? 'Biriktirilmagan' }}</span>
                   <span class="tabular">{{ dateShort(r.dueAt) }}</span>
                 </div>
               </div>
 
-              <p v-if="!col.items.length" class="px-1 py-6 text-center text-[12.5px] text-ink-400">
+              <p v-if="!col.items.length" class="px-1 py-6 text-center text-[13px] text-ink-400">
                 Ariza yo‘q
               </p>
             </div>
@@ -761,8 +761,8 @@ function submitRequest() {
                 <UiIcon :name="u.icon" :size="18" />
               </span>
               <span class="min-w-0 flex-1">
-                <span class="block truncate text-[12.5px] text-ink-500">{{ u.label }}</span>
-                <span class="tabular block text-[15px] font-bold text-ink-900 group-hover:text-brand-600">
+                <span class="block truncate text-[13px] text-ink-500">{{ u.label }}</span>
+                <span class="tabular block text-[16px] font-bold text-ink-900 group-hover:text-brand-600">
                   {{ u.value }}
                   <span class="text-[12px] font-medium text-ink-500">{{ u.unit }}</span>
                 </span>

@@ -36,7 +36,6 @@ const roleLabel = computed(() => (auth.role ? ROLE_META[auth.role].label : 'Xodi
  * hech kimga yetib bormasdi.
  */
 const canManage = computed(() => auth.can('application.decide') || auth.can('system.administer'))
-const isAccountant = computed(() => auth.role === 'ACCOUNTANT')
 
 /**
  * Sotuv so‘rovi ijara oqimiga kirmaydi: oldi-sotdi shartnomasi tizim orqali
@@ -104,14 +103,19 @@ const serviceTotal = computed(() =>
 /**
  * Imzolash bosqichlari rolga emas, huquq va biriktirilgan binoga bog‘lanadi.
  * Tizimda bitta bino rahbari bo‘lgani uchun rolga bog‘lash qolgan binolardagi
- * arizalarni qoralama bosqichida abadiy ushlab qolar edi: `contract.sign`
+ * arizalarni qoralama bosqichida abadiy ushlab qolar edi: `contract.manage`
  * huquqi bor har bir rol o‘z doirasidagi arizani oxirigacha olib boradi.
  */
 const canSign = computed(
-  () => Boolean(item.value) && auth.can('contract.sign') && auth.inScope(item.value!.buildingId),
+  () => Boolean(item.value) && auth.can('contract.manage') && auth.inScope(item.value!.buildingId),
 )
 
-const canApproveOperation = computed(
+/**
+ * Yagona tasdiq: operator telefon orqali kelishgan shartlarni kiritadi va
+ * arizani tasdiqlaydi. Tugma bosilgan zahoti shartnoma tuziladi, oraliq
+ * moliya tasdig‘i yo‘q.
+ */
+const canApprove = computed(
   () =>
     item.value?.status === 'YANGI' &&
     !isPurchase.value &&
@@ -119,37 +123,23 @@ const canApproveOperation = computed(
     auth.inScope(item.value.buildingId),
 )
 
-/*
- * MOLIYA_TASDIQLADI ham qabul qilinadi: qoralama tuzilmay qolgan yoki
- * qoralamadan qaytarilgan yozuv shu tugma bilan oldinga siljiydi.
- */
-const canApproveFinance = computed(
-  () =>
-    (item.value?.status === 'OPERATSIYA_TASDIQLADI' ||
-      item.value?.status === 'MOLIYA_TASDIQLADI') &&
-    auth.can('application.decide') &&
-    auth.inScope(item.value.buildingId),
+/** Shartnoma matni Didoxga yuborilgunicha tahrirlanadi */
+const canEditContract = computed(
+  () => item.value?.status === 'SHARTNOMA_TAYYOR' && Boolean(item.value.contract) && canSign.value,
 )
 
-const canSendDidox = computed(() => item.value?.status === 'QORALAMA_TAYYOR' && canSign.value)
+const canSendDidox = computed(() => item.value?.status === 'SHARTNOMA_TAYYOR' && canSign.value)
 
 const canCheckDidox = computed(() => item.value?.status === 'DIDOX_YUBORILDI' && canSign.value)
 
 const canUpload = computed(() => item.value?.status === 'DIDOX_IMZOLANDI' && canSign.value)
 
-const canActivate = computed(
+/** Ariza yopiladi: imzolangan nusxa yuklangandan keyin */
+const canClose = computed(
   () =>
     item.value?.status === 'DIDOX_IMZOLANDI' &&
     Boolean(item.value?.signedDocument) &&
     canSign.value,
-)
-
-/** Grafikdagi navbatdagi rejalashtirilgan davr */
-const nextPeriod = computed(() => item.value?.schedule.find((r) => r.status === 'PLANNED') ?? null)
-
-/** Muddati kelgan davr uchun hisob-faktura buxgalter tomonidan chiqariladi */
-const canIssueInvoice = computed(
-  () => item.value?.status === 'FAOL' && Boolean(nextPeriod.value) && auth.can('invoice.create'),
 )
 
 /** Rad etish har bir jonli bosqichda ochiq: sikl hech qayerda qotib qolmaydi */
@@ -174,7 +164,7 @@ const readOnly = computed(
 /** Obyektlar moduli hamma rolga ochiq emas, havola shunga qarab ko‘rsatiladi */
 const canOpenObjects = computed(() => auth.canRoute('/objects'))
 
-const editing = computed(() => canApproveOperation.value || canApproveFinance.value)
+const editing = computed(() => canApprove.value)
 
 const shownSchedule = computed(() =>
   editing.value ? previewSchedule.value : (item.value?.schedule ?? []),
@@ -187,52 +177,65 @@ const didoxStage = computed(() =>
   ['DIDOX_YUBORILDI', 'DIDOX_IMZOLANDI', 'FAOL'].includes(item.value?.status ?? ''),
 )
 
-const activationBlockers = computed(() => {
+const closeBlockers = computed(() => {
   const c = item.value
   if (!c) return []
   const list: string[] = []
   if (c.didox?.state !== 'Imzolangan') list.push('Didox holati «Imzolangan» ga o‘tmagan')
   if (!c.signedDocument) list.push('Imzolangan hujjat tizimga yuklanmagan')
-  if (!canSign.value) list.push('Faollashtirish huquqi shartnoma imzolash huquqiga bog‘langan')
+  if (!canSign.value) list.push('Arizani yopish huquqi shartnoma yuritish huquqiga bog‘langan')
   return list
 })
 
 // --- Amallar ---------------------------------------------------------------
 
 const contractOpen = ref(false)
+const contractEditOpen = ref(false)
 const rejectOpen = ref(false)
 const reworkOpen = ref(false)
 const reason = ref('')
 const notice = ref('')
+/** Xabar ohangi: tekshiruv natijasi o‘zgarishsiz bo‘lsa yashil emas, kulrang */
+const noticeTone = ref<'ok' | 'info'>('ok')
 
-function approveOperation() {
-  if (!item.value || formInvalid.value) return
-  lease.approveOperation(item.value.id, actorName.value, roleLabel.value, draftOffer.value)
-  notice.value = 'Kelishilgan shartlar tasdiqlandi va buxgalterga yuborildi.'
+function say(text: string, tone: 'ok' | 'info' = 'ok') {
+  notice.value = text
+  noticeTone.value = tone
 }
 
-function approveFinance() {
+function approve() {
   if (!item.value || formInvalid.value) return
-  lease.approveFinance(item.value.id, actorName.value, roleLabel.value, draftOffer.value)
-  notice.value = 'Moliyaviy shartlar tasdiqlandi, shartnoma qoralamasi tayyor.'
+  lease.approveApplication(item.value.id, actorName.value, roleLabel.value, draftOffer.value)
+  const code = item.value.contract?.code
+  say(
+    code
+      ? `Ariza tasdiqlandi. Tizim ${code} raqamli ijara shartnomasini tuzdi.`
+      : 'Ariza tasdiqlandi.',
+  )
 }
 
 function sendDidox() {
   if (!item.value) return
   lease.sendToDidox(item.value.id, actorName.value, roleLabel.value)
-  notice.value = 'Hujjat Didox orqali imzolashga yuborildi.'
+  say(`Hujjat Didox orqali imzolashga yuborildi: ${item.value.didox?.docNumber ?? '-'}.`)
 }
 
+/**
+ * Tekshiruv natijasi qanday bo‘lsa, shunday aytiladi. Ilgari holat
+ * o‘zgarmagan taqdirda ham «yangilandi» deb yozilar edi.
+ */
 function checkDidox() {
   if (!item.value) return
-  lease.checkDidox(item.value.id, actorName.value, roleLabel.value)
-  notice.value = `Didox holati yangilandi: ${item.value.didox?.state ?? '-'}.`
+  const result = lease.checkDidox(item.value.id, actorName.value, roleLabel.value)
+  if (!result) return
+  if (result.changed) say(`Didoxda yangi holat: ${result.state}.`)
+  else say(`Didoxda holat o‘zgarmagan, hujjat hamon «${result.state}» holatida.`, 'info')
 }
 
 function onUpload(file: Omit<SignedDocument, 'uploadedAt' | 'uploadedBy'>) {
   if (!item.value) return
   lease.attachSignedDocument(item.value.id, actorName.value, roleLabel.value, file)
-  notice.value = `${file.fileName} yuklandi, nazorat yig‘indisi hisoblandi.`
+  say(`${file.fileName} yuklandi, nazorat yig‘indisi hisoblandi.`)
 }
 
 function onRemoveUpload() {
@@ -241,10 +244,12 @@ function onRemoveUpload() {
   notice.value = ''
 }
 
-function activate() {
-  if (!item.value || !canActivate.value) return
-  lease.activate(item.value.id, actorName.value, roleLabel.value)
-  notice.value = 'Shartnoma faollashtirildi, o‘zgarishlar quyida ko‘rsatilgan.'
+function closeCase() {
+  if (!item.value || !canClose.value) return
+  lease.closeCase(item.value.id, actorName.value, roleLabel.value)
+  say(
+    `Ariza yopildi. Ijarachiga ${item.value.access?.login ?? '-'} logini berildi, parol quyida ko‘rsatilgan.`,
+  )
 }
 
 function confirmReject() {
@@ -273,22 +278,56 @@ function confirmRework() {
 
 function markContacted() {
   if (!item.value) return
-  lease.markContacted(
-    item.value.id,
-    actorName.value,
-    isAccountant.value ? 'Buxgalter' : 'Bino rahbari',
-  )
+  lease.markContacted(item.value.id, actorName.value, roleLabel.value)
 }
 
 /** Hisobsiz mijozga kabinet ochish taklif qilinadi */
 function inviteAccount() {
   if (!item.value) return
-  lease.inviteAccount(
-    item.value.id,
-    actorName.value,
-    isAccountant.value ? 'Buxgalter' : 'Bino rahbari',
-  )
-  notice.value = 'Mijozga kabinet ochish taklif qilindi, u parol o‘rnatib kabinetga kiradi.'
+  lease.inviteAccount(item.value.id, actorName.value, roleLabel.value)
+  say('Mijozga kabinet ochish taklif qilindi, u parol o‘rnatib kabinetga kiradi.')
+}
+
+// --- Shartnomani tizim ichida tahrirlash -----------------------------------
+
+const clauseDraft = ref<Array<{ title: string; text: string }>>([])
+
+function openContractEditor() {
+  clauseDraft.value = (item.value?.contract?.clauses ?? []).map((c) => ({ ...c }))
+  contractEditOpen.value = true
+}
+
+function addClause() {
+  clauseDraft.value.push({ title: '', text: '' })
+}
+
+function removeClause(index: number) {
+  clauseDraft.value.splice(index, 1)
+}
+
+const clauseDraftValid = computed(() =>
+  clauseDraft.value.every((c) => c.title.trim() && c.text.trim()),
+)
+
+function saveContract() {
+  if (!item.value || !clauseDraftValid.value) return
+  lease.editContract(item.value.id, actorName.value, roleLabel.value, clauseDraft.value)
+  contractEditOpen.value = false
+  say(`${item.value.contract?.code ?? 'Shartnoma'} matni yangilandi.`)
+}
+
+// --- Kabinet kaliti --------------------------------------------------------
+
+const copied = ref('')
+
+async function copyValue(label: string, value: string) {
+  try {
+    await navigator.clipboard.writeText(value)
+    copied.value = label
+    setTimeout(() => (copied.value = ''), 2200)
+  } catch {
+    copied.value = ''
+  }
 }
 </script>
 
@@ -309,14 +348,30 @@ function inviteAccount() {
   <main v-if="item" class="scroll-slim flex-1 space-y-5 overflow-y-auto p-4 sm:p-6">
     <div
       v-if="notice"
-      class="flex items-start gap-3 rounded-card bg-ok-50 px-4 py-3.5 ring-1 ring-inset ring-ok-100"
+      class="flex items-start gap-3 rounded-card px-4 py-3.5 ring-1 ring-inset"
+      :class="noticeTone === 'ok' ? 'bg-ok-50 ring-ok-100' : 'bg-ink-50 ring-ink-200'"
       role="status"
     >
-      <UiIcon name="check" :size="18" class="mt-0.5 shrink-0 text-ok-600" />
-      <p class="min-w-0 flex-1 text-[13px] font-medium text-ok-700">{{ notice }}</p>
+      <UiIcon
+        :name="noticeTone === 'ok' ? 'check' : 'info'"
+        :size="18"
+        class="mt-0.5 shrink-0"
+        :class="noticeTone === 'ok' ? 'text-ok-600' : 'text-ink-500'"
+      />
+      <p
+        class="min-w-0 flex-1 text-[13px] font-medium"
+        :class="noticeTone === 'ok' ? 'text-ok-700' : 'text-ink-700'"
+      >
+        {{ notice }}
+      </p>
       <button
         type="button"
-        class="shrink-0 rounded-[8px] p-1.5 text-ok-600 transition-colors hover:bg-ok-100"
+        class="shrink-0 rounded-[8px] p-1.5 transition-colors"
+        :class="
+          noticeTone === 'ok'
+            ? 'text-ok-600 hover:bg-ok-100'
+            : 'text-ink-500 hover:bg-ink-100'
+        "
         aria-label="Xabarni yopish"
         @click="notice = ''"
       >
@@ -346,6 +401,11 @@ function inviteAccount() {
             Shartnomani ko‘rish
           </UiButton>
 
+          <UiButton v-if="canEditContract" variant="secondary" size="sm" @click="openContractEditor">
+            <UiIcon name="edit" :size="15" />
+            Shartnomani tahrirlash
+          </UiButton>
+
           <UiButton v-if="canSendDidox" size="sm" @click="sendDidox">
             <UiIcon name="send" :size="15" />
             Didox orqali yuborish
@@ -357,25 +417,14 @@ function inviteAccount() {
           </UiButton>
 
           <UiButton
-            v-if="canApproveOperation"
+            v-if="canApprove"
             variant="success"
             size="sm"
             :disabled="formInvalid"
-            @click="approveOperation"
+            @click="approve"
           >
             <UiIcon name="check" :size="15" />
             Tasdiqlash
-          </UiButton>
-
-          <UiButton
-            v-if="canApproveFinance"
-            variant="success"
-            size="sm"
-            :disabled="formInvalid"
-            @click="approveFinance"
-          >
-            <UiIcon name="check" :size="15" />
-            Moliya tasdiqlash
           </UiButton>
 
           <UiButton v-if="canRework" variant="secondary" size="sm" @click="reworkOpen = true">
@@ -519,7 +568,7 @@ function inviteAccount() {
             </div>
 
             <UiButton
-              v-if="!item.contactedAt && (canManage || isAccountant)"
+              v-if="!item.contactedAt && canManage"
               variant="secondary"
               size="sm"
               class="mt-3"
@@ -556,7 +605,7 @@ function inviteAccount() {
             </template>
 
             <UiButton
-              v-else-if="canManage || isAccountant"
+              v-else-if="canManage"
               variant="secondary"
               size="sm"
               class="mt-3"
@@ -570,10 +619,10 @@ function inviteAccount() {
 
         <!-- Kelishilgan shartlar -->
         <UiCard
-          :title="canApproveFinance ? 'Moliyaviy shartlarni tekshirish' : 'Kelishilgan shartlar'"
+          title="Kelishilgan shartlar"
           :subtitle="
             editing
-              ? 'Qiymatni o‘zgartiring: to‘lov grafigi darhol qayta hisoblanadi'
+              ? 'Telefon suhbatida kelishilgan qiymatlarni kiriting: to‘lov grafigi darhol qayta hisoblanadi'
               : 'Tasdiqlangan shartlar'
           "
           icon="wallet"
@@ -603,14 +652,13 @@ function inviteAccount() {
             </UiField>
 
             <UiField
-              v-if="canApproveFinance"
-              label="Tuzatish sababi"
+              label="Kelishuv izohi"
               class="sm:col-span-2"
-              hint="Shartlar o‘zgartirilgan bo‘lsa sababi audit jurnalida qoladi"
+              hint="Suhbatda kelishilgan qo‘shimcha shart audit jurnalida qoladi"
             >
               <UiInput
                 v-model="form.adjustmentReason"
-                placeholder="Masalan: depozit ikki oylik ijara miqdorigacha kamaytirildi"
+                placeholder="Masalan: depozit ikki oylik ijara miqdorigacha kelishildi"
               />
             </UiField>
           </div>
@@ -643,11 +691,11 @@ function inviteAccount() {
           <LeaseDidox :item="item" :can-check="canCheckDidox" @check="checkDidox" />
         </UiCard>
 
-        <!-- Imzolangan hujjatni yuklash va faollashtirish -->
+        <!-- Imzolangan hujjatni yuklash va arizani yopish -->
         <UiCard
           v-if="item.status === 'DIDOX_IMZOLANDI' || item.status === 'FAOL'"
-          title="Imzolangan hujjat va faollashtirish"
-          subtitle="Didox’dan olingan nusxa tizimga yuklanadi"
+          title="Imzolangan hujjat va arizani yopish"
+          subtitle="Didox’dan olingan nusxa ariza kartochkasiga yuklanadi"
           icon="shield"
           tone="ok"
         >
@@ -659,22 +707,75 @@ function inviteAccount() {
           />
 
           <div v-if="item.status !== 'FAOL'" class="mt-4">
-            <UiButton :disabled="!canActivate" @click="activate">
+            <UiButton :disabled="!canClose" @click="closeCase">
               <UiIcon name="check" :size="17" />
-              Faollashtirish
+              Arizani yopish
             </UiButton>
+            <p class="mt-2 text-[12.5px] leading-relaxed text-ink-500">
+              Ariza yopilganda unit band qilinadi, shartnoma reyestrga tushadi va ijarachi kabineti
+              uchun login bilan parol beriladi.
+            </p>
 
             <p
-              v-if="activationBlockers.length"
+              v-if="closeBlockers.length"
               class="mt-2.5 flex items-start gap-2 rounded-field bg-warn-50 px-3.5 py-2.5 text-[12.5px] leading-relaxed text-warn-700 ring-1 ring-inset ring-warn-100"
             >
               <UiIcon name="warning" :size="15" class="mt-px shrink-0" />
               <span>
-                Faollashtirish uchun yetishmayapti:
-                <b>{{ activationBlockers.join('; ') }}</b>
+                Arizani yopish uchun yetishmayapti:
+                <b>{{ closeBlockers.join('; ') }}</b>
               </span>
             </p>
           </div>
+        </UiCard>
+
+        <!-- Ijarachi kabineti uchun kalit -->
+        <UiCard
+          v-if="item.access"
+          title="Ijarachi kabineti"
+          subtitle="Ariza yopilganda tizim avtomatik bergan kirish ma’lumotlari"
+          icon="user"
+          tone="brand"
+        >
+          <div class="grid gap-3 sm:grid-cols-2">
+            <div
+              v-for="row in [
+                { key: 'login', label: 'Login', value: item.access.login },
+                { key: 'password', label: 'Parol', value: item.access.password },
+              ]"
+              :key="row.key"
+              class="rounded-field bg-surface-sunken p-4 ring-1 ring-inset ring-ink-200"
+            >
+              <p class="text-[11.5px] font-semibold uppercase tracking-wide text-ink-500">
+                {{ row.label }}
+              </p>
+              <div class="mt-1.5 flex items-center gap-2">
+                <code
+                  class="tabular min-w-0 flex-1 truncate rounded-[6px] bg-white px-2.5 py-1.5 text-[14px] font-bold text-ink-900 ring-1 ring-inset ring-ink-200"
+                >
+                  {{ row.value }}
+                </code>
+                <button
+                  type="button"
+                  class="inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-field px-2.5 text-[12px] font-semibold text-brand-600 transition-colors duration-150 hover:bg-white"
+                  :aria-label="`${row.label} qiymatidan nusxa olish`"
+                  @click="copyValue(row.key, row.value)"
+                >
+                  <UiIcon :name="copied === row.key ? 'check' : 'clipboard'" :size="14" />
+                  {{ copied === row.key ? 'Nusxalandi' : 'Nusxa olish' }}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <p class="mt-3.5 flex items-start gap-2 rounded-field bg-brand-50 px-3.5 py-2.5 text-[12.5px] leading-relaxed text-brand-700 ring-1 ring-inset ring-brand-200">
+            <UiIcon name="info" :size="15" class="mt-px shrink-0" />
+            <span>
+              Kalit {{ dateShort(item.access.issuedAt) }} {{ timeOf(item.access.issuedAt) }} da
+              berildi. Uni ijarachi vakiliga yetkazing, kabinetga birinchi kirishda parol
+              o‘zgartiriladi.
+            </span>
+          </p>
         </UiCard>
 
         <!-- Audit -->
@@ -752,6 +853,65 @@ function inviteAccount() {
     </div>
 
     <LeaseContractModal v-model="contractOpen" :item="item" />
+
+    <!-- Shartnomani tizim ichida tahrirlash -->
+    <UiModal
+      v-model="contractEditOpen"
+      size="lg"
+      title="Shartnomani tahrirlash"
+      :subtitle="item.contract ? `${item.contract.code} · ${item.org.name}` : item.code"
+    >
+      <p class="text-[13px] leading-relaxed text-ink-600">
+        Shartnoma bandlarini o‘zgartiring yoki tomonlar bilan kelishilgan qo‘shimcha shartni
+        kiriting. O‘zgarishlar hujjatga va yuklab olinadigan DOCX nusxaga darhol tushadi.
+      </p>
+
+      <div class="mt-4 space-y-4">
+        <div
+          v-for="(c, i) in clauseDraft"
+          :key="i"
+          class="rounded-field bg-surface-sunken p-4 ring-1 ring-inset ring-ink-200"
+        >
+          <div class="flex items-center justify-between gap-3">
+            <span class="text-[11.5px] font-semibold uppercase tracking-wide text-ink-500">
+              {{ i + 1 }}-band
+            </span>
+            <button
+              type="button"
+              class="grid size-9 place-items-center rounded-field text-ink-500 transition-colors duration-150 hover:bg-white hover:text-danger-600"
+              :aria-label="`${i + 1}-bandni olib tashlash`"
+              @click="removeClause(i)"
+            >
+              <UiIcon name="trash" :size="16" />
+            </button>
+          </div>
+          <UiField label="Band sarlavhasi" required class="mt-2">
+            <UiInput v-model="c.title" placeholder="Masalan: Qo‘shimcha shart" />
+          </UiField>
+          <UiField label="Band matni" required class="mt-3">
+            <textarea
+              v-model="c.text"
+              rows="3"
+              class="w-full rounded-field bg-white px-3.5 py-2.5 text-sm text-ink-800 ring-1 ring-inset ring-ink-200 transition-colors placeholder:text-ink-400 focus:ring-2 focus:ring-brand-500"
+              placeholder="Band matnini yozing…"
+            />
+          </UiField>
+        </div>
+      </div>
+
+      <UiButton variant="secondary" size="sm" class="mt-4" @click="addClause">
+        <UiIcon name="plus" :size="15" />
+        Qo‘shimcha shart kiritish
+      </UiButton>
+
+      <template #footer>
+        <UiButton variant="ghost" @click="contractEditOpen = false">Bekor qilish</UiButton>
+        <UiButton :disabled="!clauseDraftValid || !clauseDraft.length" @click="saveContract">
+          <UiIcon name="check" :size="16" />
+          Saqlash
+        </UiButton>
+      </template>
+    </UiModal>
 
     <!-- Rad etish -->
     <UiModal v-model="rejectOpen" title="Arizani rad etish" :subtitle="item.code">

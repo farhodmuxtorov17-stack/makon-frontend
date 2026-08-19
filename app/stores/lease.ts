@@ -10,8 +10,18 @@ import { docxBlob, type DocxLine } from '~/utils/docx'
 /**
  * Ijara sikli: bitta umumiy haqiqat manbasi.
  *
- * Ijarachi, bino rahbari va buxgalter ekranlari aynan shu do‘kondan o‘qiydi
- * va unga yozadi, shuning uchun uchala rol bir xil holatni ko‘radi va holat
+ * Jarayon buyurtmachi ta’rifi bo‘yicha beshta bosqichdan iborat:
+ *   1. Ijarachi (faqat yuridik shaxs) ariza yuboradi.
+ *   2. Operator qo‘ng‘iroq qilib shartlarni kelishadi va arizani tasdiqlaydi.
+ *      Tasdiqlash bosilgan zahoti tizim ijara shartnomasini tuzadi.
+ *   3. Operator shartnomani tizim ichida tahrirlaydi va Didox orqali yuboradi.
+ *   4. Operator Didoxdagi holatni tekshiradi, imzolangan nusxani yuklab olib
+ *      ariza kartochkasiga qaytadan yuklaydi.
+ *   5. Ariza yopiladi: unit band qilinadi, shartnoma reyestrga tushadi va
+ *      ijarachi kabineti uchun login bilan parol beriladi.
+ *
+ * Ijarachi, operator va buxgalter ekranlari aynan shu do‘kondan o‘qiydi va
+ * unga yozadi, shuning uchun uchala rol bir xil holatni ko‘radi va holat
  * sahifadan sahifaga o‘tganda saqlanib qoladi.
  *
  * Didox tashqi xizmat: tizim hujjatni yuboradi, holatni tekshiradi,
@@ -19,26 +29,42 @@ import { docxBlob, type DocxLine } from '~/utils/docx'
  * jarayoni tizim ichida bajarilmaydi.
  */
 
-export type LeaseStatus =
-  | 'YANGI'
+/**
+ * Oldingi oqimdan qolgan bosqichlar. Ular endi hech qachon qo‘yilmaydi, lekin
+ * brauzer xotirasida saqlangan eski yozuvlar shu qiymatlar bilan tiklanadi,
+ * shuning uchun tur ularni biladi va `syncWorld` ularni yangi bosqichga
+ * ko‘chiradi.
+ */
+export type LegacyLeaseStatus =
   | 'OPERATSIYA_TASDIQLADI'
   | 'MOLIYA_TASDIQLADI'
   | 'QORALAMA_TAYYOR'
+
+export type LeaseStatus =
+  | 'YANGI'
+  | 'SHARTNOMA_TAYYOR'
   | 'DIDOX_YUBORILDI'
   | 'DIDOX_IMZOLANDI'
   | 'FAOL'
   | 'RAD_ETILDI'
+  | LegacyLeaseStatus
 
 /** Muvaffaqiyatli oqim tartibi, bosqich indeksini hisoblash uchun */
 export const LEASE_FLOW: LeaseStatus[] = [
   'YANGI',
-  'OPERATSIYA_TASDIQLADI',
-  'MOLIYA_TASDIQLADI',
-  'QORALAMA_TAYYOR',
+  'SHARTNOMA_TAYYOR',
   'DIDOX_YUBORILDI',
   'DIDOX_IMZOLANDI',
   'FAOL',
 ]
+
+/** Saqlangan eski yozuv qaysi yangi bosqichga to‘g‘ri keladi */
+const LEGACY_STATUS: Record<LegacyLeaseStatus, LeaseStatus> = {
+  // Shartlar kelishilgan, lekin tasdiq bosilmagan: ariza yangiligicha qoladi.
+  OPERATSIYA_TASDIQLADI: 'YANGI',
+  MOLIYA_TASDIQLADI: 'SHARTNOMA_TAYYOR',
+  QORALAMA_TAYYOR: 'SHARTNOMA_TAYYOR',
+}
 
 export type Periodicity = 'Oylik' | 'Choraklik' | 'Yillik'
 
@@ -81,7 +107,7 @@ export interface LeaseOffer {
   /** Servis to‘lovi, so‘m / m² / oy */
   servicePerSqm: number
   periodicity: Periodicity
-  /** Buxgalter tuzatish kiritgan bo‘lsa, sababi */
+  /** Telefon suhbatida kelishilgan qo‘shimcha shart yoki izoh */
   adjustmentReason: string
 }
 
@@ -151,6 +177,17 @@ export interface SignedDocument {
   hash: string
 }
 
+/**
+ * Ariza yopilganda ijarachiga beriladigan kabinet kaliti. Parol ochiq
+ * ko‘rsatiladi: operator uni telefon orqali ijarachiga aytadi, keyin ijarachi
+ * kabinetda o‘zgartiradi.
+ */
+export interface TenantAccess {
+  login: string
+  password: string
+  issuedAt: string
+}
+
 export interface AuditEntry {
   at: string
   actor: string
@@ -193,6 +230,10 @@ export interface LeaseCase {
   contactName: string
   /** Operator kabinet ochishni taklif qilgan vaqt */
   accountInvitedAt: string | null
+  /** Ariza yopilganda berilgan kabinet kaliti */
+  access: TenantAccess | null
+  /** Operator shartnomaga kiritgan tahrirlar soni */
+  contractEdits: number
   activation: {
     at: string
     invoiceCode: string
@@ -271,6 +312,62 @@ function today() {
 
 function money(value: number) {
   return `${num(Math.round(value))} so‘m`
+}
+
+// ---------------------------------------------------------------------------
+// Kabinet kaliti: ariza yopilganda avtomatik beriladi
+
+/** «Sultonov Bekzod O‘g‘li» → «sultonov bekzod ogli»: faqat lotin harflari */
+function asciiName(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/[‘’'`ʻʼ]/g, '')
+    .replace(/o‘|o'/g, 'o')
+    .replace(/g‘|g'/g, 'g')
+    .replace(/[^a-z\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+/**
+ * Login xodim hisoblari bilan bir xil qoidada tuziladi: ismning bosh harfi,
+ * nuqta va familiya. Bir xil familiya ikkinchi marta uchrasa raqam qo‘shiladi,
+ * shuning uchun ikkita ijarachi bitta loginni olmaydi.
+ */
+function buildLogin(director: string, orgName: string, taken: Set<string>) {
+  const parts = asciiName(director).split(' ').filter(Boolean)
+  const first = parts[0] ?? ''
+  const last = parts[1] ?? asciiName(orgName).split(' ')[0] ?? 'ijarachi'
+  const base = first ? `${first.slice(0, 1)}.${last}` : last
+  let login = base
+  let n = 1
+  while (taken.has(login)) {
+    n += 1
+    login = `${base}${n}`
+  }
+  return login
+}
+
+const PASSWORD_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789'
+
+/** Tasodifiy sonlar brauzer kriptografiyasidan olinadi */
+function randomBytes(length: number) {
+  const out = new Uint8Array(length)
+  const source = typeof globalThis !== 'undefined' ? globalThis.crypto : undefined
+  if (source?.getRandomValues) {
+    source.getRandomValues(out)
+    return out
+  }
+  for (let i = 0; i < length; i += 1) out[i] = Math.floor(Math.random() * 256)
+  return out
+}
+
+/** O‘qishga qulay, adashtiruvchi belgilarsiz parol */
+function buildPassword() {
+  const bytes = randomBytes(10)
+  let value = ''
+  for (const b of bytes) value += PASSWORD_ALPHABET[b % PASSWORD_ALPHABET.length]
+  return `${value.slice(0, 4)}-${value.slice(4, 7)}-${value.slice(7)}`
 }
 
 // ---------------------------------------------------------------------------
@@ -521,7 +618,12 @@ interface SeedInput {
   note: string
   rejectReason?: string
   offer?: Partial<LeaseOffer>
+  /** Operator telefon orqali bog‘langan sana va vaqti */
+  contactedAt?: string
 }
+
+/** Arizalar bilan ishlaydigan operator, boshlang‘ich yozuvlarda mas’ul shaxs */
+const SEED_OPERATOR = 'Malika Yusupova'
 
 const ORG_URBAN: LeaseOrg = {
   name: 'Urban Office MCHJ',
@@ -564,8 +666,9 @@ const SEEDS: SeedInput[] = [
       email: 's.aliyev@techsolutions.uz',
       address: 'Toshkent shahri, Chilonzor tumani, Bunyodkor shoh ko‘chasi 3',
     },
-    status: 'OPERATSIYA_TASDIQLADI',
+    status: 'YANGI',
     submittedAt: '2026-08-11 14:05',
+    contactedAt: '2026-08-12 09:40',
     startDate: '2026-09-01',
     term: 24,
     offerPrice: 18500000,
@@ -603,8 +706,9 @@ const SEEDS: SeedInput[] = [
       email: 'k.yusupova@creative.uz',
       address: 'Toshkent shahri, Mirobod tumani, Amir Temur ko‘chasi 88',
     },
-    status: 'OPERATSIYA_TASDIQLADI',
+    status: 'SHARTNOMA_TAYYOR',
     submittedAt: '2026-08-06 16:40',
+    contactedAt: '2026-08-07 10:15',
     startDate: '2026-09-01',
     term: 12,
     offerPrice: 11200000,
@@ -641,8 +745,9 @@ const SEEDS: SeedInput[] = [
     code: 'ARZ-2026-0151',
     unitId: 'u-702',
     org: ORG_URBAN,
-    status: 'OPERATSIYA_TASDIQLADI',
+    status: 'YANGI',
     submittedAt: '2026-08-09 12:40',
+    contactedAt: '2026-08-10 11:05',
     startDate: '2026-09-01',
     term: 24,
     offerPrice: 11800000,
@@ -699,12 +804,22 @@ function seedCase(seed: SeedInput): LeaseCase | null {
     },
   ]
 
-  if (seed.status === 'OPERATSIYA_TASDIQLADI') {
+  if (seed.contactedAt) {
     audit.push({
-      at: `${addDays(seed.submittedAt.slice(0, 10), 1)} 09:15`,
-      actor: building.manager,
-      roleLabel: 'Bino rahbari',
-      action: 'Operatsiya tasdiqladi',
+      at: seed.contactedAt,
+      actor: SEED_OPERATOR,
+      roleLabel: 'Operator',
+      action: 'Bog‘lanildi',
+      detail: `${seed.org.director} bilan ${seed.org.phone} raqami orqali gaplashildi, shartlar kelishildi`,
+    })
+  }
+
+  if (seed.status === 'SHARTNOMA_TAYYOR') {
+    audit.push({
+      at: `${addDays(seed.submittedAt.slice(0, 10), 2)} 09:15`,
+      actor: SEED_OPERATOR,
+      roleLabel: 'Operator',
+      action: 'Ariza tasdiqlandi',
       detail: 'Kelishilgan shartlar kiritildi va to‘lov grafigi hisoblandi',
     })
   }
@@ -712,8 +827,8 @@ function seedCase(seed: SeedInput): LeaseCase | null {
   if (seed.status === 'RAD_ETILDI') {
     audit.push({
       at: `${addDays(seed.submittedAt.slice(0, 10), 2)} 11:20`,
-      actor: building.manager,
-      roleLabel: 'Bino rahbari',
+      actor: SEED_OPERATOR,
+      roleLabel: 'Operator',
       action: 'Ariza rad etildi',
       detail: seed.rejectReason ?? '',
     })
@@ -739,11 +854,13 @@ function seedCase(seed: SeedInput): LeaseCase | null {
     didox: null,
     signedDocument: null,
     audit,
-    contactedAt: seed.status === 'OPERATSIYA_TASDIQLADI' ? seed.submittedAt : null,
+    contactedAt: seed.contactedAt ?? null,
     rejectReason: seed.rejectReason ?? '',
     guest: false,
     contactName: seed.org.director,
     accountInvitedAt: null,
+    access: null,
+    contractEdits: 0,
     activation: null,
   }
 }
@@ -790,6 +907,14 @@ export const useLeaseStore = defineStore('lease', {
       if (this.seeded) return
       this.cases = SEEDS.map(seedCase).filter((c): c is LeaseCase => c !== null)
       this.seeded = true
+      /*
+       * Tasdiqlangan bosqichdagi yozuv uchun shartnoma matni ham tuziladi:
+       * jarayonda tasdiq bilan shartnoma bir vaqtda paydo bo‘ladi, boshlang‘ich
+       * yozuv ham shu qoidaga bo‘ysunadi va reyestrga hujjatsiz ariza tushmaydi.
+       */
+      for (const item of this.cases) {
+        if (item.status === 'SHARTNOMA_TAYYOR' && !item.contract) this.composeContract(item.id)
+      }
     },
 
     log(item: LeaseCase, entry: Omit<AuditEntry, 'at'>) {
@@ -858,6 +983,8 @@ export const useLeaseStore = defineStore('lease', {
         guest: input.guest === true,
         contactName: input.contactName?.trim() || input.org.director,
         accountInvitedAt: null,
+        access: null,
+        contractEdits: 0,
         activation: null,
       }
 
@@ -928,65 +1055,43 @@ export const useLeaseStore = defineStore('lease', {
       item.schedule = buildSchedule(item.offer, item.request, item.area)
     },
 
-    approveOperation(id: string, actor: string, roleLabel: string, offer: LeaseOffer) {
+    /**
+     * Operator arizani tasdiqlaydi.
+     *
+     * Buyurtmachi ta’rifi bo‘yicha tasdiq bosilishi bilan shartnoma o‘sha
+     * zahoti tuziladi: oraliq moliya tasdig‘i yo‘q, shuning uchun ariza
+     * to‘g‘ridan-to‘g‘ri «Shartnoma tayyorlandi» bosqichiga o‘tadi.
+     */
+    approveApplication(id: string, actor: string, roleLabel: string, offer: LeaseOffer) {
       const item = this.byId(id)
       if (!item || item.status !== 'YANGI') return
       /* Ijara oqimi faqat ijara so‘rovi uchun: sotuv alohida rasmiylashtiriladi */
       if (item.request.type !== 'Ijaraga olish') return
+
       this.saveOffer(id, offer)
-      item.status = 'OPERATSIYA_TASDIQLADI'
       const totals = scheduleTotals(item.schedule)
+
+      const agreed = offer.adjustmentReason.trim()
       this.log(item, {
         actor,
         roleLabel,
-        action: 'Operatsiya tasdiqladi',
-        detail: `Oylik ijara ${money(offer.monthlyRent)}, depozit ${money(offer.deposit)}, ${totals.periods} ta to‘lov davri`,
-      })
-    },
-
-    /**
-     * Buxgalter moliyaviy shartlarni tasdiqlaydi, qoralama darhol tuziladi.
-     * MOLIYA_TASDIQLADI holati ham qabul qilinadi: qoralama tuzilmay qolgan
-     * yozuv shu amal bilan oldinga siljiydi va oqim uzilmaydi.
-     */
-    approveFinance(id: string, actor: string, roleLabel: string, offer: LeaseOffer) {
-      const item = this.byId(id)
-      if (!item) return
-      if (item.status !== 'OPERATSIYA_TASDIQLADI' && item.status !== 'MOLIYA_TASDIQLADI') return
-
-      const before = item.offer
-      const changed =
-        !before ||
-        before.monthlyRent !== offer.monthlyRent ||
-        before.deposit !== offer.deposit ||
-        before.servicePerSqm !== offer.servicePerSqm ||
-        before.periodicity !== offer.periodicity
-
-      this.saveOffer(id, offer)
-      item.status = 'MOLIYA_TASDIQLADI'
-
-      const totals = scheduleTotals(item.schedule)
-      this.log(item, {
-        actor,
-        roleLabel,
-        action: 'Moliya tasdiqladi',
-        detail:
-          changed && offer.adjustmentReason
-            ? `Shartlar tuzatildi: ${offer.adjustmentReason}. Shartnoma summasi ${money(totals.total)}`
-            : `Shartlar o‘zgarishsiz tasdiqlandi. Shartnoma summasi ${money(totals.total)}`,
+        action: 'Ariza tasdiqlandi',
+        detail: agreed
+          ? `Oylik ijara ${money(offer.monthlyRent)}, depozit ${money(offer.deposit)}, ${totals.periods} ta to‘lov davri. Kelishuv izohi: ${agreed}`
+          : `Oylik ijara ${money(offer.monthlyRent)}, depozit ${money(offer.deposit)}, ${totals.periods} ta to‘lov davri`,
       })
 
       this.composeContract(id)
     },
 
-    /** Tizim shartnoma qoralamasini tuzadi */
+    /** Tasdiq bosilgan zahoti tizim ijara shartnomasini tuzadi */
     composeContract(id: string) {
       const item = this.byId(id)
       if (!item || !item.offer) return
       if (item.request.type !== 'Ijaraga olish') return
 
       /*
-       * Qayta ishlashdan keyin qoralama qayta tuzilsa, avvalgi kod saqlanadi:
+       * Qayta ishlashdan keyin shartnoma qayta tuzilsa, avvalgi kod saqlanadi:
        * bitta ariza bo‘yicha reyestrda ikkita raqam paydo bo‘lmaydi.
        */
       const code =
@@ -1058,19 +1163,60 @@ export const useLeaseStore = defineStore('lease', {
       }
 
       item.contract = doc
-      item.status = 'QORALAMA_TAYYOR'
+      item.status = 'SHARTNOMA_TAYYOR'
       this.log(item, {
         actor: 'Tizim',
         roleLabel: 'Avtomatik',
-        action: 'Shartnoma qoralamasi tuzildi',
+        action: 'Ijara shartnomasi tuzildi',
         detail: `${code}: ${item.request.term} oy, ${money(totals.total)} (DOCX)`,
       })
     },
 
-    /** 6-bosqich: hujjat Didox’ga yuboriladi */
+    /**
+     * Operator shartnomani tizim ichida tahrirlaydi: mavjud bandlar matni
+     * o‘zgartiriladi yoki qo‘shimcha shart kiritiladi. Hujjat Didoxga
+     * yuborilgunicha ochiq turadi, keyin matn qotib qoladi.
+     */
+    editContract(
+      id: string,
+      actor: string,
+      roleLabel: string,
+      clauses: Array<{ title: string; text: string }>,
+    ) {
+      const item = this.byId(id)
+      if (!item || !item.contract || item.status !== 'SHARTNOMA_TAYYOR') return
+
+      const before = item.contract.clauses
+      const cleaned = clauses
+        .map((c) => ({ title: c.title.trim(), text: c.text.trim() }))
+        .filter((c) => c.title && c.text)
+      if (!cleaned.length) return
+
+      const added = Math.max(0, cleaned.length - before.length)
+      const changed = cleaned.filter(
+        (c, i) => before[i] && (before[i]!.title !== c.title || before[i]!.text !== c.text),
+      ).length
+      if (!added && !changed) return
+
+      item.contract.clauses = cleaned
+      item.contractEdits += 1
+
+      const parts: string[] = []
+      if (changed) parts.push(`${changed} ta band tahrirlandi`)
+      if (added) parts.push(`${added} ta qo‘shimcha shart kiritildi`)
+
+      this.log(item, {
+        actor,
+        roleLabel,
+        action: 'Shartnoma tahrirlandi',
+        detail: `${item.contract.code}: ${parts.join(', ')}`,
+      })
+    },
+
+    /** Hujjat Didox orqali imzolashga yuboriladi */
     sendToDidox(id: string, actor: string, roleLabel: string) {
       const item = this.byId(id)
-      if (!item || !item.contract || item.status !== 'QORALAMA_TAYYOR') return
+      if (!item || !item.contract || item.status !== 'SHARTNOMA_TAYYOR') return
 
       this.didoxSequence += 1
       const stamp = now()
@@ -1102,7 +1248,7 @@ export const useLeaseStore = defineStore('lease', {
     },
 
     /**
-     * 7-bosqich: Didox tomonidagi holat tekshiriladi.
+     * Didox tomonidagi holat tekshiriladi.
      *
      * Natija qaytariladi, shuning uchun sahifa haqiqatda nima bo‘lganini
      * aytadi: holat o‘zgardimi yoki o‘zgarishsiz qoldimi. Ariza statusi ham
@@ -1160,7 +1306,7 @@ export const useLeaseStore = defineStore('lease', {
       else if (item.status === 'DIDOX_IMZOLANDI') item.status = 'DIDOX_YUBORILDI'
     },
 
-    /** 8-bosqich: Didox’dan olingan imzolangan fayl tizimga yuklanadi */
+    /** Didox’dan olingan imzolangan fayl ariza kartochkasiga yuklanadi */
     attachSignedDocument(
       id: string,
       actor: string,
@@ -1202,21 +1348,19 @@ export const useLeaseStore = defineStore('lease', {
     /**
      * Oldingi bosqichga qaytarish, sabab bilan.
      *
-     * MOLIYA_TASDIQLADI oraliq holat: unda hech kimda bosadigan tugma yo‘q,
-     * shuning uchun qoralama bosqichi to‘g‘ridan-to‘g‘ri buxgalter qaroriga
-     * qaytariladi. Didox bosqichidan qaytarilganda tashqi xizmatdagi hujjat
-     * bekor qilinadi, aks holda ariza eski ticket bilan qotib qolar edi.
+     * Didox bosqichidan qaytarilganda tashqi xizmatdagi hujjat bekor
+     * qilinadi, aks holda ariza eski ticket bilan qotib qolar edi. Shartnoma
+     * bosqichidan qaytarilgan ariza shartlarni qayta kelishishga, ya’ni
+     * boshiga tushadi.
      */
     returnForRework(id: string, actor: string, roleLabel: string, reason: string) {
       const item = this.byId(id)
       if (!item) return
 
       const RETURN_TO: Partial<Record<LeaseStatus, LeaseStatus>> = {
-        OPERATSIYA_TASDIQLADI: 'YANGI',
-        MOLIYA_TASDIQLADI: 'OPERATSIYA_TASDIQLADI',
-        QORALAMA_TAYYOR: 'OPERATSIYA_TASDIQLADI',
-        DIDOX_YUBORILDI: 'QORALAMA_TAYYOR',
-        DIDOX_IMZOLANDI: 'QORALAMA_TAYYOR',
+        SHARTNOMA_TAYYOR: 'YANGI',
+        DIDOX_YUBORILDI: 'SHARTNOMA_TAYYOR',
+        DIDOX_IMZOLANDI: 'SHARTNOMA_TAYYOR',
       }
 
       const cancelled = item.didox
@@ -1235,7 +1379,13 @@ export const useLeaseStore = defineStore('lease', {
       })
     },
 
-    activate(id: string, actor: string, roleLabel: string) {
+    /**
+     * Yakuniy bosqich: ariza yopiladi.
+     *
+     * Unit band qilinadi, shartnoma reyestrga tushadi, birinchi hisob-faktura
+     * chiqariladi va ijarachi kabineti uchun login bilan parol beriladi.
+     */
+    closeCase(id: string, actor: string, roleLabel: string) {
       const item = this.byId(id)
       if (!item || !item.contract || !item.offer) return null
       if (item.status !== 'DIDOX_IMZOLANDI' || !item.signedDocument) return null
@@ -1256,6 +1406,22 @@ export const useLeaseStore = defineStore('lease', {
       }
 
       const rest = item.schedule.filter((r) => r.status === 'PLANNED').length
+
+      /*
+       * Kabinet kaliti shu yerda beriladi: ariza yopilishi bilan ijarachida
+       * tizimga kirish imkoni paydo bo‘ladi. Login boshqa arizalarda berilgan
+       * loginlar bilan takrorlanmaydi.
+       */
+      const access: TenantAccess = item.access ?? {
+        login: buildLogin(
+          item.org.director,
+          item.org.name,
+          new Set(this.cases.map((c) => c.access?.login).filter(Boolean) as string[]),
+        ),
+        password: buildPassword(),
+        issuedAt: now(),
+      }
+      item.access = access
 
       const changes: ActivationChange[] = [
         {
@@ -1285,6 +1451,11 @@ export const useLeaseStore = defineStore('lease', {
             ? `${first.label} · ${money(first.total)} · to‘lov muddati ${dmy(first.dueAt)}. Qolgan ${rest} ta davr muddati kelganda chiqariladi`
             : '',
         },
+        {
+          icon: 'user',
+          label: 'Ijarachi kabineti uchun login va parol berildi',
+          detail: `Login ${access.login}. Parol ariza kartochkasida ko‘rsatilgan, uni ijarachiga yetkazing.`,
+        },
       ]
 
       item.status = 'FAOL'
@@ -1293,8 +1464,8 @@ export const useLeaseStore = defineStore('lease', {
       this.log(item, {
         actor,
         roleLabel,
-        action: 'Shartnoma faollashtirildi',
-        detail: `Unit band qilindi, ${invoiceCode} hisob-fakturasi chiqarildi, qolgan ${rest} ta davr grafik bo‘yicha chiqariladi`,
+        action: 'Ariza yopildi',
+        detail: `Unit band qilindi, ${invoiceCode} hisob-fakturasi chiqarildi, ijarachiga ${access.login} logini berildi`,
       })
 
       this.applyCase(item)
@@ -1341,8 +1512,8 @@ export const useLeaseStore = defineStore('lease', {
       if (!CONTRACTS.some((c) => c.id === contractId || c.code === doc.code)) {
         /* Bosqichlar reyestr kutgan to‘rt nom bilan yoziladi, sana va mas’ul audit jurnalidan */
         const stageOf = (action: string) => item.audit.find((a) => a.action === action)
-        const composed = stageOf('Shartnoma qoralamasi tuzildi')
-        const agreed = stageOf('Moliya tasdiqladi')
+        const composed = stageOf('Ijara shartnomasi tuzildi')
+        const agreed = stageOf('Ariza tasdiqlandi')
         const signed = stageOf('Imzolangan hujjat yuklandi')
 
         CONTRACTS.unshift({
@@ -1388,7 +1559,7 @@ export const useLeaseStore = defineStore('lease', {
             {
               label: 'Faollashdi',
               date: activation.at.slice(0, 10),
-              actor: item.audit.find((a) => a.action === 'Shartnoma faollashtirildi')?.actor ?? 'Tizim',
+              actor: item.audit.find((a) => a.action === 'Ariza yopildi')?.actor ?? 'Tizim',
               done: true,
             },
           ],
@@ -1469,6 +1640,15 @@ export const useLeaseStore = defineStore('lease', {
           item.contactName = item.org.director
         }
         if (item.accountInvitedAt === undefined) item.accountInvitedAt = null
+        if (item.access === undefined) item.access = null
+        if (typeof item.contractEdits !== 'number') item.contractEdits = 0
+
+        /*
+         * Oldingi oqimdagi bosqichlar yangi bosqichlarga ko‘chiriladi: saqlangan
+         * ariza eski holatda qolib, hech qaysi tugmaga tushmay qotib qolmaydi.
+         */
+        const legacy = LEGACY_STATUS[item.status as LegacyLeaseStatus]
+        if (legacy) item.status = item.contract ? 'SHARTNOMA_TAYYOR' : legacy
 
         /*
          * Saqlangan holatda hujjat grafigi alohida massiv bo‘lib tiklanadi.

@@ -402,7 +402,7 @@ const lastFour = computed(() => form.phone.slice(-4))
 
 <template>
   <div class="mx-auto w-full max-w-[1100px] px-4 py-8 lg:px-8 lg:py-12">
-    <nav class="flex flex-wrap items-center gap-1.5 text-[12.5px] text-ink-500" aria-label="Yo‘l">
+    <nav class="flex flex-wrap items-center gap-1.5 text-[13px] text-ink-500" aria-label="Yo‘l">
       <NuxtLink to="/" class="rounded-[6px] hover:text-brand-600">Bosh sahifa</NuxtLink>
       <span aria-hidden="true">/</span>
       <NuxtLink to="/catalog" class="rounded-[6px] hover:text-brand-600">Katalog</NuxtLink>
@@ -421,10 +421,10 @@ const lastFour = computed(() => form.phone.slice(-4))
             <UiIcon name="check" :size="28" />
           </span>
 
-          <h1 class="mt-5 font-display text-[24px] font-extrabold leading-tight text-ink-900">
+          <h1 class="mt-5 font-display text-[22px] font-extrabold leading-tight text-ink-900">
             Arizangiz qabul qilindi
           </h1>
-          <p class="mt-2 text-[13.5px] leading-relaxed text-ink-600">
+          <p class="mt-2 text-[14px] leading-relaxed text-ink-600">
             Telefon raqamingiz tasdiqlandi. Ariza bino rahbariga tushdi, operator siz bilan
             bog‘lanadi.
           </p>
@@ -432,10 +432,10 @@ const lastFour = computed(() => form.phone.slice(-4))
           <div
             class="mt-5 rounded-card bg-brand-50 p-4 text-center ring-1 ring-inset ring-brand-100"
           >
-            <p class="text-[11.5px] font-semibold uppercase tracking-wide text-brand-700">
+            <p class="text-[12px] font-semibold uppercase tracking-wide text-brand-700">
               Ariza raqami
             </p>
-            <p class="tabular mt-1 text-[24px] font-extrabold tracking-wide text-brand-700">
+            <p class="tabular mt-1 text-[22px] font-extrabold tracking-wide text-brand-700">
               {{ createdCode }}
             </p>
           </div>
@@ -460,11 +460,11 @@ const lastFour = computed(() => form.phone.slice(-4))
           >
             <UiIcon name="info" :size="17" class="mt-px shrink-0 text-ink-400" />
             <span class="min-w-0">
-              <span class="block text-[12.5px] leading-relaxed text-ink-600">
+              <span class="block text-[13px] leading-relaxed text-ink-600">
                 Havolani saqlab qo‘ying:
                 <span class="font-semibold text-ink-900">{{ trackPath }}</span>
               </span>
-              <span class="mt-1.5 block text-[12.5px] leading-relaxed text-ink-600">
+              <span class="mt-1.5 block text-[13px] leading-relaxed text-ink-600">
                 Operator bog‘langanda sizga kabinet ochish taklif qilinadi, shundan so‘ng barcha
                 hujjatlar shaxsiy kabinetingizda bo‘ladi.
               </span>
@@ -481,10 +481,10 @@ const lastFour = computed(() => form.phone.slice(-4))
           <p class="text-[11px] font-semibold uppercase tracking-wide text-brand-600">
             2-qadam / 2: Telefon tasdig‘i
           </p>
-          <h1 class="mt-2 font-display text-[24px] font-extrabold leading-tight text-ink-900">
+          <h1 class="mt-2 font-display text-[22px] font-extrabold leading-tight text-ink-900">
             Raqamingizni tasdiqlang
           </h1>
-          <p class="mt-2 text-[13.5px] leading-relaxed text-ink-600">
+          <p class="mt-2 text-[14px] leading-relaxed text-ink-600">
             Olti xonali kod
             <span class="tabular font-semibold text-ink-900">{{ phoneFormatted }}</span>
             raqamiga SMS orqali yuborildi. Ariza faqat shu qadamdan keyin ro‘yxatga olinadi.
@@ -494,7 +494,7 @@ const lastFour = computed(() => form.phone.slice(-4))
             class="mt-3 flex items-start gap-2.5 rounded-field bg-surface-sunken p-3.5 ring-1 ring-inset ring-ink-200"
           >
             <UiIcon name="info" :size="16" class="mt-px shrink-0 text-ink-400" />
-            <p class="min-w-0 text-[12.5px] leading-relaxed text-ink-600">
+            <p class="min-w-0 text-[13px] leading-relaxed text-ink-600">
               Yuborilgan kod:
               <span class="tabular text-[14px] font-bold tracking-wide text-ink-900">
                 {{ sentCode }}
@@ -536,7 +536,7 @@ const lastFour = computed(() => form.phone.slice(-4))
             <p
               v-if="wrong"
               role="alert"
-              class="mt-3 flex items-center gap-2 text-[12.5px] font-medium text-danger-600"
+              class="mt-3 flex items-center gap-2 text-[13px] font-medium text-danger-600"
             >
               <UiIcon name="warning" :size="16" class="shrink-0" />
               Kod noto‘g‘ri yoki to‘liq emas. Qaytadan kiriting.
@@ -544,7 +544,7 @@ const lastFour = computed(() => form.phone.slice(-4))
             <p
               v-else-if="resent"
               role="status"
-              class="mt-3 flex items-center gap-2 text-[12.5px] font-medium text-ok-600"
+              class="mt-3 flex items-center gap-2 text-[13px] font-medium text-ok-600"
             >
               <UiIcon name="check" :size="16" class="shrink-0" />
               Yangi kod yuborildi.
@@ -558,7 +558,7 @@ const lastFour = computed(() => form.phone.slice(-4))
           <div
             class="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-field bg-surface-sunken p-3.5 ring-1 ring-inset ring-ink-200"
           >
-            <p class="text-[12.5px] text-ink-600">
+            <p class="text-[13px] text-ink-600">
               <template v-if="secondsLeft > 0">
                 Yangi kodni
                 <span class="tabular font-semibold text-ink-900">{{ countdownLabel }}</span>
@@ -590,10 +590,10 @@ const lastFour = computed(() => form.phone.slice(-4))
         <p class="text-[11px] font-semibold uppercase tracking-wide text-brand-600">
           1-qadam / 2: Ariza ma’lumotlari
         </p>
-        <h1 class="mt-2 font-display text-[26px] font-extrabold leading-tight text-ink-900 sm:text-[30px]">
+        <h1 class="mt-2 font-display text-[28px] font-extrabold leading-tight text-ink-900 sm:text-[28px]">
           Ariza yuborish
         </h1>
-        <p class="mt-2 max-w-[70ch] text-[13.5px] leading-relaxed text-ink-600">
+        <p class="mt-2 max-w-[70ch] text-[14px] leading-relaxed text-ink-600">
           Ro‘yxatdan o‘tish shart emas. Ma’lumotlarni to‘ldiring, telefon raqamingizni tasdiqlang
           va ariza bino rahbariga tushadi.
         </p>
@@ -621,12 +621,12 @@ const lastFour = computed(() => form.phone.slice(-4))
                     @click="form.personType = p.value"
                   >
                     <span
-                      class="block text-[13.5px] font-semibold"
+                      class="block text-[14px] font-semibold"
                       :class="form.personType === p.value ? 'text-brand-600' : 'text-ink-600'"
                     >
                       {{ p.label }}
                     </span>
-                    <span class="block text-[11.5px] text-ink-500">{{ p.caption }}</span>
+                    <span class="block text-[12px] text-ink-500">{{ p.caption }}</span>
                   </button>
                 </div>
               </div>
@@ -723,24 +723,24 @@ const lastFour = computed(() => form.phone.slice(-4))
                   v-if="foundOrg"
                   class="rounded-field bg-ok-50 p-3.5 ring-1 ring-inset ring-ok-100"
                 >
-                  <p class="flex items-center gap-2 text-[12.5px] font-semibold text-ok-700">
+                  <p class="flex items-center gap-2 text-[13px] font-semibold text-ok-700">
                     <UiIcon name="check" :size="15" class="shrink-0" />
                     Tashkilot reyestrda topildi
                   </p>
                   <dl class="mt-2.5 grid gap-2 sm:grid-cols-2">
                     <div>
-                      <dt class="text-[11.5px] text-ink-500">Nomi</dt>
-                      <dd class="text-[12.5px] font-semibold text-ink-900">{{ foundOrg.name }}</dd>
+                      <dt class="text-[12px] text-ink-500">Nomi</dt>
+                      <dd class="text-[13px] font-semibold text-ink-900">{{ foundOrg.name }}</dd>
                     </div>
                     <div>
-                      <dt class="text-[11.5px] text-ink-500">Rahbar</dt>
-                      <dd class="text-[12.5px] font-semibold text-ink-900">
+                      <dt class="text-[12px] text-ink-500">Rahbar</dt>
+                      <dd class="text-[13px] font-semibold text-ink-900">
                         {{ foundOrg.director }}
                       </dd>
                     </div>
                     <div class="sm:col-span-2">
-                      <dt class="text-[11.5px] text-ink-500">Yuridik manzil</dt>
-                      <dd class="text-[12.5px] font-semibold text-ink-900">
+                      <dt class="text-[12px] text-ink-500">Yuridik manzil</dt>
+                      <dd class="text-[13px] font-semibold text-ink-900">
                         {{ foundOrg.address }}
                       </dd>
                     </div>
@@ -749,7 +749,7 @@ const lastFour = computed(() => form.phone.slice(-4))
 
                 <p
                   v-else-if="stirNotFound"
-                  class="flex items-start gap-2 rounded-field bg-warn-50 p-3.5 text-[12.5px] leading-relaxed text-ink-700 ring-1 ring-inset ring-warn-100"
+                  class="flex items-start gap-2 rounded-field bg-warn-50 p-3.5 text-[13px] leading-relaxed text-ink-700 ring-1 ring-inset ring-warn-100"
                 >
                   <UiIcon name="info" :size="15" class="mt-px shrink-0 text-warn-600" />
                   Bu STIR reyestrda topilmadi. Tashkilot nomini qo‘lda kiriting, qolgan
@@ -833,7 +833,7 @@ const lastFour = computed(() => form.phone.slice(-4))
                 class="flex items-start gap-3 rounded-field bg-brand-50 p-3.5 ring-1 ring-inset ring-brand-100"
               >
                 <UiIcon name="shield" :size="18" class="mt-px shrink-0 text-brand-600" />
-                <p class="text-[12.5px] leading-relaxed text-ink-700">
+                <p class="text-[13px] leading-relaxed text-ink-700">
                   Keyingi qadamda telefon raqamingizga bir martalik kod yuboriladi. Bu yagona
                   majburiy tasdiq: aloqa raqami haqiqiy bo‘lishi kerak.
                 </p>
@@ -842,7 +842,7 @@ const lastFour = computed(() => form.phone.slice(-4))
               <p
                 v-if="submitted && firstErrorLabel"
                 role="alert"
-                class="flex items-start gap-2 rounded-field bg-danger-50 p-3.5 text-[12.5px] leading-relaxed font-medium text-danger-700 ring-1 ring-inset ring-danger-100"
+                class="flex items-start gap-2 rounded-field bg-danger-50 p-3.5 text-[13px] leading-relaxed font-medium text-danger-700 ring-1 ring-inset ring-danger-100"
               >
                 <UiIcon name="warning" :size="16" class="mt-px shrink-0" />
                 <span class="min-w-0">
@@ -879,10 +879,10 @@ const lastFour = computed(() => form.phone.slice(-4))
               sizes="(max-width: 1279px) 100vw, 340px"
             />
             <div class="p-5">
-              <p class="text-[15px] font-extrabold leading-snug text-ink-900">
+              <p class="text-[16px] font-extrabold leading-snug text-ink-900">
                 {{ building.name }}
               </p>
-              <p class="mt-1 text-[12.5px] text-ink-500">
+              <p class="mt-1 text-[13px] text-ink-500">
                 {{ building.city }}, {{ building.district }}, {{ building.street }}
               </p>
 
@@ -908,7 +908,7 @@ const lastFour = computed(() => form.phone.slice(-4))
               <div
                 class="mt-3 flex items-baseline justify-between gap-3 rounded-field bg-brand-50 px-3.5 py-3 ring-1 ring-inset ring-brand-100"
               >
-                <span class="text-[12.5px] text-ink-600">E’lon narxi</span>
+                <span class="text-[13px] text-ink-600">E’lon narxi</span>
                 <span class="tabular text-[14px] font-extrabold text-brand-700">
                   {{ num(unit.price) }} {{ unit.priceUnit }}
                 </span>
@@ -930,26 +930,26 @@ const lastFour = computed(() => form.phone.slice(-4))
           <UiCard v-if="price > 0" title="Dastlabki hisob" subtitle="Yakuniy shartlar ko‘rikdan keyin" icon="chart" tone="brand">
             <dl class="space-y-3">
               <div class="flex items-baseline justify-between gap-3">
-                <dt class="text-[12.5px] text-ink-500">Taklif narxi (oylik)</dt>
-                <dd class="tabular text-[13.5px] font-bold text-ink-900">{{ sum(price) }}</dd>
+                <dt class="text-[13px] text-ink-500">Taklif narxi (oylik)</dt>
+                <dd class="tabular text-[14px] font-bold text-ink-900">{{ sum(price) }}</dd>
               </div>
               <div class="flex items-baseline justify-between gap-3">
-                <dt class="text-[12.5px] text-ink-500">Muddat</dt>
-                <dd class="tabular text-[13.5px] font-bold text-ink-900">{{ term }} oy</dd>
+                <dt class="text-[13px] text-ink-500">Muddat</dt>
+                <dd class="tabular text-[14px] font-bold text-ink-900">{{ term }} oy</dd>
               </div>
               <div class="flex items-baseline justify-between gap-3 border-t border-ink-100 pt-3">
-                <dt class="text-[12.5px] text-ink-500">Muddat bo‘yicha jami</dt>
-                <dd class="tabular text-[15px] font-extrabold text-brand-700">{{ sum(estimate) }}</dd>
+                <dt class="text-[13px] text-ink-500">Muddat bo‘yicha jami</dt>
+                <dd class="tabular text-[16px] font-extrabold text-brand-700">{{ sum(estimate) }}</dd>
               </div>
             </dl>
           </UiCard>
 
           <UiCard title="Arizani kuzatish" icon="search" tone="neutral">
-            <p class="text-[12.5px] leading-relaxed text-ink-600">
+            <p class="text-[13px] leading-relaxed text-ink-600">
               Ariza yuborilgach sizga raqam beriladi. Holatni kuzatish uchun shu raqam va telefon
               raqamingizning oxirgi to‘rt raqami kifoya.
             </p>
-            <p v-if="lastFour.length === 4" class="mt-2 text-[12.5px] text-ink-600">
+            <p v-if="lastFour.length === 4" class="mt-2 text-[13px] text-ink-600">
               Hozirgi raqamingiz bo‘yicha oxirgi to‘rt raqam:
               <span class="tabular font-bold text-ink-900">{{ lastFour }}</span>
             </p>

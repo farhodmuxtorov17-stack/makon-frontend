@@ -216,7 +216,7 @@ function toggleNotification(id: string) {
       <span class="grid size-9 shrink-0 place-items-center rounded-[10px] bg-ok-500 text-white">
         <UiIcon name="check" :size="18" />
       </span>
-      <p class="min-w-0 flex-1 text-[13.5px] text-ok-700">{{ savedMessage }}</p>
+      <p class="min-w-0 flex-1 text-[14px] text-ok-700">{{ savedMessage }}</p>
       <button
         type="button"
         class="rounded-lg p-1.5 text-ok-700 transition-colors hover:bg-ok-100"
@@ -238,7 +238,7 @@ function toggleNotification(id: string) {
             ring
           />
           <div class="min-w-0">
-            <h3 class="truncate text-[17px] font-bold text-ink-900">
+            <h3 class="truncate text-[18px] font-bold text-ink-900">
               {{ auth.user?.fullName ?? '-' }}
             </h3>
             <p class="truncate text-[13px] text-ink-500">{{ auth.user?.position ?? '-' }}</p>
@@ -247,21 +247,21 @@ function toggleNotification(id: string) {
 
         <div class="mt-4 rounded-field bg-brand-50 px-4 py-3">
           <p class="text-[11px] font-bold uppercase tracking-wider text-brand-600">Rol</p>
-          <p class="mt-0.5 text-[13.5px] font-bold text-brand-700">{{ roleLabel }}</p>
+          <p class="mt-0.5 text-[14px] font-bold text-brand-700">{{ roleLabel }}</p>
           <p class="mt-0.5 text-[12px] leading-snug text-brand-600">{{ roleCaption }}</p>
         </div>
 
         <dl class="mt-4 divide-y divide-ink-100 border-t border-ink-100">
           <div class="flex items-center justify-between py-2.5">
-            <dt class="text-[12.5px] text-ink-500">Tashkilot</dt>
+            <dt class="text-[13px] text-ink-500">Tashkilot</dt>
             <dd class="text-[13px] font-semibold text-ink-900">{{ auth.user?.organization ?? '-' }}</dd>
           </div>
           <div class="flex items-center justify-between py-2.5">
-            <dt class="text-[12.5px] text-ink-500">Telefon</dt>
+            <dt class="text-[13px] text-ink-500">Telefon</dt>
             <dd class="tabular text-[13px] font-semibold text-ink-900">{{ auth.user?.phone ?? '-' }}</dd>
           </div>
           <div class="flex items-center justify-between py-2.5">
-            <dt class="text-[12.5px] text-ink-500">E-pochta</dt>
+            <dt class="text-[13px] text-ink-500">E-pochta</dt>
             <dd class="truncate text-[13px] font-semibold text-ink-900">{{ auth.user?.email ?? '-' }}</dd>
           </div>
         </dl>
@@ -276,7 +276,7 @@ function toggleNotification(id: string) {
         <template #actions>
           <span
             v-if="dirty"
-            class="rounded-pill bg-warn-50 px-2.5 py-1 text-[11.5px] font-semibold text-warn-700"
+            class="rounded-pill bg-warn-50 px-2.5 py-1 text-[12px] font-semibold text-warn-700"
           >
             Saqlanmagan o‘zgarishlar
           </span>
@@ -331,7 +331,7 @@ function toggleNotification(id: string) {
               <UiIcon name="lock" :size="19" />
             </span>
             <span class="min-w-0 flex-1">
-              <span class="block text-[13.5px] font-semibold text-ink-900">Parol</span>
+              <span class="block text-[14px] font-semibold text-ink-900">Parol</span>
               <span class="block text-[12px] text-ink-500">
                 Xavfsizlik uchun parolni muntazam yangilab turing
               </span>

@@ -267,7 +267,7 @@ function downloadAct() {
         <UiCard>
           <div class="flex flex-wrap items-start justify-between gap-3">
             <div class="min-w-0">
-              <h2 class="text-[21px] font-bold leading-tight text-ink-900">{{ order.title }}</h2>
+              <h2 class="text-[22px] font-bold leading-tight text-ink-900">{{ order.title }}</h2>
               <p class="tabular mt-1 text-[13px] font-semibold text-brand-600">{{ order.code }}</p>
             </div>
             <UiStatus kind="service" :value="order.status" />
@@ -276,32 +276,32 @@ function downloadAct() {
           <dl class="mt-5 grid gap-x-5 gap-y-4 rounded-field bg-surface-sunken p-4 sm:grid-cols-3 lg:grid-cols-5">
             <div class="min-w-0">
               <dt class="text-[12px] text-ink-500">Obyekt</dt>
-              <dd class="mt-0.5 truncate text-[13.5px] font-semibold text-ink-900">
+              <dd class="mt-0.5 truncate text-[14px] font-semibold text-ink-900">
                 {{ order.buildingName }}
               </dd>
             </div>
             <div class="min-w-0">
               <dt class="text-[12px] text-ink-500">Lokatsiya</dt>
-              <dd class="mt-0.5 truncate text-[13.5px] font-semibold text-ink-900">
+              <dd class="mt-0.5 truncate text-[14px] font-semibold text-ink-900">
                 {{ order.unitCode }}
               </dd>
             </div>
             <div class="min-w-0">
               <dt class="text-[12px] text-ink-500">Topshiriq berdi</dt>
-              <dd class="mt-0.5 truncate text-[13.5px] font-semibold text-ink-900">
+              <dd class="mt-0.5 truncate text-[14px] font-semibold text-ink-900">
                 {{ order.requester }}
               </dd>
             </div>
             <div class="min-w-0">
               <dt class="text-[12px] text-ink-500">Muddati</dt>
-              <dd class="tabular mt-0.5 text-[13.5px] font-semibold text-ink-900">
+              <dd class="tabular mt-0.5 text-[14px] font-semibold text-ink-900">
                 {{ dateShort(order.dueAt) }}
               </dd>
             </div>
             <div class="min-w-0">
               <dt class="text-[12px] text-ink-500">Ustuvorlik</dt>
               <dd
-                class="mt-0.5 inline-flex items-center gap-1.5 text-[13.5px] font-semibold"
+                class="mt-0.5 inline-flex items-center gap-1.5 text-[14px] font-semibold"
                 :class="PRIORITY_STYLE[order.priority]?.text"
               >
                 <svg class="size-3 shrink-0" viewBox="0 0 12 12" aria-hidden="true">
@@ -330,7 +330,7 @@ function downloadAct() {
 
           <div class="mt-5">
             <h3 class="text-[13px] font-semibold text-ink-700">Topshiriq tavsifi</h3>
-            <p class="mt-1.5 text-[13.5px] leading-relaxed text-ink-600">{{ order.description }}</p>
+            <p class="mt-1.5 text-[14px] leading-relaxed text-ink-600">{{ order.description }}</p>
           </div>
 
           <div class="mt-5">
@@ -349,7 +349,7 @@ function downloadAct() {
                   <rect x="164" y="104" width="72" height="46" rx="4" fill="#cbd4e3" />
                 </svg>
                 <span
-                  class="absolute left-3 top-3 rounded-pill bg-ink-900/70 px-2.5 py-1 text-[11.5px] font-semibold text-white"
+                  class="absolute left-3 top-3 rounded-pill bg-ink-900/70 px-2.5 py-1 text-[12px] font-semibold text-white"
                 >
                   Oldin
                 </span>
@@ -370,7 +370,7 @@ function downloadAct() {
                   <rect x="164" y="104" width="72" height="46" rx="4" fill="#a1bffd" />
                 </svg>
                 <span
-                  class="absolute left-3 top-3 rounded-pill bg-ok-600/90 px-2.5 py-1 text-[11.5px] font-semibold text-white"
+                  class="absolute left-3 top-3 rounded-pill bg-ok-600/90 px-2.5 py-1 text-[12px] font-semibold text-white"
                 >
                   Keyin
                 </span>
@@ -383,25 +383,25 @@ function downloadAct() {
             <dl class="mt-3 grid gap-x-5 gap-y-4 sm:grid-cols-2 lg:grid-cols-4">
               <div class="min-w-0">
                 <dt class="text-[12px] text-ink-500">Pudratchi / xodim</dt>
-                <dd class="mt-0.5 truncate text-[13.5px] font-semibold text-ink-900">
+                <dd class="mt-0.5 truncate text-[14px] font-semibold text-ink-900">
                   {{ order.assignee ?? 'Biriktirilmagan' }}
                 </dd>
               </div>
               <div class="min-w-0">
                 <dt class="text-[12px] text-ink-500">Boshlanish sanasi</dt>
-                <dd class="tabular mt-0.5 text-[13.5px] font-semibold text-ink-900">
+                <dd class="tabular mt-0.5 text-[14px] font-semibold text-ink-900">
                   {{ dateShort(order.createdAt.slice(0, 10)) }} {{ order.createdAt.slice(11) }}
                 </dd>
               </div>
               <div class="min-w-0">
                 <dt class="text-[12px] text-ink-500">Rejalashtirilgan tugash</dt>
-                <dd class="tabular mt-0.5 text-[13.5px] font-semibold text-ink-900">
+                <dd class="tabular mt-0.5 text-[14px] font-semibold text-ink-900">
                   {{ dateShort(order.dueAt) }}
                 </dd>
               </div>
               <div class="min-w-0">
                 <dt class="text-[12px] text-ink-500">Amaldagi holat</dt>
-                <dd class="mt-0.5 truncate text-[13.5px] font-semibold text-ink-900">
+                <dd class="mt-0.5 truncate text-[14px] font-semibold text-ink-900">
                   {{ SERVICE_STATUS[order.status]?.label }}
                 </dd>
               </div>
@@ -455,8 +455,8 @@ function downloadAct() {
               <UiIcon name="upload" :size="20" />
             </span>
             <span class="min-w-0">
-              <span class="block text-[14.5px] font-bold text-ink-900">Bajarilgan ishni yuklash</span>
-              <span class="block text-[12.5px] text-ink-500">Foto, video yoki hujjat yuklang</span>
+              <span class="block text-[14px] font-bold text-ink-900">Bajarilgan ishni yuklash</span>
+              <span class="block text-[13px] text-ink-500">Foto, video yoki hujjat yuklang</span>
             </span>
           </button>
 
@@ -524,7 +524,7 @@ function downloadAct() {
               <span class="grid size-9 shrink-0 place-items-center rounded-[10px] bg-ink-100 text-ink-600">
                 <UiIcon name="cube" :size="17" />
               </span>
-              <span class="min-w-0 flex-1 truncate text-[13.5px] font-medium text-ink-800">
+              <span class="min-w-0 flex-1 truncate text-[14px] font-medium text-ink-800">
                 {{ m.name }}
               </span>
               <span class="tabular shrink-0 text-[13px] font-semibold text-ink-700">
@@ -581,7 +581,7 @@ function downloadAct() {
                   {{ c.label }}
                 </span>
                 <span
-                  class="shrink-0 text-[11.5px] font-semibold"
+                  class="shrink-0 text-[12px] font-semibold"
                   :class="orderChecks[i] ? 'text-ok-600' : 'text-ink-400'"
                 >
                   {{ orderChecks[i] ? 'Bajarildi' : 'Kutilmoqda' }}
@@ -594,7 +594,7 @@ function downloadAct() {
         <UiCard title="Xarajat va akt">
           <template #actions>
             <span
-              class="inline-flex items-center gap-1.5 rounded-pill px-2.5 py-1 text-[11.5px] font-semibold ring-1 ring-inset"
+              class="inline-flex items-center gap-1.5 rounded-pill px-2.5 py-1 text-[12px] font-semibold ring-1 ring-inset"
               :class="
                 actReady
                   ? 'bg-ok-50 text-ok-700 ring-ok-100'
@@ -621,14 +621,14 @@ function downloadAct() {
 
           <dl class="space-y-3">
             <div class="flex items-baseline justify-between gap-3">
-              <dt class="text-[12.5px] text-ink-500">Taxminiy xarajat</dt>
-              <dd class="tabular text-[13.5px] font-bold text-ink-900">{{ sum(estimate) }}</dd>
+              <dt class="text-[13px] text-ink-500">Taxminiy xarajat</dt>
+              <dd class="tabular text-[14px] font-bold text-ink-900">{{ sum(estimate) }}</dd>
             </div>
             <div class="flex items-baseline justify-between gap-3">
-              <dt class="text-[12.5px] text-ink-500">Amaldagi xarajat</dt>
+              <dt class="text-[13px] text-ink-500">Amaldagi xarajat</dt>
               <dd
                 v-if="issuedRequest"
-                class="tabular text-[13.5px] font-bold"
+                class="tabular text-[14px] font-bold"
                 :class="actual > estimate ? 'text-danger-600' : 'text-ok-600'"
               >
                 {{ sum(actual) }}
@@ -636,8 +636,8 @@ function downloadAct() {
               <dd v-else class="text-[13px] text-ink-500">Ombordan berilmagan</dd>
             </div>
             <div class="flex items-baseline justify-between gap-3">
-              <dt class="text-[12.5px] text-ink-500">Ish yakunlangan sana</dt>
-              <dd class="tabular text-[13.5px] font-bold text-ink-900">
+              <dt class="text-[13px] text-ink-500">Ish yakunlangan sana</dt>
+              <dd class="tabular text-[14px] font-bold text-ink-900">
                 {{ actReady ? dateShort(actDate(order)) : '-' }}
               </dd>
             </div>
@@ -663,7 +663,7 @@ function downloadAct() {
 
     <UiCard v-else>
       <div class="py-10 text-center">
-        <p class="text-[15px] font-semibold text-ink-900">Bunday topshiriq topilmadi</p>
+        <p class="text-[16px] font-semibold text-ink-900">Bunday topshiriq topilmadi</p>
         <p class="mt-1.5 text-[13px] text-ink-500">
           Topshiriq boshqa ijrochiga o‘tkazilgan yoki manzil noto‘g‘ri kiritilgan bo‘lishi mumkin.
         </p>
@@ -712,7 +712,7 @@ function downloadAct() {
             stroke-linejoin="round"
           />
         </svg>
-        <span class="text-[13.5px] font-semibold">Fayl biriktirish uchun bosing</span>
+        <span class="text-[14px] font-semibold">Fayl biriktirish uchun bosing</span>
         <span class="text-[12px]">Biriktirilgan: {{ uploadFiles.length }} ta</span>
       </button>
 
@@ -723,7 +723,7 @@ function downloadAct() {
           class="flex items-center gap-2.5 rounded-field px-3 py-2 ring-1 ring-ink-200"
         >
           <UiIcon name="doc" :size="16" class="shrink-0 text-brand-600" />
-          <span class="min-w-0 flex-1 truncate text-[12.5px] text-ink-700">
+          <span class="min-w-0 flex-1 truncate text-[13px] text-ink-700">
             {{ x.name }}
             <span class="tabular text-ink-500">· {{ fileSize(x.size) }}</span>
           </span>
@@ -834,7 +834,7 @@ function downloadAct() {
     <div v-if="order && actReady" class="rounded-field bg-white p-6 ring-1 ring-ink-200">
       <div class="flex items-start justify-between gap-4 border-b border-ink-200 pb-4">
         <div>
-          <p class="text-[17px] font-bold text-ink-900">Bajarilgan ish akti</p>
+          <p class="text-[18px] font-bold text-ink-900">Bajarilgan ish akti</p>
           <p class="tabular mt-1 text-[13px] text-ink-500">
             {{ order.code }} · {{ dateShort(actDate(order)) }}
           </p>
@@ -844,21 +844,21 @@ function downloadAct() {
 
       <dl class="mt-4 grid gap-x-6 gap-y-3 sm:grid-cols-2">
         <div class="flex justify-between gap-3 border-b border-ink-100 pb-2">
-          <dt class="text-[12.5px] text-ink-500">Obyekt</dt>
+          <dt class="text-[13px] text-ink-500">Obyekt</dt>
           <dd class="text-[13px] font-semibold text-ink-900">{{ order.buildingName }}</dd>
         </div>
         <div class="flex justify-between gap-3 border-b border-ink-100 pb-2">
-          <dt class="text-[12.5px] text-ink-500">Lokatsiya</dt>
+          <dt class="text-[13px] text-ink-500">Lokatsiya</dt>
           <dd class="text-[13px] font-semibold text-ink-900">{{ order.unitCode }}</dd>
         </div>
         <div class="flex justify-between gap-3 border-b border-ink-100 pb-2">
-          <dt class="text-[12.5px] text-ink-500">Ijrochi</dt>
+          <dt class="text-[13px] text-ink-500">Ijrochi</dt>
           <dd class="text-[13px] font-semibold text-ink-900">
             {{ order.assignee ?? 'Biriktirilmagan' }}
           </dd>
         </div>
         <div class="flex justify-between gap-3 border-b border-ink-100 pb-2">
-          <dt class="text-[12.5px] text-ink-500">Topshiriq berdi</dt>
+          <dt class="text-[13px] text-ink-500">Topshiriq berdi</dt>
           <dd class="text-[13px] font-semibold text-ink-900">{{ order.requester }}</dd>
         </div>
       </dl>
@@ -866,13 +866,13 @@ function downloadAct() {
       <table class="mt-5 w-full border-collapse text-sm">
         <thead>
           <tr class="border-b border-ink-200 bg-surface-sunken">
-            <th class="px-3 py-2 text-left text-[11.5px] font-semibold uppercase tracking-wide text-ink-500">
+            <th class="px-3 py-2 text-left text-[12px] font-semibold uppercase tracking-wide text-ink-500">
               Nomi
             </th>
-            <th class="px-3 py-2 text-right text-[11.5px] font-semibold uppercase tracking-wide text-ink-500">
+            <th class="px-3 py-2 text-right text-[12px] font-semibold uppercase tracking-wide text-ink-500">
               Miqdor
             </th>
-            <th class="px-3 py-2 text-right text-[11.5px] font-semibold uppercase tracking-wide text-ink-500">
+            <th class="px-3 py-2 text-right text-[12px] font-semibold uppercase tracking-wide text-ink-500">
               Summa
             </th>
           </tr>
@@ -903,13 +903,13 @@ function downloadAct() {
       <div class="mt-6 grid gap-6 sm:grid-cols-2">
         <div>
           <p class="text-[12px] text-ink-500">Topshirdi</p>
-          <p class="mt-6 border-t border-ink-300 pt-1.5 text-[12.5px] text-ink-600">
+          <p class="mt-6 border-t border-ink-300 pt-1.5 text-[13px] text-ink-600">
             {{ order.assignee ?? '-' }}
           </p>
         </div>
         <div>
           <p class="text-[12px] text-ink-500">Qabul qildi</p>
-          <p class="mt-6 border-t border-ink-300 pt-1.5 text-[12.5px] text-ink-600">
+          <p class="mt-6 border-t border-ink-300 pt-1.5 text-[13px] text-ink-600">
             {{ order.requester }}
           </p>
         </div>

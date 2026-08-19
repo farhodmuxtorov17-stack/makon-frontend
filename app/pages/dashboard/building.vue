@@ -280,7 +280,7 @@ const revenueSeries = computed(() => {
               >
                 <UiIcon :name="p.icon" :size="18" />
               </span>
-              <span class="min-w-0 flex-1 truncate text-[13.5px] font-medium text-ink-700 group-hover:text-brand-700">
+              <span class="min-w-0 flex-1 truncate text-[14px] font-medium text-ink-700 group-hover:text-brand-700">
                 {{ p.label }}
               </span>
               <span class="tabular shrink-0 text-lg font-bold text-ink-900">{{ p.count }}</span>
@@ -306,7 +306,7 @@ const revenueSeries = computed(() => {
                 <span class="text-[13px] font-semibold text-ink-700 group-hover:text-brand-700">
                   {{ f.floor }}-qavat
                 </span>
-                <span class="tabular text-[12.5px] text-ink-500">
+                <span class="tabular text-[13px] text-ink-500">
                   {{ f.taken }} / {{ f.total }} unit
                 </span>
                 <span class="tabular text-[13px] font-bold text-ink-900">
@@ -329,7 +329,7 @@ const revenueSeries = computed(() => {
       <UiCard title="Tushum dinamikasi" subtitle="Oxirgi nuqta: KPI kartadagi joriy qiymat">
         <div class="flex items-baseline justify-between gap-3">
           <p class="text-[13px] font-semibold text-ink-700">Oylik tushum</p>
-          <p class="tabular text-[13.5px] font-bold text-brand-600">
+          <p class="tabular text-[14px] font-bold text-brand-600">
             {{ sumShort(building.monthlyRevenue) }}
           </p>
         </div>
@@ -360,7 +360,7 @@ const revenueSeries = computed(() => {
             </span>
             <span class="min-w-0 flex-1">
               <span
-                class="block truncate text-[13.5px] font-semibold text-ink-900 group-hover:text-brand-600"
+                class="block truncate text-[14px] font-semibold text-ink-900 group-hover:text-brand-600"
               >
                 {{ s.title }}
               </span>
@@ -428,7 +428,7 @@ const revenueSeries = computed(() => {
               </span>
               <span class="min-w-0 flex-1">
                 <span
-                  class="block truncate text-[13.5px] font-semibold text-ink-900 group-hover:text-brand-600"
+                  class="block truncate text-[14px] font-semibold text-ink-900 group-hover:text-brand-600"
                 >
                   {{ i.tenant }}
                 </span>
@@ -437,7 +437,7 @@ const revenueSeries = computed(() => {
                 </span>
               </span>
               <span class="shrink-0 text-right">
-                <span class="tabular block text-[13.5px] font-bold text-danger-600">
+                <span class="tabular block text-[14px] font-bold text-danger-600">
                   {{ sumShort(i.total - i.paid) }}
                 </span>
                 <span class="block text-[12px] text-ink-500">
@@ -472,7 +472,7 @@ const revenueSeries = computed(() => {
               </span>
               <span class="min-w-0 flex-1">
                 <span
-                  class="block truncate text-[13.5px] font-semibold text-ink-900 group-hover:text-brand-600"
+                  class="block truncate text-[14px] font-semibold text-ink-900 group-hover:text-brand-600"
                 >
                   {{ c.code }} · {{ c.unitCode }}
                 </span>

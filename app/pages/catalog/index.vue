@@ -695,127 +695,120 @@ watch(
           :key="l.unit.id"
           :data-building="l.building.id"
           :to="`/catalog/${l.building.slug}?unit=${l.unit.id}`"
-          class="group flex flex-col overflow-hidden rounded-card bg-surface shadow-card ring-1 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-pop md:flex-row"
+          class="group flex h-[148px] overflow-hidden rounded-card bg-surface shadow-card ring-1 transition-shadow duration-150 hover:shadow-panel md:h-[168px]"
           :class="hoverId === l.building.id ? 'ring-brand-400' : 'ring-ink-200/70'"
           @mouseenter="hoverId = l.building.id"
           @mouseleave="hoverId = null"
           @focusin="hoverId = l.building.id"
           @click="onCardClick"
         >
-          <div class="relative flex w-full shrink-0 md:w-[150px]">
-            <UiPhoto
-              :name="l.building.photo"
-              :alt="`${l.building.name}, ${l.building.city}, ${l.building.district}`"
-              rounded="rounded-none"
-              ratio="aspect-[16/10] w-full md:aspect-auto"
-              sizes="(max-width: 767px) 100vw, 200px"
+          <!--
+            Rasm ramkasi kvadrat: reyestrdagi 22 binodan 18 tasining surati
+            1:1 nisbatda saqlanadi, shuning uchun kvadrat ramka ularni na
+            kesadi, na cho‘zadi. Ramka eni kartochka balandligiga teng, ya’ni
+            matn uzunligi rasm nisbatini boshqara olmaydi. Surat yuklanmasa
+            UiPhoto shu o‘lchamdagi neytral o‘rin egallovchini ko‘rsatadi va
+            kartochka geometriyasi buzilmaydi.
+          -->
+          <UiPhoto
+            :name="l.building.photo"
+            :alt="`${l.building.name}, ${l.building.city}, ${l.building.district}`"
+            rounded="rounded-none"
+            ratio="h-full w-[148px] shrink-0 md:w-[168px]"
+            sizes="200px"
+          >
+            <button
+              type="button"
+              class="absolute right-2 top-2 grid size-9 place-items-center rounded-full bg-white/92 shadow-card backdrop-blur-sm transition-colors duration-150 after:absolute after:-inset-1 after:content-['']"
+              :class="
+                favourites.includes(l.unit.id)
+                  ? 'text-danger-500'
+                  : 'text-ink-500 hover:bg-white hover:text-danger-500'
+              "
+              :aria-pressed="favourites.includes(l.unit.id)"
+              :aria-label="`${l.building.name} ${l.unit.code} ni sevimlilarga qo‘shish`"
+              @click.prevent.stop="toggleFavourite(l.unit.id)"
             >
-              <span
-                class="pointer-events-none absolute inset-0 bg-gradient-to-t from-ink-900/75 via-ink-900/10 to-transparent"
-              />
-
-              <button
-                type="button"
-                class="absolute right-2 top-2 grid size-11 place-items-center rounded-full bg-white/92 shadow-card backdrop-blur-sm transition-colors duration-150 md:size-8"
-                :class="
-                  favourites.includes(l.unit.id)
-                    ? 'text-danger-500'
-                    : 'text-ink-500 hover:text-danger-500'
-                "
-                :aria-pressed="favourites.includes(l.unit.id)"
-                :aria-label="`${l.building.name} ${l.unit.code} ni sevimlilarga qo‘shish`"
-                @click.prevent.stop="toggleFavourite(l.unit.id)"
+              <svg
+                class="size-[17px]"
+                viewBox="0 0 24 24"
+                :fill="favourites.includes(l.unit.id) ? 'currentColor' : 'none'"
+                stroke="currentColor"
+                stroke-width="1.7"
+                aria-hidden="true"
               >
-                <svg
-                  class="size-[17px]"
-                  viewBox="0 0 24 24"
-                  :fill="favourites.includes(l.unit.id) ? 'currentColor' : 'none'"
-                  stroke="currentColor"
-                  stroke-width="1.7"
-                  aria-hidden="true"
-                >
-                  <path
-                    d="M12 20.2 4.9 13.3a4.6 4.6 0 0 1 6.5-6.5l.6.6.6-.6a4.6 4.6 0 0 1 6.5 6.5z"
-                    stroke-linejoin="round"
-                  />
-                </svg>
-              </button>
+                <path
+                  d="M12 20.2 4.9 13.3a4.6 4.6 0 0 1 6.5-6.5l.6.6.6-.6a4.6 4.6 0 0 1 6.5 6.5z"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </button>
+          </UiPhoto>
 
+          <!--
+            Qatorlarda `shrink-0` bor: aks holda tor ekranda flex ularni
+            qisib, bino nomini ko‘rinmas holga keltiradi. Bo‘sh joyni faqat
+            `mt-auto` yutadi.
+          -->
+          <div class="flex min-w-0 flex-1 flex-col p-3.5 md:p-4">
+            <!--
+              Birinchi qator har bir kartochkada bir xil: chapda holat
+              nishonchasi, o‘ngda unit kodi. Kod reyestr, shartnoma va qavat
+              rejasida ham shu ko‘rinishda uchraydi.
+            -->
+            <div class="flex shrink-0 items-center justify-between gap-2">
+              <UiStatus kind="unit" :value="l.unit.status" size="sm" />
               <span
-                class="absolute bottom-2 left-2 rounded-pill bg-white/92 px-2 py-0.5 text-[10.5px] font-bold text-ink-800 shadow-card"
-              >
-                {{ l.building.type }}
-              </span>
-            </UiPhoto>
-          </div>
-
-          <div class="flex min-w-0 flex-1 flex-col gap-2 p-4">
-            <div class="flex items-start justify-between gap-2">
-              <h2 class="truncate text-[15.5px] font-bold text-ink-900 group-hover:text-brand-700">
-                {{ l.building.name }}
-              </h2>
-              <span
-                class="shrink-0 rounded-pill bg-ink-100 px-2 py-0.5 text-[11px] font-semibold text-ink-600"
+                class="tabular shrink-0 rounded-[6px] bg-ink-100 px-1.5 text-[11px] font-bold leading-5 text-ink-700"
               >
                 {{ l.unit.code }}
               </span>
             </div>
 
-            <p class="flex items-center gap-1.5 text-[12.5px] text-ink-500">
-              <UiIcon name="location" :size="14" class="shrink-0 text-ink-400" />
-              <span class="truncate">
-                {{ l.building.city }}, {{ l.building.district }}, {{ l.building.street }}
+            <!--
+              Narx va o‘lchov birligi ajralmas juftlik: ijara so‘m/oy da,
+              sotuv so‘m/m² da narxlanadi. Birlik yozilmasa raqam noto‘g‘ri
+              o‘qiladi, shuning uchun u doim raqam yonida turadi.
+            -->
+            <p class="mt-2 flex shrink-0 flex-wrap items-baseline gap-x-1.5">
+              <span
+                class="tabular text-[17px] font-extrabold leading-none md:text-[20px]"
+                :class="l.unit.offer === 'Sotuv' ? 'text-teal-700' : 'text-brand-700'"
+              >
+                {{ num(l.unit.price) }}
+              </span>
+              <span class="text-[11px] font-medium text-ink-500 md:text-[11.5px]">
+                {{ l.unit.priceUnit }}
               </span>
             </p>
 
-            <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-[12.5px] text-ink-600">
-              <span class="inline-flex items-center gap-1.5">
-                <UiIcon name="layers" :size="14" class="text-ink-400" />
-                <span class="tabular">{{ area(l.unit.area) }}</span>
-              </span>
-              <span v-if="l.unit.usage" class="inline-flex items-center gap-1.5">
-                <UiIcon name="building" :size="14" class="text-ink-400" />
-                {{ usageLabel(l.unit.usage) }}
-              </span>
-              <span class="inline-flex items-center gap-1.5">
-                <UiIcon name="grid" :size="14" class="text-ink-400" />
-                <span class="tabular">{{ l.unit.floor }}-qavat</span>
-              </span>
-            </div>
-
-            <ul class="flex flex-wrap items-center gap-x-3 gap-y-1">
-              <li
-                v-for="e in l.unit.equipment.slice(0, 3)"
-                :key="e"
-                class="inline-flex items-center gap-1 text-[11.5px] text-ink-500"
-              >
-                <UiIcon name="check" :size="12" class="shrink-0 text-ok-600" />
-                {{ e }}
-              </li>
-            </ul>
-
-            <div
-              class="mt-auto flex flex-wrap items-end justify-between gap-2 border-t border-ink-100 pt-2.5"
+            <p
+              class="mt-1.5 flex shrink-0 items-center gap-x-1.5 text-[12.5px] text-ink-600 md:gap-x-2 md:text-[13px]"
             >
-              <p class="min-w-0">
-                <span
-                  class="tabular text-[19px] font-extrabold leading-tight"
-                  :class="l.unit.offer === 'Sotuv' ? 'text-teal-700' : 'text-brand-700'"
-                >
-                  {{ num(l.unit.price) }}
-                </span>
-                <span class="ml-1 text-[11.5px] font-medium text-ink-500">
-                  {{ l.unit.priceUnit }}
-                </span>
-              </p>
+              <span class="tabular shrink-0 font-bold text-ink-900">{{ area(l.unit.area) }}</span>
+              <span class="shrink-0 text-ink-300">·</span>
+              <span class="tabular shrink-0 whitespace-nowrap">{{ l.unit.floor }}-qavat</span>
+              <template v-if="l.unit.usage">
+                <span class="hidden shrink-0 text-ink-300 md:inline">·</span>
+                <span class="hidden truncate md:inline">{{ usageLabel(l.unit.usage) }}</span>
+              </template>
+            </p>
 
-              <span
-                class="inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-field bg-brand-50 px-3 text-[12.5px] font-semibold text-brand-700 transition-colors duration-150 group-hover:bg-brand-500 group-hover:text-white"
-              >
-                Batafsil
-                <UiIcon name="arrowRight" :size="14" />
+            <!-- Ikkinchi darajali ma’lumot pastda, mayda va yengil ohangda -->
+            <h2
+              class="mt-auto shrink-0 truncate text-[12.5px] font-semibold text-ink-800 transition-colors duration-150 group-hover:text-brand-700 md:text-[13.5px]"
+            >
+              {{ l.building.name }}
+            </h2>
+
+            <p
+              class="mt-1 flex shrink-0 items-center gap-1.5 text-[11.5px] text-ink-500 md:text-[12.5px]"
+            >
+              <UiIcon name="location" :size="13" class="shrink-0 text-ink-400" />
+              <span class="truncate">
+                {{ l.building.district }}<span class="hidden md:inline">, {{ l.building.street }}</span>
               </span>
-            </div>
+            </p>
           </div>
         </NuxtLink>
 

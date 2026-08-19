@@ -465,10 +465,10 @@ function saveIssue() {
             >
               <UiIcon :name="c.icon" :size="21" />
             </span>
-            <span class="mt-2.5 block truncate text-[12.5px] font-semibold text-ink-900">
+            <span class="mt-2.5 block truncate text-[13px] font-semibold text-ink-900">
               {{ c.label }}
             </span>
-            <span class="tabular mt-0.5 block text-[11.5px] text-ink-500">{{ c.count }} nom</span>
+            <span class="tabular mt-0.5 block text-[12px] text-ink-500">{{ c.count }} nom</span>
           </button>
         </div>
       </UiCard>
@@ -492,29 +492,29 @@ function saveIssue() {
               />
               {{ s.label }}
             </span>
-            <span class="tabular mt-1 block text-[20px] font-bold leading-none text-ink-900">
+            <span class="tabular mt-1 block text-[22px] font-bold leading-none text-ink-900">
               {{ s.value }}
             </span>
-            <span class="mt-1 block text-[11.5px] text-ink-500">{{ s.unit }}</span>
+            <span class="mt-1 block text-[12px] text-ink-500">{{ s.unit }}</span>
           </div>
         </div>
 
         <dl class="mt-4 space-y-3 border-t border-ink-100 pt-4">
           <div class="flex items-baseline justify-between gap-3">
-            <dt class="text-[12.5px] text-ink-500">Sizga biriktirilgan omborlar</dt>
-            <dd class="tabular text-[13.5px] font-bold text-ink-900">
+            <dt class="text-[13px] text-ink-500">Sizga biriktirilgan omborlar</dt>
+            <dd class="tabular text-[14px] font-bold text-ink-900">
               {{ warehouses.length }} ta
             </dd>
           </div>
           <div class="flex items-baseline justify-between gap-3">
-            <dt class="text-[12.5px] text-ink-500">Jami pozitsiyalar</dt>
-            <dd class="tabular text-[13.5px] font-bold text-ink-900">
+            <dt class="text-[13px] text-ink-500">Jami pozitsiyalar</dt>
+            <dd class="tabular text-[14px] font-bold text-ink-900">
               {{ num(scopedSummary.positions) }} nom
             </dd>
           </div>
           <div class="flex items-baseline justify-between gap-3">
-            <dt class="text-[12.5px] text-ink-500">Jami qoldiq qiymati</dt>
-            <dd class="tabular text-[13.5px] font-bold text-ink-900">
+            <dt class="text-[13px] text-ink-500">Jami qoldiq qiymati</dt>
+            <dd class="tabular text-[14px] font-bold text-ink-900">
               {{ sumShort(scopedSummary.totalValue) }}
             </dd>
           </div>
@@ -607,7 +607,7 @@ function saveIssue() {
     >
       <p
         v-if="handoverError"
-        class="mb-3 rounded-field bg-danger-50 px-4 py-2.5 text-[12.5px] font-medium text-danger-700 ring-1 ring-inset ring-danger-100"
+        class="mb-3 rounded-field bg-danger-50 px-4 py-2.5 text-[13px] font-medium text-danger-700 ring-1 ring-inset ring-danger-100"
         role="status"
       >
         {{ handoverError }}
@@ -620,19 +620,19 @@ function saveIssue() {
           class="flex flex-wrap items-center gap-3 py-3 first:pt-0 last:pb-0"
         >
           <span class="min-w-0 flex-1">
-            <span class="tabular block text-[13.5px] font-bold text-ink-900">{{ r.code }}</span>
-            <span class="block truncate text-[12.5px] text-ink-500">
+            <span class="tabular block text-[14px] font-bold text-ink-900">{{ r.code }}</span>
+            <span class="block truncate text-[13px] text-ink-500">
               {{ r.workOrder }} · {{ r.requester }} · {{ r.items }} ta pozitsiya
             </span>
           </span>
-          <span class="tabular shrink-0 text-[13.5px] font-bold text-ink-900">
+          <span class="tabular shrink-0 text-[14px] font-bold text-ink-900">
             {{ sum(r.amount) }}
           </span>
           <UiButton v-if="canIssue" size="sm" variant="success" @click="handoverRequest(r)">
             <UiIcon name="send" :size="16" />
             Berish
           </UiButton>
-          <span v-else class="shrink-0 text-[12.5px] text-ink-500">Berish huquqi yo‘q</span>
+          <span v-else class="shrink-0 text-[13px] text-ink-500">Berish huquqi yo‘q</span>
         </li>
       </ul>
     </UiCard>
@@ -753,7 +753,7 @@ function saveIssue() {
       <div class="overflow-hidden rounded-field ring-1 ring-ink-200">
         <div class="flex items-center justify-between border-b border-ink-200 bg-surface-sunken px-4 py-3">
           <span class="text-[13px] font-semibold text-ink-700">Jihoz va materiallarni tanlash</span>
-          <span class="tabular text-[12.5px] text-ink-500">
+          <span class="tabular text-[13px] text-ink-500">
             {{ issuePool.length }} ta pozitsiya mavjud
           </span>
         </div>
@@ -764,7 +764,7 @@ function saveIssue() {
               <UiIcon name="cube" :size="17" />
             </span>
             <span class="min-w-0 flex-1">
-              <span class="block truncate text-[13.5px] font-semibold text-ink-900">{{ i.name }}</span>
+              <span class="block truncate text-[14px] font-semibold text-ink-900">{{ i.name }}</span>
               <span class="tabular block text-[12px] text-ink-500">
                 {{ i.code }} · mavjud {{ num(i.qty) }} {{ i.unit }}
               </span>
@@ -819,7 +819,7 @@ function saveIssue() {
     <div v-if="printAct" class="rounded-field bg-white p-6 ring-1 ring-ink-200">
       <div class="flex items-start justify-between gap-4 border-b border-ink-200 pb-4">
         <div>
-          <p class="text-[17px] font-bold text-ink-900">Jihoz va material berish dalolatnomasi</p>
+          <p class="text-[18px] font-bold text-ink-900">Jihoz va material berish dalolatnomasi</p>
           <p class="tabular mt-1 text-[13px] text-ink-500">
             {{ printAct.code }} · {{ dateShort(printAct.at) }}
           </p>
@@ -829,19 +829,19 @@ function saveIssue() {
 
       <dl class="mt-4 grid gap-x-6 gap-y-3 sm:grid-cols-2">
         <div class="flex justify-between gap-3 border-b border-ink-100 pb-2">
-          <dt class="text-[12.5px] text-ink-500">Kimga berildi</dt>
+          <dt class="text-[13px] text-ink-500">Kimga berildi</dt>
           <dd class="text-[13px] font-semibold text-ink-900">{{ printAct.recipient }}</dd>
         </div>
         <div class="flex justify-between gap-3 border-b border-ink-100 pb-2">
-          <dt class="text-[12.5px] text-ink-500">Qaysi ariza bo‘yicha</dt>
+          <dt class="text-[13px] text-ink-500">Qaysi ariza bo‘yicha</dt>
           <dd class="tabular text-[13px] font-semibold text-ink-900">{{ printAct.request }}</dd>
         </div>
         <div class="flex justify-between gap-3 border-b border-ink-100 pb-2">
-          <dt class="text-[12.5px] text-ink-500">Ombor</dt>
+          <dt class="text-[13px] text-ink-500">Ombor</dt>
           <dd class="text-[13px] font-semibold text-ink-900">{{ printAct.warehouse }}</dd>
         </div>
         <div class="flex justify-between gap-3 border-b border-ink-100 pb-2">
-          <dt class="text-[12.5px] text-ink-500">Omborchi</dt>
+          <dt class="text-[13px] text-ink-500">Omborchi</dt>
           <dd class="text-[13px] font-semibold text-ink-900">
             {{ auth.user?.fullName ?? 'Ombor mas’uli' }}
           </dd>
@@ -851,16 +851,16 @@ function saveIssue() {
       <table class="mt-5 w-full border-collapse text-sm">
         <thead>
           <tr class="border-b border-ink-200 bg-surface-sunken">
-            <th class="px-3 py-2 text-left text-[11.5px] font-semibold uppercase tracking-wide text-ink-500">
+            <th class="px-3 py-2 text-left text-[12px] font-semibold uppercase tracking-wide text-ink-500">
               №
             </th>
-            <th class="px-3 py-2 text-left text-[11.5px] font-semibold uppercase tracking-wide text-ink-500">
+            <th class="px-3 py-2 text-left text-[12px] font-semibold uppercase tracking-wide text-ink-500">
               Nomi
             </th>
-            <th class="px-3 py-2 text-left text-[11.5px] font-semibold uppercase tracking-wide text-ink-500">
+            <th class="px-3 py-2 text-left text-[12px] font-semibold uppercase tracking-wide text-ink-500">
               O‘lchov birligi
             </th>
-            <th class="px-3 py-2 text-right text-[11.5px] font-semibold uppercase tracking-wide text-ink-500">
+            <th class="px-3 py-2 text-right text-[12px] font-semibold uppercase tracking-wide text-ink-500">
               Miqdor
             </th>
           </tr>
@@ -878,13 +878,13 @@ function saveIssue() {
       <div class="mt-6 grid gap-6 sm:grid-cols-2">
         <div>
           <p class="text-[12px] text-ink-500">Berdi (omborchi)</p>
-          <p class="mt-6 border-t border-ink-300 pt-1.5 text-[12.5px] text-ink-600">
+          <p class="mt-6 border-t border-ink-300 pt-1.5 text-[13px] text-ink-600">
             {{ auth.user?.fullName ?? 'Ombor mas’uli' }}
           </p>
         </div>
         <div>
           <p class="text-[12px] text-ink-500">Oldi</p>
-          <p class="mt-6 border-t border-ink-300 pt-1.5 text-[12.5px] text-ink-600">
+          <p class="mt-6 border-t border-ink-300 pt-1.5 text-[13px] text-ink-600">
             {{ printAct.recipient }}
           </p>
         </div>

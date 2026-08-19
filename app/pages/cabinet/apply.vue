@@ -163,7 +163,7 @@ function submit() {
               v-if="unit && building"
               class="flex flex-wrap items-center justify-between gap-3 rounded-field bg-surface-sunken px-4 py-3 ring-1 ring-inset ring-ink-200"
             >
-              <span class="min-w-0 text-[12.5px] text-ink-600">
+              <span class="min-w-0 text-[13px] text-ink-600">
                 {{ building.name }} · {{ unit.usage }} · {{ unit.floor }}-qavat ·
                 {{ unit.rooms }} xona · {{ area(unit.area) }}
               </span>
@@ -259,20 +259,20 @@ function submit() {
         <UiCard v-if="price > 0" title="Dastlabki hisob" subtitle="Yakuniy shartlar ko‘rikdan keyin" icon="chart" tone="brand">
           <dl class="space-y-3">
             <div class="flex items-baseline justify-between gap-3">
-              <dt class="text-[12.5px] text-ink-500">Ariza turi</dt>
-              <dd class="text-[13.5px] font-bold text-ink-900">{{ REQUEST_TYPE }}</dd>
+              <dt class="text-[13px] text-ink-500">Ariza turi</dt>
+              <dd class="text-[14px] font-bold text-ink-900">{{ REQUEST_TYPE }}</dd>
             </div>
             <div class="flex items-baseline justify-between gap-3">
-              <dt class="text-[12.5px] text-ink-500">Taklif narxi (oylik)</dt>
-              <dd class="tabular text-[13.5px] font-bold text-ink-900">{{ sum(price) }}</dd>
+              <dt class="text-[13px] text-ink-500">Taklif narxi (oylik)</dt>
+              <dd class="tabular text-[14px] font-bold text-ink-900">{{ sum(price) }}</dd>
             </div>
             <div class="flex items-baseline justify-between gap-3">
-              <dt class="text-[12.5px] text-ink-500">Muddat</dt>
-              <dd class="tabular text-[13.5px] font-bold text-ink-900">{{ term }} oy</dd>
+              <dt class="text-[13px] text-ink-500">Muddat</dt>
+              <dd class="tabular text-[14px] font-bold text-ink-900">{{ term }} oy</dd>
             </div>
             <div class="flex items-baseline justify-between gap-3 border-t border-ink-100 pt-3">
-              <dt class="text-[12.5px] text-ink-500">Muddat bo‘yicha jami</dt>
-              <dd class="tabular text-[15px] font-extrabold text-brand-700">{{ sum(estimate) }}</dd>
+              <dt class="text-[13px] text-ink-500">Muddat bo‘yicha jami</dt>
+              <dd class="tabular text-[16px] font-extrabold text-brand-700">{{ sum(estimate) }}</dd>
             </div>
           </dl>
         </UiCard>

@@ -324,7 +324,7 @@ function submitRequest() {
 
       <div v-if="detail.reason" class="rounded-field bg-surface-sunken px-4 py-3">
         <p class="text-[12px] text-ink-500">Asos</p>
-        <p class="mt-1 text-[13.5px] leading-relaxed text-ink-800">{{ detail.reason }}</p>
+        <p class="mt-1 text-[14px] leading-relaxed text-ink-800">{{ detail.reason }}</p>
       </div>
 
       <UiTable
@@ -345,7 +345,7 @@ function submitRequest() {
 
       <div class="flex items-center justify-between rounded-field bg-surface-sunken px-4 py-3">
         <span class="text-[13px] font-semibold text-ink-700">Jami</span>
-        <span class="tabular text-[15px] font-bold text-ink-900">{{ sum(detailTotal) }}</span>
+        <span class="tabular text-[16px] font-bold text-ink-900">{{ sum(detailTotal) }}</span>
       </div>
     </div>
 
@@ -406,12 +406,12 @@ function submitRequest() {
         <ul class="divide-y divide-ink-100">
           <li v-for="l in draftLines" :key="l.code" class="flex items-center gap-3 px-4 py-3">
             <span class="min-w-0 flex-1">
-              <span class="block truncate text-[13.5px] font-semibold text-ink-900">{{ l.name }}</span>
+              <span class="block truncate text-[14px] font-semibold text-ink-900">{{ l.name }}</span>
               <span class="tabular block text-[12px] text-ink-500">
                 {{ l.qty }} {{ l.unit }} × {{ sum(l.price) }}
               </span>
             </span>
-            <span class="tabular shrink-0 text-[13.5px] font-bold text-ink-900">
+            <span class="tabular shrink-0 text-[14px] font-bold text-ink-900">
               {{ sum(l.qty * l.price) }}
             </span>
             <button
@@ -428,7 +428,7 @@ function submitRequest() {
           <span class="text-[13px] font-semibold text-ink-700">
             Jami {{ draftLines.length }} ta pozitsiya
           </span>
-          <span class="tabular text-[15px] font-bold text-ink-900">{{ sum(draftTotal) }}</span>
+          <span class="tabular text-[16px] font-bold text-ink-900">{{ sum(draftTotal) }}</span>
         </div>
       </div>
 

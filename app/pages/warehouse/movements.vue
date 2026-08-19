@@ -598,7 +598,7 @@ function saveIssue() {
       </template>
       <span
         v-else
-        class="inline-flex items-center gap-1.5 rounded-pill bg-ink-100 px-3 py-1.5 text-[12.5px] font-semibold text-ink-600 ring-1 ring-inset ring-ink-200"
+        class="inline-flex items-center gap-1.5 rounded-pill bg-ink-100 px-3 py-1.5 text-[13px] font-semibold text-ink-600 ring-1 ring-inset ring-ink-200"
       >
         <UiIcon name="eye" :size="15" />
         Kuzatuv rejimi
@@ -683,7 +683,7 @@ function saveIssue() {
           <div class="flex flex-wrap items-center gap-2 lg:col-span-2">
             <button
               type="button"
-              class="rounded-pill px-3 py-2 text-[12.5px] font-semibold ring-1 ring-inset transition-colors"
+              class="rounded-pill px-3 py-2 text-[13px] font-semibold ring-1 ring-inset transition-colors"
               :class="
                 from === CURRENT_DAY && to === CURRENT_DAY
                   ? 'bg-brand-500 text-white ring-brand-500'
@@ -695,21 +695,21 @@ function saveIssue() {
             </button>
             <button
               type="button"
-              class="rounded-pill bg-surface px-3 py-2 text-[12.5px] font-semibold text-ink-600 ring-1 ring-inset ring-ink-200 transition-colors hover:ring-brand-300"
+              class="rounded-pill bg-surface px-3 py-2 text-[13px] font-semibold text-ink-600 ring-1 ring-inset ring-ink-200 transition-colors hover:ring-brand-300"
               @click="setPeriod(7)"
             >
               7 kun
             </button>
             <button
               type="button"
-              class="rounded-pill bg-surface px-3 py-2 text-[12.5px] font-semibold text-ink-600 ring-1 ring-inset ring-ink-200 transition-colors hover:ring-brand-300"
+              class="rounded-pill bg-surface px-3 py-2 text-[13px] font-semibold text-ink-600 ring-1 ring-inset ring-ink-200 transition-colors hover:ring-brand-300"
               @click="setPeriod(-1)"
             >
               Butun davr
             </button>
             <button
               type="button"
-              class="inline-flex items-center gap-1.5 rounded-pill px-3 py-2 text-[12.5px] font-semibold ring-1 ring-inset transition-colors"
+              class="inline-flex items-center gap-1.5 rounded-pill px-3 py-2 text-[13px] font-semibold ring-1 ring-inset transition-colors"
               :class="
                 onlyOpen
                   ? 'bg-warn-50 text-warn-700 ring-warn-100'
@@ -744,7 +744,7 @@ function saveIssue() {
             <span class="tabular text-[13px] font-bold text-ink-900">{{ row.doc }}</span>
             <span
               v-if="row.open"
-              class="rounded-pill bg-warn-50 px-1.5 py-0.5 text-[10.5px] font-bold text-warn-700 ring-1 ring-inset ring-warn-100"
+              class="rounded-pill bg-warn-50 px-1.5 py-0.5 text-[11px] font-bold text-warn-700 ring-1 ring-inset ring-warn-100"
             >
               ochiq
             </span>
@@ -833,7 +833,7 @@ function saveIssue() {
         </UiField>
       </div>
 
-      <p v-if="receiveError" class="text-[12.5px] font-medium text-danger-600">{{ receiveError }}</p>
+      <p v-if="receiveError" class="text-[13px] font-medium text-danger-600">{{ receiveError }}</p>
     </div>
 
     <template #footer>
@@ -887,7 +887,7 @@ function saveIssue() {
         <UiSelect v-model="issueBasis" :options="basisOptions" />
       </UiField>
 
-      <p v-if="issueError" class="text-[12.5px] font-medium text-danger-600">{{ issueError }}</p>
+      <p v-if="issueError" class="text-[13px] font-medium text-danger-600">{{ issueError }}</p>
     </div>
 
     <template #footer>
@@ -910,7 +910,7 @@ function saveIssue() {
     <div v-if="detail" class="space-y-4">
       <p
         v-if="detailFresh"
-        class="flex items-start gap-2 rounded-field bg-ok-50 px-3.5 py-3 text-[12.5px] text-ok-700"
+        class="flex items-start gap-2 rounded-field bg-ok-50 px-3.5 py-3 text-[13px] text-ok-700"
       >
         <UiIcon name="check" :size="16" class="mt-0.5 shrink-0" />
         {{ kindMeta(detail.kind).label }} qayd etildi, ombor qoldig‘i yangilandi.
@@ -919,7 +919,7 @@ function saveIssue() {
       <div class="rounded-field bg-white p-5 ring-1 ring-ink-200 sm:p-6">
         <div class="flex flex-wrap items-start justify-between gap-4 border-b border-ink-200 pb-4">
           <div class="min-w-0">
-            <p class="text-[17px] font-bold text-ink-900">Elektron nakladnoy</p>
+            <p class="text-[18px] font-bold text-ink-900">Elektron nakladnoy</p>
             <p class="tabular mt-1 text-[13px] text-ink-500">
               {{ detail.doc }} · {{ dateShort(detail.date) }}
             </p>
@@ -942,11 +942,11 @@ function saveIssue() {
 
         <dl class="mt-4 grid gap-x-6 gap-y-3 sm:grid-cols-2">
           <div class="flex justify-between gap-3 border-b border-ink-100 pb-2">
-            <dt class="text-[12.5px] text-ink-500">Ombor</dt>
+            <dt class="text-[13px] text-ink-500">Ombor</dt>
             <dd class="text-right text-[13px] font-semibold text-ink-900">{{ detail.warehouse }}</dd>
           </div>
           <div class="flex justify-between gap-3 border-b border-ink-100 pb-2">
-            <dt class="text-[12.5px] text-ink-500">
+            <dt class="text-[13px] text-ink-500">
               {{
                 detail.kind === 'IN'
                   ? 'Yetkazib beruvchi'
@@ -960,13 +960,13 @@ function saveIssue() {
             </dd>
           </div>
           <div class="flex justify-between gap-3 border-b border-ink-100 pb-2">
-            <dt class="text-[12.5px] text-ink-500">Asos</dt>
+            <dt class="text-[13px] text-ink-500">Asos</dt>
             <dd class="tabular text-right text-[13px] font-semibold text-brand-600">
               {{ detail.basis }}
             </dd>
           </div>
           <div class="flex justify-between gap-3 border-b border-ink-100 pb-2">
-            <dt class="text-[12.5px] text-ink-500">Mas’ul omborchi</dt>
+            <dt class="text-[13px] text-ink-500">Mas’ul omborchi</dt>
             <dd class="text-right text-[13px] font-semibold text-ink-900">{{ detail.who }}</dd>
           </div>
         </dl>
@@ -976,32 +976,32 @@ function saveIssue() {
             <thead>
               <tr class="border-b border-ink-200 bg-surface-sunken">
                 <th
-                  class="px-3 py-2 text-left text-[11.5px] font-semibold uppercase tracking-wide text-ink-500"
+                  class="px-3 py-2 text-left text-[12px] font-semibold uppercase tracking-wide text-ink-500"
                 >
                   №
                 </th>
                 <th
-                  class="px-3 py-2 text-left text-[11.5px] font-semibold uppercase tracking-wide text-ink-500"
+                  class="px-3 py-2 text-left text-[12px] font-semibold uppercase tracking-wide text-ink-500"
                 >
                   Nomi
                 </th>
                 <th
-                  class="px-3 py-2 text-left text-[11.5px] font-semibold uppercase tracking-wide text-ink-500"
+                  class="px-3 py-2 text-left text-[12px] font-semibold uppercase tracking-wide text-ink-500"
                 >
                   Kodi
                 </th>
                 <th
-                  class="px-3 py-2 text-right text-[11.5px] font-semibold uppercase tracking-wide text-ink-500"
+                  class="px-3 py-2 text-right text-[12px] font-semibold uppercase tracking-wide text-ink-500"
                 >
                   Miqdor
                 </th>
                 <th
-                  class="px-3 py-2 text-right text-[11.5px] font-semibold uppercase tracking-wide text-ink-500"
+                  class="px-3 py-2 text-right text-[12px] font-semibold uppercase tracking-wide text-ink-500"
                 >
                   Narxi
                 </th>
                 <th
-                  class="px-3 py-2 text-right text-[11.5px] font-semibold uppercase tracking-wide text-ink-500"
+                  class="px-3 py-2 text-right text-[12px] font-semibold uppercase tracking-wide text-ink-500"
                 >
                   Summa
                 </th>
@@ -1028,7 +1028,7 @@ function saveIssue() {
           class="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-field bg-surface-sunken px-4 py-3"
         >
           <span class="text-[13px] font-semibold text-ink-700">Jami qiymat</span>
-          <span class="tabular text-[15px] font-bold text-ink-900">
+          <span class="tabular text-[16px] font-bold text-ink-900">
             {{ sum(detail.qty * detail.price) }}
           </span>
         </div>
@@ -1036,13 +1036,13 @@ function saveIssue() {
         <div class="mt-6 grid gap-6 sm:grid-cols-2">
           <div>
             <p class="text-[12px] text-ink-500">Topshirdi</p>
-            <p class="mt-6 border-t border-ink-300 pt-1.5 text-[12.5px] text-ink-600">
+            <p class="mt-6 border-t border-ink-300 pt-1.5 text-[13px] text-ink-600">
               {{ detail.kind === 'IN' ? detail.party : detail.who }}
             </p>
           </div>
           <div>
             <p class="text-[12px] text-ink-500">Qabul qildi</p>
-            <p class="mt-6 border-t border-ink-300 pt-1.5 text-[12.5px] text-ink-600">
+            <p class="mt-6 border-t border-ink-300 pt-1.5 text-[13px] text-ink-600">
               {{ detail.kind === 'IN' ? detail.who : detail.party }}
             </p>
           </div>
@@ -1051,7 +1051,7 @@ function saveIssue() {
 
       <p
         v-if="detail.open"
-        class="flex items-start gap-2 rounded-field bg-warn-50 px-3.5 py-3 text-[12.5px] text-warn-700"
+        class="flex items-start gap-2 rounded-field bg-warn-50 px-3.5 py-3 text-[13px] text-warn-700"
       >
         <UiIcon name="warning" :size="16" class="mt-0.5 shrink-0" />
         Nakladnoy ochiq: hujjat hali yopilmagan va ochiq hujjatlar hisobida turibdi.

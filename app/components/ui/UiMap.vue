@@ -678,9 +678,9 @@ function hideTile(e: Event) {
           v-if="active === m.id"
           class="absolute bottom-full left-1/2 z-20 mb-2 w-56 -translate-x-1/2 rounded-field bg-surface p-3 text-left shadow-pop ring-1 ring-ink-200"
         >
-          <p class="text-[13.5px] font-semibold text-ink-900">{{ m.label }}</p>
+          <p class="text-[14px] font-semibold text-ink-900">{{ m.label }}</p>
           <p v-if="m.caption" class="mt-0.5 text-[12px] text-ink-500">{{ m.caption }}</p>
-          <p v-if="m.value !== undefined" class="tabular mt-2 text-[20px] font-bold text-ink-900">
+          <p v-if="m.value !== undefined" class="tabular mt-2 text-[22px] font-bold text-ink-900">
             {{ Math.round(m.value) }}<span class="ml-1 text-[12px] font-medium text-ink-500">
               {{ m.valueLabel ?? '%' }}
             </span>
@@ -688,7 +688,7 @@ function hideTile(e: Event) {
           <NuxtLink
             v-if="m.to"
             :to="m.to"
-            class="mt-2 inline-flex items-center gap-1 text-[12.5px] font-semibold text-brand-600 hover:text-brand-700"
+            class="mt-2 inline-flex items-center gap-1 text-[13px] font-semibold text-brand-600 hover:text-brand-700"
           >
             Obyektni ochish
             <UiIcon name="chevronRight" :size="14" />
@@ -705,7 +705,7 @@ function hideTile(e: Event) {
       <dl class="grid grid-cols-2 gap-x-5 gap-y-2">
         <div v-for="s in stats" :key="s.label">
           <dt class="text-[11px] uppercase tracking-wide text-ink-500">{{ s.label }}</dt>
-          <dd class="tabular text-[15px] font-bold text-ink-900">{{ s.value }}</dd>
+          <dd class="tabular text-[16px] font-bold text-ink-900">{{ s.value }}</dd>
         </div>
       </dl>
     </div>
@@ -745,14 +745,14 @@ function hideTile(e: Event) {
       v-if="legend.length"
       class="absolute bottom-3 left-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 rounded-field bg-surface/95 px-3 py-2 shadow-card ring-1 ring-ink-200 backdrop-blur-sm"
     >
-      <span v-for="l in legend" :key="l.label" class="flex items-center gap-1.5 text-[11.5px] text-ink-600">
+      <span v-for="l in legend" :key="l.label" class="flex items-center gap-1.5 text-[12px] text-ink-600">
         <span class="size-2.5 rounded-full" :class="l.class" />
         {{ l.label }}
       </span>
     </div>
 
     <!-- Litsenziya talabiga ko‘ra manba ko‘rsatiladi -->
-    <p class="absolute bottom-0 right-0 bg-surface/85 px-1.5 py-0.5 text-[10px] text-ink-500">
+    <p class="absolute bottom-0 right-0 bg-surface/85 px-1.5 py-0.5 text-[11px] text-ink-500">
       <a
         href="https://www.openstreetmap.org/copyright"
         target="_blank"

@@ -496,8 +496,8 @@ const agingTotal = computed(() => aging.value.reduce((s, a) => s + a.amount, 0))
             <span class="mx-auto grid size-12 place-items-center rounded-full bg-ink-100 text-ink-400">
               <UiIcon name="wallet" :size="22" />
             </span>
-            <p class="mt-3 text-[13.5px] font-semibold text-ink-800">To‘lov tanlanmagan</p>
-            <p class="mt-1 text-[12.5px] text-ink-500">
+            <p class="mt-3 text-[14px] font-semibold text-ink-800">To‘lov tanlanmagan</p>
+            <p class="mt-1 text-[13px] text-ink-500">
               Chapdagi ro‘yxatdan hujjatni tanlang, tafsilotlar shu yerda ochiladi.
             </p>
           </div>
@@ -511,27 +511,27 @@ const agingTotal = computed(() => aging.value.reduce((s, a) => s + a.amount, 0))
             <dl class="divide-y divide-ink-100 border-y border-ink-100">
               <div class="flex items-baseline justify-between gap-4 py-2.5">
                 <dt class="text-[13px] text-ink-500">Hisob-faktura raqami</dt>
-                <dd class="text-[13.5px] font-semibold text-ink-900">{{ selected.code }}</dd>
+                <dd class="text-[14px] font-semibold text-ink-900">{{ selected.code }}</dd>
               </div>
               <div class="flex items-baseline justify-between gap-4 py-2.5">
                 <dt class="text-[13px] text-ink-500">Mijoz</dt>
-                <dd class="text-[13.5px] font-semibold text-ink-900">{{ selected.tenant }}</dd>
+                <dd class="text-[14px] font-semibold text-ink-900">{{ selected.tenant }}</dd>
               </div>
               <div class="flex items-baseline justify-between gap-4 py-2.5">
                 <dt class="text-[13px] text-ink-500">Obyekt</dt>
-                <dd class="text-right text-[13.5px] font-semibold text-ink-900">
+                <dd class="text-right text-[14px] font-semibold text-ink-900">
                   {{ selected.buildingName }} · {{ selected.unitCode }}
                 </dd>
               </div>
               <div class="flex items-baseline justify-between gap-4 py-2.5">
                 <dt class="text-[13px] text-ink-500">Jami summa</dt>
-                <dd class="tabular text-[13.5px] font-bold text-ink-900">
+                <dd class="tabular text-[14px] font-bold text-ink-900">
                   {{ sum(selected.total) }}
                 </dd>
               </div>
               <div class="flex items-baseline justify-between gap-4 py-2.5">
                 <dt class="text-[13px] text-ink-500">Qoldiq</dt>
-                <dd class="tabular text-[13.5px] font-bold text-danger-600">
+                <dd class="tabular text-[14px] font-bold text-danger-600">
                   {{ sum(balance) }}
                 </dd>
               </div>
@@ -565,7 +565,7 @@ const agingTotal = computed(() => aging.value.reduce((s, a) => s + a.amount, 0))
                   placeholder="Qaytarish sababi yoki qo‘shimcha izoh"
                   class="scroll-slim w-full rounded-field bg-white px-3.5 py-2.5 text-sm text-ink-800 ring-1 ring-inset ring-ink-200 transition-colors placeholder:text-ink-400 hover:ring-ink-300 focus:ring-2 focus:ring-brand-500"
                 />
-                <p class="tabular mt-1 text-right text-[11.5px] text-ink-400">
+                <p class="tabular mt-1 text-right text-[12px] text-ink-400">
                   {{ note.length }}/500
                 </p>
               </UiField>
@@ -586,7 +586,7 @@ const agingTotal = computed(() => aging.value.reduce((s, a) => s + a.amount, 0))
               </div>
 
               <div v-if="selectedHistory.length" class="border-t border-ink-100 pt-3">
-                <p class="text-[12.5px] font-semibold text-ink-800">Ushbu hujjat bo‘yicha amallar</p>
+                <p class="text-[13px] font-semibold text-ink-800">Ushbu hujjat bo‘yicha amallar</p>
                 <ul class="mt-2 space-y-1.5">
                   <li
                     v-for="h in selectedHistory"
@@ -607,7 +607,7 @@ const agingTotal = computed(() => aging.value.reduce((s, a) => s + a.amount, 0))
               </div>
             </template>
 
-            <p v-else class="rounded-field bg-surface-sunken px-3.5 py-3 text-[12.5px] text-ink-500">
+            <p v-else class="rounded-field bg-surface-sunken px-3.5 py-3 text-[13px] text-ink-500">
               To‘lovni tasdiqlash huquqi buxgalter rolida beriladi. Ushbu rolda hujjat faqat
               kuzatiladi.
             </p>
@@ -650,7 +650,7 @@ const agingTotal = computed(() => aging.value.reduce((s, a) => s + a.amount, 0))
         <UiCard title="To‘lov holati" subtitle="Umumiy bajarilish darajasi">
           <div class="flex items-baseline justify-between">
             <span class="text-[13px] text-ink-500">To‘langan ulush</span>
-            <span class="tabular text-[15px] font-bold text-ink-900">
+            <span class="tabular text-[16px] font-bold text-ink-900">
               {{ percent(paidShare) }}
             </span>
           </div>

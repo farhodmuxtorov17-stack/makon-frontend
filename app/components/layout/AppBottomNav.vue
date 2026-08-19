@@ -119,12 +119,12 @@ onKeyStroke('Escape', () => (sheetOpen.value = false))
             <UiIcon :name="item.icon" :size="21" />
             <span
               v-if="item.badge"
-              class="tabular absolute -right-0.5 -top-1 grid min-w-4 place-items-center rounded-pill bg-danger-500 px-1 text-[10px] font-bold leading-4 text-white ring-2 ring-white"
+              class="tabular absolute -right-0.5 -top-1 grid min-w-4 place-items-center rounded-pill bg-danger-500 px-1 text-[11px] font-bold leading-4 text-white ring-2 ring-white"
             >
               {{ item.badge }}
             </span>
           </span>
-          <span class="w-full truncate text-center text-[10.5px] font-semibold leading-none">
+          <span class="w-full truncate text-center text-[11px] font-semibold leading-none">
             {{ shortLabel(item) }}
           </span>
         </NuxtLink>
@@ -145,12 +145,12 @@ onKeyStroke('Escape', () => (sheetOpen.value = false))
             <UiIcon name="dots" :size="21" />
             <span
               v-if="extraBadge"
-              class="tabular absolute -right-0.5 -top-1 grid min-w-4 place-items-center rounded-pill bg-danger-500 px-1 text-[10px] font-bold leading-4 text-white ring-2 ring-white"
+              class="tabular absolute -right-0.5 -top-1 grid min-w-4 place-items-center rounded-pill bg-danger-500 px-1 text-[11px] font-bold leading-4 text-white ring-2 ring-white"
             >
               {{ extraBadge }}
             </span>
           </span>
-          <span class="w-full truncate text-center text-[10.5px] font-semibold leading-none">
+          <span class="w-full truncate text-center text-[11px] font-semibold leading-none">
             {{ t('shell.moreTab') }}
           </span>
         </button>
@@ -186,7 +186,7 @@ onKeyStroke('Escape', () => (sheetOpen.value = false))
               <span
                 class="absolute left-1/2 top-2 h-1 w-10 -translate-x-1/2 rounded-pill bg-ink-200"
               />
-              <h2 class="text-[15px] font-bold text-ink-900">{{ t('shell.allSections') }}</h2>
+              <h2 class="text-[16px] font-bold text-ink-900">{{ t('shell.allSections') }}</h2>
               <button
                 type="button"
                 class="-mr-2 grid size-11 place-items-center rounded-field text-ink-500 transition-colors hover:bg-ink-100 hover:text-ink-800"

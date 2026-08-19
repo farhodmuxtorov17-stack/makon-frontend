@@ -391,7 +391,7 @@ const summary = computed(() => {
       <span
         v-for="(l, i) in labels"
         :key="l"
-        class="min-w-0 truncate text-[11.5px]"
+        class="min-w-0 truncate text-[12px]"
         :class="active === i ? 'font-semibold text-ink-800' : 'text-ink-500'"
       >
         {{ l }}
@@ -399,7 +399,7 @@ const summary = computed(() => {
     </div>
 
     <ul class="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2">
-      <li v-for="(s, i) in series" :key="s.label" class="flex items-center gap-2 text-[12.5px]">
+      <li v-for="(s, i) in series" :key="s.label" class="flex items-center gap-2 text-[13px]">
         <svg viewBox="0 0 22 10" class="h-2.5 w-5 shrink-0" aria-hidden="true">
           <line
             x1="1"

@@ -546,7 +546,7 @@ function selectRow(row: Unit) {
                 <span class="block truncate text-[13px] font-semibold text-ink-900">
                   {{ f.label }}
                 </span>
-                <span class="block truncate text-[11.5px] text-ink-500">
+                <span class="block truncate text-[12px] text-ink-500">
                   {{ f.units ? `${f.units} ta unit` : 'Unit kiritilmagan' }}
                 </span>
               </span>
@@ -595,7 +595,7 @@ function selectRow(row: Unit) {
 
           <div
             v-else
-            class="mx-4 mb-4 flex items-start gap-2.5 rounded-field bg-ink-50 px-3.5 py-3 text-[12.5px] text-ink-600 ring-1 ring-inset ring-ink-200 lg:mx-5"
+            class="mx-4 mb-4 flex items-start gap-2.5 rounded-field bg-ink-50 px-3.5 py-3 text-[13px] text-ink-600 ring-1 ring-inset ring-ink-200 lg:mx-5"
           >
             <UiIcon name="lock" :size="16" class="mt-0.5 shrink-0 text-ink-400" />
             <span>Sizda reja tahrirlash huquqi yo‘q, reja faqat ko‘rish uchun ochilgan.</span>
@@ -745,7 +745,7 @@ function selectRow(row: Unit) {
             <div class="mt-4 grid gap-3 sm:grid-cols-2">
               <div class="rounded-field p-3.5 ring-1 ring-inset ring-ink-200">
                 <div class="flex items-center justify-between gap-3">
-                  <span class="text-[12.5px] font-semibold text-ink-700">Poligon chizilgan</span>
+                  <span class="text-[13px] font-semibold text-ink-700">Poligon chizilgan</span>
                   <span class="tabular text-[13px] font-bold text-brand-600">
                     {{ stats.withPlan }} / {{ stats.total }}
                   </span>
@@ -763,7 +763,7 @@ function selectRow(row: Unit) {
 
               <div class="rounded-field p-3.5 ring-1 ring-inset ring-ink-200">
                 <div class="flex items-center justify-between gap-3">
-                  <span class="text-[12.5px] font-semibold text-ink-700">Atributi to‘liq</span>
+                  <span class="text-[13px] font-semibold text-ink-700">Atributi to‘liq</span>
                   <span class="tabular text-[13px] font-bold text-ok-600">
                     {{ stats.withAttrs }} / {{ stats.total }}
                   </span>
@@ -909,7 +909,7 @@ function selectRow(row: Unit) {
                   </button>
                 </span>
               </div>
-              <p v-else class="text-[12.5px] text-ink-400">Jihozlar kiritilmagan</p>
+              <p v-else class="text-[13px] text-ink-400">Jihozlar kiritilmagan</p>
 
               <div class="mt-2.5 flex gap-2">
                 <UiInput
@@ -937,7 +937,7 @@ function selectRow(row: Unit) {
               </div>
             </div>
 
-            <p v-if="formError" class="mt-3 text-[12.5px] font-medium text-danger-600">
+            <p v-if="formError" class="mt-3 text-[13px] font-medium text-danger-600">
               {{ formError }}
             </p>
 
@@ -956,23 +956,23 @@ function selectRow(row: Unit) {
           <template v-else>
             <dl class="divide-y divide-ink-100">
               <div class="flex items-center justify-between gap-4 py-2.5">
-                <dt class="text-[12.5px] text-ink-500">Maydoni</dt>
+                <dt class="text-[13px] text-ink-500">Maydoni</dt>
                 <dd class="tabular text-[13px] font-bold text-ink-900">{{ area(selected.area) }}</dd>
               </div>
               <div class="flex items-center justify-between gap-4 py-2.5">
-                <dt class="text-[12.5px] text-ink-500">Xonalar</dt>
+                <dt class="text-[13px] text-ink-500">Xonalar</dt>
                 <dd class="tabular text-[13px] font-semibold text-ink-900">{{ selected.rooms }}</dd>
               </div>
               <div class="flex items-center justify-between gap-4 py-2.5">
-                <dt class="text-[12.5px] text-ink-500">Foydalanish turi</dt>
+                <dt class="text-[13px] text-ink-500">Foydalanish turi</dt>
                 <dd class="text-[13px] font-semibold text-ink-900">{{ selected.usage || '-' }}</dd>
               </div>
               <div class="flex items-center justify-between gap-4 py-2.5">
-                <dt class="text-[12.5px] text-ink-500">Taklif turi</dt>
+                <dt class="text-[13px] text-ink-500">Taklif turi</dt>
                 <dd class="text-[13px] font-semibold text-ink-900">{{ selected.offer || '-' }}</dd>
               </div>
               <div class="flex items-start justify-between gap-4 py-2.5">
-                <dt class="text-[12.5px] text-ink-500">Jihozlar</dt>
+                <dt class="text-[13px] text-ink-500">Jihozlar</dt>
                 <dd class="max-w-[60%] text-right text-[13px] font-semibold text-ink-900">
                   {{ selected.equipment.join(', ') || '-' }}
                 </dd>

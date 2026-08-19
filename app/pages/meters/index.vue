@@ -417,11 +417,11 @@ function saveReading() {
           </span>
           <span
             v-if="row.overdue"
-            class="block text-[11.5px] font-semibold text-danger-600"
+            class="block text-[12px] font-semibold text-danger-600"
           >
             {{ -row.daysLeft }} kun kechikdi
           </span>
-          <span v-else-if="row.soon" class="block text-[11.5px] text-warn-600">
+          <span v-else-if="row.soon" class="block text-[12px] text-warn-600">
             {{ row.daysLeft }} kun qoldi
           </span>
         </template>
@@ -484,22 +484,22 @@ function saveReading() {
       <div class="grid gap-4 sm:grid-cols-3">
         <div class="rounded-field bg-surface-sunken p-4">
           <p class="text-[12px] text-ink-500">Oxirgi ko‘rsatkich</p>
-          <p class="tabular mt-1 text-[19px] font-bold text-ink-900">
+          <p class="tabular mt-1 text-[18px] font-bold text-ink-900">
             {{ num(detail.lastReading, decimalsOf(detail)) }}
-            <span class="text-[12.5px] font-medium text-ink-500">{{ detail.unit }}</span>
+            <span class="text-[13px] font-medium text-ink-500">{{ detail.unit }}</span>
           </p>
         </div>
         <div class="rounded-field bg-surface-sunken p-4">
           <p class="text-[12px] text-ink-500">Oxirgi sarf</p>
-          <p class="tabular mt-1 text-[19px] font-bold text-brand-600">
+          <p class="tabular mt-1 text-[18px] font-bold text-brand-600">
             {{ num(detail.lastReading - detail.previousReading, decimalsOf(detail)) }}
-            <span class="text-[12.5px] font-medium text-ink-500">{{ detail.unit }}</span>
+            <span class="text-[13px] font-medium text-ink-500">{{ detail.unit }}</span>
           </p>
         </div>
         <div class="rounded-field bg-surface-sunken p-4">
           <p class="text-[12px] text-ink-500">Navbatdagi qiyoslash</p>
           <p
-            class="tabular mt-1 text-[19px] font-bold"
+            class="tabular mt-1 text-[18px] font-bold"
             :class="isVerificationOverdue(detail) ? 'text-danger-700' : 'text-ink-900'"
           >
             {{ dateShort(detail.verifyAt) }}
@@ -517,10 +517,10 @@ function saveReading() {
         v-if="tariffLineOf(detail)"
         class="rounded-field bg-brand-50 px-4 py-3.5 ring-1 ring-inset ring-brand-100"
       >
-        <p class="text-[12.5px] font-semibold text-brand-700">
+        <p class="text-[13px] font-semibold text-brand-700">
           Joriy davr hisob-fakturasidagi kommunal qator
         </p>
-        <p class="tabular mt-1 text-[13.5px] text-ink-800">
+        <p class="tabular mt-1 text-[14px] text-ink-800">
           {{ tariffLineOf(detail)!.service }} ·
           {{ num(tariffLineOf(detail)!.qty, decimalsOf(detail)) }}
           {{ tariffLineOf(detail)!.unit }} × {{ sum(tariffLineOf(detail)!.tariff) }} =
@@ -619,17 +619,17 @@ function saveReading() {
       >
         <div class="flex items-center justify-between">
           <span class="text-[13px] font-medium text-brand-700">Hisoblangan sarf</span>
-          <span class="tabular text-[15px] font-bold text-brand-700">
+          <span class="tabular text-[16px] font-bold text-brand-700">
             +{{ num(entryUsage, decimalsOf(activeMeter)) }} {{ activeMeter.unit }}
           </span>
         </div>
-        <p v-if="entryTariffLine" class="text-[12.5px] text-ink-700">
+        <p v-if="entryTariffLine" class="text-[13px] text-ink-700">
           Joriy davr hisob-fakturasiga «{{ entryTariffLine.service }}» qatori sifatida tushadi:
           {{ num(entryTariffLine.qty, decimalsOf(activeMeter)) }} {{ entryTariffLine.unit }} ×
           {{ sum(entryTariffLine.tariff) }} =
           <b class="text-ink-900">{{ sum(entryTariffLine.sum) }}</b>
         </p>
-        <p v-else class="text-[12.5px] text-ink-600">
+        <p v-else class="text-[13px] text-ink-600">
           Bu tur bo‘yicha tarif belgilanmagan, ko‘rsatkich faqat monitoringda qayd etiladi.
         </p>
       </div>

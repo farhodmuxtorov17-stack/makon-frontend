@@ -25,7 +25,7 @@ const home = computed(() => auth.roleMeta?.home ?? '/')
       <h1 class="mt-2 text-lg font-bold text-ink-900">
         {{ isForbidden ? 'Ruxsat berilmagan' : 'Sahifa topilmadi' }}
       </h1>
-      <p class="mt-2 text-[13.5px] leading-relaxed text-ink-600">
+      <p class="mt-2 text-[14px] leading-relaxed text-ink-600">
         {{
           isForbidden
             ? 'Ushbu bo‘limga kirish sizning rolingiz doirasiga kirmaydi. Zarur bo‘lsa tizim administratoriga murojaat qiling.'

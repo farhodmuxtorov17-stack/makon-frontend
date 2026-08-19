@@ -246,10 +246,10 @@ function resend() {
             </p>
           </div>
 
-          <h1 class="mt-5 font-display text-[26px] font-extrabold leading-tight">
+          <h1 class="mt-5 font-display text-[28px] font-extrabold leading-tight">
             Kodni kiriting
           </h1>
-          <p class="mt-2 text-[13.5px] leading-relaxed text-ink-500">
+          <p class="mt-2 text-[14px] leading-relaxed text-ink-500">
             Olti xonali kod
             <span class="tabular font-semibold text-ink-800">{{ phoneLabel }}</span>
             raqamiga SMS orqali yuborildi.
@@ -259,7 +259,7 @@ function resend() {
             class="mt-3 flex items-start gap-2.5 rounded-field bg-surface-sunken p-3.5 ring-1 ring-inset ring-ink-200"
           >
             <UiIcon name="info" :size="16" class="mt-px shrink-0 text-ink-400" />
-            <p class="min-w-0 text-[12.5px] leading-relaxed text-ink-500">
+            <p class="min-w-0 text-[13px] leading-relaxed text-ink-500">
               Yuborilgan kod:
               <span class="tabular text-[14px] font-bold tracking-wide text-ink-800">
                 {{ sentCode }}
@@ -322,14 +322,14 @@ function resend() {
               </div>
             </fieldset>
 
-            <p v-if="wrong" role="alert" class="mt-3 flex items-center gap-2 text-[12.5px] font-medium text-danger-600">
+            <p v-if="wrong" role="alert" class="mt-3 flex items-center gap-2 text-[13px] font-medium text-danger-600">
               <UiIcon name="warning" :size="16" class="shrink-0" />
               Kod noto‘g‘ri yoki to‘liq emas. Qaytadan kiriting.
             </p>
             <p
               v-else-if="resent"
               role="status"
-              class="mt-3 flex items-center gap-2 text-[12.5px] font-medium text-ok-600"
+              class="mt-3 flex items-center gap-2 text-[13px] font-medium text-ok-600"
             >
               <UiIcon name="check" :size="16" class="shrink-0" />
               Yangi kod yuborildi.
@@ -365,7 +365,7 @@ function resend() {
           <div
             class="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-field bg-surface-sunken p-3.5 ring-1 ring-inset ring-ink-200"
           >
-            <p class="text-[12.5px] text-ink-600">
+            <p class="text-[13px] text-ink-600">
               <template v-if="secondsLeft > 0">
                 Yangi kodni
                 <span class="tabular font-semibold text-ink-900">{{ countdownLabel }}</span>
@@ -440,7 +440,7 @@ function resend() {
             >
               <UiIcon :name="f.icon" :size="18" />
             </span>
-            <span class="text-[13.5px] text-white/85">{{ f.text }}</span>
+            <span class="text-[14px] text-white/85">{{ f.text }}</span>
           </li>
         </ul>
       </div>

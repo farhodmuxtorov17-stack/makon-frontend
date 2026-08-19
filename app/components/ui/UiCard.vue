@@ -49,7 +49,7 @@ const TONE: Record<string, string> = {
           <UiIcon :name="icon" :size="18" />
         </span>
         <span class="min-w-0">
-          <h3 class="truncate text-[15px] font-semibold text-ink-900">{{ title }}</h3>
+          <h3 class="truncate text-[16px] font-semibold text-ink-900">{{ title }}</h3>
           <p v-if="subtitle" class="mt-0.5 text-[13px] text-ink-500">{{ subtitle }}</p>
         </span>
       </div>

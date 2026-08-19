@@ -229,7 +229,7 @@ const summary = computed(() => {
               <!-- Qiymat yozuvi -->
               <span
                 v-if="showValues"
-                class="tabular pointer-events-none absolute inset-x-0 whitespace-nowrap text-center text-[10.5px] font-semibold leading-none transition-opacity duration-300 ease-out"
+                class="tabular pointer-events-none absolute inset-x-0 whitespace-nowrap text-center text-[11px] font-semibold leading-none transition-opacity duration-300 ease-out"
                 :class="[
                   active === i ? 'text-ink-900' : 'text-ink-500',
                   shown ? 'opacity-100' : 'opacity-0',
@@ -316,7 +316,7 @@ const summary = computed(() => {
             </div>
 
             <span
-              class="mt-1.5 truncate text-center text-[11.5px] leading-[18px]"
+              class="mt-1.5 truncate text-center text-[12px] leading-[18px]"
               :class="active === i ? 'font-semibold text-ink-800' : 'text-ink-500'"
             >
               {{ label }}
@@ -359,7 +359,7 @@ const summary = computed(() => {
     </div>
 
     <ul class="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2">
-      <li v-for="s in series" :key="s.label" class="flex items-center gap-2 text-[12.5px]">
+      <li v-for="s in series" :key="s.label" class="flex items-center gap-2 text-[13px]">
         <span
           class="size-2.5 rounded-[3px]"
           :style="{

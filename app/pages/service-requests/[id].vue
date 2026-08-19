@@ -364,7 +364,7 @@ const info = computed(() => {
             <dl class="mt-5 grid gap-x-5 gap-y-4 border-t border-ink-100 pt-5 sm:grid-cols-2 lg:grid-cols-4">
               <div v-for="f in info" :key="f.label" class="min-w-0">
                 <dt class="text-[12px] text-ink-500">{{ f.label }}</dt>
-                <dd class="mt-0.5 truncate text-[13.5px] font-semibold text-ink-900">
+                <dd class="mt-0.5 truncate text-[14px] font-semibold text-ink-900">
                   {{ f.value }}
                 </dd>
               </div>
@@ -372,7 +372,7 @@ const info = computed(() => {
 
             <div class="mt-5 border-t border-ink-100 pt-5">
               <h3 class="text-[13px] font-semibold text-ink-700">Muammo tavsifi</h3>
-              <p class="mt-1.5 text-[13.5px] leading-relaxed text-ink-600">
+              <p class="mt-1.5 text-[14px] leading-relaxed text-ink-600">
                 {{ request.description }}
               </p>
             </div>
@@ -408,7 +408,7 @@ const info = computed(() => {
                   <path d="M60 190h44M296 190h44" stroke="#b9c4d6" stroke-width="4" stroke-linecap="round" />
                 </svg>
                 <span
-                  class="absolute left-3 top-3 rounded-pill bg-ink-900/70 px-2.5 py-1 text-[11.5px] font-semibold text-white"
+                  class="absolute left-3 top-3 rounded-pill bg-ink-900/70 px-2.5 py-1 text-[12px] font-semibold text-white"
                 >
                   Oldin
                 </span>
@@ -430,7 +430,7 @@ const info = computed(() => {
                   <path d="M60 190h44M296 190h44" stroke="#8fb0fb" stroke-width="4" stroke-linecap="round" />
                 </svg>
                 <span
-                  class="absolute left-3 top-3 rounded-pill bg-ok-600/90 px-2.5 py-1 text-[11.5px] font-semibold text-white"
+                  class="absolute left-3 top-3 rounded-pill bg-ok-600/90 px-2.5 py-1 text-[12px] font-semibold text-white"
                 >
                   Keyin
                 </span>
@@ -470,14 +470,14 @@ const info = computed(() => {
 
             <div class="flex items-center justify-between border-t border-ink-200 bg-surface-sunken px-4 py-3.5">
               <span class="text-[13px] font-semibold text-ink-700">Jami</span>
-              <span class="tabular text-[15px] font-bold text-ink-900">{{ sum(materialsSum) }}</span>
+              <span class="tabular text-[16px] font-bold text-ink-900">{{ sum(materialsSum) }}</span>
             </div>
 
             <div
               v-if="materialRequest"
               class="flex flex-wrap items-center justify-between gap-2 border-t border-ink-100 px-4 py-3"
             >
-              <span class="text-[12.5px] text-ink-600">
+              <span class="text-[13px] text-ink-600">
                 Ombor so‘rovi
                 <b class="tabular text-ink-900">{{ materialRequest.code }}</b>
                 · {{ dateShort(materialRequest.createdAt) }}
@@ -520,7 +520,7 @@ const info = computed(() => {
                     </svg>
                   </span>
                   <span
-                    class="min-w-0 flex-1 text-[13.5px]"
+                    class="min-w-0 flex-1 text-[14px]"
                     :class="c.done ? 'text-ink-500 line-through' : 'font-medium text-ink-800'"
                   >
                     {{ c.label }}
@@ -574,7 +574,7 @@ const info = computed(() => {
                   :class="i === 0 ? 'bg-brand-500' : 'bg-ink-300'"
                 />
                 <span class="min-w-0 flex-1">
-                  <span class="block text-[13.5px] font-medium text-ink-800">{{ h.label }}</span>
+                  <span class="block text-[14px] font-medium text-ink-800">{{ h.label }}</span>
                   <span class="mt-1 flex items-center gap-2">
                     <UiStatus kind="service" :value="h.status" size="sm" />
                     <span class="text-[12px] text-ink-500">{{ h.at }}</span>
@@ -589,7 +589,7 @@ const info = computed(() => {
 
     <UiCard v-else>
       <div class="py-10 text-center">
-        <p class="text-[15px] font-semibold text-ink-900">Bunday raqamli ariza topilmadi</p>
+        <p class="text-[16px] font-semibold text-ink-900">Bunday raqamli ariza topilmadi</p>
         <p class="mt-1.5 text-[13px] text-ink-500">
           Ariza yopilgan yoki manzil noto‘g‘ri kiritilgan bo‘lishi mumkin.
         </p>

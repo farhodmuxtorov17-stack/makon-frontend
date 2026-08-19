@@ -532,19 +532,19 @@ const tariffTotal = TARIFF_LINES.reduce((s, t) => s + t.sum, 0)
                 <UiIcon name="wallet" :size="18" />
               </span>
               <span class="min-w-0 flex-1">
-                <span class="block text-[13.5px] font-semibold text-ink-900">{{ p.label }}</span>
+                <span class="block text-[14px] font-semibold text-ink-900">{{ p.label }}</span>
                 <span class="tabular block text-[12px] text-ink-500">
                   {{ num(p.count) }} ta · {{ percent(p.share) }}
                 </span>
               </span>
-              <span class="tabular shrink-0 text-[13.5px] font-bold text-ink-900">
+              <span class="tabular shrink-0 text-[14px] font-bold text-ink-900">
                 {{ sum(p.amount) }}
               </span>
             </button>
           </li>
         </ul>
         <div class="border-t border-ink-100 px-5 py-3.5">
-          <p class="text-[12.5px] text-ink-500">
+          <p class="text-[13px] text-ink-500">
             Qatorni bosish orqali reyestr tanlangan status bo‘yicha filtrlanadi.
           </p>
         </div>
@@ -567,17 +567,17 @@ const tariffTotal = TARIFF_LINES.reduce((s, t) => s + t.sum, 0)
       <div class="grid gap-3 border-y border-ink-100 bg-surface-sunken px-5 py-3.5 sm:grid-cols-3">
         <div>
           <p class="text-[12px] text-ink-500">Ijarachi</p>
-          <p class="mt-0.5 text-[13.5px] font-semibold text-ink-900">{{ activeContract.tenant }}</p>
+          <p class="mt-0.5 text-[14px] font-semibold text-ink-900">{{ activeContract.tenant }}</p>
         </div>
         <div>
           <p class="text-[12px] text-ink-500">Obyekt / Unit</p>
-          <p class="mt-0.5 text-[13.5px] font-semibold text-ink-900">
+          <p class="mt-0.5 text-[14px] font-semibold text-ink-900">
             {{ activeContract.buildingName }} · {{ activeContract.unitCode }}
           </p>
         </div>
         <div>
           <p class="text-[12px] text-ink-500">To‘lov shakli</p>
-          <p class="mt-0.5 text-[13.5px] font-semibold text-ink-900">
+          <p class="mt-0.5 text-[14px] font-semibold text-ink-900">
             {{ activeContract.paymentTerm }}
           </p>
         </div>
@@ -604,8 +604,8 @@ const tariffTotal = TARIFF_LINES.reduce((s, t) => s + t.sum, 0)
       <div
         class="flex items-center justify-between gap-4 border-t border-ink-200 bg-surface-sunken px-5 py-4"
       >
-        <span class="text-[13.5px] font-bold text-ink-900">Jami</span>
-        <span class="tabular text-[15px] font-bold text-ink-900">{{ sum(tariffTotal) }}</span>
+        <span class="text-[14px] font-bold text-ink-900">Jami</span>
+        <span class="tabular text-[16px] font-bold text-ink-900">{{ sum(tariffTotal) }}</span>
       </div>
     </UiCard>
 
@@ -627,15 +627,15 @@ const tariffTotal = TARIFF_LINES.reduce((s, t) => s + t.sum, 0)
         <dl class="grid gap-4 sm:grid-cols-3">
           <div class="rounded-field bg-surface-sunken p-3.5">
             <dt class="text-[12px] text-ink-500">Jami summa</dt>
-            <dd class="tabular mt-1 text-[15px] font-bold text-ink-900">{{ sum(active.total) }}</dd>
+            <dd class="tabular mt-1 text-[16px] font-bold text-ink-900">{{ sum(active.total) }}</dd>
           </div>
           <div class="rounded-field bg-surface-sunken p-3.5">
             <dt class="text-[12px] text-ink-500">To‘langan</dt>
-            <dd class="tabular mt-1 text-[15px] font-bold text-ok-600">{{ sum(active.paid) }}</dd>
+            <dd class="tabular mt-1 text-[16px] font-bold text-ok-600">{{ sum(active.paid) }}</dd>
           </div>
           <div class="rounded-field bg-surface-sunken p-3.5">
             <dt class="text-[12px] text-ink-500">Qoldiq</dt>
-            <dd class="tabular mt-1 text-[15px] font-bold text-danger-600">
+            <dd class="tabular mt-1 text-[16px] font-bold text-danger-600">
               {{ sum(active.total - active.paid) }}
             </dd>
           </div>
@@ -644,19 +644,19 @@ const tariffTotal = TARIFF_LINES.reduce((s, t) => s + t.sum, 0)
         <dl class="grid gap-x-6 gap-y-3 border-t border-ink-100 pt-5 sm:grid-cols-2">
           <div class="flex items-baseline justify-between gap-4">
             <dt class="text-[13px] text-ink-500">Obyekt</dt>
-            <dd class="text-[13.5px] font-semibold text-ink-900">{{ active.buildingName }}</dd>
+            <dd class="text-[14px] font-semibold text-ink-900">{{ active.buildingName }}</dd>
           </div>
           <div class="flex items-baseline justify-between gap-4">
             <dt class="text-[13px] text-ink-500">Unit</dt>
-            <dd class="text-[13.5px] font-semibold text-ink-900">{{ active.unitCode }}</dd>
+            <dd class="text-[14px] font-semibold text-ink-900">{{ active.unitCode }}</dd>
           </div>
           <div class="flex items-baseline justify-between gap-4">
             <dt class="text-[13px] text-ink-500">Davr</dt>
-            <dd class="text-[13.5px] font-semibold text-ink-900">{{ active.period }}</dd>
+            <dd class="text-[14px] font-semibold text-ink-900">{{ active.period }}</dd>
           </div>
           <div class="flex items-baseline justify-between gap-4">
             <dt class="text-[13px] text-ink-500">Qarzdorlik guruhi</dt>
-            <dd class="text-[13.5px] font-semibold text-ink-900">
+            <dd class="text-[14px] font-semibold text-ink-900">
               {{ agingLabel(active.agingBucket) }}
             </dd>
           </div>
@@ -683,7 +683,7 @@ const tariffTotal = TARIFF_LINES.reduce((s, t) => s + t.sum, 0)
                 <span v-if="p.note" class="mt-0.5 block text-[12px] text-ink-600">{{ p.note }}</span>
               </span>
               <span
-                class="tabular shrink-0 text-[13.5px] font-bold"
+                class="tabular shrink-0 text-[14px] font-bold"
                 :class="p.kind === 'payment' ? 'text-ok-600' : 'text-danger-600'"
               >
                 {{ p.kind === 'payment' ? sum(p.amount) : 'Qaytarildi' }}
