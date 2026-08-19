@@ -183,7 +183,11 @@ const CONTACTS = [
           {{ item.code }}
         </h1>
         <p class="mt-1.5 text-[14px] text-ink-600">
-          {{ item.buildingName }}, Unit {{ item.unitCode }}, {{ item.floor }}-qavat
+          {{
+            item.unitId
+              ? `${item.buildingName}, Unit ${item.unitCode}, ${item.floor}-qavat`
+              : 'Maydon operator bilan kelishiladi'
+          }}
         </p>
       </header>
 
@@ -268,7 +272,9 @@ const CONTACTS = [
             </div>
             <div class="flex items-baseline justify-between gap-3">
               <dt class="text-[13px] text-ink-500">Maydon</dt>
-              <dd class="tabular text-[14px] font-bold text-ink-900">{{ area(item.area) }}</dd>
+              <dd class="tabular text-[14px] font-bold text-ink-900">
+                {{ item.unitId ? area(item.area) : 'Kelishiladi' }}
+              </dd>
             </div>
             <div v-if="item.request.note" class="border-t border-ink-100 pt-3">
               <dt class="text-[13px] text-ink-500">Izohingiz</dt>

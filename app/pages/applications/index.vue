@@ -18,8 +18,14 @@ const myStatuses = computed<LeaseStatus[]>(() => {
   return APPLICATION_QUEUE[auth.role] ?? []
 })
 
-/** Biriktirilgan binodan tashqaridagi ariza na ro‘yxatga, na sanoqqa kiradi */
-const rows = computed(() => lease.cases.filter((c) => auth.inScope(c.buildingId)))
+/**
+ * Biriktirilgan binodan tashqaridagi ariza na ro‘yxatga, na sanoqqa kiradi.
+ * Maydoni hali belgilanmagan ariza esa hech bir binoga tegishli emas: uni
+ * operator qo‘ng‘iroqda aniqlaydi, shuning uchun u navbatda ko‘rinadi.
+ */
+const rows = computed(() =>
+  lease.cases.filter((c) => !c.buildingId || auth.inScope(c.buildingId)),
+)
 
 const mineRows = computed(() => rows.value.filter((c) => myStatuses.value.includes(c.status)))
 
@@ -65,7 +71,10 @@ const statusChips = computed(() => [
 
 const buildingOptions = computed(() => [
   { value: '', label: 'Barcha obyektlar' },
-  ...[...new Set(rows.value.map((c) => c.buildingName))].map((n) => ({ value: n, label: n })),
+  ...[...new Set(rows.value.map((c) => c.buildingName).filter(Boolean))].map((n) => ({
+    value: n,
+    label: n,
+  })),
 ])
 
 const filtered = computed(() =>
@@ -88,6 +97,11 @@ function isMine(c: LeaseCase) {
   return myStatuses.value.includes(c.status)
 }
 
+/** Maydon hali kelishilmagan ariza */
+function needsUnit(c: LeaseCase) {
+  return !c.unitId
+}
+
 function amount(c: LeaseCase) {
   if (c.schedule.length) return sum(scheduleTotals(c.schedule).total)
   return `${sum(c.request.offerPrice)} / oy`
@@ -95,6 +109,7 @@ function amount(c: LeaseCase) {
 
 const NEXT_STEP: Record<string, string> = {
   YANGI: 'Operator bog‘lanadi, shartlarni kelishadi va arizani tasdiqlaydi',
+  MAYDON: 'Operator qo‘ng‘iroq qilib maydonni kelishadi va belgilaydi',
   SHARTNOMA_TAYYOR: 'Operator shartnomani tahrirlaydi va Didox orqali yuboradi',
   DIDOX_YUBORILDI: 'Operator Didoxdagi holatni tekshiradi',
   DIDOX_IMZOLANDI: 'Imzolangan nusxa yuklanadi va ariza yopiladi',
@@ -175,6 +190,13 @@ const NEXT_STEP: Record<string, string> = {
                 {{ c.code }}
               </NuxtLink>
               <span
+                v-if="needsUnit(c) && c.status === 'YANGI'"
+                class="inline-flex items-center gap-1 rounded-pill bg-warn-50 px-2 py-0.5 text-[11px] font-bold text-warn-700 ring-1 ring-inset ring-warn-100"
+              >
+                <UiIcon name="info" :size="12" />
+                Maydon Operator bilan kelishiladi
+              </span>
+              <span
                 v-if="isMine(c) && c.status !== 'FAOL' && c.status !== 'RAD_ETILDI'"
                 class="inline-flex items-center gap-1 rounded-pill bg-danger-50 px-2 py-0.5 text-[11px] font-bold text-danger-600 ring-1 ring-inset ring-danger-100"
               >
@@ -191,13 +213,13 @@ const NEXT_STEP: Record<string, string> = {
           <div class="min-w-0">
             <dt class="text-[12px] text-ink-500">Obyekt</dt>
             <dd class="mt-0.5 truncate text-[13px] font-semibold text-ink-800">
-              {{ c.buildingName }}
+              {{ needsUnit(c) ? 'Kelishilmagan' : c.buildingName }}
             </dd>
           </div>
           <div class="min-w-0">
             <dt class="text-[12px] text-ink-500">Unit</dt>
             <dd class="tabular mt-0.5 truncate text-[13px] font-semibold text-ink-800">
-              {{ c.unitCode }} · {{ area(c.area) }}
+              {{ needsUnit(c) ? 'Belgilanmagan' : `${c.unitCode} · ${area(c.area)}` }}
             </dd>
           </div>
           <div class="min-w-0">
@@ -223,7 +245,7 @@ const NEXT_STEP: Record<string, string> = {
             <span class="tabular">
               {{ dateShort(c.request.submittedAt) }} {{ timeOf(c.request.submittedAt) }}
             </span>
-            · {{ NEXT_STEP[c.status] ?? LEASE_STATUS[c.status]?.label }}
+            · {{ (needsUnit(c) ? NEXT_STEP.MAYDON : NEXT_STEP[c.status]) ?? LEASE_STATUS[c.status]?.label }}
           </span>
 
           <UiButton

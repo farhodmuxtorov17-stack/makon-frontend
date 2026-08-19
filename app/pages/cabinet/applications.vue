@@ -88,8 +88,7 @@ const STAGE_HINT: Record<string, string> = {
         <UiIcon name="check" :size="18" />
       </span>
       <p class="min-w-0 flex-1 text-[14px] text-ok-700">
-        <b>{{ createdCase.code }}</b> raqamli arizangiz qabul qilindi va
-        {{ createdCase.buildingName }} rahbariga yuborildi.
+        <b>{{ createdCase.code }}</b> raqamli arizangiz qabul qilindi va operatorga yuborildi.
       </p>
       <button
         type="button"
@@ -170,7 +169,7 @@ const STAGE_HINT: Record<string, string> = {
             <span class="min-w-0">
               <span class="block text-[14px] font-bold text-ink-900">{{ c.code }}</span>
               <span class="block truncate text-[12px] text-ink-500">
-                {{ c.buildingName }} · Unit {{ c.unitCode }}
+                {{ c.unitId ? `${c.buildingName} · Unit ${c.unitCode}` : 'Maydon kelishilmoqda' }}
               </span>
             </span>
             <UiStatus kind="lease" :value="c.status" size="sm" />
@@ -191,8 +190,11 @@ const STAGE_HINT: Record<string, string> = {
             <div class="min-w-0">
               <h2 class="text-[18px] font-bold text-ink-900">{{ selected.code }}</h2>
               <p class="mt-0.5 text-[13px] text-ink-600">
-                {{ selected.buildingName }} · Unit {{ selected.unitCode }} ·
-                {{ area(selected.area) }} · {{ selected.floor }}-qavat
+                {{
+                  selected.unitId
+                    ? `${selected.buildingName} · Unit ${selected.unitCode} · ${area(selected.area)} · ${selected.floor}-qavat`
+                    : 'Maydon operator bilan kelishiladi'
+                }}
               </p>
             </div>
             <UiButton

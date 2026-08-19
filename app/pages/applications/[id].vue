@@ -6,7 +6,8 @@ import {
   type Periodicity,
   type SignedDocument,
 } from '~/stores/lease'
-import { unitById } from '~/data/units'
+import { unitById, vacantUnits } from '~/data/units'
+import { buildingById } from '~/data/buildings'
 import { ROLE_META } from '~/constants/roles'
 import { area, dateShort, num, sum, timeOf } from '~/utils/format'
 
@@ -22,9 +23,19 @@ lease.seed()
  */
 const item = computed(() => {
   const c = lease.byId(String(route.params.id))
-  return c && auth.inScope(c.buildingId) ? c : null
+  if (!c) return null
+  /* Maydoni belgilanmagan ariza hech bir binoga tegishli emas: uni operator ochadi */
+  return !c.buildingId || auth.inScope(c.buildingId) ? c : null
 })
-const unit = computed(() => (item.value ? unitById(item.value.unitId) : undefined))
+const unit = computed(() => (item.value?.unitId ? unitById(item.value.unitId) : undefined))
+
+/** Maydon hali kelishilmagan: operator qo‘ng‘iroqdan keyin belgilaydi */
+const needsUnit = computed(() => Boolean(item.value) && !item.value!.unitId)
+
+/** Soha tekshiruvi: maydonsiz ariza barcha mas’ul xodimlarga ochiq */
+const inScope = computed(
+  () => Boolean(item.value) && (!item.value!.buildingId || auth.inScope(item.value!.buildingId)),
+)
 
 const actorName = computed(() => auth.user?.fullName ?? '-')
 /** Audit jurnalidagi rol nomi joriy foydalanuvchidan olinadi */
@@ -108,7 +119,7 @@ const serviceTotal = computed(() =>
  * arizani oxirigacha olib boradi.
  */
 const canSign = computed(
-  () => Boolean(item.value) && auth.can('contract.manage') && auth.inScope(item.value!.buildingId),
+  () => Boolean(item.value) && auth.can('contract.manage') && inScope.value,
 )
 
 /**
@@ -119,9 +130,15 @@ const canSign = computed(
 const canApprove = computed(
   () =>
     item.value?.status === 'YANGI' &&
+    !needsUnit.value &&
     !isPurchase.value &&
     auth.can('application.decide') &&
-    auth.inScope(item.value.buildingId),
+    inScope.value,
+)
+
+/** Maydonni belgilash huquqi arizani yuritish huquqidan kelib chiqadi */
+const canAssignUnit = computed(
+  () => needsUnit.value && item.value?.status === 'YANGI' && auth.can('application.decide'),
 )
 
 /** Shartnoma matni Didoxga yuborilgunicha tahrirlanadi */
@@ -166,6 +183,32 @@ const readOnly = computed(
 const canOpenObjects = computed(() => auth.canRoute('/objects'))
 
 const editing = computed(() => canApprove.value)
+
+// --- Maydonni belgilash ----------------------------------------------------
+
+const unitChoice = ref('')
+
+/** Bo‘sh maydonlar, byudjetga yaqinligi bo‘yicha tartiblangan */
+const unitOptions = computed(() => {
+  const budget = item.value?.request.offerPrice ?? 0
+  const monthly = (u: { price: number; area: number; priceUnit: string }) =>
+    u.priceUnit === 'so‘m / m²' ? Math.round(u.price * u.area) : u.price
+  return vacantUnits()
+    .filter((u) => u.offer !== 'Sotuv' && auth.inScope(u.buildingId))
+    .slice()
+    .sort((a, b) => Math.abs(monthly(a) - budget) - Math.abs(monthly(b) - budget))
+    .map((u) => ({
+      value: u.id,
+      label: `${buildingById(u.buildingId)?.name ?? ''} · Unit ${u.code} · ${num(u.area, 2)} m² · ${sum(monthly(u))} / oy`,
+    }))
+})
+
+function assignUnit() {
+  if (!item.value || !unitChoice.value) return
+  lease.assignUnit(item.value.id, actorName.value, roleLabel.value, unitChoice.value)
+  say(`Maydon belgilandi: ${item.value.buildingName} · Unit ${item.value.unitCode}.`)
+  unitChoice.value = ''
+}
 
 const shownSchedule = computed(() =>
   editing.value ? previewSchedule.value : (item.value?.schedule ?? []),
@@ -335,7 +378,13 @@ async function copyValue(label: string, value: string) {
 <template>
   <AppTopbar
     :title="item?.code ?? 'Ariza topilmadi'"
-    :subtitle="item ? `${item.org.name} · ${item.buildingName} · Unit ${item.unitCode}` : undefined"
+    :subtitle="
+      item
+        ? item.unitId
+          ? `${item.org.name} · ${item.buildingName} · Unit ${item.unitCode}`
+          : `${item.org.name} · maydon Operator bilan kelishiladi`
+        : undefined
+    "
     :breadcrumb="[{ label: 'Arizalar', to: '/applications' }, { label: item?.code ?? '-' }]"
   >
     <template #actions>
@@ -451,6 +500,18 @@ async function copyValue(label: string, value: string) {
       <div class="mt-5">
         <LeaseFlow :status="item.status" />
       </div>
+
+      <p
+        v-if="needsUnit && item.status === 'YANGI'"
+        class="mt-4 flex items-start gap-2 rounded-field bg-warn-50 px-3.5 py-2.5 text-[12.5px] leading-relaxed text-warn-700 ring-1 ring-inset ring-warn-100"
+      >
+        <UiIcon name="info" :size="15" class="mt-px shrink-0" />
+        <span>
+          Maydon Operator bilan kelishiladi: mijoz ariza yuborganda maydon tanlamagan.
+          Qo‘ng‘iroqdan keyin o‘ng paneldagi ro‘yxatdan maydonni belgilang, shundan keyin
+          arizani tasdiqlash mumkin bo‘ladi.
+        </span>
+      </p>
 
       <p
         v-if="item.status === 'RAD_ETILDI' && item.rejectReason"
@@ -789,10 +850,62 @@ async function copyValue(label: string, value: string) {
       <div class="min-w-0">
         <UiCard
           class="xl:sticky xl:top-[88px]"
-          title="So‘ralayotgan unit"
-          :subtitle="item.buildingName"
+          :title="needsUnit ? 'Maydon tanlanmagan' : 'So‘ralayotgan unit'"
+          :subtitle="needsUnit ? 'Operator qo‘ng‘iroqda kelishadi' : item.buildingName"
           icon="building"
         >
+          <template v-if="needsUnit">
+            <p
+              class="flex items-start gap-2 rounded-field bg-warn-50 px-3.5 py-2.5 text-[12.5px] leading-relaxed text-warn-700 ring-1 ring-inset ring-warn-100"
+            >
+              <UiIcon name="info" :size="15" class="mt-px shrink-0" />
+              Mijoz ariza yuborganda maydon tanlamagan: u byudjet va muddatni ko‘rsatgan.
+              Maydon telefon suhbatidan keyin belgilanadi.
+            </p>
+
+            <dl class="mt-4 space-y-3">
+              <div class="flex items-baseline justify-between gap-3">
+                <dt class="text-[12.5px] text-ink-500">Byudjet</dt>
+                <dd class="tabular text-[13px] font-semibold text-ink-900">
+                  {{ sum(item.request.offerPrice) }} / oy
+                </dd>
+              </div>
+              <div class="flex items-baseline justify-between gap-3">
+                <dt class="text-[12.5px] text-ink-500">Muddat</dt>
+                <dd class="tabular text-[13px] font-semibold text-ink-900">
+                  {{ item.request.term }} oy
+                </dd>
+              </div>
+            </dl>
+
+            <template v-if="canAssignUnit">
+              <UiField
+                label="Kelishilgan maydon"
+                class="mt-4"
+                hint="Ro‘yxat byudjetga yaqinligi bo‘yicha tartiblangan"
+              >
+                <UiSelect
+                  v-model="unitChoice"
+                  :options="[{ value: '', label: 'Maydonni tanlang' }, ...unitOptions]"
+                />
+              </UiField>
+
+              <UiButton block class="mt-3" :disabled="!unitChoice" @click="assignUnit">
+                <UiIcon name="check" :size="16" />
+                Maydonni biriktirish
+              </UiButton>
+            </template>
+
+            <p
+              v-else
+              class="mt-4 flex items-center justify-center gap-2 rounded-field bg-ink-100 px-3 py-2.5 text-[12.5px] font-semibold text-ink-600"
+            >
+              <UiIcon name="eye" :size="15" />
+              Maydonni Operator belgilaydi
+            </p>
+          </template>
+
+          <template v-else>
           <dl class="space-y-3">
             <div class="flex items-baseline justify-between gap-3">
               <dt class="text-[12.5px] text-ink-500">Unit raqami</dt>
@@ -849,6 +962,7 @@ async function copyValue(label: string, value: string) {
             <UiIcon name="layers" :size="15" />
             Qavat rejasida ko‘rish
           </UiButton>
+          </template>
         </UiCard>
       </div>
     </div>
