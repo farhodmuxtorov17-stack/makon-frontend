@@ -10,9 +10,19 @@ const props = withDefaults(
     type?: 'button' | 'submit'
     disabled?: boolean
     block?: boolean
+    /** Amal bajarilayotganda tugma bandligini ko‘rsatadi */
+    loading?: boolean
   }>(),
   { variant: 'primary', size: 'md', type: 'button' },
 )
+
+/**
+ * Band tugma bosilmaydi va o‘qish dasturiga ham xabar beradi. Ilgari
+ * bosilgandan keyin hech qanday belgi bo‘lmasdi va foydalanuvchi amal
+ * ketayotganini bilmasdi.
+ */
+const busy = computed(() => props.loading === true)
+const blocked = computed(() => props.disabled === true || busy.value)
 
 /**
  * Fon ranglari oq yorliq bilan WCAG AA (≥4.5:1) chegarasidan o‘tadi: brand-500
@@ -41,19 +51,34 @@ const SIZES: Record<Size, string> = {
 }
 
 const classes = computed(() => [
-  'inline-flex items-center justify-center font-semibold whitespace-nowrap',
-  'transition-colors duration-150 disabled:cursor-not-allowed',
+  'relative inline-flex items-center justify-center font-semibold whitespace-nowrap',
+  'transition-[background-color,box-shadow,transform] duration-150 disabled:cursor-not-allowed',
+  'active:translate-y-px',
   VARIANTS[props.variant],
   SIZES[props.size],
   props.block ? 'w-full' : '',
+  busy.value ? 'cursor-progress' : '',
 ])
 </script>
 
 <template>
-  <NuxtLink v-if="to && !disabled" :to="to" :class="classes">
+  <NuxtLink v-if="to && !blocked" :to="to" :class="classes">
     <slot />
   </NuxtLink>
-  <button v-else :type="type" :disabled="disabled" :class="classes">
-    <slot />
+  <button
+    v-else
+    :type="type"
+    :disabled="blocked"
+    :aria-busy="busy ? 'true' : undefined"
+    :class="classes"
+  >
+    <span
+      v-if="busy"
+      class="absolute inline-flex size-4 animate-spin rounded-full border-2 border-current border-r-transparent"
+      aria-hidden="true"
+    />
+    <span :class="busy ? 'invisible inline-flex items-center gap-inherit' : 'contents'">
+      <slot />
+    </span>
   </button>
 </template>

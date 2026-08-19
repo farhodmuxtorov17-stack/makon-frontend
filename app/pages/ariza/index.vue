@@ -33,11 +33,6 @@ const unitOptions = computed(() =>
   })),
 )
 
-const PERSON_TYPES = [
-  { value: 'individual', label: 'Jismoniy shaxs', caption: 'O‘z nomingizdan' },
-  { value: 'company', label: 'Yuridik shaxs', caption: 'Tashkilot nomidan' },
-]
-
 const TERM_OPTIONS = [
   { value: '12', label: '12 oy' },
   { value: '24', label: '24 oy' },
@@ -47,7 +42,6 @@ const TERM_OPTIONS = [
 
 const form = reactive({
   unitId: '',
-  personType: 'individual',
   fullName: '',
   phone: '',
   email: '',
@@ -61,8 +55,6 @@ const form = reactive({
 
 const submitted = ref(false)
 const pending = ref(false)
-
-const isCompany = computed(() => form.personType === 'company')
 
 const unit = computed(() => (form.unitId ? unitById(form.unitId) : undefined))
 const building = computed(() => (unit.value ? buildingById(unit.value.buildingId) : undefined))
@@ -148,8 +140,8 @@ const errors = computed(() => {
   if (form.fullName.trim().length < 3) e.fullName = 'Ism va familiyani to‘liq kiriting'
   if (!phoneValid.value) e.phone = 'Telefon raqami to‘liq emas'
   if (!/^[^\s@]+@[^\s@]+\.[A-Za-z]{2,}$/.test(form.email.trim())) e.email = 'E-pochta manzili xato'
-  if (isCompany.value && form.orgName.trim().length < 3) e.orgName = 'Tashkilot nomini kiriting'
-  if (isCompany.value && form.stir.length !== 9) e.stir = 'STIR to‘qqiz xonali bo‘lishi kerak'
+  if (form.orgName.trim().length < 3) e.orgName = 'Tashkilot nomini kiriting'
+  if (form.stir.length !== 9) e.stir = 'STIR to‘qqiz xonali bo‘lishi kerak'
   if (!(Number(form.price) > 0)) e.price = 'Taklif narxini kiriting'
   if (!form.startDate) e.startDate = 'Boshlanish sanasini tanlang'
   return e
@@ -369,12 +361,12 @@ function confirmCode() {
     const created = lease.createCase({
       unitId: form.unitId,
       org: {
-        name: isCompany.value ? form.orgName.trim() : form.fullName.trim(),
-        tin: isCompany.value ? stirLabel.value : '',
-        director: isCompany.value ? (org?.director ?? form.fullName.trim()) : form.fullName.trim(),
+        name: form.orgName.trim(),
+        tin: stirLabel.value,
+        director: org?.director ?? form.fullName.trim(),
         phone: phoneFormatted.value,
         email: form.email.trim(),
-        address: isCompany.value ? (org?.address ?? '') : '',
+        address: org?.address ?? '',
       },
       offerPrice: price.value,
       startDate: form.startDate,
@@ -595,7 +587,7 @@ const lastFour = computed(() => form.phone.slice(-4))
         </h1>
         <p class="mt-2 max-w-[70ch] text-[14px] leading-relaxed text-ink-600">
           Ro‘yxatdan o‘tish shart emas. Ma’lumotlarni to‘ldiring, telefon raqamingizni tasdiqlang
-          va ariza bino rahbariga tushadi.
+          va ariza operatorga tushadi.
         </p>
       </header>
 
@@ -603,33 +595,11 @@ const lastFour = computed(() => form.phone.slice(-4))
         <div class="min-w-0 space-y-5">
           <UiCard title="Aloqa ma’lumotlari" subtitle="Operator shu ma’lumotlar orqali bog‘lanadi" icon="user">
             <form class="space-y-4" novalidate @submit.prevent="requestCode">
-              <div>
-                <p class="mb-1.5 text-[13px] font-semibold text-ink-700">Shaxs turi</p>
-                <div
-                  role="radiogroup"
-                  aria-label="Shaxs turi"
-                  class="grid grid-cols-2 gap-1 rounded-field bg-ink-100 p-1"
-                >
-                  <button
-                    v-for="p in PERSON_TYPES"
-                    :key="p.value"
-                    type="button"
-                    role="radio"
-                    :aria-checked="form.personType === p.value"
-                    class="min-h-[44px] rounded-[8px] px-3 py-2 text-center transition-colors"
-                    :class="form.personType === p.value ? 'bg-white shadow-card' : 'hover:bg-white/60'"
-                    @click="form.personType = p.value"
-                  >
-                    <span
-                      class="block text-[14px] font-semibold"
-                      :class="form.personType === p.value ? 'text-brand-600' : 'text-ink-600'"
-                    >
-                      {{ p.label }}
-                    </span>
-                    <span class="block text-[12px] text-ink-500">{{ p.caption }}</span>
-                  </button>
-                </div>
-              </div>
+              <p class="flex items-start gap-2 rounded-field bg-brand-50 px-3.5 py-2.5 text-[12.5px] leading-relaxed text-brand-700 ring-1 ring-inset ring-brand-200">
+                <UiIcon name="info" :size="15" class="mt-px shrink-0" />
+                Ijara shartnomasi faqat yuridik shaxs bilan tuziladi, shuning uchun tashkilot
+                rekvizitlarini to‘ldiring.
+              </p>
 
               <UiField label="Ism va familiya" required for="ariza-name" :error="errorOf('fullName')">
                 <UiInput
@@ -693,85 +663,83 @@ const lastFour = computed(() => form.phone.slice(-4))
               </div>
 
               <!-- Yuridik shaxs rekvizitlari -->
-              <template v-if="isCompany">
-                <UiField
-                  label="STIR"
-                  required
-                  for="ariza-stir"
-                  :error="errorOf('stir')"
-                  hint="To‘qqiz xonali raqam: reyestrda topilsa, rekvizitlar o‘zi to‘ldiriladi"
-                >
-                  <div class="relative">
-                    <input
-                      id="ariza-stir"
-                      type="text"
-                      inputmode="numeric"
-                      name="stir"
-                      placeholder="000 000 000"
-                      :value="stirLabel"
-                      :aria-invalid="Boolean(errorOf('stir')) || undefined"
-                      class="tabular h-11 w-full rounded-field bg-white px-3.5 text-sm text-ink-800 ring-1 ring-inset transition-colors placeholder:text-ink-400 focus:ring-2 focus:ring-brand-500"
-                      :class="
-                        errorOf('stir') ? 'ring-danger-400' : 'ring-ink-200 hover:ring-ink-300'
-                      "
-                      @input="onStirInput"
-                    />
-                  </div>
-                </UiField>
-
-                <div
-                  v-if="foundOrg"
-                  class="rounded-field bg-ok-50 p-3.5 ring-1 ring-inset ring-ok-100"
-                >
-                  <p class="flex items-center gap-2 text-[13px] font-semibold text-ok-700">
-                    <UiIcon name="check" :size="15" class="shrink-0" />
-                    Tashkilot reyestrda topildi
-                  </p>
-                  <dl class="mt-2.5 grid gap-2 sm:grid-cols-2">
-                    <div>
-                      <dt class="text-[12px] text-ink-500">Nomi</dt>
-                      <dd class="text-[13px] font-semibold text-ink-900">{{ foundOrg.name }}</dd>
-                    </div>
-                    <div>
-                      <dt class="text-[12px] text-ink-500">Rahbar</dt>
-                      <dd class="text-[13px] font-semibold text-ink-900">
-                        {{ foundOrg.director }}
-                      </dd>
-                    </div>
-                    <div class="sm:col-span-2">
-                      <dt class="text-[12px] text-ink-500">Yuridik manzil</dt>
-                      <dd class="text-[13px] font-semibold text-ink-900">
-                        {{ foundOrg.address }}
-                      </dd>
-                    </div>
-                  </dl>
-                </div>
-
-                <p
-                  v-else-if="stirNotFound"
-                  class="flex items-start gap-2 rounded-field bg-warn-50 p-3.5 text-[13px] leading-relaxed text-ink-700 ring-1 ring-inset ring-warn-100"
-                >
-                  <UiIcon name="info" :size="15" class="mt-px shrink-0 text-warn-600" />
-                  Bu STIR reyestrda topilmadi. Tashkilot nomini qo‘lda kiriting, qolgan
-                  rekvizitlarni operator bog‘langanda aniqlaydi.
-                </p>
-
-                <UiField
-                  label="Tashkilot nomi"
-                  required
-                  for="ariza-org"
-                  :error="errorOf('orgName')"
-                >
-                  <UiInput
-                    id="ariza-org"
-                    v-model="form.orgName"
-                    name="organization"
-                    autocomplete="organization"
-                    placeholder="Tashkilot nomi"
-                    :invalid="Boolean(errorOf('orgName'))"
+              <UiField
+                label="STIR"
+                required
+                for="ariza-stir"
+                :error="errorOf('stir')"
+                hint="To‘qqiz xonali raqam: reyestrda topilsa, rekvizitlar o‘zi to‘ldiriladi"
+              >
+                <div class="relative">
+                  <input
+                    id="ariza-stir"
+                    type="text"
+                    inputmode="numeric"
+                    name="stir"
+                    placeholder="000 000 000"
+                    :value="stirLabel"
+                    :aria-invalid="Boolean(errorOf('stir')) || undefined"
+                    class="tabular h-11 w-full rounded-field bg-white px-3.5 text-sm text-ink-800 ring-1 ring-inset transition-colors placeholder:text-ink-400 focus:ring-2 focus:ring-brand-500"
+                    :class="
+                      errorOf('stir') ? 'ring-danger-400' : 'ring-ink-200 hover:ring-ink-300'
+                    "
+                    @input="onStirInput"
                   />
-                </UiField>
-              </template>
+                </div>
+              </UiField>
+
+              <div
+                v-if="foundOrg"
+                class="rounded-field bg-ok-50 p-3.5 ring-1 ring-inset ring-ok-100"
+              >
+                <p class="flex items-center gap-2 text-[13px] font-semibold text-ok-700">
+                  <UiIcon name="check" :size="15" class="shrink-0" />
+                  Tashkilot reyestrda topildi
+                </p>
+                <dl class="mt-2.5 grid gap-2 sm:grid-cols-2">
+                  <div>
+                    <dt class="text-[12px] text-ink-500">Nomi</dt>
+                    <dd class="text-[13px] font-semibold text-ink-900">{{ foundOrg.name }}</dd>
+                  </div>
+                  <div>
+                    <dt class="text-[12px] text-ink-500">Rahbar</dt>
+                    <dd class="text-[13px] font-semibold text-ink-900">
+                      {{ foundOrg.director }}
+                    </dd>
+                  </div>
+                  <div class="sm:col-span-2">
+                    <dt class="text-[12px] text-ink-500">Yuridik manzil</dt>
+                    <dd class="text-[13px] font-semibold text-ink-900">
+                      {{ foundOrg.address }}
+                    </dd>
+                  </div>
+                </dl>
+              </div>
+
+              <p
+                v-else-if="stirNotFound"
+                class="flex items-start gap-2 rounded-field bg-warn-50 p-3.5 text-[13px] leading-relaxed text-ink-700 ring-1 ring-inset ring-warn-100"
+              >
+                <UiIcon name="info" :size="15" class="mt-px shrink-0 text-warn-600" />
+                Bu STIR reyestrda topilmadi. Tashkilot nomini qo‘lda kiriting, qolgan
+                rekvizitlarni operator bog‘langanda aniqlaydi.
+              </p>
+
+              <UiField
+                label="Tashkilot nomi"
+                required
+                for="ariza-org"
+                :error="errorOf('orgName')"
+              >
+                <UiInput
+                  id="ariza-org"
+                  v-model="form.orgName"
+                  name="organization"
+                  autocomplete="organization"
+                  placeholder="Tashkilot nomi"
+                  :invalid="Boolean(errorOf('orgName'))"
+                />
+              </UiField>
             </form>
           </UiCard>
 

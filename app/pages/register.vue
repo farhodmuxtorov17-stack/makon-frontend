@@ -278,7 +278,7 @@ const stepCaption = computed(() =>
               </p>
             </div>
 
-            <UiButton type="submit" size="lg" block class="mt-5" :disabled="pending">
+            <UiButton type="submit" size="lg" block class="mt-5" :loading="pending">
               <svg
                 v-if="pending"
                 class="size-4 animate-spin"

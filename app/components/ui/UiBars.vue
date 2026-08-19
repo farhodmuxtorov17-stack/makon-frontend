@@ -101,6 +101,19 @@ const max = computed(() => {
   return Math.max(...values.filter((v) => Number.isFinite(v)), 0)
 })
 
+/**
+ * To'r chiziqlari yonidagi shkala. Ilgari beshta chiziq raqamsiz turardi va
+ * qiymatni faqat sichqonchani olib borib bilish mumkin edi.
+ */
+const ticks = computed(() => {
+  const top = max.value * (showValues.value ? 1 / 0.87 : 1)
+  if (!Number.isFinite(top) || top <= 0) return []
+  return [1, 0.75, 0.5, 0.25, 0].map((share) => ({
+    share,
+    label: fmt(top * share),
+  }))
+})
+
 function pct(v: number) {
   // Qiymat yozuvlari ko‘rsatilsa, tepada joy qoldiriladi
   const share = (v / (max.value || 1)) * 100 * (showValues.value ? 0.87 : 1)
@@ -198,7 +211,7 @@ const summary = computed(() => {
   <div>
     <div class="relative" @pointerleave="active = null">
       <div class="relative" :style="{ height: `${height}px` }">
-        <!-- To‘r chiziqlari -->
+        <!-- To‘r chiziqlari va shkala -->
         <div
           class="pointer-events-none absolute inset-x-0 top-0 flex flex-col justify-between"
           :style="{ bottom: `${LABEL_H}px` }"
@@ -210,6 +223,20 @@ const summary = computed(() => {
             class="border-t"
             :class="n === 5 ? 'border-ink-200' : 'border-ink-100'"
           />
+        </div>
+        <div
+          v-if="ticks.length"
+          class="pointer-events-none absolute inset-x-0 top-0 flex flex-col justify-between"
+          :style="{ bottom: `${LABEL_H}px` }"
+          aria-hidden="true"
+        >
+          <span
+            v-for="t in ticks"
+            :key="t.share"
+            class="tabular -translate-y-1/2 bg-surface pe-1 text-[11px] leading-none text-ink-400"
+          >
+            {{ t.label }}
+          </span>
         </div>
 
         <div

@@ -56,13 +56,11 @@ function unlock() {
 }
 
 const STAGE_HINT: Record<string, string> = {
-  YANGI: 'Ariza qabul qilindi va bino rahbari ko‘rigida turibdi',
-  OPERATSIYA_TASDIQLADI: 'Shartlar kelishildi, moliyaviy tekshiruv bosqichida',
-  MOLIYA_TASDIQLADI: 'Moliyaviy shartlar tasdiqlandi, shartnoma qoralamasi tayyorlanmoqda',
-  QORALAMA_TAYYOR: 'Shartnoma qoralamasi tayyor, imzolashga yuborish kutilmoqda',
+  YANGI: 'Ariza qabul qilindi va operator ko‘rigida turibdi',
+  SHARTNOMA_TAYYOR: 'Ariza tasdiqlandi, shartnoma tayyorlandi va imzolashga yuboriladi',
   DIDOX_YUBORILDI: 'Shartnoma imzolash uchun Didox orqali yuborildi',
-  DIDOX_IMZOLANDI: 'Shartnoma imzolandi, faollashtirish bosqichida',
-  FAOL: 'Shartnoma amalda: maydon sizning nomingizga rasmiylashtirildi',
+  DIDOX_IMZOLANDI: 'Shartnoma imzolandi, ariza yopilish bosqichida',
+  FAOL: 'Ariza yopildi: maydon sizning nomingizga rasmiylashtirildi',
   RAD_ETILDI: 'Ariza rad etilgan',
 }
 
@@ -163,7 +161,7 @@ const CONTACTS = [
             />
           </UiField>
 
-          <UiButton type="submit" size="lg" block :disabled="pending">
+          <UiButton type="submit" size="lg" block :loading="pending">
             {{ pending ? 'Tekshirilmoqda…' : 'Arizani ochish' }}
           </UiButton>
         </form>
