@@ -112,6 +112,10 @@ interface SlabView {
   extras: Paint[]
   anchorX: number
   anchorY: number
+  /** Qavat nishonchasi: kadr ichida qolishi uchun chegaraga bosiladi */
+  labelX: number
+  labelY: number
+  labelW: number
   aria: string
 }
 
@@ -1148,6 +1152,50 @@ const extras = computed<ExtQuad[][]>(() => {
   return out
 })
 
+/**
+ * Kadrga sig‘dirish uchun kerak bo‘ladigan chegaralar. Tom machtasi, kirish
+ * soyaboni, ombor annexi va balkon ham hisobga olinadi, shuning uchun hech
+ * bir bino chetidan qirqilib qolmaydi. Kameradan bog‘liq emas.
+ */
+const bounds = computed(() => {
+  const m = massing.value
+  const ex = extras.value
+  let x0 = Infinity
+  let x1 = -Infinity
+  let y0 = Infinity
+  let y1 = -Infinity
+  /** Har bir darajaning ustki chegarasi: qavat balandligi yoki toj */
+  const tops: number[] = []
+
+  for (const lg of m.levels) {
+    x0 = Math.min(x0, lg.ox - lg.w / 2)
+    x1 = Math.max(x1, lg.ox + lg.w / 2)
+    y0 = Math.min(y0, lg.oy - lg.d / 2)
+    y1 = Math.max(y1, lg.oy + lg.d / 2)
+    let top = lg.h
+    for (const q of ex[lg.i] ?? []) {
+      for (const p of q.p) {
+        if (p[0] < x0) x0 = p[0]
+        if (p[0] > x1) x1 = p[0]
+        if (p[1] < y0) y0 = p[1]
+        if (p[1] > y1) y1 = p[1]
+        if (p[2] > top) top = p[2]
+      }
+    }
+    tops.push(top)
+  }
+
+  return {
+    cx: (x0 + x1) / 2,
+    cy: (y0 + y1) / 2,
+    hw: (x1 - x0) / 2 || 1,
+    hd: (y1 - y0) / 2 || 1,
+    /** Burilishdan qat’i nazar eng katta gorizontal yoyilish yarmi */
+    radius: Math.hypot((x1 - x0) / 2, (y1 - y0) / 2) || 1,
+    tops,
+  }
+})
+
 /* ==========================================================================
    Sahna: proyeksiya va bo‘yoq bo‘yicha birlashtirish. Faqat shu bosqich
    kameraga bog‘liq.
@@ -1206,14 +1254,19 @@ const scene = computed(() => {
     return z
   }
 
-  const lastGeo = m.levels[lv.length - 1]
+  // Kadrga sig‘dirish: masshtab burilishdan qat’i nazar bir xil qoladi
+  // (aylantirganda bino kattalashib-kichraymaydi), markazlash esa joriy
+  // burchak bo‘yicha aniq hisoblanadi.
+  const bd = bounds.value
   const zLow = zBase(0)
-  const zHigh = zBase(lv.length - 1) + (lastGeo ? lastGeo.h : geo.h) + m.topZ * 0.09
-  const spanH = Math.hypot(geo.w * 1.25, geo.d * 1.25)
+  let zHigh = zLow + geo.h
+  for (let i = 0; i < lv.length; i++) zHigh = Math.max(zHigh, zBase(i) + (bd.tops[i] ?? geo.h))
+
+  const spanH = bd.radius * 2
   const spanV = Math.max(spanH * sp + (zHigh - zLow) * cp, 1)
-  const s = Math.min((VW * 0.84) / spanH, (VH * 0.82) / spanV) * view.zoom
-  const cx = VW / 2
-  const cy = VH / 2 + ((zLow + zHigh) / 2) * cp * s
+  const s = Math.min((VW * 0.9) / spanH, (VH * 0.88) / spanV) * view.zoom
+  const cx = VW / 2 - (bd.cx * ct - bd.cy * st) * s
+  const cy = VH / 2 + ((bd.cx * st + bd.cy * ct) * sp + ((zLow + zHigh) / 2) * cp) * s
 
   const px = (x: number, y: number) => r1(cx + (x * ct - y * st) * s)
   const py = (x: number, y: number, z: number) => r1(cy - ((x * st + y * ct) * sp + z * cp) * s)
@@ -1552,6 +1605,9 @@ const scene = computed(() => {
         anchorY = py(c[0], c[1], zTop)
       }
     }
+    const labelW = isSel ? 152 : 44
+    const labelX = clamp(anchorX + 16, 8, VW - labelW - 8)
+    const labelY = clamp(anchorY, 24, VH - 12)
 
     slabs.push({
       floor: info.floor,
@@ -1575,22 +1631,29 @@ const scene = computed(() => {
       extras: extraItems,
       anchorX,
       anchorY,
+      labelX,
+      labelY,
+      labelW,
       aria: `${info.name}, ${info.total} unit, bandlik ${info.occupancy} foiz, ${info.label}`,
     })
   }
 
-  // --- yer sathi: to‘r va quyosh yo‘nalishidagi soya
-  const gw = geo.w * 1.45
-  const gd = geo.d * 1.45
+  // --- yer sathi: to‘r va quyosh yo‘nalishidagi soya. Maydonchaning o‘lchami
+  //     binoning haqiqiy chegarasidan chiqadi, shuning uchun uzun ombor ham,
+  //     ixcham minora ham bir xil nisbatdagi zamin ustida turadi.
+  const gx0 = bd.cx - bd.hw * 1.5
+  const gx1 = bd.cx + bd.hw * 1.5
+  const gy0 = bd.cy - bd.hd * 1.5
+  const gy1 = bd.cy + bd.hd * 1.5
   const grid: string[] = []
   const divisions = 6
   for (let i = 0; i <= divisions; i++) {
-    const x = -gw + (i * 2 * gw) / divisions
-    grid.push(`M${px(x, -gd)} ${py(x, -gd, 0)} L${px(x, gd)} ${py(x, gd, 0)}`)
-    const y = -gd + (i * 2 * gd) / divisions
-    grid.push(`M${px(-gw, y)} ${py(-gw, y, 0)} L${px(gw, y)} ${py(gw, y, 0)}`)
+    const x = gx0 + ((gx1 - gx0) * i) / divisions
+    grid.push(`M${px(x, gy0)} ${py(x, gy0, 0)} L${px(x, gy1)} ${py(x, gy1, 0)}`)
+    const y = gy0 + ((gy1 - gy0) * i) / divisions
+    grid.push(`M${px(gx0, y)} ${py(gx0, y, 0)} L${px(gx1, y)} ${py(gx1, y, 0)}`)
   }
-  const plane = [pt(-gw, -gd, 0), pt(gw, -gd, 0), pt(gw, gd, 0), pt(-gw, gd, 0)].join(' ')
+  const plane = [pt(gx0, gy0, 0), pt(gx1, gy0, 0), pt(gx1, gy1, 0), pt(gx0, gy1, 0)].join(' ')
 
   // Soya: kontur nuqtalari quyosh yo‘nalishi bo‘yicha siljiydi, ikki
   // to‘plamning qavariq qobig‘i olinadi
@@ -1645,8 +1708,8 @@ const scene = computed(() => {
     plane,
     shadow,
     groundMark: {
-      x: clamp(px(-gw, gd), 14, VW - 90),
-      y: clamp(py(-gw, gd, 0), 20, VH - 14),
+      x: clamp(px(gx0, gy1), 14, VW - 90),
+      y: clamp(py(gx0, gy1, 0), 20, VH - 14),
     },
   }
 })
@@ -1770,7 +1833,12 @@ function onDown(event: PointerEvent) {
   dragY = event.clientY
   dragRot = view.rotation
   dragTilt = view.tilt
-  target.setPointerCapture(event.pointerId)
+  // Ko‘rsatkich ushlanmasa ham tortish ishlaydi, shuning uchun xato yutiladi
+  try {
+    target.setPointerCapture(event.pointerId)
+  } catch {
+    /* ushlab turish imkoni yo‘q */
+  }
 }
 
 function onMove(event: PointerEvent) {
@@ -1787,7 +1855,11 @@ function onUp(event: PointerEvent) {
   if (!dragging.value) return
   dragging.value = false
   const target = event.currentTarget as SVGSVGElement
-  if (target.hasPointerCapture(event.pointerId)) target.releasePointerCapture(event.pointerId)
+  try {
+    if (target.hasPointerCapture(event.pointerId)) target.releasePointerCapture(event.pointerId)
+  } catch {
+    /* ushlab turish allaqachon bekor qilingan */
+  }
 }
 
 function onWheel(event: WheelEvent) {
@@ -2019,15 +2091,15 @@ function toggleLayer(key: keyof Layers) {
 
           <g v-if="slab.selected || hovered === slab.floor" class="pointer-events-none">
             <path
-              :d="`M${slab.anchorX} ${slab.anchorY} L${slab.anchorX + 16} ${slab.anchorY - 4}`"
+              :d="`M${slab.anchorX} ${slab.anchorY} L${slab.labelX} ${slab.labelY - 4}`"
               stroke="#94A2B8"
               stroke-width="1"
               fill="none"
             />
             <rect
-              :x="slab.anchorX + 16"
-              :y="slab.anchorY - 16"
-              :width="slab.selected ? 152 : 44"
+              :x="slab.labelX"
+              :y="slab.labelY - 16"
+              :width="slab.labelW"
               height="24"
               rx="12"
               :fill="slab.selected ? '#0256F7' : '#FFFFFF'"
@@ -2035,8 +2107,8 @@ function toggleLayer(key: keyof Layers) {
               stroke-width="1"
             />
             <text
-              :x="slab.anchorX + 27"
-              :y="slab.anchorY + 1"
+              :x="slab.labelX + 11"
+              :y="slab.labelY + 1"
               font-size="12"
               font-weight="700"
               :fill="slab.selected ? '#FFFFFF' : '#354152'"

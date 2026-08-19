@@ -113,7 +113,7 @@ const plan = computed(() =>
     units: floorUnits.value.map((u) => ({ id: u.id, code: u.code, area: u.area })),
     buildingType: building.value?.type ?? 'Biznes markaz',
     floor: activeFloor.value,
-    underground: activeFloor.value === 0,
+    underground: activeFloor.value < 0,
   }),
 )
 
