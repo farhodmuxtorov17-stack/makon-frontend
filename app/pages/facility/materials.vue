@@ -110,8 +110,17 @@ function openDetail(row: Record<string, unknown>) {
   detail.value = list.value.find((r) => r.id === String(row.id)) ?? null
 }
 
+/** SUBMITTED holatidagi so‘rov bo‘yicha qaror: tasdiqlash yoki rad etish */
+function decide(status: 'APPROVED' | 'REJECTED') {
+  const target = detail.value
+  if (!target || !canDecide.value || target.status !== 'SUBMITTED') return
+  const row = list.value.find((r) => r.id === target.id)
+  if (row) row.status = status
+  detail.value = null
+}
+
 const createOpen = ref(false)
-const draftLines = ref<Array<{ id: string; name: string; unit: string; price: number; qty: number }>>([])
+const draftLines = ref<WorkMaterialLine[]>([])
 const pickItem = ref(STOCK_ITEMS[0]!.id)
 const pickQty = ref(1)
 const pickOrder = ref(SERVICE_REQUESTS[1]!.code)
@@ -133,16 +142,22 @@ function addLine() {
     createError.value = 'Pozitsiya tanlang va miqdorni 1 dan kam bo‘lmagan qilib kiriting'
     return
   }
-  const exists = draftLines.value.find((l) => l.id === item.id)
+  const exists = draftLines.value.find((l) => l.code === item.code)
   if (exists) exists.qty += qty
   else
-    draftLines.value.push({ id: item.id, name: item.name, unit: item.unit, price: item.price, qty })
+    draftLines.value.push({
+      code: item.code,
+      name: item.name,
+      unit: item.unit,
+      price: item.price,
+      qty,
+    })
   pickQty.value = 1
   createError.value = ''
 }
 
-function removeLine(id: string) {
-  draftLines.value = draftLines.value.filter((l) => l.id !== id)
+function removeLine(code: string) {
+  draftLines.value = draftLines.value.filter((l) => l.code !== code)
 }
 
 function resetDraft() {
@@ -165,18 +180,20 @@ function submitRequest() {
   const order = requests.value.find((r) => r.code === pickOrder.value)
   const seq = list.value.reduce((m, r) => Math.max(m, Number(r.code.slice(-4)) || 0), 0) + 1
   const numbered = String(seq).padStart(4, '0')
-  const id = `mr-${numbered}`
-  savedLines.value[id] = draftLines.value.map((l) => ({ ...l, total: l.qty * l.price }))
   list.value.unshift({
-    id,
-    code: `MT-2025-${numbered}`,
+    id: `mr-${numbered}`,
+    // Hujjat raqamining yili joriy sanadan olinadi
+    code: `MT-${new Date().getFullYear()}-${numbered}`,
     workOrder: pickOrder.value,
     requester: auth.user?.fullName ?? 'Ijrochi',
     items: draftLines.value.length,
     amount: draftTotal.value,
     status: 'SUBMITTED',
-    createdAt: (order?.createdAt ?? '2025-05-18').slice(0, 10),
+    // So‘rov bugun tuziladi, ish topshirig‘ining sanasi bilan almashtirilmaydi
+    createdAt: todayIso(),
     buildingName: order?.buildingName ?? 'Green Business Center',
+    reason: reason.value.trim(),
+    lines: draftLines.value.map((l) => ({ ...l })),
   })
   tab.value = 'all'
   createOpen.value = false
@@ -237,7 +254,11 @@ function submitRequest() {
       :padded="false"
     >
       <template #actions>
-        <UiInput v-model="query" placeholder="Raqam yoki ish topshirig‘i" class="w-64">
+        <UiInput
+          v-model="query"
+          placeholder="Raqam yoki ish topshirig‘i bo‘yicha qidirish"
+          class="w-64"
+        >
           <template #prefix>
             <UiIcon name="search" :size="18" />
           </template>
@@ -301,6 +322,11 @@ function submitRequest() {
         <span class="tabular text-[13px] text-ink-500">{{ dateShort(detail.createdAt) }}</span>
       </div>
 
+      <div v-if="detail.reason" class="rounded-field bg-surface-sunken px-4 py-3">
+        <p class="text-[12px] text-ink-500">Asos</p>
+        <p class="mt-1 text-[13.5px] leading-relaxed text-ink-800">{{ detail.reason }}</p>
+      </div>
+
       <UiTable
         :columns="[
           { key: 'name', label: 'Nomi' },
@@ -333,7 +359,17 @@ function submitRequest() {
         Ish topshirig‘i kartasi
         <UiIcon name="chevronRight" :size="15" />
       </UiButton>
-      <UiButton v-if="canOpen('/warehouse')" to="/warehouse">
+      <template v-if="canDecide && detail?.status === 'SUBMITTED'">
+        <UiButton variant="secondary" @click="decide('REJECTED')">
+          <UiIcon name="x" :size="16" />
+          Rad etish
+        </UiButton>
+        <UiButton variant="success" @click="decide('APPROVED')">
+          <UiIcon name="check" :size="16" />
+          Tasdiqlash
+        </UiButton>
+      </template>
+      <UiButton v-else-if="canOpen('/warehouse')" to="/warehouse">
         <UiIcon name="box" :size="16" />
         Omborda ko‘rish
       </UiButton>
@@ -368,7 +404,7 @@ function submitRequest() {
 
       <div v-if="draftLines.length" class="overflow-hidden rounded-field ring-1 ring-ink-200">
         <ul class="divide-y divide-ink-100">
-          <li v-for="l in draftLines" :key="l.id" class="flex items-center gap-3 px-4 py-3">
+          <li v-for="l in draftLines" :key="l.code" class="flex items-center gap-3 px-4 py-3">
             <span class="min-w-0 flex-1">
               <span class="block truncate text-[13.5px] font-semibold text-ink-900">{{ l.name }}</span>
               <span class="tabular block text-[12px] text-ink-500">
@@ -382,7 +418,7 @@ function submitRequest() {
               type="button"
               class="shrink-0 rounded-lg p-2 text-ink-400 transition-colors hover:bg-danger-50 hover:text-danger-600"
               aria-label="Pozitsiyani olib tashlash"
-              @click="removeLine(l.id)"
+              @click="removeLine(l.code)"
             >
               <UiIcon name="trash" :size="16" />
             </button>

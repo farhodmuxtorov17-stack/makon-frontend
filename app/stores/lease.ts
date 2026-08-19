@@ -1095,23 +1095,43 @@ export const useLeaseStore = defineStore('lease', {
       item.status = 'DIDOX_YUBORILDI'
       this.log(item, {
         actor,
-        roleLabel: 'Bino rahbari',
+        roleLabel,
         action: 'Didox orqali yuborildi',
         detail: `${item.contract.code} · Didox hujjat raqami ${item.didox.docNumber}`,
       })
     },
 
-    /** 7-bosqich: Didox tomonidagi holat tekshiriladi */
-    checkDidox(id: string, actor: string) {
+    /**
+     * 7-bosqich: Didox tomonidagi holat tekshiriladi.
+     *
+     * Natija qaytariladi, shuning uchun sahifa haqiqatda nima bo‘lganini
+     * aytadi: holat o‘zgardimi yoki o‘zgarishsiz qoldimi. Ariza statusi ham
+     * har safar ticket holatidan qayta hisoblanadi.
+     */
+    checkDidox(
+      id: string,
+      actor: string,
+      roleLabel: string,
+    ): { changed: boolean; state: DidoxState } | null {
       const item = this.byId(id)
-      if (!item || !item.didox) return
+      if (!item || !item.didox) return null
       const ticket = item.didox
       const stamp = now()
       ticket.lastCheckedAt = stamp
 
       const i = DIDOX_FLOW.indexOf(ticket.state)
       const next = DIDOX_FLOW[i + 1]
-      if (!next) return
+
+      if (!next) {
+        this.syncDidoxStatus(item)
+        this.log(item, {
+          actor,
+          roleLabel,
+          action: 'Didox holati tekshirildi',
+          detail: `${ticket.docNumber}, holat o‘zgarmadi: ${ticket.state}`,
+        })
+        return { changed: false, state: ticket.state }
+      }
 
       const note =
         next === 'Ko‘rib chiqilmoqda'
@@ -1123,35 +1143,49 @@ export const useLeaseStore = defineStore('lease', {
 
       this.log(item, {
         actor,
-        roleLabel: 'Bino rahbari',
+        roleLabel,
         action: 'Didox holati tekshirildi',
         detail: `${ticket.docNumber}, yangi holat: ${next}`,
       })
 
-      if (next === 'Imzolangan') item.status = 'DIDOX_IMZOLANDI'
+      this.syncDidoxStatus(item)
+      return { changed: true, state: next }
+    },
+
+    /** Ariza bosqichi Didox ticketidagi holatga moslashtiriladi */
+    syncDidoxStatus(item: LeaseCase) {
+      if (!item.didox) return
+      if (item.status === 'FAOL' || item.status === 'RAD_ETILDI') return
+      if (item.didox.state === 'Imzolangan') item.status = 'DIDOX_IMZOLANDI'
+      else if (item.status === 'DIDOX_IMZOLANDI') item.status = 'DIDOX_YUBORILDI'
     },
 
     /** 8-bosqich: Didox’dan olingan imzolangan fayl tizimga yuklanadi */
-    attachSignedDocument(id: string, actor: string, file: Omit<SignedDocument, 'uploadedAt' | 'uploadedBy'>) {
+    attachSignedDocument(
+      id: string,
+      actor: string,
+      roleLabel: string,
+      file: Omit<SignedDocument, 'uploadedAt' | 'uploadedBy'>,
+    ) {
       const item = this.byId(id)
       if (!item || item.status !== 'DIDOX_IMZOLANDI') return
       item.signedDocument = { ...file, uploadedAt: now(), uploadedBy: actor }
       this.log(item, {
         actor,
-        roleLabel: 'Bino rahbari',
+        roleLabel,
         action: 'Imzolangan hujjat yuklandi',
         detail: `${file.fileName} · SHA-256: ${file.hash.slice(0, 16)}…`,
       })
     },
 
-    removeSignedDocument(id: string, actor: string) {
+    removeSignedDocument(id: string, actor: string, roleLabel: string) {
       const item = this.byId(id)
       if (!item || !item.signedDocument || item.status === 'FAOL') return
       const name = item.signedDocument.fileName
       item.signedDocument = null
       this.log(item, {
         actor,
-        roleLabel: 'Bino rahbari',
+        roleLabel,
         action: 'Yuklangan hujjat olib tashlandi',
         detail: name,
       })
@@ -1165,39 +1199,68 @@ export const useLeaseStore = defineStore('lease', {
       this.log(item, { actor, roleLabel, action: 'Ariza rad etildi', detail: reason })
     },
 
-    /** Oldingi bosqichga qaytarish, sabab bilan */
+    /**
+     * Oldingi bosqichga qaytarish, sabab bilan.
+     *
+     * MOLIYA_TASDIQLADI oraliq holat: unda hech kimda bosadigan tugma yo‘q,
+     * shuning uchun qoralama bosqichi to‘g‘ridan-to‘g‘ri buxgalter qaroriga
+     * qaytariladi. Didox bosqichidan qaytarilganda tashqi xizmatdagi hujjat
+     * bekor qilinadi, aks holda ariza eski ticket bilan qotib qolar edi.
+     */
     returnForRework(id: string, actor: string, roleLabel: string, reason: string) {
       const item = this.byId(id)
       if (!item) return
-      const i = LEASE_FLOW.indexOf(item.status)
-      item.status = i > 0 ? (LEASE_FLOW[i - 1] as LeaseStatus) : 'YANGI'
+
+      const RETURN_TO: Partial<Record<LeaseStatus, LeaseStatus>> = {
+        OPERATSIYA_TASDIQLADI: 'YANGI',
+        MOLIYA_TASDIQLADI: 'OPERATSIYA_TASDIQLADI',
+        QORALAMA_TAYYOR: 'OPERATSIYA_TASDIQLADI',
+        DIDOX_YUBORILDI: 'QORALAMA_TAYYOR',
+        DIDOX_IMZOLANDI: 'QORALAMA_TAYYOR',
+      }
+
+      const cancelled = item.didox
+      if (cancelled) item.didox = null
+      if (item.signedDocument) item.signedDocument = null
+
+      item.status = RETURN_TO[item.status] ?? 'YANGI'
+
       this.log(item, {
         actor,
         roleLabel,
         action: 'Qayta ishlashga yuborildi',
-        detail: reason,
+        detail: cancelled
+          ? `${reason} · Didox hujjati ${cancelled.docNumber} bekor qilindi`
+          : reason,
       })
     },
 
-    activate(id: string, actor: string) {
+    activate(id: string, actor: string, roleLabel: string) {
       const item = this.byId(id)
       if (!item || !item.contract || !item.offer) return null
       if (item.status !== 'DIDOX_IMZOLANDI' || !item.signedDocument) return null
 
       const building = buildingById(item.buildingId)
       const totals = scheduleTotals(item.schedule)
-      const first = item.schedule.find((r) => r.kind === 'RENT')
+      /* Birinchi hisob-faktura grafikning birinchi qatoriga chiqariladi */
+      const first = item.schedule[0] ?? null
 
-      this.invoiceSequence += 1
-      const invoiceCode = `INV-2026-0${this.invoiceSequence}`
-      const contractId = `c-0${this.contractSequence}`
+      const contractId = `c-${item.contract.code.slice(-4)}`
+      const invoiceCode = nextInvoiceCode(
+        this.cases.flatMap((c) => c.schedule.map((r) => r.invoiceCode)),
+      )
 
-      if (first) first.status = 'ISSUED'
+      if (first) {
+        first.status = 'ISSUED'
+        first.invoiceCode = invoiceCode
+      }
+
+      const rest = item.schedule.filter((r) => r.status === 'PLANNED').length
 
       const changes: ActivationChange[] = [
         {
           icon: 'building',
-          label: 'Unit holati «Band» ga o‘tdi',
+          label: `Unit holati «${UNIT_STATUS.RENTED?.label ?? 'Ijarada'}» ga o‘tdi`,
           detail: `${item.buildingName} · Unit ${item.unitCode}, ${item.org.name} nomiga rasmiylashtirildi`,
         },
         {
@@ -1219,7 +1282,7 @@ export const useLeaseStore = defineStore('lease', {
           icon: 'wallet',
           label: `Birinchi hisob-faktura ${invoiceCode} yaratildi`,
           detail: first
-            ? `${first.label} · ${money(first.total)} · to‘lov muddati ${dmy(first.dueAt)}`
+            ? `${first.label} · ${money(first.total)} · to‘lov muddati ${dmy(first.dueAt)}. Qolgan ${rest} ta davr muddati kelganda chiqariladi`
             : '',
         },
       ]
@@ -1229,9 +1292,9 @@ export const useLeaseStore = defineStore('lease', {
 
       this.log(item, {
         actor,
-        roleLabel: 'Bino rahbari',
+        roleLabel,
         action: 'Shartnoma faollashtirildi',
-        detail: `Unit band qilindi, ${invoiceCode} hisob-fakturasi va oylik billing grafigi ishga tushdi`,
+        detail: `Unit band qilindi, ${invoiceCode} hisob-fakturasi chiqarildi, qolgan ${rest} ta davr grafik bo‘yicha chiqariladi`,
       })
 
       this.applyCase(item)
@@ -1275,7 +1338,13 @@ export const useLeaseStore = defineStore('lease', {
       const totals = scheduleTotals(item.schedule)
       const contractId = activation.contractId
 
-      if (!CONTRACTS.some((c) => c.id === contractId)) {
+      if (!CONTRACTS.some((c) => c.id === contractId || c.code === doc.code)) {
+        /* Bosqichlar reyestr kutgan to‘rt nom bilan yoziladi, sana va mas’ul audit jurnalidan */
+        const stageOf = (action: string) => item.audit.find((a) => a.action === action)
+        const composed = stageOf('Shartnoma qoralamasi tuzildi')
+        const agreed = stageOf('Moliya tasdiqladi')
+        const signed = stageOf('Imzolangan hujjat yuklandi')
+
         CONTRACTS.unshift({
           id: contractId,
           code: doc.code,
@@ -1295,34 +1364,99 @@ export const useLeaseStore = defineStore('lease', {
               size: item.signedDocument ? `${Math.round(item.signedDocument.size / 1024)} KB` : '-',
               type: item.signedDocument?.extension === 'pdf' ? 'pdf' : 'docx',
             },
-            { name: 'To‘lov jadvali.xlsx', size: '286 KB', type: 'xlsx' },
+            { name: 'To‘lov jadvali.xlsx', size: '-', type: 'xlsx' },
           ],
-          timeline: item.audit.map((a) => ({
-            label: a.action,
-            date: a.at.slice(0, 10),
-            actor: a.actor,
-            done: true,
-          })),
+          timeline: [
+            {
+              label: 'Yaratildi',
+              date: (composed?.at ?? doc.composedAt).slice(0, 10),
+              actor: composed?.actor ?? 'Tizim',
+              done: true,
+            },
+            {
+              label: 'Kelishildi',
+              date: (agreed?.at ?? doc.composedAt).slice(0, 10),
+              actor: agreed?.actor ?? 'Tizim',
+              done: true,
+            },
+            {
+              label: 'Imzolandi',
+              date: (signed?.at ?? activation.at).slice(0, 10),
+              actor: signed?.actor ?? item.didox?.sentBy ?? 'Didox',
+              done: true,
+            },
+            {
+              label: 'Faollashdi',
+              date: activation.at.slice(0, 10),
+              actor: item.audit.find((a) => a.action === 'Shartnoma faollashtirildi')?.actor ?? 'Tizim',
+              done: true,
+            },
+          ],
         })
       }
 
-      const first = item.schedule.find((r) => r.kind === 'RENT')
-      if (first && !INVOICES.some((i) => i.code === activation.invoiceCode)) {
-        INVOICES.unshift({
-          id: `i-${activation.invoiceCode.slice(-4)}`,
-          code: activation.invoiceCode,
+      this.syncInvoices(item)
+    },
+
+    /**
+     * Chiqarilgan davrlar billing reyestriga yoziladi. Amal takrorlansa ham
+     * bitta kod ikki marta qo‘shilmaydi, shuning uchun sahifa qayta
+     * yuklanganda grafik va hisob-fakturalar bir xil qoladi.
+     */
+    syncInvoices(item: LeaseCase) {
+      const activation = item.activation
+      if (!activation) return
+
+      for (const row of item.schedule) {
+        if (!row.invoiceCode || row.status === 'PLANNED') continue
+        if (INVOICES.some((i) => i.code === row.invoiceCode)) continue
+
+        const base = {
+          id: `i-${row.invoiceCode.slice(-4)}`,
+          code: row.invoiceCode,
+          contractCode: item.contract?.code,
           tenant: item.org.name,
           buildingName: item.buildingName,
           unitCode: `Unit ${item.unitCode}`,
-          period: first.label,
+          period: row.label,
           issuedAt: activation.at.slice(0, 10),
-          dueAt: first.dueAt,
-          total: first.total,
-          paid: 0,
-          status: 'ISSUED',
-          agingBucket: '0-30',
-        })
+          dueAt: row.dueAt,
+          total: row.total,
+          paid: row.status === 'PAID' ? row.total : 0,
+          status: 'ISSUED' as Invoice['status'],
+        }
+
+        INVOICES.unshift({ ...base, status: statusOf(base), agingBucket: agingKeyOf(base) })
       }
+    },
+
+    /**
+     * Grafikdagi navbatdagi davr uchun hisob-faktura chiqaradi: faollashtirish
+     * paytida birinchi davr, keyingilari muddati kelganda shu amal orqali.
+     */
+    issueInvoice(id: string, actor: string, roleLabel: string, periodId?: string): string {
+      const item = this.byId(id)
+      if (!item || item.status !== 'FAOL' || !item.activation) return ''
+
+      const row = periodId
+        ? item.schedule.find((r) => r.id === periodId && r.status === 'PLANNED')
+        : item.schedule.find((r) => r.status === 'PLANNED')
+      if (!row) return ''
+
+      row.invoiceCode = nextInvoiceCode(
+        this.cases.flatMap((c) => c.schedule.map((r) => r.invoiceCode)),
+      )
+      row.status = 'ISSUED'
+      this.syncInvoices(item)
+
+      this.log(item, {
+        actor,
+        roleLabel,
+        action: 'Hisob-faktura chiqarildi',
+        detail: `${row.invoiceCode} · ${row.label} · ${money(row.total)} · to‘lov muddati ${dmy(row.dueAt)}`,
+      })
+
+      return row.invoiceCode
     },
 
     /** Saqlangan holat qayta tiklangandan keyin reyestrni moslashtiradi */
@@ -1335,6 +1469,13 @@ export const useLeaseStore = defineStore('lease', {
           item.contactName = item.org.director
         }
         if (item.accountInvitedAt === undefined) item.accountInvitedAt = null
+
+        /*
+         * Saqlangan holatda hujjat grafigi alohida massiv bo‘lib tiklanadi.
+         * Havola qayta bog‘lanadi, aks holda shartnoma hujjatidagi davr
+         * holati ariza sahifasidagi holatdan orqada qolib ketadi.
+         */
+        if (item.contract) item.contract.schedule = item.schedule
 
         if (item.status === 'FAOL') this.applyCase(item)
       }

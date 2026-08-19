@@ -7,6 +7,7 @@ import {
   type SignedDocument,
 } from '~/stores/lease'
 import { unitById } from '~/data/units'
+import { ROLE_META } from '~/constants/roles'
 import { area, dateShort, num, sum, timeOf } from '~/utils/format'
 
 const route = useRoute()
@@ -26,8 +27,22 @@ const item = computed(() => {
 const unit = computed(() => (item.value ? unitById(item.value.unitId) : undefined))
 
 const actorName = computed(() => auth.user?.fullName ?? '-')
-const isManager = computed(() => auth.role === 'BUILDING_MANAGER')
+/** Audit jurnalidagi rol nomi joriy foydalanuvchidan olinadi */
+const roleLabel = computed(() => (auth.role ? ROLE_META[auth.role].label : 'Xodim'))
+
+/**
+ * Arizani oxirigacha olib boradigan rol. Ilgari bu tekshiruv store ichida
+ * edi va bitta binoga bog‘langan, shuning uchun boshqa binolarning arizasi
+ * hech kimga yetib bormasdi.
+ */
+const canManage = computed(() => auth.can('application.decide') || auth.can('system.administer'))
 const isAccountant = computed(() => auth.role === 'ACCOUNTANT')
+
+/**
+ * Sotuv so‘rovi ijara oqimiga kirmaydi: oldi-sotdi shartnomasi tizim orqali
+ * tuzilmaydi, shuning uchun bunday yozuvda faqat bog‘lanish va rad etish bor.
+ */
+const isPurchase = computed(() => item.value?.request.type === 'Sotib olish')
 
 // --- Kelishilgan shartlar formasi -----------------------------------------
 
@@ -86,35 +101,55 @@ const serviceTotal = computed(() =>
 
 // --- Rolga bog‘liq amallar -------------------------------------------------
 
-const canApproveOperation = computed(
-  () => item.value?.status === 'YANGI' && isManager.value && auth.can('application.decide'),
+/**
+ * Imzolash bosqichlari rolga emas, huquq va biriktirilgan binoga bog‘lanadi.
+ * Tizimda bitta bino rahbari bo‘lgani uchun rolga bog‘lash qolgan binolardagi
+ * arizalarni qoralama bosqichida abadiy ushlab qolar edi: `contract.sign`
+ * huquqi bor har bir rol o‘z doirasidagi arizani oxirigacha olib boradi.
+ */
+const canSign = computed(
+  () => Boolean(item.value) && auth.can('contract.sign') && auth.inScope(item.value!.buildingId),
 )
 
+const canApproveOperation = computed(
+  () =>
+    item.value?.status === 'YANGI' &&
+    !isPurchase.value &&
+    auth.can('application.decide') &&
+    auth.inScope(item.value.buildingId),
+)
+
+/*
+ * MOLIYA_TASDIQLADI ham qabul qilinadi: qoralama tuzilmay qolgan yoki
+ * qoralamadan qaytarilgan yozuv shu tugma bilan oldinga siljiydi.
+ */
 const canApproveFinance = computed(
   () =>
-    item.value?.status === 'OPERATSIYA_TASDIQLADI' &&
-    isAccountant.value &&
-    auth.can('application.decide'),
+    (item.value?.status === 'OPERATSIYA_TASDIQLADI' ||
+      item.value?.status === 'MOLIYA_TASDIQLADI') &&
+    auth.can('application.decide') &&
+    auth.inScope(item.value.buildingId),
 )
 
-const canSendDidox = computed(
-  () => item.value?.status === 'QORALAMA_TAYYOR' && isManager.value && auth.can('contract.sign'),
-)
+const canSendDidox = computed(() => item.value?.status === 'QORALAMA_TAYYOR' && canSign.value)
 
-const canCheckDidox = computed(
-  () => item.value?.status === 'DIDOX_YUBORILDI' && isManager.value && auth.can('contract.sign'),
-)
+const canCheckDidox = computed(() => item.value?.status === 'DIDOX_YUBORILDI' && canSign.value)
 
-const canUpload = computed(
-  () => item.value?.status === 'DIDOX_IMZOLANDI' && isManager.value && auth.can('contract.sign'),
-)
+const canUpload = computed(() => item.value?.status === 'DIDOX_IMZOLANDI' && canSign.value)
 
 const canActivate = computed(
   () =>
     item.value?.status === 'DIDOX_IMZOLANDI' &&
     Boolean(item.value?.signedDocument) &&
-    isManager.value &&
-    auth.can('application.decide'),
+    canSign.value,
+)
+
+/** Grafikdagi navbatdagi rejalashtirilgan davr */
+const nextPeriod = computed(() => item.value?.schedule.find((r) => r.status === 'PLANNED') ?? null)
+
+/** Muddati kelgan davr uchun hisob-faktura buxgalter tomonidan chiqariladi */
+const canIssueInvoice = computed(
+  () => item.value?.status === 'FAOL' && Boolean(nextPeriod.value) && auth.can('invoice.create'),
 )
 
 /** Rad etish har bir jonli bosqichda ochiq: sikl hech qayerda qotib qolmaydi */
@@ -122,7 +157,7 @@ const canDecide = computed(
   () =>
     Boolean(item.value) &&
     !['FAOL', 'RAD_ETILDI'].includes(item.value?.status ?? '') &&
-    auth.can('application.decide'),
+    (auth.can('application.decide') || canSign.value),
 )
 
 /** Birinchi bosqichda qaytariladigan oldingi bosqich yo‘q */
@@ -132,6 +167,7 @@ const canRework = computed(() => canDecide.value && item.value?.status !== 'YANG
 const readOnly = computed(
   () =>
     !auth.can('application.decide') &&
+    !canSign.value &&
     !['FAOL', 'RAD_ETILDI'].includes(item.value?.status ?? ''),
 )
 
@@ -157,7 +193,7 @@ const activationBlockers = computed(() => {
   const list: string[] = []
   if (c.didox?.state !== 'Imzolangan') list.push('Didox holati «Imzolangan» ga o‘tmagan')
   if (!c.signedDocument) list.push('Imzolangan hujjat tizimga yuklanmagan')
-  if (!isManager.value) list.push('Faollashtirish huquqi bino rahbariga tegishli')
+  if (!canSign.value) list.push('Faollashtirish huquqi shartnoma imzolash huquqiga bog‘langan')
   return list
 })
 
@@ -171,43 +207,43 @@ const notice = ref('')
 
 function approveOperation() {
   if (!item.value || formInvalid.value) return
-  lease.approveOperation(item.value.id, actorName.value, draftOffer.value)
+  lease.approveOperation(item.value.id, actorName.value, roleLabel.value, draftOffer.value)
   notice.value = 'Kelishilgan shartlar tasdiqlandi va buxgalterga yuborildi.'
 }
 
 function approveFinance() {
   if (!item.value || formInvalid.value) return
-  lease.approveFinance(item.value.id, actorName.value, draftOffer.value)
+  lease.approveFinance(item.value.id, actorName.value, roleLabel.value, draftOffer.value)
   notice.value = 'Moliyaviy shartlar tasdiqlandi, shartnoma qoralamasi tayyor.'
 }
 
 function sendDidox() {
   if (!item.value) return
-  lease.sendToDidox(item.value.id, actorName.value)
+  lease.sendToDidox(item.value.id, actorName.value, roleLabel.value)
   notice.value = 'Hujjat Didox orqali imzolashga yuborildi.'
 }
 
 function checkDidox() {
   if (!item.value) return
-  lease.checkDidox(item.value.id, actorName.value)
+  lease.checkDidox(item.value.id, actorName.value, roleLabel.value)
   notice.value = `Didox holati yangilandi: ${item.value.didox?.state ?? '-'}.`
 }
 
 function onUpload(file: Omit<SignedDocument, 'uploadedAt' | 'uploadedBy'>) {
   if (!item.value) return
-  lease.attachSignedDocument(item.value.id, actorName.value, file)
+  lease.attachSignedDocument(item.value.id, actorName.value, roleLabel.value, file)
   notice.value = `${file.fileName} yuklandi, nazorat yig‘indisi hisoblandi.`
 }
 
 function onRemoveUpload() {
   if (!item.value) return
-  lease.removeSignedDocument(item.value.id, actorName.value)
+  lease.removeSignedDocument(item.value.id, actorName.value, roleLabel.value)
   notice.value = ''
 }
 
 function activate() {
   if (!item.value || !canActivate.value) return
-  lease.activate(item.value.id, actorName.value)
+  lease.activate(item.value.id, actorName.value, roleLabel.value)
   notice.value = 'Shartnoma faollashtirildi, o‘zgarishlar quyida ko‘rsatilgan.'
 }
 
@@ -216,7 +252,7 @@ function confirmReject() {
   lease.reject(
     item.value.id,
     actorName.value,
-    isAccountant.value ? 'Buxgalter' : 'Bino rahbari',
+    roleLabel.value,
     reason.value.trim(),
   )
   rejectOpen.value = false
@@ -228,7 +264,7 @@ function confirmRework() {
   lease.returnForRework(
     item.value.id,
     actorName.value,
-    isAccountant.value ? 'Buxgalter' : 'Bino rahbari',
+    roleLabel.value,
     reason.value.trim(),
   )
   reworkOpen.value = false
@@ -483,7 +519,7 @@ function inviteAccount() {
             </div>
 
             <UiButton
-              v-if="!item.contactedAt && (isManager || isAccountant)"
+              v-if="!item.contactedAt && (canManage || isAccountant)"
               variant="secondary"
               size="sm"
               class="mt-3"
@@ -520,7 +556,7 @@ function inviteAccount() {
             </template>
 
             <UiButton
-              v-else-if="isManager || isAccountant"
+              v-else-if="canManage || isAccountant"
               variant="secondary"
               size="sm"
               class="mt-3"

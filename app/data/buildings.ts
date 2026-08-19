@@ -870,6 +870,17 @@ function glaWeighted(pick: (b: Building) => number) {
   return gla ? Math.round(sumBy((b) => pick(b) * b.gla) / gla) : 0
 }
 
+/**
+ * Portfel bandligi bino ichidagi bilan bir xil formulada hisoblanadi: jami
+ * maydondan bo‘sh maydon chegiriladi. Yaxlitlangan foizlarning o‘rtachasi
+ * emas, shuning uchun boshqaruv paneli, hisobotlar va maydon diagrammasi
+ * bitta raqamni ko‘rsatadi.
+ */
+function portfolioOccupancy() {
+  const gla = sumBy((b) => b.gla)
+  return gla ? Math.round(((gla - sumBy((b) => b.vacantArea)) / gla) * 100) : 0
+}
+
 export interface PortfolioTotals {
   buildings: number
   gla: number
@@ -900,7 +911,7 @@ export function portfolioTotals(): PortfolioTotals {
     occupiedUnits: sumBy((b) => b.occupiedUnits),
     vacantUnits: sumBy((b) => b.vacantUnits),
     serviceRequests: sumBy((b) => b.serviceRequests),
-    occupancy: glaWeighted((b) => b.occupancy),
+    occupancy: portfolioOccupancy(),
     sla: glaWeighted((b) => b.sla),
   }
 }
@@ -938,7 +949,7 @@ export const PORTFOLIO_TOTALS: PortfolioTotals = {
     return sumBy((b) => b.serviceRequests)
   },
   get occupancy() {
-    return glaWeighted((b) => b.occupancy)
+    return portfolioOccupancy()
   },
   get sla() {
     return glaWeighted((b) => b.sla)

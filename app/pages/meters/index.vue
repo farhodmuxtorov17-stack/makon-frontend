@@ -1,7 +1,16 @@
 <script setup lang="ts">
 import { BUILDINGS } from '~/data/buildings'
-import { METERS, UTILITY_SUMMARY, type Meter } from '~/data/operations'
-import { dateShort, num } from '~/utils/format'
+import { tariffLinesFor } from '~/data/business'
+import {
+  METERS,
+  buildUtilitySummary,
+  daysToVerification,
+  isVerificationOverdue,
+  isVerificationSoon,
+  meterStateLabel,
+  type Meter,
+} from '~/data/operations'
+import { dateShort, num, sum } from '~/utils/format'
 
 const auth = useAuthStore()
 
@@ -80,9 +89,28 @@ const filtered = computed(() => {
   })
 })
 
+/**
+ * Jadval qatori holatni ham o‘zi bilan olib yuradi: qiyoslash muddati
+ * o‘tgan hisoblagich oddiy «Ta’mirda» emas, alohida ajralib turadi.
+ */
 const rows = computed(() =>
-  filtered.value.map((m) => ({ ...m, usage: roundTo(m.lastReading - m.previousReading, decimalsOf(m)) })),
+  filtered.value.map((m) => ({
+    ...m,
+    usage: roundTo(m.lastReading - m.previousReading, decimalsOf(m)),
+    state: meterStateLabel(m),
+    overdue: isVerificationOverdue(m),
+    soon: isVerificationSoon(m),
+    daysLeft: daysToVerification(m),
+  })),
 )
+
+/** Holat nishonchasi: muddat o‘tgani ta’mir holatidan ustun turadi */
+function stateBadge(row: { overdue: boolean; status: Meter['status'] }): string {
+  if (row.overdue) return 'bg-danger-50 text-danger-700 ring-danger-100'
+  return row.status === 'ACTIVE'
+    ? 'bg-ok-50 text-ok-700 ring-ok-100'
+    : 'bg-warn-50 text-warn-700 ring-warn-100'
+}
 
 const dirty = computed(
   () => !!query.value.trim() || fBuilding.value !== 'all' || fType.value !== 'all',
@@ -113,11 +141,35 @@ const TYPE_TONE: Record<string, string> = {
   Issiqlik: 'bg-danger-50 text-danger-700 ring-danger-100',
 }
 
-function statusKind(status: string): 'contract' | 'unit' {
-  return status === 'ACTIVE' ? 'contract' : 'unit'
+/**
+ * Kommunal kartalar ekrandagi ro‘yxatdan hisoblanadi: ko‘rsatkich kiritilsa
+ * karta ham, jadval qatori ham bir vaqtda yangilanadi.
+ */
+const utilityCards = computed(() => buildUtilitySummary(meters.value))
+
+const UTILITY_TONE: Record<string, 'warn' | 'brand' | 'violet' | 'danger'> = {
+  'Elektr energiyasi': 'warn',
+  Suv: 'brand',
+  Gaz: 'violet',
+  Issiqlik: 'danger',
 }
 
-const UTILITY_TONE = ['warn', 'brand', 'violet', 'danger'] as const
+/** Karta bosilganda jadval shu tur bo‘yicha filtrlanadi */
+const TYPE_BY_LABEL: Record<string, Meter['type']> = {
+  'Elektr energiyasi': 'Elektr',
+  Suv: 'Suv',
+  Gaz: 'Gaz',
+  Issiqlik: 'Issiqlik',
+}
+
+/**
+ * Ko‘rsatkich bo‘yicha hisob-faktura qatori. Miqdor ham, summa ham
+ * billing tarif jadvalidan olinadi, shuning uchun hisoblagich ekranidagi
+ * sarf va hisob-fakturadagi kommunal qator bitta raqamni beradi.
+ */
+function tariffLineOf(m: Meter) {
+  return tariffLinesFor([m], m.buildingName, 0).find((l) => l.meter === m.code) ?? null
+}
 
 const detail = ref<Meter | null>(null)
 const detailOpen = computed({
@@ -207,6 +259,17 @@ const entryUsage = computed(() => {
   return roundTo(Number(entryValue.value) - m.lastReading, decimalsOf(m))
 })
 
+/** Kiritilayotgan ko‘rsatkich bo‘yicha hisob-fakturaga tushadigan qator */
+const entryTariffLine = computed(() => {
+  const m = activeMeter.value
+  if (!m || entryError.value) return null
+  return tariffLineOf({
+    ...m,
+    previousReading: m.lastReading,
+    lastReading: roundTo(Number(entryValue.value), decimalsOf(m)),
+  })
+})
+
 function saveReading() {
   const m = activeMeter.value
   if (!m || entryError.value) return
@@ -228,6 +291,19 @@ function saveReading() {
   m.previousReading = m.lastReading
   m.lastReading = value
   m.readAt = entryDate.value
+
+  /*
+   * Ko‘rsatkich reyestrdagi yozuvga ham yoziladi: billing davri kommunal
+   * qatorni aynan shu sarfdan hisoblaydi, aks holda kiritilgan qiymat
+   * hisob-fakturaga hech qachon tushmasdi.
+   */
+  const source = METERS.find((x) => x.id === m.id)
+  if (source) {
+    source.previousReading = m.previousReading
+    source.lastReading = m.lastReading
+    source.readAt = m.readAt
+  }
+
   entryNote.value = ''
   clearEntryPhotos()
   entryOpen.value = false
@@ -254,16 +330,16 @@ function saveReading() {
   <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-4 sm:p-6">
     <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <UiKpi
-        v-for="(u, i) in UTILITY_SUMMARY"
+        v-for="u in utilityCards"
         :key="u.label"
         :label="u.label"
         :value="u.value"
         :unit="u.unit"
         :delta="u.delta"
         :icon="u.icon"
-        :tone="UTILITY_TONE[i]"
+        :tone="UTILITY_TONE[u.label] ?? 'brand'"
         class="cursor-pointer"
-        @click="fType = u.label === 'Elektr energiyasi' ? 'Elektr' : u.label"
+        @click="fType = TYPE_BY_LABEL[u.label] ?? 'all'"
       />
     </section>
 
@@ -281,7 +357,11 @@ function saveReading() {
       </template>
 
       <div class="grid gap-3 border-t border-ink-100 bg-surface-sunken px-5 py-4 lg:grid-cols-4">
-        <UiInput v-model="query" placeholder="Kod, seriya yoki joylashuv" class="lg:col-span-2">
+        <UiInput
+          v-model="query"
+          placeholder="Kod, seriya yoki joylashuv bo‘yicha qidirish"
+          class="lg:col-span-2"
+        >
           <template #prefix>
             <UiIcon name="search" :size="18" />
           </template>
@@ -332,11 +412,42 @@ function saveReading() {
         </template>
 
         <template #cell-verifyAt="{ row }">
-          <span class="tabular">{{ dateShort(row.verifyAt) }}</span>
+          <span class="tabular block" :class="row.overdue ? 'font-bold text-danger-700' : ''">
+            {{ dateShort(row.verifyAt) }}
+          </span>
+          <span
+            v-if="row.overdue"
+            class="block text-[11.5px] font-semibold text-danger-600"
+          >
+            {{ -row.daysLeft }} kun kechikdi
+          </span>
+          <span v-else-if="row.soon" class="block text-[11.5px] text-warn-600">
+            {{ row.daysLeft }} kun qoldi
+          </span>
         </template>
 
         <template #cell-status="{ row }">
-          <UiStatus :kind="statusKind(row.status)" :value="row.status" size="sm" />
+          <span
+            class="inline-flex items-center gap-1.5 rounded-pill px-2.5 py-1 text-xs font-semibold ring-1 ring-inset"
+            :class="stateBadge(row)"
+          >
+            <svg class="size-3 shrink-0" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+              <path v-if="row.overdue" d="M6 1.2 11.4 10.8H.6z" fill="currentColor" />
+              <path
+                v-else-if="row.status === 'ACTIVE'"
+                d="M2.6 6.3 5 8.7l4.4-5"
+                stroke="currentColor"
+                stroke-width="1.9"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              <g v-else stroke="currentColor" stroke-width="1.6">
+                <circle cx="6" cy="6" r="4.2" />
+                <path d="M6 3.6V6l1.9 1.2" stroke-linecap="round" />
+              </g>
+            </svg>
+            {{ row.state }}
+          </span>
         </template>
       </UiTable>
 
@@ -354,7 +465,12 @@ function saveReading() {
   >
     <div v-if="detail" class="space-y-5">
       <div class="flex flex-wrap items-center gap-3">
-        <UiStatus :kind="statusKind(detail.status)" :value="detail.status" />
+        <span
+          class="inline-flex items-center gap-1.5 rounded-pill px-2.5 py-1 text-xs font-semibold ring-1 ring-inset"
+          :class="stateBadge({ overdue: isVerificationOverdue(detail), status: detail.status })"
+        >
+          {{ meterStateLabel(detail) }}
+        </span>
         <span
           class="inline-flex items-center gap-1.5 rounded-pill px-2.5 py-1 text-xs font-semibold ring-1 ring-inset"
           :class="TYPE_TONE[detail.type]"
@@ -382,10 +498,34 @@ function saveReading() {
         </div>
         <div class="rounded-field bg-surface-sunken p-4">
           <p class="text-[12px] text-ink-500">Navbatdagi qiyoslash</p>
-          <p class="tabular mt-1 text-[19px] font-bold text-ink-900">
+          <p
+            class="tabular mt-1 text-[19px] font-bold"
+            :class="isVerificationOverdue(detail) ? 'text-danger-700' : 'text-ink-900'"
+          >
             {{ dateShort(detail.verifyAt) }}
           </p>
+          <p
+            v-if="isVerificationOverdue(detail)"
+            class="mt-1 text-[12px] font-semibold text-danger-600"
+          >
+            Muddat {{ -daysToVerification(detail) }} kun oldin tugagan
+          </p>
         </div>
+      </div>
+
+      <div
+        v-if="tariffLineOf(detail)"
+        class="rounded-field bg-brand-50 px-4 py-3.5 ring-1 ring-inset ring-brand-100"
+      >
+        <p class="text-[12.5px] font-semibold text-brand-700">
+          Joriy davr hisob-fakturasidagi kommunal qator
+        </p>
+        <p class="tabular mt-1 text-[13.5px] text-ink-800">
+          {{ tariffLineOf(detail)!.service }} ·
+          {{ num(tariffLineOf(detail)!.qty, decimalsOf(detail)) }}
+          {{ tariffLineOf(detail)!.unit }} × {{ sum(tariffLineOf(detail)!.tariff) }} =
+          <b class="text-ink-900">{{ sum(tariffLineOf(detail)!.sum) }}</b>
+        </p>
       </div>
 
       <div>
@@ -475,12 +615,23 @@ function saveReading() {
 
       <div
         v-if="!entryError && activeMeter"
-        class="flex items-center justify-between rounded-field bg-brand-50 px-4 py-3"
+        class="space-y-2 rounded-field bg-brand-50 px-4 py-3"
       >
-        <span class="text-[13px] font-medium text-brand-700">Hisoblangan sarf</span>
-        <span class="tabular text-[15px] font-bold text-brand-700">
-          +{{ num(entryUsage, decimalsOf(activeMeter)) }} {{ activeMeter.unit }}
-        </span>
+        <div class="flex items-center justify-between">
+          <span class="text-[13px] font-medium text-brand-700">Hisoblangan sarf</span>
+          <span class="tabular text-[15px] font-bold text-brand-700">
+            +{{ num(entryUsage, decimalsOf(activeMeter)) }} {{ activeMeter.unit }}
+          </span>
+        </div>
+        <p v-if="entryTariffLine" class="text-[12.5px] text-ink-700">
+          Joriy davr hisob-fakturasiga «{{ entryTariffLine.service }}» qatori sifatida tushadi:
+          {{ num(entryTariffLine.qty, decimalsOf(activeMeter)) }} {{ entryTariffLine.unit }} ×
+          {{ sum(entryTariffLine.tariff) }} =
+          <b class="text-ink-900">{{ sum(entryTariffLine.sum) }}</b>
+        </p>
+        <p v-else class="text-[12.5px] text-ink-600">
+          Bu tur bo‘yicha tarif belgilanmagan, ko‘rsatkich faqat monitoringda qayd etiladi.
+        </p>
       </div>
 
       <UiField label="Izoh">

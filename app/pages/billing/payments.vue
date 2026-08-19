@@ -1,10 +1,18 @@
 <script setup lang="ts">
 import AppTopbar from '~/components/layout/AppTopbar.vue'
-import { INVOICES, agingOf, billingSummaryOf } from '~/data/business'
+import {
+  INVOICES,
+  agingKeyOf,
+  agingOf,
+  billingSummaryOf,
+  settledInvoices,
+  statusOf,
+} from '~/data/business'
 import { LANDLORD_STIR, organizationByStir } from '~/data/organizations'
-import { dateShort, num, percent, sum, sumShort, todayIso } from '~/utils/format'
+import { dateShort, monthTitle, num, percent, sum, sumShort, todayIso } from '~/utils/format'
 
 const auth = useAuthStore()
+const { field, moduleCaption, moduleTitle, sectionLabel, statusLabel } = useAppLabels()
 
 /** To‘lovni tasdiqlash yozuv amali: sahifani ko‘rish huquqi buni bermaydi */
 const canConfirm = computed(() => auth.can('payment.confirm'))
@@ -17,6 +25,29 @@ const canConfirm = computed(() => auth.can('payment.confirm'))
 const queue = computed(() =>
   INVOICES.filter((i) => i.status === 'PARTIALLY_PAID' || i.status === 'ISSUED'),
 )
+
+/**
+ * To‘lov yozuvi: usul, sana, hisob raqami, maqsad va izoh shu yerda saqlanadi
+ * va hisob-faktura tarixida ko‘rinadi. Hisob-fakturalar ekrani ham shu
+ * ro‘yxatga yozadi, ya’ni bitta jarayonning qoidasi bitta.
+ */
+interface PaymentRecord {
+  id: string
+  invoiceId: string
+  invoiceCode: string
+  tenant: string
+  amount: number
+  method: string
+  methodLabel: string
+  account: string
+  purpose: string
+  note: string
+  paidAt: string
+  actor: string
+  kind: 'payment' | 'return'
+}
+
+const payments = useState<PaymentRecord[]>('billing-payments', () => [])
 
 const summary = computed(() => billingSummaryOf(INVOICES))
 const aging = computed(() => agingOf(INVOICES))
@@ -36,6 +67,7 @@ const account = ref(organizationByStir(LANDLORD_STIR)?.account ?? '')
 const purpose = ref('')
 const note = ref('')
 const payDate = ref(todayIso())
+const payAmount = ref('')
 
 const methodOptions = [
   { value: 'bank', label: 'Bank o‘tkazmasi' },
@@ -57,17 +89,17 @@ const statusTabs = computed(() => [
   { value: 'all', label: 'Barchasi', count: queue.value.length },
   {
     value: 'PARTIALLY_PAID',
-    label: 'Qisman to‘langan',
+    label: statusLabel('invoice', 'PARTIALLY_PAID'),
     count: queue.value.filter((i) => i.status === 'PARTIALLY_PAID').length,
   },
   {
     value: 'ISSUED',
-    label: 'Tasdiqlangan',
+    label: statusLabel('invoice', 'ISSUED'),
     count: queue.value.filter((i) => i.status === 'ISSUED').length,
   },
 ])
 
-const columns = [
+const columns = computed(() => [
   { key: 'pick', label: '', width: '44px' },
   { key: 'idx', label: '№', width: '52px', align: 'right' as const, numeric: true },
   { key: 'code', label: 'Hisob-faktura raqami' },
@@ -75,9 +107,9 @@ const columns = [
   { key: 'place', label: 'Obyekt / Unit' },
   { key: 'dueAt', label: 'To‘lov muddati' },
   { key: 'total', label: 'Jami summa', align: 'right' as const, numeric: true },
-  { key: 'balance', label: 'Qoldiq', align: 'right' as const, numeric: true },
-  { key: 'status', label: 'Status' },
-]
+  { key: 'balance', label: field('balance', 'Qoldiq'), align: 'right' as const, numeric: true },
+  { key: 'status', label: field('status', 'Holat') },
+])
 
 const rows = computed(() =>
   filtered.value.map((i, idx) => ({
@@ -94,6 +126,7 @@ const rows = computed(() =>
 )
 
 const selected = computed(() => queue.value.find((i) => i.id === selectedId.value) ?? null)
+const balance = computed(() => (selected.value ? selected.value.total - selected.value.paid : 0))
 
 function selectRow(row: Record<string, unknown>) {
   selectedId.value = String(row.id)
@@ -101,50 +134,161 @@ function selectRow(row: Record<string, unknown>) {
   purpose.value = inv ? `IJARA TO‘LOVI, ${inv.code}` : ''
   note.value = ''
   payMethod.value = 'bank'
+  payDate.value = todayIso()
+  payAmount.value = inv ? String(inv.total - inv.paid) : ''
 }
 
 const queueTotal = computed(() => queue.value.reduce((s, i) => s + (i.total - i.paid), 0))
 
-const processed = ref<
-  Array<{ id: string; code: string; tenant: string; amount: number; action: string; tone: string }>
->([])
+const payValue = computed(() => Number(payAmount.value) || 0)
 
+/** Qisman to‘lov ham qabul qilinadi: summa qoldiqdan oshmasligi kifoya */
+const payValid = computed(
+  () => Boolean(selected.value) && payValue.value > 0 && payValue.value <= balance.value,
+)
+
+/** Hujjat izohsiz qaytarilmaydi: ijarachiga sabab ko‘rsatilishi kerak */
+const returnValid = computed(() => Boolean(selected.value) && note.value.trim().length > 2)
+
+/** Tanlangan hujjat bo‘yicha oldingi to‘lovlar */
+const selectedHistory = computed(() =>
+  payments.value.filter((p) => p.invoiceId === selectedId.value),
+)
+
+function recordOf(kind: 'payment' | 'return', invoiceId: string, code: string, tenant: string, amount: number): PaymentRecord {
+  return {
+    id: `pay-${invoiceId}-${payments.value.length + 1}`,
+    invoiceId,
+    invoiceCode: code,
+    tenant,
+    amount,
+    method: payMethod.value,
+    methodLabel: methodOptions.find((m) => m.value === payMethod.value)?.label ?? payMethod.value,
+    account: account.value.trim(),
+    purpose: purpose.value.trim(),
+    note: note.value.trim(),
+    paidAt: payDate.value,
+    actor: auth.user?.fullName ?? '',
+    kind,
+  }
+}
+
+/**
+ * To‘lovni tasdiqlash yoki hujjatni qaytarish. Tasdiqlashda kiritilgan summa
+ * hisob-faktura qoldig‘iga tushadi (to‘liq yoki qisman), holat esa qo‘lda
+ * emas, `statusOf()` bilan aniqlanadi. Qaytarishda hujjat qoralamaga o‘tadi,
+ * lekin bu yakuniy holat emas: «Qaytarilgan hujjatlar» ro‘yxatidan uni
+ * qaytadan chiqarish mumkin.
+ */
 function resolve(action: 'confirm' | 'return') {
   const inv = selected.value
   if (!canConfirm.value || !inv) return
-  const amount = inv.total - inv.paid
-  processed.value.unshift({
-    id: `${inv.id}-${processed.value.length}`,
-    code: inv.code,
-    tenant: inv.tenant,
-    amount,
-    action: action === 'confirm' ? 'Tasdiqlandi' : 'Qaytarildi',
-    tone: action === 'confirm' ? 'ok' : 'danger',
-  })
+  if (action === 'confirm' ? !payValid.value : !returnValid.value) return
+
+  const amount = action === 'confirm' ? payValue.value : inv.total - inv.paid
+  payments.value = [recordOf(action === 'confirm' ? 'payment' : 'return', inv.id, inv.code, inv.tenant, amount), ...payments.value]
 
   if (action === 'confirm') {
-    // To‘lov hisob-faktura yozuviga tushadi: qoldiq yopiladi
-    inv.paid = inv.total
-    inv.status = 'PAID'
-    inv.agingBucket = null
+    // To‘lov hisob-faktura yozuviga tushadi: qoldiq shu summaga kamayadi
+    inv.paid += amount
+    inv.status = statusOf(inv)
+    inv.agingBucket = agingKeyOf(inv)
   } else {
     // Hujjat tuzatish uchun ijarachiga qaytariladi va qoralamaga o‘tadi
     inv.status = 'DRAFT'
   }
 
+  const rest = inv.total - inv.paid
   selectedId.value = ''
   bannerTone.value = action === 'confirm' ? 'ok' : 'danger'
   banner.value =
     action === 'confirm'
-      ? `${inv.code} bo‘yicha ${sum(amount)} to‘lov tasdiqlandi va hisobga olindi.`
-      : `${inv.code} hujjati izoh bilan ijarachiga qaytarildi.`
+      ? rest > 0
+        ? `${inv.code} bo‘yicha ${sum(amount)} to‘lov tasdiqlandi, qoldiq ${sum(rest)}.`
+        : `${inv.code} bo‘yicha ${sum(amount)} to‘lov tasdiqlandi, hujjat to‘liq yopildi.`
+      : `${inv.code} hujjati izoh bilan ijarachiga qaytarildi va qoralamaga o‘tdi.`
 }
 
-const cashLabels = ['01 May', '08 May', '15 May', '22 May', '29 May']
-const cashSeries = [
-  { label: 'Kirim, mln so‘m', tone: 'brand' as const, values: [14.2, 18.6, 22.4, 19.8, 26.1], fill: true },
-  { label: 'Chiqim, mln so‘m', tone: 'ok' as const, values: [9.4, 11.2, 12.8, 10.6, 13.5], fill: true },
+/** Qaytarilgan hujjatlar: qoralamada qolib ketmasin */
+const returned = computed(() => INVOICES.filter((i) => i.status === 'DRAFT'))
+
+function reissue(id: string) {
+  const inv = INVOICES.find((i) => i.id === id)
+  if (!canConfirm.value || !inv) return
+  inv.status = statusOf({ ...inv, status: 'ISSUED' })
+  inv.agingBucket = agingKeyOf(inv)
+  bannerTone.value = 'ok'
+  banner.value = `${inv.code} qayta chiqarildi va tasdiqlash navbatiga qaytdi.`
+}
+
+// --- Hisob-kitob dinamikasi ------------------------------------------------
+
+const MONTHS = [
+  'Yanvar',
+  'Fevral',
+  'Mart',
+  'Aprel',
+  'May',
+  'Iyun',
+  'Iyul',
+  'Avgust',
+  'Sentabr',
+  'Oktabr',
+  'Noyabr',
+  'Dekabr',
 ]
+
+/** «Avgust 2026» → «2026-08» */
+function keyOfPeriod(label: string): string {
+  const [month, year] = label.split(' ')
+  const index = MONTHS.indexOf(month ?? '')
+  return index < 0 || !year ? '' : `${year}-${String(index + 1).padStart(2, '0')}`
+}
+
+/**
+ * Diagramma qattiq yozilgan oylardan emas, reyestrdan quriladi: oxirgi olti
+ * hisob davri bo‘yicha hisoblangan va to‘langan summa. Shu sababli u
+ * to‘lov tasdiqlangan zahoti yangilanadi va sana bilan ziddiyatga tushmaydi.
+ */
+const cashPeriods = computed(() => {
+  const map = new Map<string, { charged: number; paid: number }>()
+  for (const i of settledInvoices(INVOICES)) {
+    const key = keyOfPeriod(i.period)
+    if (!key) continue
+    const row = map.get(key) ?? { charged: 0, paid: 0 }
+    row.charged += i.total
+    row.paid += i.paid
+    map.set(key, row)
+  }
+  return [...map.entries()].sort((a, b) => (a[0] < b[0] ? -1 : 1)).slice(-6)
+})
+
+const cashLabels = computed(() =>
+  cashPeriods.value.map(([key]) => MONTHS[Number(key.slice(5)) - 1] ?? key),
+)
+
+function mln(value: number) {
+  return Math.round((value / 1_000_000) * 10) / 10
+}
+
+const cashSeries = computed(() => [
+  {
+    label: 'Hisoblangan, mln so‘m',
+    tone: 'brand' as const,
+    values: cashPeriods.value.map(([, v]) => mln(v.charged)),
+    fill: true,
+  },
+  {
+    label: 'To‘langan, mln so‘m',
+    tone: 'ok' as const,
+    values: cashPeriods.value.map(([, v]) => mln(v.paid)),
+    fill: true,
+  },
+])
+
+const cashSubtitle = computed(
+  () => `${monthTitle(todayIso())} · oxirgi olti hisob davri kesimida`,
+)
 
 const agingSlices = computed(() =>
   aging.value.map((a) => ({ label: a.bucket, value: a.amount, tone: a.tone })),
@@ -154,9 +298,12 @@ const agingTotal = computed(() => aging.value.reduce((s, a) => s + a.amount, 0))
 
 <template>
   <AppTopbar
-    title="To‘lovlarni tasdiqlash"
-    subtitle="Buxgalteriya: to‘lov qabul qilish va moliyaviy nazorat"
-    :breadcrumb="[{ label: 'Billing' }, { label: 'To‘lovlarni tasdiqlash' }]"
+    :title="moduleTitle('paymentsApprove', 'To‘lovlarni tasdiqlash')"
+    :subtitle="moduleCaption('paymentsApprove', 'Tasdiqlashni kutayotgan to‘lovlar')"
+    :breadcrumb="[
+      { label: sectionLabel('billing', 'Hisob-kitob'), to: '/billing/invoices' },
+      { label: moduleTitle('paymentsApprove', 'To‘lovlarni tasdiqlash') },
+    ]"
   >
     <template #actions>
       <UiButton variant="secondary" size="sm" to="/billing/invoices">
@@ -288,9 +435,38 @@ const agingTotal = computed(() => aging.value.reduce((s, a) => s + a.amount, 0))
           </div>
         </UiCard>
 
+        <UiCard
+          v-if="returned.length"
+          title="Qaytarilgan hujjatlar"
+          subtitle="Qoralamaga tushgan hisob-fakturalar: tuzatilgach qayta chiqariladi"
+          flush
+          :padded="false"
+        >
+          <ul class="divide-y divide-ink-100 border-t border-ink-100">
+            <li v-for="r in returned" :key="r.id" class="flex flex-wrap items-center gap-3 px-5 py-3.5">
+              <span class="grid size-9 shrink-0 place-items-center rounded-[10px] bg-ink-100 text-ink-600">
+                <UiIcon name="doc" :size="17" />
+              </span>
+              <span class="min-w-0 flex-1">
+                <span class="block truncate text-[13px] font-semibold text-ink-900">
+                  {{ r.code }} · {{ r.tenant }}
+                </span>
+                <span class="block truncate text-[12px] text-ink-500">
+                  {{ r.buildingName }} · {{ r.unitCode }} · {{ sum(r.total - r.paid) }}
+                </span>
+              </span>
+              <UiStatus kind="invoice" :value="r.status" size="sm" />
+              <UiButton v-if="canConfirm" variant="secondary" size="sm" @click="reissue(r.id)">
+                <UiIcon name="refresh" :size="15" />
+                Navbatga qaytarish
+              </UiButton>
+            </li>
+          </ul>
+        </UiCard>
+
         <section class="grid gap-5 lg:grid-cols-2">
-          <UiCard title="Pul oqimi" subtitle="May 2025 · kirim va chiqim dinamikasi">
-            <UiLine :labels="cashLabels" :series="cashSeries" :height="200" />
+          <UiCard title="Hisob-kitob dinamikasi" :subtitle="cashSubtitle">
+            <UiLine :labels="cashLabels" :series="cashSeries" :height="200" unit="mln so‘m" />
           </UiCard>
 
           <UiCard title="Qarzdorlik tahlili" subtitle="Muddat guruhlari bo‘yicha taqsimot">
@@ -356,12 +532,19 @@ const agingTotal = computed(() => aging.value.reduce((s, a) => s + a.amount, 0))
               <div class="flex items-baseline justify-between gap-4 py-2.5">
                 <dt class="text-[13px] text-ink-500">Qoldiq</dt>
                 <dd class="tabular text-[13.5px] font-bold text-danger-600">
-                  {{ sum(selected.total - selected.paid) }}
+                  {{ sum(balance) }}
                 </dd>
               </div>
             </dl>
 
             <template v-if="canConfirm">
+              <UiField
+                label="To‘lov summasi"
+                required
+                hint="Qisman to‘lov ham qabul qilinadi: summa qoldiqdan oshmasin"
+              >
+                <UiInput v-model="payAmount" type="number" placeholder="0" :invalid="!payValid" />
+              </UiField>
               <UiField label="To‘lov sanasi">
                 <UiInput v-model="payDate" type="date" />
               </UiField>
@@ -374,7 +557,7 @@ const agingTotal = computed(() => aging.value.reduce((s, a) => s + a.amount, 0))
               <UiField label="Maqsad">
                 <UiInput v-model="purpose" placeholder="To‘lov maqsadi" />
               </UiField>
-              <UiField label="Izoh">
+              <UiField label="Izoh" hint="Hujjatni qaytarish uchun izoh majburiy">
                 <textarea
                   v-model="note"
                   rows="3"
@@ -387,15 +570,40 @@ const agingTotal = computed(() => aging.value.reduce((s, a) => s + a.amount, 0))
                 </p>
               </UiField>
 
+              <p v-if="!payValid" class="text-[12px] font-medium text-danger-600">
+                To‘lov summasi 0 dan katta va {{ sum(balance) }} dan oshmasligi kerak.
+              </p>
+
               <div class="grid grid-cols-2 gap-3 pt-1">
-                <UiButton variant="success" block @click="resolve('confirm')">
+                <UiButton variant="success" block :disabled="!payValid" @click="resolve('confirm')">
                   <UiIcon name="check" :size="16" />
                   Tasdiqlash
                 </UiButton>
-                <UiButton variant="danger" block @click="resolve('return')">
+                <UiButton variant="danger" block :disabled="!returnValid" @click="resolve('return')">
                   <UiIcon name="refresh" :size="16" />
                   Qaytarish
                 </UiButton>
+              </div>
+
+              <div v-if="selectedHistory.length" class="border-t border-ink-100 pt-3">
+                <p class="text-[12.5px] font-semibold text-ink-800">Ushbu hujjat bo‘yicha amallar</p>
+                <ul class="mt-2 space-y-1.5">
+                  <li
+                    v-for="h in selectedHistory"
+                    :key="h.id"
+                    class="flex items-baseline justify-between gap-3 text-[12px]"
+                  >
+                    <span class="min-w-0 flex-1 truncate text-ink-500">
+                      {{ dateShort(h.paidAt) }} · {{ h.methodLabel }}
+                    </span>
+                    <span
+                      class="tabular shrink-0 font-semibold"
+                      :class="h.kind === 'payment' ? 'text-ok-700' : 'text-danger-600'"
+                    >
+                      {{ h.kind === 'payment' ? sum(h.amount) : 'Qaytarildi' }}
+                    </span>
+                  </li>
+                </ul>
               </div>
             </template>
 
@@ -406,28 +614,34 @@ const agingTotal = computed(() => aging.value.reduce((s, a) => s + a.amount, 0))
           </div>
         </UiCard>
 
-        <UiCard title="So‘nggi amallar" subtitle="Ushbu seansda ko‘rib chiqilgan hujjatlar" flush :padded="false">
-          <p v-if="!processed.length" class="px-5 py-6 text-[13px] text-ink-500">
+        <UiCard title="So‘nggi amallar" subtitle="Ko‘rib chiqilgan hujjatlar va to‘lov tafsilotlari" flush :padded="false">
+          <p v-if="!payments.length" class="px-5 py-6 text-[13px] text-ink-500">
             Hozircha ko‘rib chiqilgan hujjat yo‘q.
           </p>
           <ul v-else class="divide-y divide-ink-100 border-t border-ink-100">
-            <li v-for="p in processed" :key="p.id" class="flex items-center gap-3 px-5 py-3">
+            <li v-for="p in payments.slice(0, 8)" :key="p.id" class="flex items-start gap-3 px-5 py-3">
               <span
                 class="grid size-9 shrink-0 place-items-center rounded-[10px]"
-                :class="p.tone === 'ok' ? 'bg-ok-50 text-ok-600' : 'bg-danger-50 text-danger-600'"
+                :class="p.kind === 'payment' ? 'bg-ok-50 text-ok-600' : 'bg-danger-50 text-danger-600'"
               >
-                <UiIcon :name="p.tone === 'ok' ? 'check' : 'refresh'" :size="17" />
+                <UiIcon :name="p.kind === 'payment' ? 'check' : 'refresh'" :size="17" />
               </span>
               <span class="min-w-0 flex-1">
                 <span class="block truncate text-[13px] font-semibold text-ink-900">
-                  {{ p.code }}
+                  {{ p.invoiceCode }}
                 </span>
                 <span class="block truncate text-[12px] text-ink-500">
-                  {{ p.tenant }} · {{ p.action }}
+                  {{ p.tenant }} · {{ dateShort(p.paidAt) }} · {{ p.methodLabel }}
+                </span>
+                <span v-if="p.note" class="block truncate text-[12px] text-ink-600">
+                  {{ p.note }}
                 </span>
               </span>
-              <span class="tabular shrink-0 text-[13px] font-bold text-ink-900">
-                {{ sumShort(p.amount) }}
+              <span
+                class="tabular shrink-0 text-[13px] font-bold"
+                :class="p.kind === 'payment' ? 'text-ink-900' : 'text-danger-600'"
+              >
+                {{ p.kind === 'payment' ? sumShort(p.amount) : 'Qaytarildi' }}
               </span>
             </li>
           </ul>

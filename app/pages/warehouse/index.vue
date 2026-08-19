@@ -4,10 +4,24 @@ import {
   SERVICE_REQUESTS,
   STOCK_CATEGORIES,
   STOCK_ITEMS,
-  WAREHOUSE_SUMMARY,
+  buildWarehouseSummary,
+  issueLinesFor,
+  materialsFor,
+  stockByCode,
+  type MaterialRequest,
   type StockItem,
+  type WorkMaterialLine,
 } from '~/data/operations'
-import { dateShort, num, sum, sumShort } from '~/utils/format'
+import { docxBlob, saveBlob, type DocxLine } from '~/utils/docx'
+import { dateShort, num, sum, sumShort, todayIso } from '~/utils/format'
+
+/** Material so‘rovi reyestrdagi yozuvga asos va haqiqiy pozitsiyalarni qo‘shadi */
+interface MaterialRequestEntry extends MaterialRequest {
+  reason?: string
+  lines?: WorkMaterialLine[]
+  /** Ombordan berilgan sana: dalolatnoma sanasi shu maydondan olinadi */
+  issuedAt?: string
+}
 
 interface IssueAct {
   id: string
@@ -35,7 +49,7 @@ const fCategory = ref('all')
 const fWarehouse = ref('all')
 
 const categoryOptions = computed(() => [
-  { value: 'all', label: 'Barcha kategoriya' },
+  { value: 'all', label: 'Barcha kategoriyalar' },
   ...STOCK_CATEGORIES.map((c) => ({ value: c.label, label: c.label })),
 ])
 
@@ -119,11 +133,20 @@ const columns = [
 const extraIn = ref(0)
 const extraOut = ref(0)
 
+/**
+ * Jamlanma ham rol doirasidagi ro‘yxatdan hisoblanadi: kartadagi son
+ * jadvaldagi qatorlarga mos keladi. Qoldiq bevosita `items` dan sanaladi,
+ * shuning uchun qabul va berish amali kartada darhol aks etadi.
+ */
+const scopedSummary = computed(() =>
+  buildWarehouseSummary(items.value, materialRequests.value),
+)
+
 const summary = computed(() => [
   {
     key: 'in',
     label: 'Kirim',
-    value: num(WAREHOUSE_SUMMARY.inbound + extraIn.value),
+    value: num(scopedSummary.value.inbound + extraIn.value),
     unit: 'birlik',
     icon: 'arrowUp',
     tone: 'ok',
@@ -131,7 +154,7 @@ const summary = computed(() => [
   {
     key: 'out',
     label: 'Chiqim',
-    value: num(WAREHOUSE_SUMMARY.outbound + extraOut.value),
+    value: num(scopedSummary.value.outbound + extraOut.value),
     unit: 'birlik',
     icon: 'arrowDown',
     tone: 'danger',
@@ -139,7 +162,7 @@ const summary = computed(() => [
   {
     key: 'balance',
     label: 'Qoldiq',
-    value: num(WAREHOUSE_SUMMARY.balance + extraIn.value - extraOut.value),
+    value: num(scopedSummary.value.balance),
     unit: 'birlik',
     icon: 'box',
     tone: 'brand',
@@ -148,22 +171,97 @@ const summary = computed(() => [
 
 const scopedStock = STOCK_ITEMS.filter((i) => auth.inWarehouseScope(i.warehouse))
 
-const acts = ref<IssueAct[]>(
-  MATERIAL_REQUESTS.filter((r) => r.status === 'ISSUED' || r.status === 'APPROVED').map((r) => {
-    const picks = scopedStock.slice(0, Math.max(r.items, 1))
-    return {
-      id: r.id,
-      code: r.code.replace('MT-', 'BD-'),
-      recipient: r.requester,
-      request: r.workOrder,
-      warehouse: picks[0]?.warehouse ?? scopedStock[0]?.warehouse ?? 'Markaziy ombor',
-      positions: picks.length,
-      at: r.createdAt,
-      status: r.status === 'ISSUED' ? 'ISSUED' : 'APPROVED',
-      lines: picks.map((p, i) => ({ name: p.name, unit: p.unit, qty: (i + 1) * 2 })),
-    }
-  }),
+/** Berish amali faqat ombor mas’ulida */
+const canIssue = computed(() => auth.can('warehouse.issue'))
+
+/** Material so‘rovlari reyestri: ariza va material sahifasi bilan umumiy */
+const materialRequests = useState<MaterialRequestEntry[]>('material-requests', () =>
+  MATERIAL_REQUESTS.map((r) => ({ ...r })),
 )
+
+/** So‘rovning to‘liq qatorlari: ombor kodi bilan, qoldiqni kamaytirish uchun */
+function requestLines(r: MaterialRequestEntry): WorkMaterialLine[] {
+  return r.lines ?? materialsFor(r.workOrder)
+}
+
+/** Dalolatnoma qatorlari: so‘rovning haqiqiy pozitsiyalari va miqdorlari */
+function actLinesOf(r: MaterialRequestEntry) {
+  return r.lines
+    ? r.lines.map((l) => ({ name: l.name, unit: l.unit, qty: l.qty }))
+    : issueLinesFor(r.workOrder)
+}
+
+/** Dalolatnoma qaysi omborga tegishli: doiradagi birinchi pozitsiyaning ombori */
+function warehouseOfRequest(r: MaterialRequestEntry): string {
+  for (const line of requestLines(r)) {
+    const item = stockByCode(line.code)
+    if (item && auth.inWarehouseScope(item.warehouse)) return item.warehouse
+  }
+  return scopedStock[0]?.warehouse ?? 'Markaziy ombor'
+}
+
+function actOfRequest(r: MaterialRequestEntry): IssueAct {
+  const lines = actLinesOf(r)
+  return {
+    id: r.id,
+    code: r.code.replace('MT-', 'BD-'),
+    recipient: r.requester,
+    request: r.workOrder,
+    warehouse: warehouseOfRequest(r),
+    positions: lines.length,
+    at: r.issuedAt ?? r.createdAt,
+    status: r.status === 'ISSUED' ? 'ISSUED' : 'APPROVED',
+    lines,
+  }
+}
+
+/** Qo‘lda tuzilgan dalolatnomalar: material so‘roviga bog‘lanmagan */
+const manualActs = ref<IssueAct[]>([])
+
+const acts = computed<IssueAct[]>(() => [
+  ...manualActs.value,
+  ...materialRequests.value
+    .filter((r) => r.status === 'ISSUED' || r.status === 'APPROVED')
+    .map(actOfRequest),
+])
+
+/** Berishni kutayotgan so‘rovlar: nishoncha bilan bir xil shart */
+const pendingIssue = computed(() =>
+  materialRequests.value.filter((r) => r.status === 'APPROVED'),
+)
+
+const handoverError = ref('')
+
+/**
+ * Tasdiqlangan so‘rov bo‘yicha material berish: ombor qoldig‘i kamayadi va
+ * so‘rov ISSUED holatiga o‘tadi, dalolatnoma shu qatorlardan quriladi.
+ */
+function handoverRequest(r: MaterialRequestEntry) {
+  if (!canIssue.value || r.status !== 'APPROVED') return
+  const lines = requestLines(r)
+  const short = lines.find((l) => {
+    const target = items.value.find((i) => i.code === l.code)
+    return !target || target.qty < l.qty
+  })
+  if (short) {
+    const target = items.value.find((i) => i.code === short.code)
+    handoverError.value = target
+      ? `«${short.name}» bo‘yicha omborda faqat ${target.qty} ${target.unit} mavjud`
+      : `«${short.name}» sizga biriktirilgan omborda mavjud emas`
+    return
+  }
+  for (const l of lines) {
+    const target = items.value.find((i) => i.code === l.code)
+    if (target) target.qty -= l.qty
+  }
+  // Chiqim jamlanmasi ISSUED so‘rovlardan hisoblanadi, qo‘shimcha qo‘shilmaydi
+  const row = materialRequests.value.find((x) => x.id === r.id)
+  if (row) {
+    row.status = 'ISSUED'
+    row.issuedAt = todayIso()
+  }
+  handoverError.value = ''
+}
 
 const actColumns = [
   { key: 'code', label: 'Raqam', width: '150px' },
@@ -172,7 +270,7 @@ const actColumns = [
   { key: 'warehouse', label: 'Ombor' },
   { key: 'positions', label: 'Pozitsiya', align: 'right' as const, numeric: true },
   { key: 'at', label: 'Sana' },
-  { key: 'status', label: 'Holati' },
+  { key: 'status', label: 'Holat' },
   { key: 'print', label: 'Amal', align: 'right' as const },
 ]
 
@@ -192,6 +290,31 @@ function openAct(row: Record<string, unknown>) {
 
 function sendToPrinter() {
   if (import.meta.client) window.print()
+}
+
+/** Berish dalolatnomasi Word hujjati sifatida */
+function actDocLines(a: IssueAct): DocxLine[] {
+  return [
+    { text: 'Makon Property Group', style: 'subtitle' },
+    { text: 'Jihoz va material berish dalolatnomasi', style: 'title' },
+    { text: `${a.code} · ${dateShort(a.at)}`, style: 'subtitle' },
+    { text: 'Hujjat', style: 'heading' },
+    { text: `Kimga berildi: ${a.recipient}` },
+    { text: `Qaysi ariza bo‘yicha: ${a.request}` },
+    { text: `Ombor: ${a.warehouse}` },
+    { text: `Omborchi: ${auth.user?.fullName ?? 'Ombor mas’uli'}` },
+    { text: 'Pozitsiyalar', style: 'heading' },
+    ...a.lines.map((l, i) => ({ text: `${i + 1}. ${l.name}: ${l.qty} ${l.unit}` })),
+    { text: 'Imzolar', style: 'heading' },
+    { text: `Berdi: ${auth.user?.fullName ?? 'Ombor mas’uli'}`, style: 'small' as const },
+    { text: `Oldi: ${a.recipient}`, style: 'small' as const },
+  ]
+}
+
+function downloadAct() {
+  const a = printAct.value
+  if (!a) return
+  saveBlob(docxBlob(actDocLines(a)), `${a.code}-dalolatnoma.docx`)
 }
 
 const receiveOpen = ref(false)
@@ -277,14 +400,15 @@ function saveIssue() {
     if (target) target.qty -= l.qty
   })
   extraOut.value += issueUnits.value
-  acts.value.unshift({
+  manualActs.value.unshift({
     id: `bd-${numbered}`,
-    code: `BD-2025-${numbered}`,
+    // Hujjat raqamining yili joriy sanadan olinadi
+    code: `BD-${new Date().getFullYear()}-${numbered}`,
     recipient: issueRecipient.value,
     request: issueRequest.value,
     warehouse: issueWarehouse.value,
     positions: lines.length,
-    at: (SERVICE_REQUESTS[0]?.createdAt ?? '2025-05-18').slice(0, 10),
+    at: todayIso(),
     status: 'ISSUED',
     lines,
   })
@@ -377,7 +501,7 @@ function saveIssue() {
 
         <dl class="mt-4 space-y-3 border-t border-ink-100 pt-4">
           <div class="flex items-baseline justify-between gap-3">
-            <dt class="text-[12.5px] text-ink-500">Jami omborlar</dt>
+            <dt class="text-[12.5px] text-ink-500">Sizga biriktirilgan omborlar</dt>
             <dd class="tabular text-[13.5px] font-bold text-ink-900">
               {{ warehouses.length }} ta
             </dd>
@@ -385,13 +509,13 @@ function saveIssue() {
           <div class="flex items-baseline justify-between gap-3">
             <dt class="text-[12.5px] text-ink-500">Jami pozitsiyalar</dt>
             <dd class="tabular text-[13.5px] font-bold text-ink-900">
-              {{ num(WAREHOUSE_SUMMARY.positions) }} nom
+              {{ num(scopedSummary.positions) }} nom
             </dd>
           </div>
           <div class="flex items-baseline justify-between gap-3">
             <dt class="text-[12.5px] text-ink-500">Jami qoldiq qiymati</dt>
             <dd class="tabular text-[13.5px] font-bold text-ink-900">
-              {{ sumShort(WAREHOUSE_SUMMARY.totalValue) }}
+              {{ sumShort(scopedSummary.totalValue) }}
             </dd>
           </div>
         </dl>
@@ -474,6 +598,43 @@ function saveIssue() {
           </span>
         </template>
       </UiTable>
+    </UiCard>
+
+    <UiCard
+      v-if="pendingIssue.length"
+      title="Berishni kutayotgan material so‘rovlari"
+      :subtitle="`${pendingIssue.length} ta tasdiqlangan so‘rov`"
+    >
+      <p
+        v-if="handoverError"
+        class="mb-3 rounded-field bg-danger-50 px-4 py-2.5 text-[12.5px] font-medium text-danger-700 ring-1 ring-inset ring-danger-100"
+        role="status"
+      >
+        {{ handoverError }}
+      </p>
+
+      <ul class="divide-y divide-ink-100">
+        <li
+          v-for="r in pendingIssue"
+          :key="r.id"
+          class="flex flex-wrap items-center gap-3 py-3 first:pt-0 last:pb-0"
+        >
+          <span class="min-w-0 flex-1">
+            <span class="tabular block text-[13.5px] font-bold text-ink-900">{{ r.code }}</span>
+            <span class="block truncate text-[12.5px] text-ink-500">
+              {{ r.workOrder }} · {{ r.requester }} · {{ r.items }} ta pozitsiya
+            </span>
+          </span>
+          <span class="tabular shrink-0 text-[13.5px] font-bold text-ink-900">
+            {{ sum(r.amount) }}
+          </span>
+          <UiButton v-if="canIssue" size="sm" variant="success" @click="handoverRequest(r)">
+            <UiIcon name="send" :size="16" />
+            Berish
+          </UiButton>
+          <span v-else class="shrink-0 text-[12.5px] text-ink-500">Berish huquqi yo‘q</span>
+        </li>
+      </ul>
     </UiCard>
 
     <UiCard
@@ -732,6 +893,10 @@ function saveIssue() {
 
     <template #footer>
       <UiButton variant="ghost" @click="printAct = null">Yopish</UiButton>
+      <UiButton variant="secondary" :disabled="!printAct" @click="downloadAct">
+        <UiIcon name="download" :size="16" />
+        Yuklab olish
+      </UiButton>
       <UiButton @click="sendToPrinter">
         <UiIcon name="print" :size="16" />
         Chop etish
@@ -739,3 +904,41 @@ function saveIssue() {
     </template>
   </UiModal>
 </template>
+
+<style>
+/**
+ * Chop etishda faqat ochiq dalolatnoma qog‘ozga tushadi: yon menyu, topbar
+ * va orqadagi jadvallar bosilmaydi. Qoida global, chunki oyna `body` ga
+ * ko‘chiriladi va sahifa qatlamidan tashqarida turadi.
+ */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+
+  [role='dialog'],
+  [role='dialog'] * {
+    visibility: visible;
+  }
+
+  [role='dialog'] {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    max-height: none;
+    overflow: visible;
+    background: #fff;
+    box-shadow: none;
+  }
+
+  [role='dialog'] > div {
+    overflow: visible !important;
+  }
+
+  [role='dialog'] > header,
+  [role='dialog'] > footer {
+    display: none !important;
+  }
+}
+</style>
