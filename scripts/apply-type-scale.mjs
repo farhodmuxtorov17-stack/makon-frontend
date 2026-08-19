@@ -31,7 +31,9 @@ const SCALE = [
   { px: 18, role: 'Karta sarlavhasi' },
   { px: 22, role: 'Sahifa sarlavhasi' },
   { px: 28, role: 'Ko‘rsatkich qiymati' },
-  { px: 34, role: 'Bosh sahifa sarlavhasi' },
+  { px: 36, role: 'Bo‘lim sarlavhasi, ommaviy sahifa' },
+  { px: 48, role: 'Bosh sahifa yirik sarlavhasi' },
+  { px: 60, role: 'Eng yirik sarlavha, faqat birinchi ekranda' },
 ]
 
 const STEPS = SCALE.map((s) => s.px)
@@ -60,15 +62,9 @@ const SKIP = new Set(['node_modules', '.nuxt', '.output', 'dist', '.git'])
 const RESERVED = process.argv.includes('--all')
   ? []
   : [
-      'app/pages/index.vue',
-      'app/layouts/public.vue',
-      'app/pages/login.vue',
       'app/components/lease/',
       'app/pages/applications/',
       'app/pages/contracts/',
-      'app/pages/catalog/',
-      'app/components/catalog/',
-      'app/pages/cabinet/units.vue',
       'app/components/ui/UiBuilding3D.vue',
       'app/components/ui/UiBuilding3DControls.vue',
       'app/pages/objects/[id]/3d.vue',

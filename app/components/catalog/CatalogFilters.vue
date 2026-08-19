@@ -57,14 +57,14 @@ function toggleType(value: string) {
 <template>
   <div class="space-y-5">
     <div>
-      <h2 class="text-[17px] font-bold leading-tight text-ink-900">{{ heading }}</h2>
+      <h2 class="text-[18px] font-bold leading-tight text-ink-900">{{ heading }}</h2>
       <p class="mt-1 text-[12px] leading-relaxed text-ink-500">{{ summary }}</p>
 
       <div v-if="chips.length" class="mt-2.5 flex flex-wrap gap-1.5">
         <span
           v-for="c in chips"
           :key="c.key"
-          class="inline-flex max-w-full items-center gap-1 rounded-pill bg-brand-50 py-1 pl-2.5 pr-1 text-[11.5px] font-semibold text-brand-700"
+          class="inline-flex max-w-full items-center gap-1 rounded-pill bg-brand-50 py-1 pl-2.5 pr-1 text-[12px] font-semibold text-brand-700"
         >
           <span class="truncate">{{ c.label }}</span>
           <button

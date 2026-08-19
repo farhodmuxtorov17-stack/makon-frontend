@@ -53,8 +53,10 @@ function applicationQueue(): number {
   const auth = useAuthStore()
   const statuses = auth.role ? (APPLICATION_QUEUE[auth.role] ?? []) : []
   if (!statuses.length) return 0
+  /* Maydoni hali belgilanmagan ariza hech bir binoga tegishli emas, shuning
+     uchun u soha tekshiruvidan o‘tkazilmaydi va navbatdan tushib qolmaydi */
   return useLeaseStore().cases.filter(
-    (c) => statuses.includes(c.status) && auth.inScope(c.buildingId),
+    (c) => statuses.includes(c.status) && (!c.buildingId || auth.inScope(c.buildingId)),
   ).length
 }
 

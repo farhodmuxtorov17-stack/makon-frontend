@@ -209,7 +209,7 @@ const STEPS = [
 
       <div class="relative mx-auto max-w-[1200px] px-4 pb-16 pt-14 lg:px-8 lg:pb-24 lg:pt-24">
         <p
-          class="flex items-center gap-2.5 text-[11.5px] font-bold uppercase tracking-[0.09em] text-white/70"
+          class="flex items-center gap-2.5 text-[12px] font-bold uppercase tracking-[0.09em] text-white/70"
         >
           <span class="size-1.5 shrink-0 rounded-full bg-brand-400" aria-hidden="true" />
           {{
@@ -221,13 +221,13 @@ const STEPS = [
         </p>
 
         <h1
-          class="mt-5 max-w-[15ch] text-[38px] font-extrabold leading-[1.04] tracking-[-0.025em] text-white sm:text-[52px] lg:text-[62px]"
+          class="mt-5 max-w-[15ch] text-[36px] font-extrabold leading-[1.04] tracking-[-0.025em] text-white sm:text-[48px] lg:text-[60px]"
         >
           {{ t('landing.heroTitle') }}
           <span class="text-brand-400">{{ t('landing.heroTitleAccent') }}</span>
         </h1>
 
-        <p class="mt-6 max-w-[56ch] text-[15px] leading-relaxed text-white/75 sm:text-[16.5px]">
+        <p class="mt-6 max-w-[56ch] text-[16px] leading-relaxed text-white/75 sm:text-[16px]">
           {{ t('landing.heroLead') }}
         </p>
 
@@ -254,14 +254,14 @@ const STEPS = [
         </form>
 
         <div class="mt-5 flex max-w-[840px] flex-wrap items-center gap-2">
-          <span class="text-[11.5px] font-bold uppercase tracking-[0.09em] text-white/60">
+          <span class="text-[12px] font-bold uppercase tracking-[0.09em] text-white/60">
             {{ t('landing.quickPick') }}
           </span>
           <button
             v-for="c in categories"
             :key="c.key"
             type="button"
-            class="tabular inline-flex min-h-[44px] items-center gap-1.5 rounded-pill bg-white/10 px-4 text-[12.5px] font-semibold text-white ring-1 ring-inset ring-white/20 transition-colors duration-150 hover:bg-white/20 active:bg-white/25"
+            class="tabular inline-flex min-h-[44px] items-center gap-1.5 rounded-pill bg-white/10 px-4 text-[13px] font-semibold text-white ring-1 ring-inset ring-white/20 transition-colors duration-150 hover:bg-white/20 active:bg-white/25"
             @click="goCategory(c.key)"
           >
             {{ c.label }}
@@ -271,7 +271,7 @@ const STEPS = [
 
         <dl class="mt-12 grid max-w-[840px] grid-cols-3 gap-6 border-t border-white/15 pt-7">
           <div v-for="s in HERO_STATS" :key="s.label">
-            <dd class="tabular text-[26px] font-extrabold leading-none text-white sm:text-[32px]">
+            <dd class="tabular text-[28px] font-extrabold leading-none text-white sm:text-[36px]">
               {{ s.value }}
               <span v-if="s.unit" class="text-[13px] font-semibold text-white/60">
                 {{ s.unit }}
@@ -288,16 +288,16 @@ const STEPS = [
       <div class="mx-auto max-w-[1200px] px-4 py-16 lg:px-8 lg:py-24">
         <div class="flex flex-wrap items-end justify-between gap-4">
           <div class="max-w-[52ch]">
-            <h2 class="text-[28px] font-bold tracking-[-0.02em] lg:text-[34px]">
+            <h2 class="text-[28px] font-bold tracking-[-0.02em] lg:text-[36px]">
               {{ t('landing.listingsTitle') }}
             </h2>
-            <p class="mt-2.5 text-[14.5px] leading-relaxed text-ink-600">
+            <p class="mt-2.5 text-[14px] leading-relaxed text-ink-600">
               {{ t('landing.listingsLead') }}
             </p>
           </div>
           <NuxtLink
             to="/catalog"
-            class="inline-flex min-h-[44px] items-center gap-1.5 text-[13.5px] font-semibold text-brand-600 transition-colors duration-150 hover:text-brand-700"
+            class="inline-flex min-h-[44px] items-center gap-1.5 text-[14px] font-semibold text-brand-600 transition-colors duration-150 hover:text-brand-700"
           >
             {{ t('landing.listingsAll', { count: vacantCount }) }}
             <UiIcon name="arrowRight" :size="16" />
@@ -328,8 +328,8 @@ const STEPS = [
                   aria-hidden="true"
                 />
                 <div class="absolute inset-x-0 bottom-0 p-4">
-                  <p class="truncate text-[15px] font-bold text-white">{{ l.building.name }}</p>
-                  <p class="mt-0.5 flex items-center gap-1.5 truncate text-[12.5px] text-white/75">
+                  <p class="truncate text-[16px] font-bold text-white">{{ l.building.name }}</p>
+                  <p class="mt-0.5 flex items-center gap-1.5 truncate text-[13px] text-white/75">
                     <UiIcon name="location" :size="14" />
                     {{ l.building.city }}, {{ l.building.district }}
                   </p>
@@ -378,9 +378,9 @@ const STEPS = [
                 class="tabular text-[22px] font-extrabold leading-none tracking-[-0.01em] text-ink-900"
               >
                 {{ num(l.unit.price) }}
-                <span class="text-[12.5px] font-semibold text-ink-500">{{ l.unit.priceUnit }}</span>
+                <span class="text-[13px] font-semibold text-ink-500">{{ l.unit.priceUnit }}</span>
               </p>
-              <p class="mt-2 text-[12.5px] text-ink-500">
+              <p class="mt-2 text-[13px] text-ink-500">
                 {{
                   t('landing.unitSummary', {
                     code: l.unit.code,
@@ -391,7 +391,7 @@ const STEPS = [
               </p>
 
               <div
-                class="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t border-ink-100 pt-4 text-[12.5px] text-ink-600"
+                class="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t border-ink-100 pt-4 text-[13px] text-ink-600"
               >
                 <span class="inline-flex items-center gap-1.5">
                   <UiIcon name="layers" :size="15" class="text-ink-400" />
@@ -428,16 +428,16 @@ const STEPS = [
       <div class="mx-auto max-w-[1200px] px-4 py-16 lg:px-8 lg:py-24">
         <div class="flex flex-wrap items-end justify-between gap-4">
           <div class="max-w-[56ch]">
-            <h2 class="text-[28px] font-bold tracking-[-0.02em] lg:text-[34px]">
+            <h2 class="text-[28px] font-bold tracking-[-0.02em] lg:text-[36px]">
               {{ t('landing.mapTitle') }}
             </h2>
-            <p class="mt-2.5 text-[14.5px] leading-relaxed text-ink-600">
+            <p class="mt-2.5 text-[14px] leading-relaxed text-ink-600">
               {{ t('landing.mapLead', { count: PORTFOLIO_TOTALS.buildings }) }}
             </p>
           </div>
           <NuxtLink
             to="/catalog"
-            class="inline-flex min-h-[44px] items-center gap-1.5 text-[13.5px] font-semibold text-brand-600 transition-colors duration-150 hover:text-brand-700"
+            class="inline-flex min-h-[44px] items-center gap-1.5 text-[14px] font-semibold text-brand-600 transition-colors duration-150 hover:text-brand-700"
           >
             {{ t('landing.allObjects') }}
             <UiIcon name="arrowRight" :size="16" />
@@ -462,7 +462,7 @@ const STEPS = [
               class="flex h-full flex-col justify-between gap-3 rounded-card bg-surface p-4 shadow-card ring-1 ring-ink-200/70 transition-shadow duration-200 hover:shadow-pop"
             >
               <span class="min-w-0">
-                <span class="block truncate text-[13.5px] font-bold text-ink-900">
+                <span class="block truncate text-[14px] font-bold text-ink-900">
                   {{ o.name }}
                 </span>
                 <span class="mt-0.5 block truncate text-[12px] text-ink-500">
@@ -491,10 +491,10 @@ const STEPS = [
     <section class="border-y border-ink-200/80 bg-surface">
       <div class="mx-auto max-w-[1200px] px-4 py-16 lg:px-8 lg:py-24">
         <div class="max-w-[52ch]">
-          <h2 class="text-[28px] font-bold tracking-[-0.02em] lg:text-[34px]">
+          <h2 class="text-[28px] font-bold tracking-[-0.02em] lg:text-[36px]">
             {{ t('landing.stepsTitle') }}
           </h2>
-          <p class="mt-2.5 text-[14.5px] leading-relaxed text-ink-600">
+          <p class="mt-2.5 text-[14px] leading-relaxed text-ink-600">
             {{ t('landing.stepsLead') }}
           </p>
         </div>
@@ -534,10 +534,10 @@ const STEPS = [
           class="relative flex flex-wrap items-center justify-between gap-7 px-6 py-11 lg:px-12 lg:py-14"
         >
           <div class="max-w-[50ch]">
-            <h2 class="text-[26px] font-bold tracking-[-0.02em] text-white lg:text-[32px]">
+            <h2 class="text-[28px] font-bold tracking-[-0.02em] text-white lg:text-[36px]">
               {{ t('landing.ctaTitle') }}
             </h2>
-            <p class="mt-3 text-[14.5px] leading-relaxed text-white/80">
+            <p class="mt-3 text-[14px] leading-relaxed text-white/80">
               {{ t('landing.ctaText') }}
             </p>
           </div>

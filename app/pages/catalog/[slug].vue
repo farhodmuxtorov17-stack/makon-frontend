@@ -275,7 +275,7 @@ function goApply(unitId?: string) {
 <template>
   <div class="mx-auto max-w-[1360px] px-4 py-6 lg:px-8 lg:py-8">
     <template v-if="building">
-      <nav class="flex flex-wrap items-center gap-1.5 text-[12.5px]">
+      <nav class="flex flex-wrap items-center gap-1.5 text-[13px]">
         <NuxtLink to="/" class="text-ink-500 transition-colors hover:text-brand-600">
           Bosh sahifa
         </NuxtLink>
@@ -290,7 +290,7 @@ function goApply(unitId?: string) {
       <header class="mt-2 flex flex-wrap items-end justify-between gap-4">
         <div class="min-w-0">
           <h1 class="text-2xl font-bold leading-tight">{{ building.name }}</h1>
-          <p class="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[13.5px] text-ink-500">
+          <p class="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[14px] text-ink-500">
             <UiIcon name="location" :size="15" class="text-ink-400" />
             {{ building.city }}, {{ building.district }}, {{ building.street }}
             <span class="text-ink-300">·</span>
@@ -386,7 +386,7 @@ function goApply(unitId?: string) {
 
               <button
                 type="button"
-                class="grid aspect-[4/3] place-items-center rounded-[10px] bg-ink-800 text-[12.5px] font-bold text-white transition-colors duration-150 hover:bg-ink-900"
+                class="grid aspect-[4/3] place-items-center rounded-[10px] bg-ink-800 text-[13px] font-bold text-white transition-colors duration-150 hover:bg-ink-900"
                 @click="openPhoto(mainView)"
               >
                 Barchasi
@@ -395,7 +395,7 @@ function goApply(unitId?: string) {
           </section>
 
           <section class="rounded-card bg-surface p-5 shadow-card ring-1 ring-ink-200/60">
-            <h2 class="text-[17px] font-bold">Obyekt pasporti</h2>
+            <h2 class="text-[18px] font-bold">Obyekt pasporti</h2>
             <dl class="mt-4 grid gap-x-6 sm:grid-cols-2">
               <div
                 v-for="r in infoRows"
@@ -408,7 +408,7 @@ function goApply(unitId?: string) {
                   <UiIcon :name="r.icon" :size="17" />
                 </span>
                 <dt class="min-w-0 flex-1 text-[13px] text-ink-500">{{ r.label }}</dt>
-                <dd class="tabular max-w-[52%] text-right text-[13.5px] font-semibold text-ink-900">
+                <dd class="tabular max-w-[52%] text-right text-[14px] font-semibold text-ink-900">
                   {{ r.value }}
                 </dd>
               </div>
@@ -416,7 +416,7 @@ function goApply(unitId?: string) {
           </section>
 
           <section class="rounded-card bg-surface p-5 shadow-card ring-1 ring-ink-200/60">
-            <h2 class="text-[17px] font-bold">Qulayliklar</h2>
+            <h2 class="text-[18px] font-bold">Qulayliklar</h2>
             <div class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               <div
                 v-for="a in building.amenities"
@@ -439,7 +439,7 @@ function goApply(unitId?: string) {
             va bir xil unitlarni ikki marta sanab chiqardi.
           -->
           <section class="rounded-card bg-surface p-5 shadow-card ring-1 ring-ink-200/60">
-            <h2 class="text-[17px] font-bold">Qavat va bo‘sh maydonlar</h2>
+            <h2 class="text-[18px] font-bold">Qavat va bo‘sh maydonlar</h2>
             <p class="mt-1 text-[13px] text-ink-500">
               Qavatni tanlang, so‘ng rejadagi maydonni yoki ro‘yxatdagi unitni bosing.
             </p>
@@ -570,7 +570,7 @@ function goApply(unitId?: string) {
                     <li
                       v-for="l in LEGEND"
                       :key="l.label"
-                      class="flex items-center gap-2 text-[12.5px] text-ink-600"
+                      class="flex items-center gap-2 text-[13px] text-ink-600"
                     >
                       <span class="size-2.5 rounded-full" :style="{ backgroundColor: l.color }" />
                       {{ l.label }}
@@ -585,7 +585,7 @@ function goApply(unitId?: string) {
                       :key="s.label"
                       class="flex items-center justify-between gap-3 py-1"
                     >
-                      <dt class="text-[12.5px] text-ink-500">{{ s.label }}</dt>
+                      <dt class="text-[13px] text-ink-500">{{ s.label }}</dt>
                       <dd class="tabular text-[13px] font-bold" :class="s.tone">{{ s.value }}</dd>
                     </div>
                   </dl>
@@ -629,7 +629,7 @@ function goApply(unitId?: string) {
 
                     <p
                       v-else
-                      class="mt-2.5 rounded-field bg-surface-sunken px-4 py-5 text-[12.5px] leading-relaxed text-ink-600 ring-1 ring-inset ring-ink-200"
+                      class="mt-2.5 rounded-field bg-surface-sunken px-4 py-5 text-[13px] leading-relaxed text-ink-600 ring-1 ring-inset ring-ink-200"
                     >
                       Bu qavatda bo‘sh unit yo‘q. Yuqoridagi tugmalar bilan boshqa qavatga o‘ting.
                     </p>
@@ -638,14 +638,14 @@ function goApply(unitId?: string) {
               </div>
             </template>
 
-            <p v-else class="mt-4 text-[13.5px] text-ink-500">
+            <p v-else class="mt-4 text-[14px] text-ink-500">
               Ushbu obyekt bo‘yicha qavat rejalari hozircha katalogda ochiq emas. Bo‘sh maydonlar
               bo‘yicha ma’lumot olish uchun tizimga kiring.
             </p>
           </section>
 
           <section class="rounded-card bg-surface p-5 shadow-card ring-1 ring-ink-200/60">
-            <h2 class="text-[17px] font-bold">Joylashuv</h2>
+            <h2 class="text-[18px] font-bold">Joylashuv</h2>
             <p class="mt-1 text-[13px] text-ink-500">
               {{ building.street }}, {{ building.district }}, {{ building.city }}
             </p>
@@ -708,10 +708,10 @@ function goApply(unitId?: string) {
               </div>
             </div>
 
-            <h2 class="tabular mt-3 text-[19px] font-bold leading-tight">
+            <h2 class="tabular mt-3 text-[18px] font-bold leading-tight">
               Unit {{ selected.code }}
             </h2>
-            <p class="mt-1 text-[12.5px] text-ink-500">
+            <p class="mt-1 text-[13px] text-ink-500">
               {{ building.name }} · {{ selected.floor }}-qavat
             </p>
 
@@ -721,10 +721,10 @@ function goApply(unitId?: string) {
                 <p class="text-[12px] font-semibold uppercase tracking-wide text-ink-500">
                   {{ priceInfo.totalLabel }}
                 </p>
-                <p class="tabular mt-1 text-[26px] font-extrabold leading-none text-brand-700">
+                <p class="tabular mt-1 text-[28px] font-extrabold leading-none text-brand-700">
                   {{ priceInfo.totalValue }}
                 </p>
-                <p class="mt-1.5 text-[12.5px] text-ink-500">
+                <p class="mt-1.5 text-[13px] text-ink-500">
                   {{ priceInfo.perLabel }}:
                   <span class="tabular font-semibold text-ink-700">{{ priceInfo.perValue }}</span>
                 </p>
@@ -733,7 +733,7 @@ function goApply(unitId?: string) {
 
             <p
               v-else
-              class="mt-4 rounded-field bg-surface-sunken px-4 py-3 text-[12.5px] leading-relaxed text-ink-600 ring-1 ring-inset ring-ink-200"
+              class="mt-4 rounded-field bg-surface-sunken px-4 py-3 text-[13px] leading-relaxed text-ink-600 ring-1 ring-inset ring-ink-200"
             >
               Bu maydon hozirda band. Ommaviy katalogda band unitlar bo‘yicha faqat mavjudlik
               holati ko‘rsatiladi, ijarachi va shartnoma ma’lumotlari ochilmaydi.
@@ -746,7 +746,7 @@ function goApply(unitId?: string) {
                 class="flex items-center justify-between gap-3 py-2.5"
               >
                 <dt class="text-[13px] text-ink-500">{{ f.label }}</dt>
-                <dd class="tabular text-[13.5px] font-bold text-ink-900">{{ f.value }}</dd>
+                <dd class="tabular text-[14px] font-bold text-ink-900">{{ f.value }}</dd>
               </div>
             </dl>
 
@@ -769,7 +769,7 @@ function goApply(unitId?: string) {
                 <UiIcon name="key" :size="18" />
                 Ariza yuborish
               </UiButton>
-              <p class="mt-2 text-center text-[11.5px] leading-relaxed text-ink-500">
+              <p class="mt-2 text-center text-[12px] leading-relaxed text-ink-500">
                 Ariza tashkilot nomidan rasmiylashtiriladi va tizimda qayd etiladi.
               </p>
             </template>
@@ -842,7 +842,7 @@ function goApply(unitId?: string) {
         </div>
 
         <template #footer>
-          <p class="mr-auto text-[12.5px] text-ink-500">
+          <p class="mr-auto text-[13px] text-ink-500">
             ← va → tugmalari suratni almashtiradi, Esc oynani yopadi
           </p>
           <UiButton variant="secondary" @click="lightboxOpen = false">Yopish</UiButton>
@@ -857,7 +857,7 @@ function goApply(unitId?: string) {
       >
         <div class="flex gap-3 rounded-field bg-brand-50 p-4 ring-1 ring-inset ring-brand-100">
           <UiIcon name="shield" :size="20" class="mt-0.5 shrink-0 text-brand-600" />
-          <p class="text-[13.5px] leading-relaxed text-ink-700">
+          <p class="text-[14px] leading-relaxed text-ink-700">
             <span v-if="selected" class="font-semibold text-ink-900">
               {{ building.name }} · Unit {{ selected.code }}
             </span>
@@ -899,8 +899,8 @@ function goApply(unitId?: string) {
       <span class="mx-auto grid size-14 place-items-center rounded-full bg-ink-100 text-ink-400">
         <UiIcon name="building" :size="26" />
       </span>
-      <h1 class="mt-4 text-[19px] font-bold">Obyekt topilmadi</h1>
-      <p class="mx-auto mt-2 max-w-[46ch] text-[13.5px] leading-relaxed text-ink-600">
+      <h1 class="mt-4 text-[18px] font-bold">Obyekt topilmadi</h1>
+      <p class="mx-auto mt-2 max-w-[46ch] text-[14px] leading-relaxed text-ink-600">
         So‘ralgan obyekt katalogdan olib tashlangan yoki havola noto‘g‘ri. Barcha mavjud obyektlar
         va bo‘sh joylarni katalogdan ko‘rishingiz mumkin.
       </p>

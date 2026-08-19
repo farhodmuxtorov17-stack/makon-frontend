@@ -604,7 +604,7 @@ watch(
       <div
         class="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-ink-200 bg-surface px-4 py-3 lg:px-5"
       >
-        <p class="text-[13.5px] text-ink-600">
+        <p class="text-[14px] text-ink-600">
           <span class="tabular font-bold text-ink-900">{{ results.length }}</span>
           ta mavjud variant
         </p>
@@ -612,7 +612,7 @@ watch(
         <div class="ml-auto flex flex-wrap items-center gap-2">
           <button
             type="button"
-            class="inline-flex min-h-11 items-center gap-1.5 rounded-field px-3 text-[12.5px] font-semibold text-ink-700 ring-1 ring-inset ring-ink-200 transition-colors duration-150 hover:bg-ink-100 md:min-h-9 xl:hidden"
+            class="inline-flex min-h-11 items-center gap-1.5 rounded-field px-3 text-[13px] font-semibold text-ink-700 ring-1 ring-inset ring-ink-200 transition-colors duration-150 hover:bg-ink-100 md:min-h-9 xl:hidden"
             @click="filtersOpen = true"
           >
             <UiIcon name="filter" :size="16" />
@@ -635,7 +635,7 @@ watch(
               type="button"
               role="tab"
               :aria-selected="mode === t.value"
-              class="inline-flex min-h-11 items-center rounded-[8px] px-3 text-[12.5px] font-semibold transition-colors duration-150 md:min-h-9"
+              class="inline-flex min-h-11 items-center rounded-[8px] px-3 text-[13px] font-semibold transition-colors duration-150 md:min-h-9"
               :class="
                 mode === t.value ? 'bg-white text-brand-600 shadow-card' : 'text-ink-600 hover:text-ink-800'
               "
@@ -652,7 +652,7 @@ watch(
               type="button"
               role="tab"
               :aria-selected="offer === t.value"
-              class="inline-flex min-h-11 items-center rounded-[8px] px-3 text-[12.5px] font-semibold transition-colors duration-150 md:min-h-9"
+              class="inline-flex min-h-11 items-center rounded-[8px] px-3 text-[13px] font-semibold transition-colors duration-150 md:min-h-9"
               :class="
                 offer === t.value
                   ? 'bg-white text-brand-600 shadow-card'
@@ -670,7 +670,7 @@ watch(
           <span
             v-for="c in chips"
             :key="c.key"
-            class="inline-flex max-w-full items-center gap-1 rounded-pill bg-brand-50 py-1 pl-2.5 pr-1 text-[11.5px] font-semibold text-brand-700"
+            class="inline-flex max-w-full items-center gap-1 rounded-pill bg-brand-50 py-1 pl-2.5 pr-1 text-[12px] font-semibold text-brand-700"
           >
             <span class="truncate">{{ c.label }}</span>
             <button
@@ -772,18 +772,18 @@ watch(
             -->
             <p class="mt-2 flex shrink-0 flex-wrap items-baseline gap-x-1.5">
               <span
-                class="tabular text-[17px] font-extrabold leading-none md:text-[20px]"
+                class="tabular text-[18px] font-extrabold leading-none md:text-[22px]"
                 :class="l.unit.offer === 'Sotuv' ? 'text-teal-700' : 'text-brand-700'"
               >
                 {{ num(l.unit.price) }}
               </span>
-              <span class="text-[11px] font-medium text-ink-500 md:text-[11.5px]">
+              <span class="text-[11px] font-medium text-ink-500 md:text-[12px]">
                 {{ l.unit.priceUnit }}
               </span>
             </p>
 
             <p
-              class="mt-1.5 flex shrink-0 items-center gap-x-1.5 text-[12.5px] text-ink-600 md:gap-x-2 md:text-[13px]"
+              class="mt-1.5 flex shrink-0 items-center gap-x-1.5 text-[13px] text-ink-600 md:gap-x-2 md:text-[13px]"
             >
               <span class="tabular shrink-0 font-bold text-ink-900">{{ area(l.unit.area) }}</span>
               <span class="shrink-0 text-ink-300">·</span>
@@ -796,13 +796,13 @@ watch(
 
             <!-- Ikkinchi darajali ma’lumot pastda, mayda va yengil ohangda -->
             <h2
-              class="mt-auto shrink-0 truncate text-[12.5px] font-semibold text-ink-800 transition-colors duration-150 group-hover:text-brand-700 md:text-[13.5px]"
+              class="mt-auto shrink-0 truncate text-[13px] font-semibold text-ink-800 transition-colors duration-150 group-hover:text-brand-700 md:text-[14px]"
             >
               {{ l.building.name }}
             </h2>
 
             <p
-              class="mt-1 flex shrink-0 items-center gap-1.5 text-[11.5px] text-ink-500 md:text-[12.5px]"
+              class="mt-1 flex shrink-0 items-center gap-1.5 text-[12px] text-ink-500 md:text-[13px]"
             >
               <UiIcon name="location" :size="13" class="shrink-0 text-ink-400" />
               <span class="truncate">
@@ -885,7 +885,7 @@ watch(
             <div
               class="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-ink-200 bg-surface px-4 py-3"
             >
-              <p class="text-[15px] font-bold text-ink-900">Filtrlar</p>
+              <p class="text-[16px] font-bold text-ink-900">Filtrlar</p>
               <button
                 type="button"
                 class="grid size-11 place-items-center rounded-field text-ink-500 transition-colors duration-150 hover:bg-ink-100 hover:text-ink-900"

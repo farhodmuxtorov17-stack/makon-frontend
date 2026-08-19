@@ -319,6 +319,14 @@ function today() {
   return toIso(new Date())
 }
 
+/** Boshlanish sanasi standarti: keyingi oyning birinchi kuni */
+function firstOfNextMonth() {
+  const d = new Date()
+  d.setDate(1)
+  d.setMonth(d.getMonth() + 1)
+  return toIso(d)
+}
+
 function money(value: number) {
   return `${num(Math.round(value))} so‘m`
 }
@@ -908,6 +916,9 @@ export const useLeaseStore = defineStore('lease', {
     forOrganization: (s) => (name: string) => s.cases.filter((c) => c.org.name === name),
 
     activeCases: (s) => s.cases.filter((c) => c.status === 'FAOL'),
+
+    /** Maydoni hali kelishilmagan arizalar: operator qo‘ng‘iroqda aniqlaydi */
+    awaitingUnit: (s) => s.cases.filter((c) => !c.unitId && c.status === 'YANGI'),
   },
 
   actions: {
@@ -930,12 +941,20 @@ export const useLeaseStore = defineStore('lease', {
       item.audit.push({ at: now(), ...entry })
     },
 
-    /** Ijarachi yangi ariza yuboradi */
+    /**
+     * Ijarachi yangi ariza yuboradi.
+     *
+     * Maydon ixtiyoriy: ommaviy formada mijoz byudjet va muddatni aytadi,
+     * maydonni esa keyin operator qo‘ng‘iroq qilib kelishadi. Shuning uchun
+     * `unitId` berilmagan ariza maydonsiz ochiladi va tizim uning o‘rniga
+     * hech qanday maydon tanlamaydi.
+     */
     createCase(input: {
-      unitId: string
+      unitId?: string | null
       org: LeaseOrg
       offerPrice: number
-      startDate: string
+      /** Berilmasa keyingi oyning birinchi kuni olinadi */
+      startDate?: string
       term: number
       note: string
       type?: LeaseRequest['type']
@@ -944,18 +963,19 @@ export const useLeaseStore = defineStore('lease', {
       /** Ariza yuborgan shaxs ismi */
       contactName?: string
     }): LeaseCase | null {
-      const unit = unitById(input.unitId)
-      if (!unit) return null
-      const building = buildingById(unit.buildingId)
-      if (!building) return null
+      const unit = input.unitId ? unitById(input.unitId) : undefined
+      if (input.unitId && !unit) return null
+      const building = unit ? buildingById(unit.buildingId) : undefined
+      if (unit && !building) return null
 
       /*
        * So‘rov turi unitning taklif turidan aniqlanadi: faqat sotuvga
        * qo‘yilgan maydon bo‘yicha ijara arizasi ochilmaydi, aks holda sotuv
-       * so‘rovi oxirida ijara shartnomasi tuzilib qolar edi.
+       * so‘rovi oxirida ijara shartnomasi tuzilib qolar edi. Maydon
+       * tanlanmagan arizada tur so‘rovning o‘zidan olinadi.
        */
       const type: LeaseRequest['type'] =
-        input.type === 'Sotib olish' || unit.offer === 'Sotuv' ? 'Sotib olish' : 'Ijaraga olish'
+        input.type === 'Sotib olish' || unit?.offer === 'Sotuv' ? 'Sotib olish' : 'Ijaraga olish'
 
       const code = nextCode('ARZ', this.cases.map((c) => c.code))
       const stamp = now()
@@ -964,19 +984,21 @@ export const useLeaseStore = defineStore('lease', {
         id: `a-${code.slice(-4)}`,
         code,
         status: 'YANGI',
-        unitId: unit.id,
-        unitCode: unit.code,
-        area: unit.area,
-        floor: unit.floor,
-        usage: unit.usage,
-        buildingId: building.id,
-        buildingName: building.name,
-        buildingAddress: `${building.city}, ${building.district}, ${building.street}`,
+        unitId: unit?.id ?? '',
+        unitCode: unit?.code ?? '',
+        area: unit?.area ?? 0,
+        floor: unit?.floor ?? 0,
+        usage: unit?.usage ?? '',
+        buildingId: building?.id ?? '',
+        buildingName: building?.name ?? '',
+        buildingAddress: building
+          ? `${building.city}, ${building.district}, ${building.street}`
+          : '',
         org: { ...input.org },
         request: {
           type,
           offerPrice: input.offerPrice,
-          startDate: input.startDate,
+          startDate: input.startDate || firstOfNextMonth(),
           term: input.term,
           note: input.note,
           submittedAt: stamp,
@@ -1002,13 +1024,14 @@ export const useLeaseStore = defineStore('lease', {
           ? `sotib olish taklifi ${money(input.offerPrice)}`
           : `${input.term} oy · ${money(input.offerPrice)}`
 
+      const place =
+        unit && building ? `${building.name} · Unit ${unit.code}` : 'Maydon operator bilan kelishiladi'
+
       this.log(item, {
         actor: item.contactName,
         roleLabel: item.guest ? 'Mijoz, hisobsiz' : 'Ijarachi',
         action: type === 'Sotib olish' ? 'Sotib olish so‘rovi yuborildi' : 'Ariza yuborildi',
-        detail: `${building.name} · Unit ${unit.code} · ${terms}${
-          item.guest ? ' · telefon raqami tasdiqlangan' : ''
-        }`,
+        detail: `${place} · ${terms}${item.guest ? ' · telefon raqami tasdiqlangan' : ''}`,
       })
 
       this.cases.unshift(item)
@@ -1056,6 +1079,41 @@ export const useLeaseStore = defineStore('lease', {
       })
     },
 
+    /**
+     * Operator qo‘ng‘iroqda kelishilgan maydonni arizaga biriktiradi.
+     *
+     * Ommaviy formada mijoz maydon tanlamaydi: u byudjet va muddatni aytadi.
+     * Maydon aynan shu qadamda, suhbat natijasi bo‘yicha belgilanadi, shuning
+     * uchun tizim mijoz o‘rniga hech qanday maydon tanlagan bo‘lib ko‘rinmaydi.
+     */
+    assignUnit(id: string, actor: string, roleLabel: string, unitId: string) {
+      const item = this.byId(id)
+      if (!item || item.unitId || item.status !== 'YANGI') return
+      const unit = unitById(unitId)
+      if (!unit) return
+      const building = buildingById(unit.buildingId)
+      if (!building) return
+
+      item.unitId = unit.id
+      item.unitCode = unit.code
+      item.area = unit.area
+      item.floor = unit.floor
+      item.usage = unit.usage
+      item.buildingId = building.id
+      item.buildingName = building.name
+      item.buildingAddress = `${building.city}, ${building.district}, ${building.street}`
+
+      /* Maydon maydoni o‘zgargani uchun servis to‘lovi va grafik qayta hisoblanadi */
+      if (item.offer) item.schedule = buildSchedule(item.offer, item.request, item.area)
+
+      this.log(item, {
+        actor,
+        roleLabel,
+        action: 'Maydon belgilandi',
+        detail: `${building.name} · Unit ${unit.code} · ${unit.area.toFixed(2)} m² · ${unit.usage}`,
+      })
+    },
+
     /** Kelishilgan shartlar saqlanadi va to‘lov grafigi qayta hisoblanadi */
     saveOffer(id: string, offer: LeaseOffer) {
       const item = this.byId(id)
@@ -1076,6 +1134,8 @@ export const useLeaseStore = defineStore('lease', {
       if (!item || item.status !== 'YANGI') return
       /* Ijara oqimi faqat ijara so‘rovi uchun: sotuv alohida rasmiylashtiriladi */
       if (item.request.type !== 'Ijaraga olish') return
+      /* Maydonsiz shartnoma tuzilmaydi: avval operator maydonni belgilaydi */
+      if (!item.unitId) return
 
       this.saveOffer(id, offer)
       const totals = scheduleTotals(item.schedule)

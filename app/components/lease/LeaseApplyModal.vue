@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { vacantUnits, type Unit } from '~/data/units'
 import { num } from '~/utils/format'
 
 /**
@@ -95,37 +94,12 @@ function errorOf(field: string) {
 
 // --- Do‘konga yozish -------------------------------------------------------
 
-/** E’londa m² narxi ko‘rsatilgan maydonning oylik summasi */
-function monthlyOf(u: Unit) {
-  return u.priceUnit === 'so‘m / m²' ? Math.round(u.price * u.area) : u.price
-}
-
-/**
- * `createCase` aniq maydonni talab qiladi, forma esa maydon tanlashni
- * so‘ramaydi. Shuning uchun ariza byudjetga eng yaqin bo‘sh maydonga
- * biriktiriladi: operator ekranida shu maydon boshlang‘ich variant bo‘lib
- * turadi, izohda esa maydon hali kelishilmagani yozib qo‘yiladi. Katalog
- * kartasidan ochilganda o‘sha kartaning maydoni ustun turadi.
+/*
+ * Forma maydon tanlashni so‘ramaydi, shuning uchun ariza maydonsiz ochiladi.
+ * Maydonni operator qo‘ng‘iroq paytida mijoz bilan kelishib belgilaydi.
+ * Katalog kartasidan ochilgan bo‘lsa, mijoz qaysi maydonni ko‘rgani ariza
+ * bilan birga uzatiladi va operator ekranida shu maydon taklif bo‘lib turadi.
  */
-function pickUnit(budget: number): Unit | null {
-  const pool = vacantUnits()
-  if (!pool.length) return null
-
-  const exact = pool.find((u) => u.id === requestedUnit.value)
-  if (exact) return exact
-
-  return pool.reduce((best, u) =>
-    Math.abs(monthlyOf(u) - budget) < Math.abs(monthlyOf(best) - budget) ? u : best,
-  )
-}
-
-/** Boshlanish sanasi standarti: keyingi oyning birinchi kuni */
-function firstOfNextMonth() {
-  const d = new Date()
-  d.setDate(1)
-  d.setMonth(d.getMonth() + 1)
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`
-}
 
 const termValue = computed(() => Number(term.value) || 12)
 const orgName = computed(() => org.value.trim())
@@ -141,15 +115,9 @@ function submit() {
   timer = setTimeout(() => {
     pending.value = false
 
-    const unit = pickUnit(amountValue.value)
-    if (!unit) {
-      failed.value = true
-      return
-    }
-
     const contact = person.value.trim()
     const created = lease.createCase({
-      unitId: unit.id,
+      unitId: requestedUnit.value || null,
       org: {
         name: orgName.value,
         tin: '',
@@ -159,9 +127,10 @@ function submit() {
         address: '',
       },
       offerPrice: amountValue.value,
-      startDate: firstOfNextMonth(),
       term: termValue.value,
-      note: `Ochiq forma: byudjet ${num(amountValue.value)} so‘m/oy, muddat ${termValue.value} oy. Maydon operator bilan kelishiladi.`,
+      note: `Ochiq forma: byudjet ${num(amountValue.value)} so‘m/oy, muddat ${termValue.value} oy.${
+        requestedUnit.value ? '' : ' Maydon operator bilan kelishiladi.'
+      }`,
       type: 'Ijaraga olish',
       guest: true,
       contactName: contact,

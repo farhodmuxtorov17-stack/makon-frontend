@@ -195,7 +195,7 @@ function openApply() {
             v-for="n in HEADER_NAV"
             :key="n.to"
             :to="n.to"
-            class="inline-flex min-h-[44px] items-center rounded-field px-3 text-[13.5px] font-semibold transition-colors duration-150"
+            class="inline-flex min-h-[44px] items-center rounded-field px-3 text-[14px] font-semibold transition-colors duration-150"
             :class="
               isActive(n.to)
                 ? 'bg-brand-50 text-brand-700'
@@ -228,7 +228,7 @@ function openApply() {
             </svg>
             <span
               v-if="favourites.length"
-              class="tabular absolute right-1 top-1 min-w-[16px] rounded-full bg-danger-500 px-1 text-center text-[10px] font-bold leading-4 text-white"
+              class="tabular absolute right-1 top-1 min-w-[16px] rounded-full bg-danger-500 px-1 text-center text-[11px] font-bold leading-4 text-white"
             >
               {{ favourites.length }}
             </span>
@@ -238,7 +238,7 @@ function openApply() {
 
           <NuxtLink
             to="/login"
-            class="hidden min-h-[44px] items-center rounded-field px-3 text-[13.5px] font-semibold text-ink-700 transition-colors duration-150 hover:bg-ink-100 hover:text-ink-900 md:inline-flex"
+            class="hidden min-h-[44px] items-center rounded-field px-3 text-[14px] font-semibold text-ink-700 transition-colors duration-150 hover:bg-ink-100 hover:text-ink-900 md:inline-flex"
           >
             {{ t('common.signIn') }}
           </NuxtLink>
@@ -301,7 +301,7 @@ function openApply() {
                 v-for="n in NAV"
                 :key="n.to"
                 :to="n.to"
-                class="flex min-h-[44px] items-center justify-between rounded-field px-3.5 py-3 text-[14.5px] font-semibold transition-colors duration-150"
+                class="flex min-h-[44px] items-center justify-between rounded-field px-3.5 py-3 text-[14px] font-semibold transition-colors duration-150"
                 :class="
                   isActive(n.to) ? 'bg-brand-50 text-brand-700' : 'text-ink-700 hover:bg-ink-100'
                 "
@@ -321,7 +321,7 @@ function openApply() {
                   v-for="c in CATEGORIES"
                   :key="c.to"
                   :to="c.to"
-                  class="inline-flex min-h-[44px] items-center rounded-pill bg-ink-100 px-4 text-[12.5px] font-semibold text-ink-700 transition-colors duration-150 hover:bg-brand-50 hover:text-brand-700"
+                  class="inline-flex min-h-[44px] items-center rounded-pill bg-ink-100 px-4 text-[13px] font-semibold text-ink-700 transition-colors duration-150 hover:bg-brand-50 hover:text-brand-700"
                   @click="closeMenu"
                 >
                   {{ t(c.key) }}
@@ -365,7 +365,7 @@ function openApply() {
         <div class="grid gap-10 lg:grid-cols-[minmax(0,1.6fr)_repeat(2,minmax(0,1fr))]">
           <div>
             <AppLogo mono class="text-white" />
-            <p class="mt-4 max-w-[46ch] text-[13.5px] leading-relaxed text-ink-400">
+            <p class="mt-4 max-w-[46ch] text-[14px] leading-relaxed text-ink-400">
               {{ t('public.about') }}
             </p>
 
@@ -394,7 +394,7 @@ function openApply() {
                   class="group block min-w-0 py-1"
                 >
                   <span
-                    class="block text-[13.5px] font-semibold text-white transition-colors duration-150 group-hover:text-brand-400"
+                    class="block text-[14px] font-semibold text-white transition-colors duration-150 group-hover:text-brand-400"
                   >
                     {{ c.label }}
                   </span>
@@ -403,7 +403,7 @@ function openApply() {
                   </span>
                 </a>
                 <span v-else class="block min-w-0 py-1">
-                  <span class="block text-[13.5px] font-semibold text-white">{{ c.label }}</span>
+                  <span class="block text-[14px] font-semibold text-white">{{ c.label }}</span>
                   <span class="mt-0.5 block text-[12px] leading-relaxed text-ink-500">
                     {{ c.note }}
                   </span>
@@ -413,14 +413,14 @@ function openApply() {
           </div>
 
           <div>
-            <h3 class="text-[11.5px] font-bold uppercase tracking-[0.09em] text-white">
+            <h3 class="text-[12px] font-bold uppercase tracking-[0.09em] text-white">
               {{ t('public.quickLinks') }}
             </h3>
             <ul class="mt-3 space-y-0.5">
               <li v-for="l in QUICK" :key="l.to">
                 <NuxtLink
                   :to="l.to"
-                  class="flex min-h-[44px] items-center text-[13.5px] text-ink-400 transition-colors duration-150 hover:text-white"
+                  class="flex min-h-[44px] items-center text-[14px] text-ink-400 transition-colors duration-150 hover:text-white"
                 >
                   {{ t(l.key) }}
                 </NuxtLink>
@@ -429,14 +429,14 @@ function openApply() {
           </div>
 
           <div>
-            <h3 class="text-[11.5px] font-bold uppercase tracking-[0.09em] text-white">
+            <h3 class="text-[12px] font-bold uppercase tracking-[0.09em] text-white">
               {{ t('public.catalogCategories') }}
             </h3>
             <ul class="mt-3 space-y-0.5">
               <li v-for="c in CATEGORIES" :key="c.to">
                 <NuxtLink
                   :to="c.to"
-                  class="flex min-h-[44px] items-center text-[13.5px] text-ink-400 transition-colors duration-150 hover:text-white"
+                  class="flex min-h-[44px] items-center text-[14px] text-ink-400 transition-colors duration-150 hover:text-white"
                 >
                   {{ t(c.key) }}
                 </NuxtLink>
@@ -446,7 +446,7 @@ function openApply() {
             <div class="mt-7 flex flex-wrap gap-2.5">
               <button
                 type="button"
-                class="inline-flex min-h-[44px] items-center gap-2 rounded-pill bg-brand-500 px-4 text-[12.5px] font-semibold text-white transition-colors duration-150 hover:bg-brand-600"
+                class="inline-flex min-h-[44px] items-center gap-2 rounded-pill bg-brand-500 px-4 text-[13px] font-semibold text-white transition-colors duration-150 hover:bg-brand-600"
                 @click="openApply"
               >
                 <UiIcon name="send" :size="15" />
@@ -454,7 +454,7 @@ function openApply() {
               </button>
               <NuxtLink
                 to="/catalog"
-                class="inline-flex min-h-[44px] items-center gap-2 rounded-pill bg-white/10 px-4 text-[12.5px] font-semibold text-white transition-colors duration-150 hover:bg-white/20"
+                class="inline-flex min-h-[44px] items-center gap-2 rounded-pill bg-white/10 px-4 text-[13px] font-semibold text-white transition-colors duration-150 hover:bg-white/20"
               >
                 <UiIcon name="search" :size="15" />
                 {{ t('public.searchVacancy') }}
@@ -469,10 +469,10 @@ function openApply() {
           </p>
 
           <div class="mt-4 flex flex-wrap items-center justify-between gap-4">
-            <p class="text-[12.5px] text-ink-500">{{ t('public.rights', { year }) }}</p>
+            <p class="text-[13px] text-ink-500">{{ t('public.rights', { year }) }}</p>
             <NuxtLink
               to="/login"
-              class="inline-flex min-h-[44px] items-center text-[12.5px] font-semibold text-brand-400 transition-colors duration-150 hover:text-white"
+              class="inline-flex min-h-[44px] items-center text-[13px] font-semibold text-brand-400 transition-colors duration-150 hover:text-white"
             >
               {{ t('common.signIn') }}
             </NuxtLink>

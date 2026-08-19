@@ -329,10 +329,10 @@ function submit() {
           <p class="text-[11px] font-semibold uppercase tracking-wide text-brand-600">
             {{ t('login.eyebrow') }}
           </p>
-          <h1 class="mt-2 font-display text-[26px] font-extrabold leading-tight">
+          <h1 class="mt-2 font-display text-[28px] font-extrabold leading-tight">
             {{ t('login.title') }}
           </h1>
-          <p class="mt-2 text-[13.5px] leading-relaxed text-ink-500">{{ heading }}</p>
+          <p class="mt-2 text-[14px] leading-relaxed text-ink-500">{{ heading }}</p>
 
           <UiTabs v-model="mode" :tabs="MODES" class="mt-5 [&_button]:min-h-[44px]" />
 
@@ -376,7 +376,7 @@ function submit() {
                   </label>
                   <button
                     type="button"
-                    class="-my-3.5 inline-flex min-h-[44px] items-center rounded-[6px] py-3.5 text-[12.5px] font-semibold text-brand-600 transition-colors hover:text-brand-700"
+                    class="-my-3.5 inline-flex min-h-[44px] items-center rounded-[6px] py-3.5 text-[13px] font-semibold text-brand-600 transition-colors hover:text-brand-700"
                     @click="resetOpen = true"
                   >
                     {{ t('login.forgotPassword') }}
@@ -470,7 +470,7 @@ function submit() {
                 haqiqatan tekshiriladi.
               -->
               <div class="mt-5 rounded-field bg-surface-sunken p-3.5 ring-1 ring-inset ring-ink-200">
-                <p class="text-[12.5px] font-semibold text-ink-700">{{ t('login.demoTitle') }}</p>
+                <p class="text-[13px] font-semibold text-ink-700">{{ t('login.demoTitle') }}</p>
                 <p class="mt-1 text-[12px] leading-relaxed text-ink-500">{{ t('login.demoText') }}</p>
                 <!-- Butun qator bosiladi: nishon 44px, rol va login yonma-yon -->
                 <div class="mt-3 grid gap-1.5 sm:grid-cols-2">
@@ -484,7 +484,7 @@ function submit() {
                     <span class="truncate text-[12px] font-semibold text-ink-800">
                       {{ a.label }}
                     </span>
-                    <span class="tabular truncate text-[11.5px] text-ink-500">{{ a.login }}</span>
+                    <span class="tabular truncate text-[12px] text-ink-500">{{ a.login }}</span>
                   </button>
                 </div>
                 <p class="tabular mt-2.5 text-[12px] text-ink-600">
@@ -580,10 +580,10 @@ function submit() {
                     >
                       <span class="flex items-start justify-between gap-3">
                         <span class="min-w-0">
-                          <span class="block truncate text-[13.5px] font-bold text-ink-900">
+                          <span class="block truncate text-[14px] font-bold text-ink-900">
                             {{ c.holderName }}
                           </span>
-                          <span class="mt-0.5 block truncate text-[12.5px] text-ink-600">
+                          <span class="mt-0.5 block truncate text-[13px] text-ink-600">
                             {{ orgOf(c)?.name ?? t('login.certOrgMissing') }}
                           </span>
                         </span>
@@ -727,7 +727,7 @@ function submit() {
 
               <p
                 v-else
-                class="flex items-start gap-2 rounded-field bg-surface-sunken p-3.5 text-[12.5px] leading-relaxed text-ink-600 ring-1 ring-inset ring-ink-200"
+                class="flex items-start gap-2 rounded-field bg-surface-sunken p-3.5 text-[13px] leading-relaxed text-ink-600 ring-1 ring-inset ring-ink-200"
               >
                 <UiIcon name="info" :size="15" class="mt-px shrink-0 text-ink-400" />
                 {{ t('login.certHint') }}
@@ -782,7 +782,7 @@ function submit() {
             >
               <UiIcon :name="f.icon" :size="18" />
             </span>
-            <span class="text-[13.5px] text-white/85">{{ f.text }}</span>
+            <span class="text-[14px] text-white/85">{{ f.text }}</span>
           </li>
         </ul>
       </div>
@@ -794,7 +794,7 @@ function submit() {
       :title="t('login.resetTitle')"
       :subtitle="t('login.resetSubtitle')"
     >
-      <p class="text-[13.5px] leading-relaxed text-ink-700">{{ t('login.resetLead') }}</p>
+      <p class="text-[14px] leading-relaxed text-ink-700">{{ t('login.resetLead') }}</p>
 
       <ol class="mt-5 space-y-3.5">
         <li
@@ -812,8 +812,8 @@ function submit() {
             {{ i + 1 }}
           </span>
           <span>
-            <span class="block text-[13.5px] font-semibold text-ink-900">{{ s.title }}</span>
-            <span class="block text-[12.5px] leading-relaxed text-ink-600">{{ s.text }}</span>
+            <span class="block text-[14px] font-semibold text-ink-900">{{ s.title }}</span>
+            <span class="block text-[13px] leading-relaxed text-ink-600">{{ s.text }}</span>
           </span>
         </li>
       </ol>

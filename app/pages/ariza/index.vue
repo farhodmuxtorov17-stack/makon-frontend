@@ -595,7 +595,7 @@ const lastFour = computed(() => form.phone.slice(-4))
         <div class="min-w-0 space-y-5">
           <UiCard title="Aloqa ma’lumotlari" subtitle="Operator shu ma’lumotlar orqali bog‘lanadi" icon="user">
             <form class="space-y-4" novalidate @submit.prevent="requestCode">
-              <p class="flex items-start gap-2 rounded-field bg-brand-50 px-3.5 py-2.5 text-[12.5px] leading-relaxed text-brand-700 ring-1 ring-inset ring-brand-200">
+              <p class="flex items-start gap-2 rounded-field bg-brand-50 px-3.5 py-2.5 text-[13px] leading-relaxed text-brand-700 ring-1 ring-inset ring-brand-200">
                 <UiIcon name="info" :size="15" class="mt-px shrink-0" />
                 Ijara shartnomasi faqat yuridik shaxs bilan tuziladi, shuning uchun tashkilot
                 rekvizitlarini to‘ldiring.

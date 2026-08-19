@@ -208,10 +208,10 @@ const planOpen = ref(false)
           <UiStatus kind="unit" :value="u.status" size="sm" />
         </div>
 
-        <p class="tabular mt-2.5 text-[17px] font-bold leading-tight text-ink-900">
+        <p class="tabular mt-2.5 text-[18px] font-bold leading-tight text-ink-900">
           Unit {{ u.code }}
         </p>
-        <p class="mt-0.5 truncate text-[12.5px] text-ink-500">
+        <p class="mt-0.5 truncate text-[13px] text-ink-500">
           {{ buildingById(u.buildingId)?.name }}
         </p>
 
@@ -245,10 +245,10 @@ const planOpen = ref(false)
           yengilroq ohangda yonida turadi.
         -->
         <div class="mt-auto flex items-end justify-between gap-3 border-t border-ink-100 pt-3">
-          <span class="tabular text-[17px] font-extrabold leading-none text-ink-900">
+          <span class="tabular text-[18px] font-extrabold leading-none text-ink-900">
             {{ area(u.area) }}
           </span>
-          <span class="tabular text-[12.5px] text-ink-500">
+          <span class="tabular text-[13px] text-ink-500">
             {{ u.floor }}-qavat · {{ u.rooms }} xona
           </span>
         </div>
@@ -258,7 +258,7 @@ const planOpen = ref(false)
     <UiCard v-else flush>
       <UiTable :columns="columns" :rows="rows" @row-click="(row) => select(String(row.id))">
         <template #cell-code="{ row }">
-          <span class="text-[13.5px] font-semibold text-ink-900">Unit {{ row.code }}</span>
+          <span class="text-[14px] font-semibold text-ink-900">Unit {{ row.code }}</span>
         </template>
         <template #cell-area="{ value }">{{ area(Number(value)) }}</template>
         <template #cell-floor="{ value }">{{ value }}-qavat</template>
@@ -334,23 +334,23 @@ const planOpen = ref(false)
             <p class="mb-2 text-[13px] font-semibold text-ink-700">Texnik ko‘rsatkichlar</p>
             <dl class="divide-y divide-ink-100 rounded-field ring-1 ring-ink-200">
               <div class="flex items-center justify-between px-4 py-2.5">
-                <dt class="text-[12.5px] text-ink-500">Umumiy maydon</dt>
+                <dt class="text-[13px] text-ink-500">Umumiy maydon</dt>
                 <dd class="tabular text-[13px] font-bold text-ink-900">{{ area(selected.area) }}</dd>
               </div>
               <div class="flex items-center justify-between px-4 py-2.5">
-                <dt class="text-[12.5px] text-ink-500">Qavat</dt>
+                <dt class="text-[13px] text-ink-500">Qavat</dt>
                 <dd class="tabular text-[13px] font-bold text-ink-900">{{ selected.floor }}-qavat</dd>
               </div>
               <div class="flex items-center justify-between px-4 py-2.5">
-                <dt class="text-[12.5px] text-ink-500">Xonalar soni</dt>
+                <dt class="text-[13px] text-ink-500">Xonalar soni</dt>
                 <dd class="tabular text-[13px] font-bold text-ink-900">{{ selected.rooms }} ta</dd>
               </div>
               <div class="flex items-center justify-between px-4 py-2.5">
-                <dt class="text-[12.5px] text-ink-500">Tayinlanishi</dt>
+                <dt class="text-[13px] text-ink-500">Tayinlanishi</dt>
                 <dd class="text-[13px] font-bold text-ink-900">{{ selected.usage }}</dd>
               </div>
               <div class="flex items-center justify-between px-4 py-2.5">
-                <dt class="text-[12.5px] text-ink-500">Holat</dt>
+                <dt class="text-[13px] text-ink-500">Holat</dt>
                 <dd><UiStatus kind="unit" :value="selected.status" size="sm" /></dd>
               </div>
             </dl>
@@ -360,7 +360,7 @@ const planOpen = ref(false)
             <p class="mb-2 text-[13px] font-semibold text-ink-700">Shartnoma</p>
             <div class="rounded-field p-4 ring-1 ring-ink-200">
               <div class="flex items-center justify-between gap-3">
-                <span class="text-[13.5px] font-bold text-ink-900">
+                <span class="text-[14px] font-bold text-ink-900">
                   {{ selected.contractCode ?? 'Shartnoma biriktirilmagan' }}
                 </span>
                 <UiStatus
@@ -372,31 +372,31 @@ const planOpen = ref(false)
               </div>
               <dl v-if="selectedContract" class="mt-3 space-y-1.5">
                 <div class="flex items-center justify-between">
-                  <dt class="text-[12.5px] text-ink-500">Muddat</dt>
-                  <dd class="tabular text-[12.5px] font-semibold text-ink-800">
+                  <dt class="text-[13px] text-ink-500">Muddat</dt>
+                  <dd class="tabular text-[13px] font-semibold text-ink-800">
                     {{ dateShort(selectedContract.startsAt) }} · {{ dateShort(selectedContract.endsAt) }}
                   </dd>
                 </div>
                 <div class="flex items-center justify-between">
-                  <dt class="text-[12.5px] text-ink-500">To‘lov shartlari</dt>
-                  <dd class="text-[12.5px] font-semibold text-ink-800">
+                  <dt class="text-[13px] text-ink-500">To‘lov shartlari</dt>
+                  <dd class="text-[13px] font-semibold text-ink-800">
                     {{ selectedContract.paymentTerm }}
                   </dd>
                 </div>
                 <div class="flex items-center justify-between">
-                  <dt class="text-[12.5px] text-ink-500">Oylik ijara to‘lovi</dt>
-                  <dd class="tabular text-[12.5px] font-semibold text-ink-800">
+                  <dt class="text-[13px] text-ink-500">Oylik ijara to‘lovi</dt>
+                  <dd class="tabular text-[13px] font-semibold text-ink-800">
                     {{ selected.priceUnit === 'so‘m / oy' ? sum(selected.price) : '-' }}
                   </dd>
                 </div>
                 <div class="flex items-center justify-between">
-                  <dt class="text-[12.5px] text-ink-500">Shartnoma summasi</dt>
-                  <dd class="tabular text-[12.5px] font-semibold text-ink-800">
+                  <dt class="text-[13px] text-ink-500">Shartnoma summasi</dt>
+                  <dd class="tabular text-[13px] font-semibold text-ink-800">
                     {{ sum(selectedContract.amount) }}
                   </dd>
                 </div>
               </dl>
-              <p v-else class="mt-2 text-[12.5px] text-ink-500">
+              <p v-else class="mt-2 text-[13px] text-ink-500">
                 Shartnoma nusxasi hujjatlar bo‘limida saqlanadi.
               </p>
               <UiButton variant="secondary" size="sm" class="mt-3" block to="/cabinet/documents">
@@ -412,29 +412,29 @@ const planOpen = ref(false)
             <p class="mb-2 text-[13px] font-semibold text-ink-700">To‘lov holati</p>
             <div v-if="selectedInvoice" class="rounded-field p-4 ring-1 ring-ink-200">
               <div class="flex items-center justify-between gap-3">
-                <span class="text-[13.5px] font-bold text-ink-900">{{ selectedInvoice.code }}</span>
+                <span class="text-[14px] font-bold text-ink-900">{{ selectedInvoice.code }}</span>
                 <UiStatus kind="invoice" :value="selectedInvoice.status" size="sm" />
               </div>
-              <p class="tabular mt-2 text-[20px] font-bold leading-none text-ink-900">
+              <p class="tabular mt-2 text-[22px] font-bold leading-none text-ink-900">
                 {{ num(selectedInvoice.total) }}
                 <span class="text-[13px] font-medium text-ink-500">so‘m</span>
               </p>
               <div class="mt-3 space-y-1.5">
                 <div class="flex items-center justify-between">
-                  <span class="text-[12.5px] text-ink-500">To‘langan</span>
-                  <span class="tabular text-[12.5px] font-semibold text-ok-700">
+                  <span class="text-[13px] text-ink-500">To‘langan</span>
+                  <span class="tabular text-[13px] font-semibold text-ok-700">
                     {{ sum(selectedInvoice.paid) }}
                   </span>
                 </div>
                 <div class="flex items-center justify-between">
-                  <span class="text-[12.5px] text-ink-500">Qoldiq</span>
-                  <span class="tabular text-[12.5px] font-semibold text-ink-900">
+                  <span class="text-[13px] text-ink-500">Qoldiq</span>
+                  <span class="tabular text-[13px] font-semibold text-ink-900">
                     {{ sum(selectedInvoice.total - selectedInvoice.paid) }}
                   </span>
                 </div>
                 <div class="flex items-center justify-between">
-                  <span class="text-[12.5px] text-ink-500">To‘lov muddati</span>
-                  <span class="tabular text-[12.5px] font-semibold text-ink-900">
+                  <span class="text-[13px] text-ink-500">To‘lov muddati</span>
+                  <span class="tabular text-[13px] font-semibold text-ink-900">
                     {{ dateShort(selectedInvoice.dueAt) }}
                   </span>
                 </div>
@@ -456,7 +456,7 @@ const planOpen = ref(false)
                 <div class="flex items-center justify-between gap-3">
                   <span class="min-w-0">
                     <span class="block truncate text-[13px] font-semibold text-ink-900">{{ r.title }}</span>
-                    <span class="block truncate text-[11.5px] text-ink-500">{{ r.code }} · {{ r.createdAt }}</span>
+                    <span class="block truncate text-[12px] text-ink-500">{{ r.code }} · {{ r.createdAt }}</span>
                   </span>
                   <UiStatus kind="service" :value="r.status" size="sm" />
                 </div>
