@@ -28,6 +28,22 @@ const visible = computed(() =>
   scope.value === 'all' ? BUILDINGS : BUILDINGS.filter((b) => b.id === scope.value),
 )
 
+/**
+ * Panelda barcha 22 obyekt kartochkasi chiqarilardi va sahifa ikki yarim
+ * ekranga cho'zilardi. Rahbarga diqqat talab qiladigan bir nechtasi kerak,
+ * to'liq ro'yxat esa obyektlar reyestrida. Saralash: eng past bandlik va eng
+ * katta qarzdorlik yuqorida.
+ */
+const HIGHLIGHT_COUNT = 5
+
+const highlighted = computed(() => {
+  const list = [...visible.value]
+  if (list.length <= HIGHLIGHT_COUNT) return list
+  return list
+    .sort((a, b) => a.occupancy - b.occupancy || b.debt - a.debt)
+    .slice(0, HIGHLIGHT_COUNT)
+})
+
 const totals = computed(() => {
   if (scope.value === 'all') return PORTFOLIO_TOTALS
   const b = visible.value[0]!
@@ -102,9 +118,7 @@ const debtAlerts = computed(() =>
 
 const PENDING_LEASE: LeaseStatus[] = [
   'YANGI',
-  'OPERATSIYA_TASDIQLADI',
-  'MOLIYA_TASDIQLADI',
-  'QORALAMA_TAYYOR',
+  'SHARTNOMA_TAYYOR',
   'DIDOX_YUBORILDI',
   'DIDOX_IMZOLANDI',
 ]
@@ -286,7 +300,11 @@ const mapLegend = OCCUPANCY_BANDS.map((b) => ({ label: b.label, class: b.class }
     </section>
 
     <!-- Obyektlar taqqoslanishi -->
-    <UiCard title="Obyektlar taqqoslanishi" subtitle="Bandlik, tushum va qarzdorlik kesimida" flush>
+    <UiCard
+      title="Diqqat talab qiladigan obyektlar"
+      :subtitle="`Bandlik bo‘yicha eng past ${highlighted.length} ta, jami ${visible.length} ta obyekt`"
+      flush
+    >
       <template #actions>
         <UiButton variant="ghost" size="sm" to="/objects">
           Barchasi
@@ -296,7 +314,7 @@ const mapLegend = OCCUPANCY_BANDS.map((b) => ({ label: b.label, class: b.class }
 
       <div class="grid gap-4 p-5 pt-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         <NuxtLink
-          v-for="b in visible"
+          v-for="b in highlighted"
           :key="b.id"
           :to="`/objects/${b.id}`"
           class="group rounded-field p-4 ring-1 ring-ink-200 transition-all hover:shadow-card hover:ring-brand-300"
