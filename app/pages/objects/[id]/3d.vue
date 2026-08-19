@@ -51,6 +51,7 @@ const CATEGORY_OF: Record<string, string> = {
 const route = useRoute()
 const id = computed(() => String(route.params.id))
 const auth = useAuthStore()
+const { action: leadAction, label: leadLabel, staffHint } = useLeadAction()
 
 /** Biriktirilmagan obyekt 3D navigator havolasi orqali ham ochilmaydi */
 const building = computed(() => {
@@ -66,6 +67,15 @@ const showFinance = computed(
 // 0 hech qachon haqiqiy daraja emas (yer osti manfiy, yer usti 1 dan boshlanadi),
 // shu sababli birinchi kuzatuvchi reja kiritilgan eng boy qavatni ochadi.
 const selectedFloor = ref(0)
+
+/**
+ * Qavat tanlansa uning ichi darhol ochiladi: ilgari avval qavat ajratilar,
+ * so'ng rejimni qo'lda "Interyer" ga o'tkazish kerak edi.
+ */
+function openFloor(floor: number) {
+  selectedFloor.value = floor
+  viewMode.value = 'interior'
+}
 const selectedUnit = ref('')
 const viewMode = ref<ViewMode>('occupancy')
 
@@ -464,7 +474,7 @@ function goApply() {
                   :key="f.floor"
                   type="button"
                   class="rounded-pill bg-brand-50 px-3 py-1.5 text-[12px] font-semibold text-brand-700 transition-colors hover:bg-brand-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500"
-                  @click="selectedFloor = f.floor"
+                  @click="openFloor(f.floor)"
                 >
                   {{ f.name }} · {{ f.total }}
                 </button>
@@ -525,14 +535,20 @@ function goApply() {
             </div>
 
             <UiButton
-              v-if="currentUnit.status === 'VACANT'"
+              v-if="currentUnit.status === 'VACANT' && leadAction !== 'none'"
               block
               class="mt-4"
               @click="goApply"
             >
               <UiIcon name="send" :size="16" />
-              Ariza yuborish
+              {{ leadLabel }}
             </UiButton>
+            <p
+              v-else-if="currentUnit.status === 'VACANT' && staffHint"
+              class="mt-4 text-[12px] leading-relaxed text-ink-500"
+            >
+              {{ staffHint }}
+            </p>
 
             <UiButton
               block

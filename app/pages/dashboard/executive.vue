@@ -34,6 +34,35 @@ const visible = computed(() =>
  * to'liq ro'yxat esa obyektlar reyestrida. Saralash: eng past bandlik va eng
  * katta qarzdorlik yuqorida.
  */
+/**
+ * Rahbar panelida obyektning uch o'lchamli ko'rinishi. Ilgari 3D faqat
+ * obyekt kartochkasi ichida edi va rahbar uni umuman ko'rmasdi. Bu yerda
+ * portfeldagi istalgan obyektni tanlab, uchastkani darhol ko'rish mumkin.
+ */
+const view3dId = ref(BUILDINGS[0]?.id ?? '')
+
+const view3dOptions = computed(() =>
+  visible.value.map((b) => ({ value: b.id, label: b.name })),
+)
+
+const view3dBuilding = computed(
+  () => BUILDINGS.find((b) => b.id === view3dId.value) ?? visible.value[0] ?? BUILDINGS[0]!,
+)
+
+const view3dFloor = ref(1)
+const view3dUnit = ref('')
+
+// Doira boshqa obyektga o'tsa, 3D ham shunga ergashadi
+watch(
+  () => scope.value,
+  () => {
+    if (scope.value !== 'all') view3dId.value = scope.value
+    else if (!visible.value.some((b) => b.id === view3dId.value)) {
+      view3dId.value = visible.value[0]?.id ?? ''
+    }
+  },
+)
+
 const HIGHLIGHT_COUNT = 5
 
 const highlighted = computed(() => {
@@ -243,6 +272,37 @@ const mapLegend = OCCUPANCY_BANDS.map((b) => ({ label: b.label, class: b.class }
           height="368px"
           :zoom="11"
         />
+      </UiCard>
+
+      <UiCard
+        class="xl:col-span-2"
+        title="Obyektning uch o‘lchamli ko‘rinishi"
+        :subtitle="`${view3dBuilding.name} · qavatni tanlab bo‘sh maydonlarni ko‘ring`"
+        flush
+      >
+        <template #actions>
+          <UiSelect
+            v-model="view3dId"
+            :options="view3dOptions"
+            size="sm"
+            aria-label="3D uchun obyektni tanlash"
+            class="min-w-[190px]"
+          />
+          <UiButton variant="ghost" size="sm" :to="`/objects/${view3dBuilding.id}/3d`">
+            To‘liq ekran
+            <UiIcon name="chevronRight" :size="15" />
+          </UiButton>
+        </template>
+
+        <div class="px-5 pb-5">
+          <UiBuilding3D
+            v-model:floor="view3dFloor"
+            v-model:unit="view3dUnit"
+            :building="view3dBuilding"
+            :controls="false"
+            height-class="h-[320px] sm:h-[380px]"
+          />
+        </div>
       </UiCard>
 
       <UiCard title="Portfel ko‘rinishi" subtitle="Maydon taqsimoti">

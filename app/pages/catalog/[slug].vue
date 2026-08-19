@@ -20,6 +20,7 @@ const VIEW_LABELS = ['Bosh fasad', 'Yon ko‘rinish', 'Kirish va atrof', 'Umumiy
 
 const route = useRoute()
 const auth = useAuthStore()
+const { action: leadAction, label: leadLabel, staffHint } = useLeadAction()
 const building = computed(() => buildingBySlug(String(route.params.slug)))
 const units = computed(() => (building.value ? unitsOfBuilding(building.value.id) : []))
 const floors = computed(() => [...new Set(units.value.map((u) => u.floor))].sort((a, b) => a - b))

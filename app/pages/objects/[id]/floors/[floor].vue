@@ -7,6 +7,7 @@ import { buildFloorPlan } from '~/utils/floorPlan'
 
 const route = useRoute()
 const auth = useAuthStore()
+const { action: leadAction, label: leadLabel, staffHint } = useLeadAction()
 
 const id = computed(() => String(route.params.id))
 const floorNo = computed(() => Number(route.params.floor))
@@ -980,7 +981,10 @@ function goApply() {
                 <UiIcon name="eye" :size="16" />
                 Ko‘rish
               </UiButton>
-              <UiButton v-if="selected.status === 'VACANT'" @click="goApply">
+              <UiButton
+                v-if="selected.status === 'VACANT' && leadAction !== 'none'"
+                @click="goApply"
+              >
                 <UiIcon name="key" :size="16" />
                 Ariza yuborish
               </UiButton>
@@ -1112,7 +1116,10 @@ function goApply() {
 
         <template #footer>
           <UiButton variant="ghost" @click="viewOpen = false">Yopish</UiButton>
-          <UiButton v-if="selected.status === 'VACANT'" @click="goApply">
+          <UiButton
+                v-if="selected.status === 'VACANT' && leadAction !== 'none'"
+                @click="goApply"
+              >
             <UiIcon name="key" :size="16" />
             Ariza yuborish
           </UiButton>

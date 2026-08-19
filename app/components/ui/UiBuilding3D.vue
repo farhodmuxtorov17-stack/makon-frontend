@@ -1804,9 +1804,14 @@ watch(
   },
 )
 
+/**
+ * Qavat bosilganda darhol o'sha qavatning ichi ochiladi. Ilgari bosish faqat
+ * qavatni ajratardi va rejani ko'rish uchun yana bir necha qadam kerak edi.
+ */
 function pickFloor(floor: number) {
   if (blockClick) return
   emit('update:floor', floor)
+  if (props.mode !== 'interior') emit('update:mode', 'interior')
 }
 
 function pickUnit(floor: number, id: string) {
