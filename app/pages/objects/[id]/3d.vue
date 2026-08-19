@@ -68,6 +68,8 @@ const showFinance = computed(
 // shu sababli birinchi kuzatuvchi reja kiritilgan eng boy qavatni ochadi.
 const selectedFloor = ref(0)
 
+const selectedUnit = ref('')
+const viewMode = ref<ViewMode>('occupancy')
 /**
  * Qavat tanlansa uning ichi darhol ochiladi: ilgari avval qavat ajratilar,
  * so'ng rejimni qo'lda "Interyer" ga o'tkazish kerak edi.
@@ -76,8 +78,6 @@ function openFloor(floor: number) {
   selectedFloor.value = floor
   viewMode.value = 'interior'
 }
-const selectedUnit = ref('')
-const viewMode = ref<ViewMode>('occupancy')
 
 const allUnits = computed(() => (building.value ? unitsOfBuilding(building.value.id) : []))
 

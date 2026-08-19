@@ -276,14 +276,16 @@ const EXT_TONE: Record<string, string> = {
  * Reyestrdagi suratlarda bino kadr o‘rtasida turadi, tepasida osmon, pastida
  * yo‘l yoki maydoncha bo‘ladi. Devorga butun kadr emas, faqat shu oyna
  * tushiriladi, aks holda fasadning ustida osmon, ostida asfalt paydo bo‘lardi.
- * Chegaralar bino oilasi bo‘yicha tanlangan: minorada bino baland va tor,
- * omborda esa uzun past tasma bo‘lib kadrning o‘rta qismini egallaydi.
+ * Chegaralar bino oilasi bo‘yicha tanlangan va reyestrdagi hamma surat
+ * bo‘yicha tekshirilgan: oyna ichida silliq yorug‘ maydon, ya’ni osmon yoki
+ * oq fon qolmaydi. Balandlik chegarasi qat’iy, kenglik esa yuz nisbatiga
+ * qarab shu chegara ichida toraytiriladi, shunda surat cho‘zilmaydi.
  */
 const PHOTO_CROP: Record<Family, { u0: number; u1: number; v0: number; v1: number }> = {
-  tower: { u0: 0.22, u1: 0.8, v0: 0.22, v1: 0.7 },
-  retail: { u0: 0.3, u1: 0.88, v0: 0.18, v1: 0.64 },
-  shed: { u0: 0.16, u1: 0.84, v0: 0.32, v1: 0.62 },
-  resi: { u0: 0.4, u1: 0.92, v0: 0.18, v1: 0.68 },
+  tower: { u0: 0.3, u1: 0.72, v0: 0.42, v1: 0.72 },
+  retail: { u0: 0.42, u1: 0.9, v0: 0.35, v1: 0.62 },
+  shed: { u0: 0.26, u1: 0.74, v0: 0.42, v1: 0.6 },
+  resi: { u0: 0.46, u1: 0.88, v0: 0.26, v1: 0.68 },
 }
 
 /** Surat chiziladigan mahalliy kadr tomoni: matritsa shu kadrni yuzga qo‘yadi */
@@ -1372,8 +1374,8 @@ const scene = computed(() => {
 
      Aksonometriyada yuz parallelogramm bo‘lgani uchun surat aniq affin
      matritsa bilan tushadi. Uchta nuqta yetarli: yuqori chap P0, yuqori
-     o‘ng P1 va pastki chap P2. U = P1 − P0 va V = P2 − P0 vektorlari
-     mahalliy kadrning yon tomonlariga aylanadi.
+     o‘ng P1 va pastki chap P2. U = P1 ayirma P0 va V = P2 ayirma P0
+     vektorlari mahalliy kadrning yon tomonlariga aylanadi.
 
      Surat butun hajm uchun bir marta chiziladi: pastki chegara yer sathi,
      yuqorisi esa stikning eng baland nuqtasi. Yer osti darajalari qirqib
@@ -1385,10 +1387,15 @@ const scene = computed(() => {
     mode === 'occupancy' && photoOk.value && photoSrc.value !== '' && !isCut && !view.exploded
   if (usePhoto) {
     const crop = PHOTO_CROP[m.family]
-    // Kadrning qaysi qismi yuzga tushishi: oyna butun kadrga cho‘ziladi,
-    // ortiqcha chekkalar yuz konturidan tashqarida qolib qirqiladi
-    const iw = PHOTO_BOX / Math.max(crop.u1 - crop.u0, 0.05)
-    const ih = PHOTO_BOX / Math.max(crop.v1 - crop.v0, 0.05)
+    const vSpan = Math.max(crop.v1 - crop.v0, 0.05)
+    const uMid = (crop.u0 + crop.u1) / 2
+    const uMax = crop.u1 - crop.u0
+    // Oyna balandligi yuzning butun balandligiga tushadi, shuning uchun
+    // kengligi ham yuz nisbatiga qarab olinadi: shunda suratdagi deraza
+    // qatorlari cho‘zilmaydi. Xavfsiz chegaradan kengaymaydi.
+    const uSpanOf = (len: number) =>
+      clamp((vSpan * len) / Math.max(m.topZ, 1), Math.min(0.12, uMax), uMax)
+    const ih = PHOTO_BOX / vSpan
     const hw = geo.w / 2
     const hd = geo.d / 2
     const ring: Array<[number, number]> = [
@@ -1401,6 +1408,15 @@ const scene = computed(() => {
     // bir xil o‘qiladi, chunki quyosh yo‘nalishi qo‘zg‘almaydi
     let bright = -1
     for (const f of faceState) bright = Math.max(bright, f.amount)
+    /*
+     * Yuz qanchalik qorayadi. Tartib `lightOf` bilan bir xil: quyoshga
+     * qaragan yuz eng ochiq qoladi. Farq yumshoq to‘yinish bilan
+     * kuchaytiriladi, aks holda yonma-yon turgan ikki yuz bir xil zichlikda
+     * chiqib, hajm yassi ko‘rinardi. Yuqori chegara bo‘yoq rejimidagi eng
+     * to‘q yuz bilan bir darajada.
+     */
+    const darkOf = (amount: number) =>
+      Math.round((0.04 + 0.38 * (1 - Math.exp(-8 * (bright - amount)))) * 1000) / 1000
 
     for (let f = 0; f < 4; f++) {
       const state = faceState[f]!
@@ -1443,15 +1459,20 @@ const scene = computed(() => {
       const vy = (p2y - p0y) / PHOTO_BOX
       const k5 = (n: number) => Math.round(n * 100000) / 100000
 
+      // Yuz uzunligi: 0 va 2 yuzlar kontur eni, 1 va 3 yuzlar chuqurligi
+      const uSpan = uSpanOf(f % 2 === 0 ? geo.w : geo.d)
+      const u0 = uMid - uSpan / 2
+      const iw = PHOTO_BOX / uSpan
+
       photo.push({
         f,
         d: shell.join(''),
         m: `matrix(${k5(ux)},${k5(uy)},${k5(vx)},${k5(vy)},${p0x},${p0y})`,
-        x: r1(-crop.u0 * iw),
+        x: r1(-u0 * iw),
         y: r1(-crop.v0 * ih),
         w: r1(iw),
         h: r1(ih),
-        dark: Math.round(clamp(0.05 + (bright - state.amount) * 2, 0, 0.38) * 1000) / 1000,
+        dark: darkOf(state.amount),
       })
     }
   }
