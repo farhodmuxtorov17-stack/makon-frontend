@@ -9,6 +9,14 @@ definePageMeta({ layout: 'public' })
 
 const { t } = useI18n()
 
+/**
+ * Xarita bosilgandan keyin ochiladi. Sabab ikkita: birinchi ekranda u
+ * diqqatni tortib oladi va foydalanuvchi qidiruvdan chalg'iydi; ikkinchidan
+ * plitkalar yuklanishi sahifa ochilishini sekinlashtiradi. Bosilmaguncha
+ * o'rnida yengil taklif turadi.
+ */
+const mapOpen = ref(false)
+
 interface Listing {
   unit: Unit
   building: Building
@@ -145,15 +153,6 @@ const mapStats = computed(() => [
 const mapLegend = computed(() =>
   OCCUPANCY_BANDS.map((b) => ({ label: t(b.labelKey), class: b.class })),
 )
-
-const objects = computed(() => [...BUILDINGS].sort((a, b) => a.name.localeCompare(b.name)))
-
-/** Bandlik rangi xarita nishonchalari bilan bitta shkalada */
-function occupancyTone(value: number) {
-  if (value >= 90) return 'bg-ok-500'
-  if (value >= 84) return 'bg-brand-500'
-  return 'bg-warn-500'
-}
 
 // --- Sevimlilar ------------------------------------------------------------
 
@@ -446,6 +445,7 @@ const STEPS = [
 
         <div class="mt-9">
           <UiMap
+            v-if="mapOpen"
             :markers="mapMarkers"
             :stats="mapStats"
             :legend="mapLegend"
@@ -453,37 +453,25 @@ const STEPS = [
             :zoom="11"
             :min-zoom="11"
           />
+
+          <button
+            v-else
+            type="button"
+            class="group flex w-full flex-col items-center justify-center gap-3 rounded-panel bg-surface-sunken px-6 py-14 ring-1 ring-inset ring-ink-200 transition-colors duration-150 hover:bg-brand-50/60 hover:ring-brand-300"
+            @click="mapOpen = true"
+          >
+            <span
+              class="grid size-12 place-items-center rounded-full bg-white text-brand-600 shadow-card ring-1 ring-ink-200 transition-colors duration-150 group-hover:ring-brand-300"
+            >
+              <UiIcon name="map" :size="22" />
+            </span>
+            <span class="text-[16px] font-bold text-ink-900">{{ t('landing.mapOpen') }}</span>
+            <span class="max-w-[46ch] text-[13px] leading-relaxed text-ink-500">
+              {{ t('landing.mapOpenHint', { count: PORTFOLIO_TOTALS.buildings }) }}
+            </span>
+          </button>
         </div>
 
-        <ul class="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          <li v-for="o in objects" :key="o.id">
-            <NuxtLink
-              :to="`/catalog/${o.slug}`"
-              class="flex h-full flex-col justify-between gap-3 rounded-card bg-surface p-4 shadow-card ring-1 ring-ink-200/70 transition-shadow duration-200 hover:shadow-pop"
-            >
-              <span class="min-w-0">
-                <span class="block truncate text-[14px] font-bold text-ink-900">
-                  {{ o.name }}
-                </span>
-                <span class="mt-0.5 block truncate text-[12px] text-ink-500">
-                  {{ o.district }}
-                </span>
-              </span>
-              <span class="flex items-center gap-2.5">
-                <span class="h-1.5 flex-1 overflow-hidden rounded-pill bg-ink-100">
-                  <span
-                    class="block h-full rounded-pill"
-                    :class="occupancyTone(o.occupancy)"
-                    :style="{ width: `${o.occupancy}%` }"
-                  />
-                </span>
-                <span class="tabular shrink-0 text-[12px] font-bold text-ink-700">
-                  {{ percent(o.occupancy) }}
-                </span>
-              </span>
-            </NuxtLink>
-          </li>
-        </ul>
       </div>
     </section>
 

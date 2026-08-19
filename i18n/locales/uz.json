@@ -371,7 +371,9 @@
     "ctaTitle": "Mos maydon topilmadimi?",
     "ctaText": "Byudjet va muddatni qoldiring. Ro‘yxatdan o‘tish talab etilmaydi, mutaxassis variantlarni o‘zi tanlab beradi.",
     "ctaPhotoAlt": "Urban Office ofis binosi",
-    "ctaCatalog": "Bo‘sh joylar katalogi"
+    "ctaCatalog": "Bo‘sh joylar katalogi",
+    "mapOpen": "Xaritani ochish",
+    "mapOpenHint": "{count} ta obyekt xaritada belgilangan. Kerakli hududni tanlab, bo‘sh maydonlarni ko‘ring."
   },
   "apply": {
     "cta": "Ariza yuborish",
