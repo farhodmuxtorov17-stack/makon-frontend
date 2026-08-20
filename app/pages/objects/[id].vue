@@ -115,14 +115,23 @@ const spec = computed<SpecRow[]>(() => {
         : String(b.floors),
     },
     { label: t("kpi.unitCount"), value: num(b.units) },
+    /*
+     * Unit SONI yonidagi ulush ham unit soni bo'yicha hisoblanadi.
+     *
+     * Ilgari bu yerda maydon bo'yicha bandlik foizi turardi: «45 (50%)» va
+     * «18 (50%)» deb chiqar, ya'ni ikkala qatorda bir xil foiz bo'lar va
+     * sonlar jamiga (77) yetmasdi. Rezerv, ta'mir va yashirilgan unitlar na
+     * band, na bo'sh sanaladi, shuning uchun ulush jamining ulushi sifatida
+     * ko'rsatiladi. Maydon bo'yicha bandlik yuqoridagi alohida kartada.
+     */
     {
       label: field("occupiedUnits"),
-      value: `${num(b.occupiedUnits)} (${percent(b.occupancy)})`,
+      value: `${num(b.occupiedUnits)} (${percent(b.units ? Math.round((b.occupiedUnits / b.units) * 100) : 0)})`,
       tone: "ok",
     },
     {
       label: field("vacantUnits"),
-      value: `${num(b.vacantUnits)} (${percent(100 - b.occupancy)})`,
+      value: `${num(b.vacantUnits)} (${percent(b.units ? Math.round((b.vacantUnits / b.units) * 100) : 0)})`,
       tone: "warn",
     },
     { label: field("equipment"), value: b.equipment.join(", ") },
@@ -133,7 +142,14 @@ const floors = computed(() => {
   const b = building.value;
   if (!b) return [];
   const list = Array.from({ length: b.floors }, (_, i) => b.floors - i);
-  if (b.undergroundFloors) list.push(0);
+
+  /*
+   * Yer osti darajalari -1, -2 raqamlari bilan yuritiladi. Ilgari bu yerda
+   * ro'yxatga 0 qo'shilardi: shunday qavat mavjud emas, shuning uchun
+   * ro'yxatda unitsiz bo'sh «0-qavat» qatori chiqar, haqiqiy yer osti
+   * qavatlari esa umuman ko'rinmasdi.
+   */
+  for (let i = 1; i <= b.undergroundFloors; i++) list.push(-i);
   return list.map((floor) => {
     const floorUnits = unitsOfFloor(b.id, floor);
     return {

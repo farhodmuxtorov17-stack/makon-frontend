@@ -1,65 +1,67 @@
 <script setup lang="ts">
-import { ROLE_TONE_CLASSES } from '~/constants/roles'
-import { NOTIFICATIONS, type AppNotification } from '~/data/operations'
+import { ROLE_TONE_CLASSES } from "~/constants/roles";
+import { NOTIFICATIONS, type AppNotification } from "~/data/operations";
 
 defineProps<{
-  title?: string
-  subtitle?: string
-  breadcrumb?: Array<{ label: string; to?: string }>
-}>()
+  title?: string;
+  subtitle?: string;
+  breadcrumb?: Array<{ label: string; to?: string }>;
+}>();
 
-const auth = useAuthStore()
-const route = useRoute()
-const { t, roleLabel } = useAppLabels()
+const auth = useAuthStore();
+const route = useRoute();
+const { t, roleLabel } = useAppLabels();
 
 // --- Ko‘rsatkichlar: valyuta kursi va ob-havo ------------------------------
 
-const { rates, usd, weather, load } = useHeaderData()
-const fetched = useState('header-fetched', () => false)
+const { rates, usd, weather, load } = useHeaderData();
+const fetched = useState("header-fetched", () => false);
 
 onMounted(() => {
-  if (fetched.value) return
-  fetched.value = true
-  load()
-})
+  if (fetched.value) return;
+  fetched.value = true;
+  load();
+});
 
 const WEATHER_TONE: Record<string, string> = {
-  sun: 'text-warn-500',
-  cloudSun: 'text-warn-500',
-  cloud: 'text-ink-400',
-  fog: 'text-ink-400',
-  drizzle: 'text-brand-400',
-  rain: 'text-brand-500',
-  snow: 'text-brand-300',
-  storm: 'text-info-500',
-}
+  sun: "text-warn-500",
+  cloudSun: "text-warn-500",
+  cloud: "text-ink-400",
+  fog: "text-ink-400",
+  drizzle: "text-brand-400",
+  rain: "text-brand-500",
+  snow: "text-brand-300",
+  storm: "text-info-500",
+};
 
-const weatherTone = computed(() => WEATHER_TONE[weather.value.icon] ?? 'text-ink-400')
+const weatherTone = computed(
+  () => WEATHER_TONE[weather.value.icon] ?? "text-ink-400",
+);
 
 const CURRENCY_KEY: Record<string, string> = {
-  USD: 'shell.currencyUSD',
-  EUR: 'shell.currencyEUR',
-  RUB: 'shell.currencyRUB',
-}
+  USD: "shell.currencyUSD",
+  EUR: "shell.currencyEUR",
+  RUB: "shell.currencyRUB",
+};
 
-const ORDER = ['USD', 'EUR', 'RUB']
+const ORDER = ["USD", "EUR", "RUB"];
 
 const rateList = computed(() =>
   rates.value
     .filter((r) => ORDER.includes(r.code))
     .slice()
     .sort((a, b) => ORDER.indexOf(a.code) - ORDER.indexOf(b.code)),
-)
+);
 
 /** Ming xonalar orasida bo‘shliq, kasr qismi nuqta bilan */
 function money(value: number, digits = 2) {
-  const [int = '0', frac] = Math.abs(value).toFixed(digits).split('.')
-  const grouped = int.replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
-  return `${value < 0 ? '-' : ''}${grouped}${frac ? `.${frac}` : ''}`
+  const [int = "0", frac] = Math.abs(value).toFixed(digits).split(".");
+  const grouped = int.replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+  return `${value < 0 ? "-" : ""}${grouped}${frac ? `.${frac}` : ""}`;
 }
 
 function signedDiff(value: number) {
-  return `${value > 0 ? '+' : ''}${money(value)}`
+  return `${value > 0 ? "+" : ""}${money(value)}`;
 }
 
 /**
@@ -67,30 +69,37 @@ function signedDiff(value: number) {
  * ink-500 4.76:1. ok-600 (3.17:1) matn uchun yetarli emas edi.
  */
 function diffTone(value: number) {
-  return value > 0 ? 'text-ok-700' : value < 0 ? 'text-danger-600' : 'text-ink-500'
+  return value > 0
+    ? "text-ok-700"
+    : value < 0
+      ? "text-danger-600"
+      : "text-ink-500";
 }
 
 function diffIcon(value: number) {
-  return value > 0 ? 'arrowUp' : value < 0 ? 'arrowDown' : 'minus'
+  return value > 0 ? "arrowUp" : value < 0 ? "arrowDown" : "minus";
 }
 
 // --- Ochiladigan panellar --------------------------------------------------
 
-type Panel = 'rate' | 'bell' | 'profile'
+type Panel = "rate" | "bell" | "profile";
 
-const panel = ref<Panel | null>(null)
-const cluster = ref<HTMLElement | null>(null)
+const panel = ref<Panel | null>(null);
+const cluster = ref<HTMLElement | null>(null);
 
-onClickOutside(cluster, () => (panel.value = null))
-onKeyStroke('Escape', () => (panel.value = null))
-watch(() => route.fullPath, () => (panel.value = null))
+onClickOutside(cluster, () => (panel.value = null));
+onKeyStroke("Escape", () => (panel.value = null));
+watch(
+  () => route.fullPath,
+  () => (panel.value = null),
+);
 
 function toggle(name: Panel) {
-  panel.value = panel.value === name ? null : name
+  panel.value = panel.value === name ? null : name;
 }
 
 function closeRate() {
-  if (panel.value === 'rate') panel.value = null
+  if (panel.value === "rate") panel.value = null;
 }
 
 // --- Bildirishnomalar ------------------------------------------------------
@@ -101,43 +110,43 @@ function closeRate() {
  * u faqat billing moduli ochiq rollarga ko'rinadi. Qoida bitta joyda
  * turadi, aks holda qo'ng'iroq filtrlaydi-yu sahifa ochiq ko'rsatadi.
  */
-const { items: visible, unread, markRead, markAllRead } = useNotifications()
+const { items: visible, unread, markRead, markAllRead } = useNotifications();
 
-const recent = computed(() => visible.value.slice(0, 5))
+const recent = computed(() => visible.value.slice(0, 5));
 
 const NOTIFICATION_TONE: Record<string, string> = {
-  'To‘lovlar': 'bg-warn-50 text-warn-600',
-  Arizalar: 'bg-info-50 text-info-600',
-  Servis: 'bg-ok-50 text-ok-600',
-  Hujjatlar: 'bg-brand-50 text-brand-600',
-  Tizim: 'bg-ink-100 text-ink-600',
-}
+  "To‘lovlar": "bg-warn-50 text-warn-600",
+  Arizalar: "bg-info-50 text-info-600",
+  Servis: "bg-ok-50 text-ok-600",
+  Hujjatlar: "bg-brand-50 text-brand-600",
+  Tizim: "bg-ink-100 text-ink-600",
+};
 
 function openNotification(item: AppNotification) {
-  markRead(item.id)
-  panel.value = null
+  markRead(item.id);
+  panel.value = null;
 }
 
 // --- Profil ----------------------------------------------------------------
 
 const initials = computed(() =>
-  (auth.user?.fullName ?? '')
-    .split(' ')
+  (auth.user?.fullName ?? "")
+    .split(" ")
     .filter(Boolean)
     .slice(0, 2)
     .map((word) => word[0])
-    .join('')
+    .join("")
     .toUpperCase(),
-)
+);
 
 const settingsTo = computed(() =>
-  auth.canRoute('/settings/users') ? '/settings/users' : '/profile',
-)
+  auth.canRoute("/settings/users") ? "/settings/users" : "/profile",
+);
 
 function signOut() {
-  panel.value = null
-  auth.signOut()
-  navigateTo('/login')
+  panel.value = null;
+  auth.signOut();
+  navigateTo("/login");
 }
 </script>
 
@@ -150,7 +159,10 @@ function signOut() {
     >
       <!-- Sahifa sarlavhasi -->
       <div class="min-w-0 flex-1 basis-full lg:basis-auto lg:min-w-[180px]">
-        <nav v-if="breadcrumb?.length" class="mb-0.5 flex flex-wrap items-center gap-1.5 text-[12px]">
+        <nav
+          v-if="breadcrumb?.length"
+          class="mb-0.5 flex flex-wrap items-center gap-1.5 text-[12px]"
+        >
           <template v-for="(c, i) in breadcrumb" :key="i">
             <NuxtLink
               v-if="c.to"
@@ -169,8 +181,12 @@ function signOut() {
           </template>
         </nav>
 
-        <h1 v-if="title" class="truncate text-[22px] font-bold text-ink-900">{{ title }}</h1>
-        <p v-if="subtitle" class="truncate text-[13px] text-ink-500">{{ subtitle }}</p>
+        <h1 v-if="title" class="truncate text-[22px] font-bold text-ink-900">
+          {{ title }}
+        </h1>
+        <p v-if="subtitle" class="truncate text-[13px] text-ink-500">
+          {{ subtitle }}
+        </p>
       </div>
 
       <!-- O‘ng blok -->
@@ -179,22 +195,31 @@ function signOut() {
         class="relative flex min-w-0 flex-wrap items-center justify-end gap-2 lg:flex-nowrap"
       >
         <template v-if="$slots.actions">
-          <div class="flex min-w-0 flex-wrap items-center justify-end gap-2 lg:flex-nowrap">
+          <div
+            class="flex min-w-0 flex-wrap items-center justify-end gap-2 lg:flex-nowrap"
+          >
             <slot name="actions" />
           </div>
-          <span class="hidden h-6 w-px shrink-0 bg-ink-200 sm:block" aria-hidden="true" />
+          <span
+            class="hidden h-6 w-px shrink-0 bg-ink-200 sm:block"
+            aria-hidden="true"
+          />
         </template>
 
         <!-- Ob-havo -->
         <div class="hidden shrink-0 items-center gap-2 pr-0.5 sm:flex">
-          <span class="sr-only">{{ t('shell.weatherOf', { city: weather.city }) }}</span>
+          <span class="sr-only">{{
+            t("shell.weatherOf", { city: weather.city })
+          }}</span>
           <UiIcon :name="weather.icon" :size="19" :class="weatherTone" />
           <span class="tabular text-[14px] font-semibold text-ink-800">
             {{ weather.tempC }}°
           </span>
           <span class="text-[13px] leading-tight text-ink-500 max-xl:sr-only">
             {{ weather.label }}
-            <span class="block text-[11px]" aria-hidden="true">{{ weather.city }}</span>
+            <span class="block text-[11px]" aria-hidden="true">{{
+              weather.city
+            }}</span>
           </span>
         </div>
 
@@ -213,14 +238,19 @@ function signOut() {
             :aria-expanded="panel === 'rate'"
             @click="toggle('rate')"
           >
-            <span class="sr-only">{{ t('shell.ratesLabel') }}</span>
-            <span class="hidden text-[11px] font-semibold uppercase tracking-wide text-ink-500 xl:block">
+            <span class="sr-only">{{ t("shell.ratesLabel") }}</span>
+            <span
+              class="hidden text-[11px] font-semibold uppercase tracking-wide text-ink-500 xl:block"
+            >
               1 USD
             </span>
             <span class="tabular text-[14px] font-semibold text-ink-800">
               {{ money(usd.rate) }}
             </span>
-            <span class="flex items-center gap-0.5 text-[12px] font-semibold" :class="diffTone(usd.diff)">
+            <span
+              class="flex items-center gap-0.5 text-[12px] font-semibold"
+              :class="diffTone(usd.diff)"
+            >
               <UiIcon :name="diffIcon(usd.diff)" :size="12" />
               <span class="tabular">{{ signedDiff(usd.diff) }}</span>
             </span>
@@ -238,8 +268,12 @@ function signOut() {
               :aria-label="t('shell.ratesDialog')"
               class="absolute right-0 z-30 mt-2 w-[300px] max-w-[calc(100vw-2rem)] overflow-hidden rounded-panel bg-surface shadow-pop ring-1 ring-ink-200"
             >
-              <div class="flex items-center justify-between gap-3 border-b border-ink-100 px-4 py-3">
-                <p class="text-[13px] font-semibold text-ink-900">{{ t('shell.ratesTitle') }}</p>
+              <div
+                class="flex items-center justify-between gap-3 border-b border-ink-100 px-4 py-3"
+              >
+                <p class="text-[13px] font-semibold text-ink-900">
+                  {{ t("shell.ratesTitle") }}
+                </p>
                 <p class="tabular text-[12px] text-ink-500">{{ usd.date }}</p>
               </div>
 
@@ -254,11 +288,17 @@ function signOut() {
                   >
                     {{ r.code }}
                   </span>
-                  <span class="min-w-0 flex-1 truncate text-[13px] text-ink-600">
-                    {{ CURRENCY_KEY[r.code] ? t(CURRENCY_KEY[r.code]!) : r.label }}
+                  <span
+                    class="min-w-0 flex-1 truncate text-[13px] text-ink-600"
+                  >
+                    {{
+                      CURRENCY_KEY[r.code] ? t(CURRENCY_KEY[r.code]!) : r.label
+                    }}
                   </span>
                   <span class="shrink-0 text-right">
-                    <span class="tabular block text-[13px] font-semibold text-ink-900">
+                    <span
+                      class="tabular block text-[13px] font-semibold text-ink-900"
+                    >
                       {{ money(r.rate) }}
                     </span>
                     <span
@@ -272,8 +312,10 @@ function signOut() {
                 </li>
               </ul>
 
-              <p class="bg-surface-sunken px-4 py-2.5 text-[12px] leading-snug text-ink-500">
-                {{ t('shell.ratesSource') }}
+              <p
+                class="bg-surface-sunken px-4 py-2.5 text-[12px] leading-snug text-ink-500"
+              >
+                {{ t("shell.ratesSource") }}
               </p>
             </div>
           </Transition>
@@ -290,7 +332,9 @@ function signOut() {
             class="relative grid size-10 place-items-center rounded-field text-ink-500 transition-colors hover:bg-ink-100 hover:text-ink-800"
             :class="panel === 'bell' ? 'bg-ink-100 text-ink-800' : ''"
             :aria-label="
-              unread ? t('shell.notificationsAria', { count: unread }) : t('common.notifications')
+              unread
+                ? t('shell.notificationsAria', { count: unread })
+                : t('common.notifications')
             "
             aria-haspopup="menu"
             :aria-expanded="panel === 'bell'"
@@ -315,42 +359,61 @@ function signOut() {
               v-if="panel === 'bell'"
               class="absolute right-0 top-full z-30 mt-2 w-[336px] max-w-[calc(100vw-2rem)] overflow-hidden rounded-panel bg-surface shadow-pop ring-1 ring-ink-200"
             >
-              <div class="flex items-center justify-between gap-3 border-b border-ink-100 px-4 py-3">
+              <div
+                class="flex items-center justify-between gap-3 border-b border-ink-100 px-4 py-3"
+              >
                 <p class="text-[14px] font-semibold text-ink-900">
-                  {{ t('common.notifications') }}
+                  {{ t("common.notifications") }}
                 </p>
                 <span
                   v-if="unread"
                   class="tabular rounded-pill bg-danger-50 px-2 py-0.5 text-[11px] font-bold text-danger-700"
                 >
-                  {{ t('shell.notificationsNew', { count: unread }) }}
+                  {{ t("shell.notificationsNew", { count: unread }) }}
                 </span>
                 <span v-else class="text-[12px] text-ink-500">
-                  {{ t('shell.notificationsNone') }}
+                  {{ t("shell.notificationsNone") }}
                 </span>
               </div>
 
-              <ul v-if="recent.length" class="scroll-slim max-h-[320px] divide-y divide-ink-100 overflow-y-auto">
+              <ul
+                v-if="recent.length"
+                class="scroll-slim max-h-[320px] divide-y divide-ink-100 overflow-y-auto"
+              >
                 <li v-for="n in recent" :key="n.id">
+                  <!--
+                    Bosilgan bildirishnoma identifikatori havolada uzatiladi.
+                    Ilgari havola shunchaki `/notifications` edi va sahifa
+                    qaysi yozuv bosilganidan qat'i nazar birinchisini ochardi.
+                  -->
                   <NuxtLink
-                    to="/notifications"
+                    :to="{ path: '/notifications', query: { id: n.id } }"
                     class="flex items-start gap-3 px-4 py-3 transition-colors hover:bg-ink-50"
                     @click="openNotification(n)"
                   >
                     <span
                       class="grid size-9 shrink-0 place-items-center rounded-[10px]"
-                      :class="NOTIFICATION_TONE[n.category] ?? 'bg-ink-100 text-ink-600'"
+                      :class="
+                        NOTIFICATION_TONE[n.category] ??
+                        'bg-ink-100 text-ink-600'
+                      "
                     >
                       <UiIcon :name="n.icon" :size="17" />
                     </span>
                     <span class="min-w-0 flex-1">
                       <span
                         class="block truncate text-[13px]"
-                        :class="n.read ? 'font-medium text-ink-700' : 'font-bold text-ink-900'"
+                        :class="
+                          n.read
+                            ? 'font-medium text-ink-700'
+                            : 'font-bold text-ink-900'
+                        "
                       >
                         {{ n.title }}
                       </span>
-                      <span class="mt-0.5 block truncate text-[12px] text-ink-500">
+                      <span
+                        class="mt-0.5 block truncate text-[12px] text-ink-500"
+                      >
                         {{ n.category }} · {{ n.at }}
                       </span>
                     </span>
@@ -364,29 +427,33 @@ function signOut() {
               </ul>
 
               <div v-else class="px-4 py-10 text-center">
-                <span class="mx-auto grid size-11 place-items-center rounded-full bg-ink-100 text-ink-400">
+                <span
+                  class="mx-auto grid size-11 place-items-center rounded-full bg-ink-100 text-ink-400"
+                >
                   <UiIcon name="bell" :size="20" />
                 </span>
                 <p class="mt-2.5 text-[13px] text-ink-500">
-                  {{ t('shell.notificationsEmpty') }}
+                  {{ t("shell.notificationsEmpty") }}
                 </p>
               </div>
 
-              <div class="flex items-center justify-between gap-2 border-t border-ink-100 px-2 py-2">
+              <div
+                class="flex items-center justify-between gap-2 border-t border-ink-100 px-2 py-2"
+              >
                 <button
                   type="button"
                   class="flex h-10 items-center rounded-[8px] px-2.5 text-[12px] font-semibold text-ink-600 transition-colors hover:bg-ink-100 hover:text-ink-900 disabled:cursor-not-allowed disabled:opacity-40"
                   :disabled="!unread"
                   @click="markAllRead"
                 >
-                  {{ t('shell.notificationsMarkAll') }}
+                  {{ t("shell.notificationsMarkAll") }}
                 </button>
                 <NuxtLink
                   to="/notifications"
                   class="flex h-10 items-center gap-1 rounded-[8px] px-2.5 text-[12px] font-semibold text-brand-600 transition-colors hover:bg-brand-50"
                   @click="panel = null"
                 >
-                  {{ t('shell.notificationsAll') }}
+                  {{ t("shell.notificationsAll") }}
                   <UiIcon name="chevronRight" :size="13" />
                 </NuxtLink>
               </div>
@@ -400,7 +467,9 @@ function signOut() {
             type="button"
             class="flex h-10 items-center gap-1.5 rounded-field pl-0.5 pr-1 transition-colors hover:bg-ink-100"
             :class="panel === 'profile' ? 'bg-ink-100' : ''"
-            :aria-label="t('shell.profileMenuAria', { name: auth.user?.fullName ?? '' })"
+            :aria-label="
+              t('shell.profileMenuAria', { name: auth.user?.fullName ?? '' })
+            "
             aria-haspopup="menu"
             :aria-expanded="panel === 'profile'"
             @click="toggle('profile')"
@@ -430,7 +499,9 @@ function signOut() {
               role="menu"
               class="absolute right-0 top-full z-30 mt-2 w-[272px] max-w-[calc(100vw-2rem)] overflow-hidden rounded-panel bg-surface shadow-pop ring-1 ring-ink-200"
             >
-              <div class="flex items-start gap-3 border-b border-ink-100 px-4 py-3.5">
+              <div
+                class="flex items-start gap-3 border-b border-ink-100 px-4 py-3.5"
+              >
                 <UiAvatar
                   :user-id="auth.user?.id"
                   :full-name="auth.user?.fullName ?? ''"
@@ -442,7 +513,9 @@ function signOut() {
                   <p class="truncate text-[14px] font-semibold text-ink-900">
                     {{ auth.user?.fullName }}
                   </p>
-                  <p class="truncate text-[12px] text-ink-500">{{ auth.user?.position }}</p>
+                  <p class="truncate text-[12px] text-ink-500">
+                    {{ auth.user?.position }}
+                  </p>
                   <span
                     v-if="auth.roleMeta"
                     class="mt-1.5 inline-flex rounded-pill px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide ring-1 ring-inset"
@@ -461,7 +534,7 @@ function signOut() {
                   @click="panel = null"
                 >
                   <UiIcon name="user" :size="18" class="text-ink-500" />
-                  {{ t('shell.myProfile') }}
+                  {{ t("shell.myProfile") }}
                 </NuxtLink>
                 <NuxtLink
                   :to="settingsTo"
@@ -470,7 +543,7 @@ function signOut() {
                   @click="panel = null"
                 >
                   <UiIcon name="gear" :size="18" class="text-ink-500" />
-                  {{ t('common.settings') }}
+                  {{ t("common.settings") }}
                 </NuxtLink>
               </div>
 
@@ -482,7 +555,7 @@ function signOut() {
                   @click="signOut"
                 >
                   <UiIcon name="logout" :size="18" />
-                  {{ t('common.signOut') }}
+                  {{ t("common.signOut") }}
                 </button>
               </div>
             </div>

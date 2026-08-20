@@ -1,157 +1,158 @@
 <script setup lang="ts">
-import { useStorage } from '@vueuse/core'
-import { CONTACT } from '~/constants/contacts'
+import { useStorage } from "@vueuse/core";
+import { CONTACT } from "~/constants/contacts";
 
-const route = useRoute()
-const { t } = useI18n()
+const route = useRoute();
+const { t } = useI18n();
 
 /** Sahifa butun ekranni egallasa (katalog qidiruvi), pastki blok chiqarilmaydi */
-const fullscreen = computed(() => route.meta.fullscreen === true)
+const fullscreen = computed(() => route.meta.fullscreen === true);
 
 /** Sarlavhada ikkita havola: katalog va obyektlar, boshqasi pastki blokda */
 const HEADER_NAV = [
-  { key: 'public.navCatalog', to: '/catalog' },
-  { key: 'public.navObjects', to: '/#obyektlar' },
-]
+  { key: "public.navCatalog", to: "/catalog" },
+  { key: "public.navObjects", to: "/#obyektlar" },
+];
 
 /** Mobil menyuda to‘liq ro‘yxat */
 const NAV = [
-  { key: 'public.navCatalog', to: '/catalog' },
-  { key: 'public.navObjects', to: '/#obyektlar' },
-  { key: 'public.navFavourites', to: '/catalog?fav=1' },
-  { key: 'public.navApply', to: '/ariza' },
-  { key: 'nav.help', to: '/help' },
-]
+  { key: "public.navCatalog", to: "/catalog" },
+  { key: "public.navObjects", to: "/#obyektlar" },
+  { key: "public.navFavourites", to: "/catalog?fav=1" },
+  { key: "public.navApply", to: "/ariza" },
+  { key: "nav.help", to: "/help" },
+];
 
-const favourites = useStorage<string[]>('makon.favourites', [])
+const favourites = useStorage<string[]>("makon.favourites", []);
 
 const QUICK = [
-  { key: 'public.quickCatalog', to: '/catalog' },
-  { key: 'public.quickMap', to: '/#obyektlar' },
-  { key: 'public.quickFavourites', to: '/catalog?fav=1' },
-  { key: 'public.navApply', to: '/ariza' },
-  { key: 'public.quickHelp', to: '/help' },
-]
+  { key: "public.quickCatalog", to: "/catalog" },
+  { key: "public.quickMap", to: "/#obyektlar" },
+  { key: "public.quickFavourites", to: "/catalog?fav=1" },
+  { key: "public.navApply", to: "/ariza" },
+  { key: "public.quickHelp", to: "/help" },
+];
 
 const CATEGORIES = [
-  { key: 'public.categoryBiznes', to: '/catalog?type=biznes' },
-  { key: 'public.categoryOfis', to: '/catalog?type=ofis' },
-  { key: 'public.categorySavdo', to: '/catalog?type=savdo' },
-  { key: 'public.categoryOmbor', to: '/catalog?type=ombor' },
-  { key: 'public.categoryTurar', to: '/catalog?type=turar' },
-]
+  { key: "public.categoryBiznes", to: "/catalog?type=biznes" },
+  { key: "public.categoryOfis", to: "/catalog?type=ofis" },
+  { key: "public.categorySavdo", to: "/catalog?type=savdo" },
+  { key: "public.categoryOmbor", to: "/catalog?type=ombor" },
+  { key: "public.categoryTurar", to: "/catalog?type=turar" },
+];
 
 /** Rekvizitlar `~/constants/contacts` dan: butun sayt bo‘yicha bitta manba */
 const CONTACTS = computed(() => [
   {
-    d: 'M12 21s7-5.8 7-11a7 7 0 1 0-14 0c0 5.2 7 11 7 11zM12 12.6a2.6 2.6 0 1 0 0-5.2 2.6 2.6 0 0 0 0 5.2z',
+    d: "M12 21s7-5.8 7-11a7 7 0 1 0-14 0c0 5.2 7 11 7 11zM12 12.6a2.6 2.6 0 1 0 0-5.2 2.6 2.6 0 0 0 0 5.2z",
     label: CONTACT.address,
-    note: t('public.contactAddressNote'),
-    href: '',
+    note: t("public.contactAddressNote"),
+    href: "",
   },
   {
-    d: 'M6.5 3.5h3l1.5 4-2 1.5a11 11 0 0 0 5 5l1.5-2 4 1.5v3a2 2 0 0 1-2 2A15.5 15.5 0 0 1 4.5 5.5a2 2 0 0 1 2-2z',
+    d: "M6.5 3.5h3l1.5 4-2 1.5a11 11 0 0 0 5 5l1.5-2 4 1.5v3a2 2 0 0 1-2 2A15.5 15.5 0 0 1 4.5 5.5a2 2 0 0 1 2-2z",
     label: CONTACT.phone,
-    note: t('public.contactHours'),
+    note: t("public.contactHours"),
     href: CONTACT.phoneHref,
   },
   {
-    d: 'M3.5 6.5h17v11h-17zM3.5 7l8.5 6 8.5-6',
+    d: "M3.5 6.5h17v11h-17zM3.5 7l8.5 6 8.5-6",
     label: CONTACT.email,
-    note: t('public.contactEmailNote'),
+    note: t("public.contactEmailNote"),
     href: CONTACT.emailHref,
   },
-])
+]);
 
-const year = new Date().getFullYear()
+const year = new Date().getFullYear();
 
 function isActive(to: string) {
-  if (to.startsWith('/#')) return route.path === '/' && route.hash === to.slice(1)
-  return route.path === to || route.path.startsWith(`${to}/`)
+  if (to.startsWith("/#"))
+    return route.path === "/" && route.hash === to.slice(1);
+  return route.path === to || route.path.startsWith(`${to}/`);
 }
 
-const scrolled = ref(false)
+const scrolled = ref(false);
 
 function onScroll() {
-  scrolled.value = window.scrollY > 40
+  scrolled.value = window.scrollY > 40;
 }
 
 // --- Mobil menyu -----------------------------------------------------------
 
-const menuOpen = ref(false)
-const drawer = ref<HTMLElement | null>(null)
-const menuToggle = ref<HTMLButtonElement | null>(null)
+const menuOpen = ref(false);
+const drawer = ref<HTMLElement | null>(null);
+const menuToggle = ref<HTMLButtonElement | null>(null);
 
 const FOCUSABLE =
-  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 function focusables(): HTMLElement[] {
-  if (!drawer.value) return []
-  return Array.from(drawer.value.querySelectorAll<HTMLElement>(FOCUSABLE)).filter(
-    (el) => el.offsetParent !== null,
-  )
+  if (!drawer.value) return [];
+  return Array.from(
+    drawer.value.querySelectorAll<HTMLElement>(FOCUSABLE),
+  ).filter((el) => el.offsetParent !== null);
 }
 
 function closeMenu() {
-  menuOpen.value = false
+  menuOpen.value = false;
 }
 
 function onKeydown(e: KeyboardEvent) {
-  if (!menuOpen.value) return
+  if (!menuOpen.value) return;
 
-  if (e.key === 'Escape') {
-    e.preventDefault()
-    closeMenu()
-    return
+  if (e.key === "Escape") {
+    e.preventDefault();
+    closeMenu();
+    return;
   }
 
-  if (e.key !== 'Tab') return
+  if (e.key !== "Tab") return;
 
-  const items = focusables()
-  if (!items.length) return
+  const items = focusables();
+  if (!items.length) return;
 
-  const first = items[0]!
-  const last = items[items.length - 1]!
-  const current = document.activeElement as HTMLElement | null
-  const inside = !!current && !!drawer.value?.contains(current)
+  const first = items[0]!;
+  const last = items[items.length - 1]!;
+  const current = document.activeElement as HTMLElement | null;
+  const inside = !!current && !!drawer.value?.contains(current);
 
   if (e.shiftKey && (!inside || current === first)) {
-    e.preventDefault()
-    last.focus()
+    e.preventDefault();
+    last.focus();
   } else if (!e.shiftKey && (!inside || current === last)) {
-    e.preventDefault()
-    first.focus()
+    e.preventDefault();
+    first.focus();
   }
 }
 
 watch(menuOpen, async (open) => {
-  document.body.style.overflow = open ? 'hidden' : ''
+  document.body.style.overflow = open ? "hidden" : "";
   if (open) {
-    await nextTick()
-    focusables()[0]?.focus()
+    await nextTick();
+    focusables()[0]?.focus();
   } else {
-    menuToggle.value?.focus()
+    menuToggle.value?.focus();
   }
-})
+});
 
 watch(
   () => route.fullPath,
   () => {
-    if (menuOpen.value) menuOpen.value = false
+    if (menuOpen.value) menuOpen.value = false;
   },
-)
+);
 
 onMounted(() => {
-  onScroll()
-  window.addEventListener('scroll', onScroll, { passive: true })
-  window.addEventListener('keydown', onKeydown)
-})
+  onScroll();
+  window.addEventListener("scroll", onScroll, { passive: true });
+  window.addEventListener("keydown", onKeydown);
+});
 
 onBeforeUnmount(() => {
-  window.removeEventListener('scroll', onScroll)
-  window.removeEventListener('keydown', onKeydown)
-  document.body.style.overflow = ''
-})
+  window.removeEventListener("scroll", onScroll);
+  window.removeEventListener("keydown", onKeydown);
+  document.body.style.overflow = "";
+});
 
 // --- Ariza oynasi ----------------------------------------------------------
 
@@ -159,13 +160,13 @@ onBeforeUnmount(() => {
  * Oyna maket ichida bir nusxada turadi, holati esa `useState` orqali umumiy.
  * Shu sababli ariza istalgan sahifadan, shu jumladan sarlavhadan ochiladi.
  */
-const applyOpen = useState<boolean>('makon.apply.open', () => false)
-const applyUnit = useState<string>('makon.apply.unit', () => '')
+const applyOpen = useState<boolean>("makon.apply.open", () => false);
+const applyUnit = useState<string>("makon.apply.unit", () => "");
 
 function openApply() {
-  applyUnit.value = ''
-  applyOpen.value = true
-  menuOpen.value = false
+  applyUnit.value = "";
+  applyOpen.value = true;
+  menuOpen.value = false;
 }
 </script>
 
@@ -190,7 +191,10 @@ function openApply() {
           <AppLogo :size="scrolled ? 'sm' : 'md'" />
         </NuxtLink>
 
-        <nav class="ml-4 hidden items-center gap-0.5 lg:flex" :aria-label="t('public.mainMenu')">
+        <nav
+          class="ml-4 hidden items-center gap-0.5 lg:flex"
+          :aria-label="t('public.mainMenu')"
+        >
           <NuxtLink
             v-for="n in HEADER_NAV"
             :key="n.to"
@@ -240,11 +244,11 @@ function openApply() {
             to="/login"
             class="hidden min-h-[44px] items-center rounded-field px-3 text-[14px] font-semibold text-ink-700 transition-colors duration-150 hover:bg-ink-100 hover:text-ink-900 md:inline-flex"
           >
-            {{ t('common.signIn') }}
+            {{ t("common.signIn") }}
           </NuxtLink>
 
           <UiButton class="ml-1 hidden md:inline-flex" @click="openApply">
-            {{ t('apply.cta') }}
+            {{ t("apply.cta") }}
           </UiButton>
 
           <button
@@ -256,7 +260,8 @@ function openApply() {
             :aria-label="t('public.menuOpen')"
             @click="menuOpen = true"
           >
-            <UiIcon name="filter" :size="20" />
+            <!-- Menyu tugmasi: ilgari bu yerda filtr (voronka) belgisi turardi -->
+            <UiIcon name="menu" :size="20" />
           </button>
         </div>
       </div>
@@ -269,7 +274,10 @@ function openApply() {
       leave-to-class="opacity-0"
     >
       <div v-if="menuOpen" class="fixed inset-0 z-50 lg:hidden">
-        <div class="absolute inset-0 bg-ink-900/50 backdrop-blur-[2px]" @click="closeMenu" />
+        <div
+          class="absolute inset-0 bg-ink-900/50 backdrop-blur-[2px]"
+          @click="closeMenu"
+        />
 
         <Transition
           appear
@@ -284,7 +292,9 @@ function openApply() {
             :aria-label="t('public.menu')"
             class="scroll-slim absolute inset-y-0 right-0 flex w-[88%] max-w-[340px] flex-col overflow-y-auto bg-surface shadow-pop"
           >
-            <div class="flex items-center justify-between gap-3 border-b border-ink-200 px-4 py-3.5">
+            <div
+              class="flex items-center justify-between gap-3 border-b border-ink-200 px-4 py-3.5"
+            >
               <AppLogo size="sm" />
               <button
                 type="button"
@@ -303,7 +313,9 @@ function openApply() {
                 :to="n.to"
                 class="flex min-h-[44px] items-center justify-between rounded-field px-3.5 py-3 text-[14px] font-semibold transition-colors duration-150"
                 :class="
-                  isActive(n.to) ? 'bg-brand-50 text-brand-700' : 'text-ink-700 hover:bg-ink-100'
+                  isActive(n.to)
+                    ? 'bg-brand-50 text-brand-700'
+                    : 'text-ink-700 hover:bg-ink-100'
                 "
                 @click="closeMenu"
               >
@@ -313,8 +325,10 @@ function openApply() {
             </nav>
 
             <div class="border-t border-ink-200 px-4 py-4">
-              <p class="text-[11px] font-bold uppercase tracking-[0.09em] text-ink-500">
-                {{ t('public.categories') }}
+              <p
+                class="text-[11px] font-bold uppercase tracking-[0.09em] text-ink-500"
+              >
+                {{ t("public.categories") }}
               </p>
               <div class="mt-2.5 flex flex-wrap gap-2">
                 <NuxtLink
@@ -332,10 +346,15 @@ function openApply() {
             <div class="mt-auto border-t border-ink-200 p-4">
               <div class="grid gap-2.5">
                 <UiButton block @click="openApply">
-                  {{ t('apply.cta') }}
+                  {{ t("apply.cta") }}
                 </UiButton>
-                <UiButton variant="secondary" to="/login" block @click="closeMenu">
-                  {{ t('common.signIn') }}
+                <UiButton
+                  variant="secondary"
+                  to="/login"
+                  block
+                  @click="closeMenu"
+                >
+                  {{ t("common.signIn") }}
                 </UiButton>
               </div>
               <div class="mt-4 flex items-center justify-between gap-3">
@@ -362,11 +381,15 @@ function openApply() {
       :class="fullscreen ? 'lg:hidden' : ''"
     >
       <div class="mx-auto max-w-[1200px] px-4 py-14 lg:px-8 lg:py-16">
-        <div class="grid gap-10 lg:grid-cols-[minmax(0,1.6fr)_repeat(2,minmax(0,1fr))]">
+        <div
+          class="grid gap-10 lg:grid-cols-[minmax(0,1.6fr)_repeat(2,minmax(0,1fr))]"
+        >
           <div>
             <AppLogo mono class="text-white" />
-            <p class="mt-4 max-w-[46ch] text-[14px] leading-relaxed text-ink-400">
-              {{ t('public.about') }}
+            <p
+              class="mt-4 max-w-[46ch] text-[14px] leading-relaxed text-ink-400"
+            >
+              {{ t("public.about") }}
             </p>
 
             <ul class="mt-7 space-y-3.5">
@@ -398,13 +421,19 @@ function openApply() {
                   >
                     {{ c.label }}
                   </span>
-                  <span class="mt-0.5 block text-[12px] leading-relaxed text-ink-500">
+                  <span
+                    class="mt-0.5 block text-[12px] leading-relaxed text-ink-500"
+                  >
                     {{ c.note }}
                   </span>
                 </a>
                 <span v-else class="block min-w-0 py-1">
-                  <span class="block text-[14px] font-semibold text-white">{{ c.label }}</span>
-                  <span class="mt-0.5 block text-[12px] leading-relaxed text-ink-500">
+                  <span class="block text-[14px] font-semibold text-white">{{
+                    c.label
+                  }}</span>
+                  <span
+                    class="mt-0.5 block text-[12px] leading-relaxed text-ink-500"
+                  >
                     {{ c.note }}
                   </span>
                 </span>
@@ -413,8 +442,10 @@ function openApply() {
           </div>
 
           <div>
-            <h3 class="text-[12px] font-bold uppercase tracking-[0.09em] text-white">
-              {{ t('public.quickLinks') }}
+            <h3
+              class="text-[12px] font-bold uppercase tracking-[0.09em] text-white"
+            >
+              {{ t("public.quickLinks") }}
             </h3>
             <ul class="mt-3 space-y-0.5">
               <li v-for="l in QUICK" :key="l.to">
@@ -429,8 +460,10 @@ function openApply() {
           </div>
 
           <div>
-            <h3 class="text-[12px] font-bold uppercase tracking-[0.09em] text-white">
-              {{ t('public.catalogCategories') }}
+            <h3
+              class="text-[12px] font-bold uppercase tracking-[0.09em] text-white"
+            >
+              {{ t("public.catalogCategories") }}
             </h3>
             <ul class="mt-3 space-y-0.5">
               <li v-for="c in CATEGORIES" :key="c.to">
@@ -450,14 +483,14 @@ function openApply() {
                 @click="openApply"
               >
                 <UiIcon name="send" :size="15" />
-                {{ t('apply.cta') }}
+                {{ t("apply.cta") }}
               </button>
               <NuxtLink
                 to="/catalog"
                 class="inline-flex min-h-[44px] items-center gap-2 rounded-pill bg-white/10 px-4 text-[13px] font-semibold text-white transition-colors duration-150 hover:bg-white/20"
               >
                 <UiIcon name="search" :size="15" />
-                {{ t('public.searchVacancy') }}
+                {{ t("public.searchVacancy") }}
               </NuxtLink>
             </div>
           </div>
@@ -465,16 +498,18 @@ function openApply() {
 
         <div class="mt-12 border-t border-white/10 pt-6">
           <p class="max-w-[92ch] text-[12px] leading-relaxed text-ink-500">
-            {{ t('public.notice') }}
+            {{ t("public.notice") }}
           </p>
 
           <div class="mt-4 flex flex-wrap items-center justify-between gap-4">
-            <p class="text-[13px] text-ink-500">{{ t('public.rights', { year }) }}</p>
+            <p class="text-[13px] text-ink-500">
+              {{ t("public.rights", { year }) }}
+            </p>
             <NuxtLink
               to="/login"
               class="inline-flex min-h-[44px] items-center text-[13px] font-semibold text-brand-400 transition-colors duration-150 hover:text-white"
             >
-              {{ t('common.signIn') }}
+              {{ t("common.signIn") }}
             </NuxtLink>
           </div>
         </div>
