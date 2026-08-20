@@ -528,6 +528,7 @@ function confirmExport() {
 
     <UiCard title="Hodisalar ro‘yxati" subtitle="Qatorni bosing, to‘liq tafsilot va o‘zgarishlar" flush>
       <UiTable
+        :page-size="25"
         :columns="columns"
         :rows="filtered"
         empty="Filtrga mos yozuv topilmadi"

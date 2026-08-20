@@ -322,6 +322,7 @@ function createContract() {
       </div>
 
       <UiTable
+        :page-size="25"
         :columns="columns"
         :rows="rows"
         :to="contractLink"

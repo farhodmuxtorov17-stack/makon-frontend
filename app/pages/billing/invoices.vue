@@ -450,6 +450,7 @@ const tariffTotal = TARIFF_LINES.reduce((s, t) => s + t.sum, 0)
       </div>
 
       <UiTable
+        :page-size="25"
         :columns="columns"
         :rows="rows"
         empty="Tanlangan shartlarga mos hisob-faktura topilmadi"
