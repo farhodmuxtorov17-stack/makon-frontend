@@ -76,8 +76,23 @@ for (const role of ROLES) {
   }
 }
 
-// 4. Ochiq bo'lim menyuda ko'rinsinmi: yozuvsiz qolgan modul
-const HIDDEN_OK = new Set(['/cabinet', '/settings/audit'])
+/*
+ * 4. Ochiq bo'lim menyuda ko'rinsinmi.
+ *
+ * Yon panel ataylab qisqa: har bir marshrut uchun alohida yozuv qo'yilsa menyu
+ * uzayib ketadi va foydalanuvchi chalkashadi. Shuning uchun modul ichidagi
+ * sahifalar yozuvsiz qolishi mumkin, ular modul ichidan ochiladi.
+ */
+const HIDDEN_OK = new Set([
+  '/cabinet',
+  '/settings/audit',
+  // Rahbar paneli ichida bino tanlagichi bor, alohida yozuv kerak emas
+  '/dashboard/building',
+  // Servis moduli ichidan ochiladi
+  '/facility',
+  '/facility/materials',
+  '/meters',
+])
 for (const role of ROLES) {
   const inMenu = new Set()
   for (const section of NAVIGATION[role] ?? []) {
