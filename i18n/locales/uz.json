@@ -3675,7 +3675,9 @@
     "noRequestForObject": "Ushbu obyekt bo‘yicha ariza yo‘q",
     "noDebtForObject": "Ushbu obyekt bo‘yicha qarzdorlik yo‘q",
     "noPendingApplications": "Tasdiqlash kutayotgan ariza yo‘q",
-    "perMonth": "{value} / oy"
+    "perMonth": "{value} / oy",
+    "moreFloors": "Yana {count} ta qavat, bino pasportida",
+    "moreDebts": "Yana {count} ta hujjat, qarzdorlik ekranida"
   },
   "ui": {
     "layerCount": "{active} / {total} qatlam",
@@ -3858,7 +3860,8 @@
     "glaRow": "Ijara maydoni",
     "parkingSpaces": "Avtoturargoh joylari",
     "pickStructure": "Qurilmani tanlang",
-    "pickStructureHint": "Rejadagi shaklni yoki quyidagi ro‘yxatdagi qatorni bosing: turi, o‘lchami va izohi shu yerda ochiladi."
+    "pickStructureHint": "Rejadagi shaklni yoki quyidagi ro‘yxatdagi qatorni bosing: turi, o‘lchami va izohi shu yerda ochiladi.",
+    "siteVolume": "Uchastkaning hajmli ko‘rinishi"
   },
   "monthShort": {
     "1": "Yan",

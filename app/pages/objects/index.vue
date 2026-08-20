@@ -1,12 +1,6 @@
 <script setup lang="ts">
 import { OCCUPANCY_BANDS } from "~/constants/statuses";
 import { BUILDINGS, type Building } from "~/data/buildings";
-import {
-  STRUCTURE_KIND,
-  siteSummary,
-  structureKindsOf,
-  type StructureKind,
-} from "~/data/structures";
 import { dateShort, num, percent, sum, todayIso } from "~/utils/format";
 import { csvBlob, docxBlob, saveBlob } from "~/utils/docx";
 
@@ -35,7 +29,6 @@ const districtFilter = ref("");
 const classFilter = ref("");
 const occupancyFilter = ref("");
 /** Uchastkada shu turdagi qurilma bor obyektlar: KPP, parkovka, kafe va hokazo */
-const kindFilter = ref("");
 const sortBy = ref("name");
 const moreOpen = ref(false);
 const page = ref(1);
@@ -78,20 +71,6 @@ const classOptions = computed(() =>
   })),
 );
 
-/** Faqat biriktirilgan obyektlarda haqiqatan uchraydigan qurilma turlari */
-const kindOptions = computed(() => {
-  const present = new Set<StructureKind>();
-  for (const b of scoped.value) {
-    for (const k of structureKindsOf(b.id)) present.add(k);
-  }
-  return (Object.keys(STRUCTURE_KIND) as StructureKind[])
-    .filter((k) => present.has(k))
-    .map((k) => ({
-      value: k,
-      label: tr(`obj.structureKind.${k}`, STRUCTURE_KIND[k].label),
-    }));
-});
-
 const statusOptions = computed(() => [
   { value: "ACTIVE", label: statusLabel("contract", "ACTIVE") },
   { value: "ARCHIVED", label: statusLabel("unit", "ARCHIVED") },
@@ -117,7 +96,6 @@ const sortOptions = computed(() => [
   { value: "occupancy", label: t("sort.occupancyDesc") },
   { value: "units", label: t("sort.unitsDesc") },
   { value: "vacant", label: t("sort.vacantUnitsDesc") },
-  { value: "structures", label: t("sort.structuresDesc") },
 ]);
 
 const perPageOptions = [
@@ -187,10 +165,7 @@ const filtered = computed(() => {
     )
       return false;
     if (occupancyFilter.value === "low" && b.occupancy >= 84) return false;
-    if (
-      kindFilter.value &&
-      !structureKindsOf(b.id).includes(kindFilter.value as StructureKind)
-    ) {
+    if (false) {
       return false;
     }
     return true;
@@ -200,9 +175,6 @@ const filtered = computed(() => {
     if (sortBy.value === "occupancy") return b.occupancy - a.occupancy;
     if (sortBy.value === "units") return b.units - a.units;
     if (sortBy.value === "vacant") return b.vacantUnits - a.vacantUnits;
-    if (sortBy.value === "structures") {
-      return siteSummary(b.id).structures - siteSummary(a.id).structures;
-    }
     return a.name.localeCompare(b.name);
   });
 });
@@ -211,14 +183,6 @@ const totals = computed(() => ({
   units: filtered.value.reduce((s, b) => s + b.units, 0),
   occupied: filtered.value.reduce((s, b) => s + b.occupiedUnits, 0),
   vacant: filtered.value.reduce((s, b) => s + b.vacantUnits, 0),
-  structures: filtered.value.reduce(
-    (s, b) => s + siteSummary(b.id).structures,
-    0,
-  ),
-  parking: filtered.value.reduce(
-    (s, b) => s + siteSummary(b.id).parkingSpaces,
-    0,
-  ),
 }));
 
 const perPageNum = computed(() => Number(perPage.value));
@@ -229,7 +193,6 @@ const pageCount = computed(() =>
 const rows = computed(() => {
   const start = (page.value - 1) * perPageNum.value;
   return filtered.value.slice(start, start + perPageNum.value).map((b) => {
-    const site = siteSummary(b.id);
     return {
       id: b.id,
       code: b.code,
@@ -239,11 +202,6 @@ const rows = computed(() => {
       address: `${b.city}, ${b.district}, ${b.street}`,
       type: buildingTypeLabel(b.type),
       floors: b.floors,
-      structures: site.structures,
-      structuresMeta: t("obj.structuresMeta", {
-        lease: site.leasable,
-        service: site.service,
-      }),
       units: b.units,
       occupiedUnits: b.occupiedUnits,
       vacantUnits: b.vacantUnits,
@@ -269,7 +227,6 @@ const activeFilters = computed(
       districtFilter.value,
       classFilter.value,
       occupancyFilter.value,
-      kindFilter.value,
     ].filter(Boolean).length,
 );
 
@@ -282,7 +239,6 @@ watch(
     districtFilter,
     classFilter,
     occupancyFilter,
-    kindFilter,
     perPage,
   ],
   () => {
@@ -301,7 +257,6 @@ const columns = computed(() =>
     { key: "address", field: "address" },
     { key: "type", field: "type" },
     { key: "floors", field: "floors", align: "right", numeric: true },
-    { key: "structures", field: "structures", align: "right", width: "148px" },
     { key: "units", field: "units", align: "right", numeric: true },
     {
       key: "occupiedUnits",
@@ -326,7 +281,6 @@ function resetFilters() {
   districtFilter.value = "";
   classFilter.value = "";
   occupancyFilter.value = "";
-  kindFilter.value = "";
   page.value = 1;
 }
 
@@ -348,10 +302,6 @@ function submitExport() {
           field("address"),
           field("type"),
           field("floors"),
-          field("structures"),
-          t("obj.leasableStructures"),
-          t("obj.serviceStructures"),
-          t("obj.parkingSpaces"),
           field("units"),
           t("common.occupied"),
           t("common.vacant"),
@@ -360,17 +310,12 @@ function submitExport() {
           t("obj.monthlyRevenueSum"),
         ],
         ...rows.map((b) => {
-          const site = siteSummary(b.id);
           return [
             b.code,
             b.name,
             `${b.city}, ${b.district}, ${b.street}`,
             b.type,
             b.floors,
-            site.structures,
-            site.leasable,
-            site.service,
-            site.parkingSpaces,
             b.units,
             b.occupiedUnits,
             b.vacantUnits,
@@ -400,8 +345,6 @@ function submitExport() {
             address: `${b.city}, ${b.district}, ${b.street}`,
             type: b.type,
             floors: b.floors,
-            structures: siteSummary(b.id).structures,
-            parking: siteSummary(b.id).parkingSpaces,
             units: b.units,
             occupied: b.occupiedUnits,
             vacant: b.vacantUnits,
@@ -651,18 +594,6 @@ function submitCreate() {
             size="sm"
           />
         </UiField>
-        <UiField
-          :label="field('structureKind')"
-          :hint="t('obj.structureKindHint')"
-          class="w-60"
-        >
-          <UiSelect
-            v-model="kindFilter"
-            :options="kindOptions"
-            :placeholder="t('common.all')"
-            size="sm"
-          />
-        </UiField>
         <UiButton
           variant="ghost"
           size="sm"
@@ -730,17 +661,6 @@ function submitCreate() {
           </span>
         </template>
 
-        <template #cell-structures="{ row }">
-          <span class="block text-right">
-            <span class="tabular block text-[13px] font-semibold text-ink-900">
-              {{ row.structures }} {{ t("unitOf.pcs") }}
-            </span>
-            <span class="block text-[12px] text-ink-500">{{
-              row.structuresMeta
-            }}</span>
-          </span>
-        </template>
-
         <template #cell-occupiedUnits="{ row }">
           <span class="tabular font-semibold text-ok-600">{{
             row.occupiedUnits
@@ -769,10 +689,6 @@ function submitCreate() {
           {{ t("common.total") }}:
           <b class="text-ink-800">{{ filtered.length }}</b>
           {{ t("obj.unitObjects") }} ·
-          <span class="tabular">{{ num(totals.structures) }}</span>
-          {{ t("obj.unitStructures") }} ·
-          <span class="tabular">{{ num(totals.parking) }}</span>
-          {{ t("obj.unitParking") }} ·
           <span class="tabular">{{ num(totals.units) }}</span>
           {{ t("obj.unitUnits") }} ·
           <span class="tabular text-ok-600">{{ num(totals.occupied) }}</span>

@@ -1360,8 +1360,30 @@ export const useLeaseStore = defineStore('lease', {
       file: Omit<SignedDocument, 'uploadedAt' | 'uploadedBy'>,
     ) {
       const item = this.byId(id)
-      if (!item || item.status !== 'DIDOX_IMZOLANDI') return
+      if (!item) return
+      if (item.status !== 'DIDOX_YUBORILDI' && item.status !== 'DIDOX_IMZOLANDI') return
+
       item.signedDocument = { ...file, uploadedAt: now(), uploadedBy: actor }
+
+      /*
+       * Imzolangan faylning yuklanishi imzo dalilidir.
+       *
+       * Didox tashqi xizmat va uning holatini operator o'sha yerda ko'radi;
+       * bizning tizim uni so'roq qilmaydi. Shuning uchun ariza bosqichi
+       * alohida «holatni tekshirish» tugmasi bilan emas, aynan hujjat
+       * yuklanganda siljiydi.
+       */
+      if (item.didox) {
+        item.didox.state = 'Imzolangan'
+        item.didox.stateAt = Date.now()
+        item.didox.history.push({
+          state: 'Imzolangan',
+          at: now(),
+          note: `Imzolangan hujjat operator tomonidan yuklandi: ${file.fileName}`,
+        })
+      }
+      item.status = 'DIDOX_IMZOLANDI'
+
       this.log(item, {
         actor,
         roleLabel,

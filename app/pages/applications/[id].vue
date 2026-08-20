@@ -181,12 +181,15 @@ const canSendDidox = computed(
   () => item.value?.status === "SHARTNOMA_TAYYOR" && canSign.value,
 );
 
-const canCheckDidox = computed(
-  () => item.value?.status === "DIDOX_YUBORILDI" && canSign.value,
-);
-
+/*
+ * Imzolangan hujjatni yuklash Didox'ga yuborilgan zahoti ochiladi: operator
+ * imzoni Didox'ning o'zida ko'radi va faylni shu yerga qo'yadi.
+ */
 const canUpload = computed(
-  () => item.value?.status === "DIDOX_IMZOLANDI" && canSign.value,
+  () =>
+    (item.value?.status === "DIDOX_YUBORILDI" ||
+      item.value?.status === "DIDOX_IMZOLANDI") &&
+    canSign.value,
 );
 
 /** Ariza yopiladi: imzolangan nusxa yuklangandan keyin */
@@ -329,18 +332,6 @@ function sendDidox() {
  * Tekshiruv natijasi qanday bo‘lsa, shunday aytiladi. Ilgari holat
  * o‘zgarmagan taqdirda ham «yangilandi» deb yozilar edi.
  */
-function checkDidox() {
-  if (!item.value) return;
-  const result = lease.checkDidox(
-    item.value.id,
-    actorName.value,
-    roleLabel.value,
-  );
-  if (!result) return;
-  const state = didoxLabel(result.state);
-  if (result.changed) say(t("app2.didoxChanged", { state }));
-  else say(t("app2.didoxSame", { state }), "info");
-}
 
 function onUpload(file: Omit<SignedDocument, "uploadedAt" | "uploadedBy">) {
   if (!item.value) return;
@@ -470,8 +461,7 @@ const accessRows = computed(() => {
 const tourStage = computed(() => {
   if (canAssignUnit.value) return "assign";
   if (canApprove.value) return "approve";
-  if (canEditContract.value || canSendDidox.value || canCheckDidox.value)
-    return "didox";
+  if (canEditContract.value || canSendDidox.value) return "didox";
   if (canUpload.value || canClose.value) return "close";
   if (readOnly.value) return "watch";
   return "read";
@@ -485,7 +475,7 @@ const tourSteps = computed(() => {
   if (canAssignUnit.value) plan.push(["assign", "case-unit"]);
   if (editing.value) plan.push(["terms", "case-terms"]);
   if (canApprove.value) plan.push(["approve", "case-actions"]);
-  if (canEditContract.value || canSendDidox.value || canCheckDidox.value) {
+  if (canEditContract.value || canSendDidox.value) {
     plan.push(["didox", "case-actions"]);
   }
   if (canUpload.value || canClose.value) plan.push(["close", "case-close"]);
@@ -616,11 +606,6 @@ const tourId = computed(
           <UiButton v-if="canSendDidox" size="sm" @click="sendDidox">
             <UiIcon name="send" :size="15" />
             {{ t("app2.sendDidox") }}
-          </UiButton>
-
-          <UiButton v-if="canCheckDidox" size="sm" @click="checkDidox">
-            <UiIcon name="refresh" :size="15" />
-            {{ t("app2.checkDidox") }}
           </UiButton>
 
           <UiButton
@@ -994,16 +979,22 @@ const tourId = computed(
           icon="external"
           tone="info"
         >
-          <LeaseDidox
-            :item="item"
-            :can-check="canCheckDidox"
-            @check="checkDidox"
-          />
+          <LeaseDidox :item="item" />
         </UiCard>
 
-        <!-- Imzolangan hujjatni yuklash va arizani yopish -->
+        <!--
+          Imzolangan hujjatni yuklash va arizani yopish.
+
+          Blok Didox'ga yuborilgan zahoti ochiladi: operator imzoni Didox'ning
+          o'zida ko'radi, faylni yuklab olib shu yerga qo'yadi. Fayl yuklanishi
+          arizani «Imzolandi» bosqichiga o'tkazadi.
+        -->
         <UiCard
-          v-if="item.status === 'DIDOX_IMZOLANDI' || item.status === 'FAOL'"
+          v-if="
+            item.status === 'DIDOX_YUBORILDI' ||
+            item.status === 'DIDOX_IMZOLANDI' ||
+            item.status === 'FAOL'
+          "
           data-tour="case-close"
           :title="t('app2.signedTitle')"
           :subtitle="t('app2.signedSubtitle')"

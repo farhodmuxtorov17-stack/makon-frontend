@@ -97,7 +97,6 @@ export const SETTINGS_CHILDREN: NavChild[] = [
  * Bildirishnoma va profil sidebar’da emas, faqat header’da bo‘ladi,
  * yon menyu ish modullariga ajratilgan.
  */
-const HELP_ITEM: NavItem = { label: 'Yordam markazi', key: 'nav.help', to: '/help', icon: 'help' }
 
 export const NAVIGATION: Record<Role, NavSection[]> = {
   SUPER_HEAD: [
@@ -128,10 +127,14 @@ export const NAVIGATION: Record<Role, NavSection[]> = {
           icon: 'wrench',
         },
         { label: 'Hisobotlar', key: 'nav.reports', to: '/reports', icon: 'chart' },
-        { label: 'Sozlamalar', key: 'nav.settings', to: '/settings/users', icon: 'gear', children: SETTINGS_CHILDREN },
+        /*
+         * Sozlamalar yon panelda bitta yozuv. Ichidagi olti bo‘lim sahifaning
+         * o‘zida yorliqlar qatorida turadi, shuning uchun ularni menyuga ham
+         * chiqarish yon panelni ikki baravar uzaytirardi.
+         */
+        { label: 'Sozlamalar', key: 'nav.settings', to: '/settings/users', icon: 'gear' },
       ],
     },
-    { items: [HELP_ITEM] },
   ],
 
   BUILDING_MANAGER: [
@@ -155,7 +158,6 @@ export const NAVIGATION: Record<Role, NavSection[]> = {
         { label: 'Hisobotlar', key: 'nav.reports', to: '/reports', icon: 'chart' },
       ],
     },
-    { items: [HELP_ITEM] },
   ],
 
   ACCOUNTANT: [
@@ -186,7 +188,6 @@ export const NAVIGATION: Record<Role, NavSection[]> = {
         { label: 'Hisobotlar', key: 'nav.reports', to: '/reports', icon: 'chart' },
       ],
     },
-    { items: [HELP_ITEM] },
   ],
 
   FACILITY: [
@@ -198,7 +199,6 @@ export const NAVIGATION: Record<Role, NavSection[]> = {
         { label: 'Hisoblagichlar', key: 'nav.meters', to: '/meters', icon: 'meter' },
       ],
     },
-    { items: [HELP_ITEM] },
   ],
 
   /*
@@ -230,7 +230,6 @@ export const NAVIGATION: Record<Role, NavSection[]> = {
         { label: 'Inventarizatsiya', key: 'nav.inventory', to: '/warehouse/inventory', icon: 'check' },
       ],
     },
-    { items: [HELP_ITEM] },
   ],
 
   // Operator ijara jarayonini boshidan oxirigacha olib boradi, shuning uchun
@@ -254,7 +253,6 @@ export const NAVIGATION: Record<Role, NavSection[]> = {
         { label: 'Unit atributlari', key: 'nav.unitAttributes', to: '/content/units', icon: 'clipboard' },
       ],
     },
-    { items: [HELP_ITEM] },
   ],
 
   TENANT_OWNER: [
@@ -268,7 +266,6 @@ export const NAVIGATION: Record<Role, NavSection[]> = {
         { label: 'Hisoblagichlar', key: 'nav.meters', to: '/cabinet/meters', icon: 'meter' },
       ],
     },
-    { items: [HELP_ITEM] },
   ],
 }
 
