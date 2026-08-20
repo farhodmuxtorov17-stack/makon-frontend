@@ -54,12 +54,15 @@ const floorOccupancy = computed(() => {
   const floors = [...new Set(units.map((u) => u.floor))].sort((a, b) => b - a)
   return floors.map((floor) => {
     const onFloor = units.filter((u) => u.floor === floor)
-    const taken = onFloor.filter((u) => u.status === 'RENTED' || u.status === 'SOLD').length
+    const occupied = onFloor.filter((u) => u.status === 'RENTED' || u.status === 'SOLD')
+    // Ulush maydon bo'yicha: KPI kartasi ham shu ta'rifda hisoblanadi
+    const area = onFloor.reduce((sum, u) => sum + u.area, 0)
+    const takenArea = occupied.reduce((sum, u) => sum + u.area, 0)
     return {
       floor,
       total: onFloor.length,
-      taken,
-      share: onFloor.length ? Math.round((taken / onFloor.length) * 100) : 0,
+      taken: occupied.length,
+      share: area ? Math.round((takenArea / area) * 100) : 0,
     }
   })
 })

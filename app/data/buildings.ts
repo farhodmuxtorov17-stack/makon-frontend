@@ -74,6 +74,8 @@ export interface BuildingUnitStats {
   vacantUnits: number
   gla: number
   vacantArea: number
+  /** Shartnoma bo‘yicha egallangan maydon, m² */
+  occupiedArea: number
   occupancy: number
 }
 
@@ -94,11 +96,22 @@ export function unitStatsOf(buildingId: string): BuildingUnitStats {
   let gla = 0
   let vacantArea = 0
 
+  /*
+   * Bandlik yagona ta'rif bilan hisoblanadi: shartnoma bo'yicha egallangan
+   * maydonning ijaraga beriladigan umumiy maydondagi ulushi. Ilgari KPI
+   * "bo'sh emas" ni band deb sanardi, qavatlar jadvali esa faqat "ijarada"
+   * va "sotilgan" ni, natijada bitta ekranda 73% va 57% turardi: rezerv va
+   * ta'mirdagi unitlar birinchisida band, ikkinchisida bo'sh edi.
+   */
+  let occupiedArea = 0
   for (const unit of UNITS) {
     if (unit.buildingId !== buildingId) continue
     units += 1
     gla += unit.area
-    if (unit.status === 'RENTED' || unit.status === 'SOLD') occupiedUnits += 1
+    if (unit.status === 'RENTED' || unit.status === 'SOLD') {
+      occupiedUnits += 1
+      occupiedArea += unit.area
+    }
     if (unit.status === 'VACANT') {
       vacantUnits += 1
       vacantArea += unit.area
@@ -107,6 +120,7 @@ export function unitStatsOf(buildingId: string): BuildingUnitStats {
 
   gla = round2(gla)
   vacantArea = round2(vacantArea)
+  occupiedArea = round2(occupiedArea)
 
   return {
     units,
@@ -114,7 +128,8 @@ export function unitStatsOf(buildingId: string): BuildingUnitStats {
     vacantUnits,
     gla,
     vacantArea,
-    occupancy: gla ? Math.round(((gla - vacantArea) / gla) * 100) : 0,
+    occupiedArea,
+    occupancy: gla ? Math.round((occupiedArea / gla) * 100) : 0,
   }
 }
 
