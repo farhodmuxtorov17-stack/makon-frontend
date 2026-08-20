@@ -707,10 +707,16 @@ function submitPdf() {
             flush
             :padded="false"
           >
+            <!--
+              Unitlar sahifama-sahifa ko'rsatiladi. Ilgari bino pasportida
+              barcha 77 qator birdaniga chizilar va sahifa olti ekranga
+              cho'zilardi.
+            -->
             <UiTable
               :columns="unitColumns"
               :rows="unitRows"
               :to="unitPath"
+              :page-size="10"
               :empty="t('obj.emptyUnits')"
             >
               <template #cell-code="{ row }">

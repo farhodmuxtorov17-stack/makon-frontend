@@ -1,16 +1,30 @@
 <script setup lang="ts">
-import { BUILDINGS, PORTFOLIO_TOTALS, trendDelta, trendSpark } from '~/data/buildings'
-import { INVOICES, agingOf } from '~/data/business'
-import { csvBlob, docxBlob, fileSlug, saveBlob } from '~/utils/docx'
-import { num, percent, sumShort, dateShort, todayIso, monthShift } from '~/utils/format'
+import {
+  BUILDINGS,
+  PORTFOLIO_TOTALS,
+  trendDelta,
+  trendSpark,
+} from "~/data/buildings";
+import { INVOICES, agingOf } from "~/data/business";
+import { csvBlob, docxBlob, fileSlug, saveBlob } from "~/utils/docx";
+import {
+  num,
+  percent,
+  sumShort,
+  dateShort,
+  todayIso,
+  monthShift,
+} from "~/utils/format";
 
-const { buildingTypeLabel, moneyShort } = useAppLabels()
+const { buildingTypeLabel, moneyShort } = useAppLabels();
 
-const auth = useAuthStore()
-const { t } = useI18n()
+const auth = useAuthStore();
+const { t } = useI18n();
 
 /** Hisobot faqat foydalanuvchining ko‘rish sohasidagi obyektlarni qamraydi */
-const scopedBuildings = computed(() => BUILDINGS.filter((b) => auth.inScope(b.id)))
+const scopedBuildings = computed(() =>
+  BUILDINGS.filter((b) => auth.inScope(b.id)),
+);
 
 /**
  * Hisobotlar bitta uzun ustunda joylashgani uchun sahifa balandligi to‘rt
@@ -19,150 +33,181 @@ const scopedBuildings = computed(() => BUILDINGS.filter((b) => auth.inScope(b.id
  * har bir bo‘lim bitta ekranga sig‘adi.
  */
 const REPORT_TABS = computed(() => [
-  { key: 'umumiy', label: t('usr.repTabGeneral'), caption: t('usr.repTabGeneralCaption') },
-  { key: 'moliya', label: t('usr.repTabFinance'), caption: t('usr.repTabFinanceCaption') },
-  { key: 'bandlik', label: t('field.occupancy'), caption: t('usr.repTabOccupancyCaption') },
-  { key: 'servis', label: t('section.service'), caption: t('usr.repTabServiceCaption') },
-  { key: 'hujjat', label: t('navShort.documents'), caption: t('usr.repQuickCaption') },
-])
+  {
+    key: "umumiy",
+    label: t("usr.repTabGeneral"),
+    caption: t("usr.repTabGeneralCaption"),
+  },
+  {
+    key: "moliya",
+    label: t("usr.repTabFinance"),
+    caption: t("usr.repTabFinanceCaption"),
+  },
+  {
+    key: "bandlik",
+    label: t("field.occupancy"),
+    caption: t("usr.repTabOccupancyCaption"),
+  },
+  {
+    key: "servis",
+    label: t("section.service"),
+    caption: t("usr.repTabServiceCaption"),
+  },
+  {
+    key: "hujjat",
+    label: t("navShort.documents"),
+    caption: t("usr.repQuickCaption"),
+  },
+]);
 
-const tab = ref('umumiy')
+const tab = ref("umumiy");
 const activeTab = computed(
-  () => REPORT_TABS.value.find((r) => r.key === tab.value) ?? REPORT_TABS.value[0]!,
-)
+  () =>
+    REPORT_TABS.value.find((r) => r.key === tab.value) ?? REPORT_TABS.value[0]!,
+);
 
 const MONTHS = computed(() => [
-  t('monthShort.1'),
-  t('monthShort.2'),
-  t('monthShort.3'),
-  t('monthShort.4'),
-  t('monthShort.5'),
-  t('monthShort.6'),
-  t('monthShort.7'),
-  t('monthShort.8'),
-  t('monthShort.9'),
-  t('monthShort.10'),
-  t('monthShort.11'),
-  t('monthShort.12'),
-])
+  t("monthShort.1"),
+  t("monthShort.2"),
+  t("monthShort.3"),
+  t("monthShort.4"),
+  t("monthShort.5"),
+  t("monthShort.6"),
+  t("monthShort.7"),
+  t("monthShort.8"),
+  t("monthShort.9"),
+  t("monthShort.10"),
+  t("monthShort.11"),
+  t("monthShort.12"),
+]);
 
 // Hisobot davri bugun tugaydi: kelajakdagi oy uchun hisobot bo‘lmaydi
-const DEFAULT_FROM = monthShift(-5)
-const DEFAULT_TO = todayIso()
+const DEFAULT_FROM = monthShift(-5);
+const DEFAULT_TO = todayIso();
 
 const TYPE_OPTIONS = computed(() => [
-  { value: 'all', label: t('usr.repAllBuildingTypes') },
+  { value: "all", label: t("usr.repAllBuildingTypes") },
   ...[...new Set(scopedBuildings.value.map((b) => b.type))].map((type) => ({
     value: type,
     label: buildingTypeLabel(type),
   })),
-])
+]);
 
-const draftFrom = ref(DEFAULT_FROM)
-const draftTo = ref(DEFAULT_TO)
-const draftType = ref('all')
-const draftBuildings = ref<string[]>([])
+const draftFrom = ref(DEFAULT_FROM);
+const draftTo = ref(DEFAULT_TO);
+const draftType = ref("all");
+const draftBuildings = ref<string[]>([]);
 
-const fromDate = ref(DEFAULT_FROM)
-const toDate = ref(DEFAULT_TO)
-const typeFilter = ref('all')
-const buildingFilter = ref<string[]>([])
+const fromDate = ref(DEFAULT_FROM);
+const toDate = ref(DEFAULT_TO);
+const typeFilter = ref("all");
+const buildingFilter = ref<string[]>([]);
 
 /** Ko‘rish sohasi o‘zgarsa tanlov ham shu sohaga qisqaradi */
 watch(
   scopedBuildings,
   (list) => {
-    const ids = list.map((b) => b.id)
+    const ids = list.map((b) => b.id);
     const keep = (current: string[]) => {
-      const next = current.filter((id) => ids.includes(id))
-      return next.length ? next : ids
-    }
-    draftBuildings.value = keep(draftBuildings.value)
-    buildingFilter.value = keep(buildingFilter.value)
+      const next = current.filter((id) => ids.includes(id));
+      return next.length ? next : ids;
+    };
+    draftBuildings.value = keep(draftBuildings.value);
+    buildingFilter.value = keep(buildingFilter.value);
 
-    const types = new Set(list.map((b) => b.type as string))
-    if (draftType.value !== 'all' && !types.has(draftType.value)) draftType.value = 'all'
-    if (typeFilter.value !== 'all' && !types.has(typeFilter.value)) typeFilter.value = 'all'
+    const types = new Set(list.map((b) => b.type as string));
+    if (draftType.value !== "all" && !types.has(draftType.value))
+      draftType.value = "all";
+    if (typeFilter.value !== "all" && !types.has(typeFilter.value))
+      typeFilter.value = "all";
   },
   { immediate: true },
-)
+);
 
-const objMenuRoot = ref<HTMLElement | null>(null)
-const objMenuOpen = ref(false)
-onClickOutside(objMenuRoot, () => (objMenuOpen.value = false))
+const objMenuRoot = ref<HTMLElement | null>(null);
+const objMenuOpen = ref(false);
+onClickOutside(objMenuRoot, () => (objMenuOpen.value = false));
 
-const rangeInvalid = computed(() => new Date(draftTo.value) < new Date(draftFrom.value))
+const rangeInvalid = computed(
+  () => new Date(draftTo.value) < new Date(draftFrom.value),
+);
 
 const filterChanged = computed(
   () =>
     draftFrom.value !== fromDate.value ||
     draftTo.value !== toDate.value ||
     draftType.value !== typeFilter.value ||
-    draftBuildings.value.slice().sort().join() !== buildingFilter.value.slice().sort().join(),
-)
+    draftBuildings.value.slice().sort().join() !==
+      buildingFilter.value.slice().sort().join(),
+);
 
 const draftLabel = computed(() => {
-  if (!draftBuildings.value.length) return t('usr.repNoObjectSelected')
-  if (draftBuildings.value.length === scopedBuildings.value.length) return t('landing.allObjects')
+  if (!draftBuildings.value.length) return t("usr.repNoObjectSelected");
+  if (draftBuildings.value.length === scopedBuildings.value.length)
+    return t("landing.allObjects");
   if (draftBuildings.value.length === 1)
-    return scopedBuildings.value.find((b) => b.id === draftBuildings.value[0])?.name ?? t('field.object')
-  return t('usr.repObjectsSelected', { count: draftBuildings.value.length })
-})
+    return (
+      scopedBuildings.value.find((b) => b.id === draftBuildings.value[0])
+        ?.name ?? t("field.object")
+    );
+  return t("usr.repObjectsSelected", { count: draftBuildings.value.length });
+});
 
 function applyFilters() {
-  if (rangeInvalid.value) return
-  fromDate.value = draftFrom.value
-  toDate.value = draftTo.value
-  typeFilter.value = draftType.value
-  buildingFilter.value = [...draftBuildings.value]
-  objMenuOpen.value = false
+  if (rangeInvalid.value) return;
+  fromDate.value = draftFrom.value;
+  toDate.value = draftTo.value;
+  typeFilter.value = draftType.value;
+  buildingFilter.value = [...draftBuildings.value];
+  objMenuOpen.value = false;
 }
 
 function resetFilters() {
-  draftFrom.value = DEFAULT_FROM
-  draftTo.value = DEFAULT_TO
-  draftType.value = 'all'
-  draftBuildings.value = scopedBuildings.value.map((b) => b.id)
-  applyFilters()
+  draftFrom.value = DEFAULT_FROM;
+  draftTo.value = DEFAULT_TO;
+  draftType.value = "all";
+  draftBuildings.value = scopedBuildings.value.map((b) => b.id);
+  applyFilters();
 }
 
 function toggleAllBuildings() {
   draftBuildings.value =
     draftBuildings.value.length === scopedBuildings.value.length
       ? []
-      : scopedBuildings.value.map((b) => b.id)
+      : scopedBuildings.value.map((b) => b.id);
 }
 
-const mode = ref('portfolio')
+const mode = ref("portfolio");
 const modeTabs = computed(() => [
-  { value: 'portfolio', label: t('usr.repModePortfolio') },
-  { value: 'single', label: t('usr.repModeSingle') },
-])
+  { value: "portfolio", label: t("usr.repModePortfolio") },
+  { value: "single", label: t("usr.repModeSingle") },
+]);
 
 const filtered = computed(() =>
   scopedBuildings.value.filter(
     (b) =>
       buildingFilter.value.includes(b.id) &&
-      (typeFilter.value === 'all' || b.type === typeFilter.value),
+      (typeFilter.value === "all" || b.type === typeFilter.value),
   ),
-)
+);
 
-const singleId = ref(scopedBuildings.value[0]?.id ?? BUILDINGS[0]!.id)
+const singleId = ref(scopedBuildings.value[0]?.id ?? BUILDINGS[0]!.id);
 
 watch(
   filtered,
   (list) => {
-    if (!list.some((b) => b.id === singleId.value)) singleId.value = list[0]?.id ?? singleId.value
+    if (!list.some((b) => b.id === singleId.value))
+      singleId.value = list[0]?.id ?? singleId.value;
   },
   { immediate: true },
-)
+);
 
 const singleOptions = computed(() =>
   (filtered.value.length ? filtered.value : scopedBuildings.value).map((b) => ({
     value: b.id,
     label: b.name,
   })),
-)
+);
 
 const singleBuilding = computed(
   () =>
@@ -170,11 +215,15 @@ const singleBuilding = computed(
     filtered.value[0] ??
     scopedBuildings.value.find((b) => b.id === singleId.value) ??
     BUILDINGS.find((b) => b.id === singleId.value)!,
-)
+);
 
 const active = computed(() =>
-  mode.value === 'single' ? (filtered.value.length ? [singleBuilding.value] : []) : filtered.value,
-)
+  mode.value === "single"
+    ? filtered.value.length
+      ? [singleBuilding.value]
+      : []
+    : filtered.value,
+);
 
 /**
  * Davr filtri haqiqatan ishlaydi.
@@ -189,24 +238,24 @@ const active = computed(() =>
  * shunday deb belgilanadi.
  */
 const periodInvoices = computed(() => {
-  const names = new Set(active.value.map((b) => b.name))
+  const names = new Set(active.value.map((b) => b.name));
   return INVOICES.filter(
     (inv) =>
       names.has(inv.buildingName) &&
       inv.issuedAt >= fromDate.value &&
       inv.issuedAt <= toDate.value,
-  )
-})
+  );
+});
 
 const totals = computed(() => {
-  const list = active.value
-  const gla = list.reduce((s, b) => s + b.gla, 0)
-  const vacantArea = list.reduce((s, b) => s + b.vacantArea, 0)
-  const occupiedArea = list.reduce((s, b) => s + b.occupiedArea, 0)
+  const list = active.value;
+  const gla = list.reduce((s, b) => s + b.gla, 0);
+  const vacantArea = list.reduce((s, b) => s + b.vacantArea, 0);
+  const occupiedArea = list.reduce((s, b) => s + b.occupiedArea, 0);
 
-  const period = periodInvoices.value
-  const billed = period.reduce((s, inv) => s + inv.total, 0)
-  const paid = period.reduce((s, inv) => s + inv.paid, 0)
+  const period = periodInvoices.value;
+  const billed = period.reduce((s, inv) => s + inv.total, 0);
+  const paid = period.reduce((s, inv) => s + inv.paid, 0);
 
   return {
     count: list.length,
@@ -219,73 +268,86 @@ const totals = computed(() => {
     collection: billed ? Math.round((paid / billed) * 100) : 0,
     occupied: occupiedArea,
     occupancy: gla ? Math.round((occupiedArea / gla) * 100) : 0,
-    sla: gla ? Math.round(list.reduce((s, b) => s + b.sla * b.gla, 0) / gla) : 0,
-  }
-})
+    sla: gla
+      ? Math.round(list.reduce((s, b) => s + b.sla * b.gla, 0) / gla)
+      : 0,
+  };
+});
 
-const periodLabel = computed(() => `${dateShort(fromDate.value)} – ${dateShort(toDate.value)}`)
+const periodLabel = computed(
+  () => `${dateShort(fromDate.value)} – ${dateShort(toDate.value)}`,
+);
 
 const scopeLabel = computed(() => {
-  if (mode.value === 'single') return singleBuilding.value?.name ?? t('usr.repNoObjectSelected')
-  if (!totals.value.count) return t('usr.repNoObjectSelected')
+  if (mode.value === "single")
+    return singleBuilding.value?.name ?? t("usr.repNoObjectSelected");
+  if (!totals.value.count) return t("usr.repNoObjectSelected");
   if (totals.value.count === scopedBuildings.value.length)
-    return t('usr.repAllObjectsCount', {
+    return t("usr.repAllObjectsCount", {
       current: totals.value.count,
       total: scopedBuildings.value.length,
-    })
-  return t('usr.repObjectCount', { count: totals.value.count })
-})
+    });
+  return t("usr.repObjectCount", { count: totals.value.count });
+});
 
 /** Grafik o‘qidagi o‘lchov birligi ham tanlangan tilda yoziladi */
-const billionUnit = computed(() => `${t('unitOf.billion')} ${t('unitOf.currency')}`)
-const millionUnit = computed(() => `${t('unitOf.million')} ${t('unitOf.currency')}`)
+const billionUnit = computed(
+  () => `${t("unitOf.billion")} ${t("unitOf.currency")}`,
+);
+const millionUnit = computed(
+  () => `${t("unitOf.million")} ${t("unitOf.currency")}`,
+);
 
 const months = computed(() => {
-  const f = new Date(fromDate.value)
-  const to = new Date(toDate.value)
+  const f = new Date(fromDate.value);
+  const to = new Date(toDate.value);
   if (Number.isNaN(f.getTime()) || Number.isNaN(to.getTime()) || to < f)
-    return MONTHS.value.slice(0, 6)
-  const out: string[] = []
-  const cur = new Date(f.getFullYear(), f.getMonth(), 1)
-  const multiYear = f.getFullYear() !== to.getFullYear()
+    return MONTHS.value.slice(0, 6);
+  const out: string[] = [];
+  const cur = new Date(f.getFullYear(), f.getMonth(), 1);
+  const multiYear = f.getFullYear() !== to.getFullYear();
   while (cur <= to && out.length < 12) {
     out.push(
       multiYear
         ? `${MONTHS.value[cur.getMonth()]} ${String(cur.getFullYear()).slice(2)}`
         : MONTHS.value[cur.getMonth()]!,
-    )
-    cur.setMonth(cur.getMonth() + 1)
+    );
+    cur.setMonth(cur.getMonth() + 1);
   }
-  return out.length ? out : MONTHS.value.slice(0, 6)
-})
+  return out.length ? out : MONTHS.value.slice(0, 6);
+});
 
 function ramp(base: number, start: number, end: number, digits = 2) {
-  const n = months.value.length
+  const n = months.value.length;
   return Array.from({ length: n }, (_, i) =>
-    Number((base * (start + ((end - start) * i) / Math.max(n - 1, 1))).toFixed(digits)),
-  )
+    Number(
+      (base * (start + ((end - start) * i) / Math.max(n - 1, 1))).toFixed(
+        digits,
+      ),
+    ),
+  );
 }
 
 const occupancySeries = computed(() => [
   {
-    label: t('usr.repOccupiedAreaSeries'),
-    tone: 'ok' as const,
+    label: t("usr.repOccupiedAreaSeries"),
+    tone: "ok" as const,
     values: ramp(totals.value.occupied, 0.965, 1, 0),
   },
   {
-    label: t('usr.repVacantAreaSeries'),
-    tone: 'violet' as const,
+    label: t("usr.repVacantAreaSeries"),
+    tone: "violet" as const,
     values: ramp(totals.value.vacantArea, 1.14, 1, 0),
   },
-])
+]);
 
 const revenueSeries = computed(() => [
   {
-    label: t('usr.repRevenueSeries'),
-    tone: 'brand' as const,
+    label: t("usr.repRevenueSeries"),
+    tone: "brand" as const,
     values: ramp(totals.value.revenue / 1_000_000_000, 0.87, 1),
   },
-])
+]);
 
 // Muddat guruhlari hisob-fakturalar registridan har safar qayta hisoblanadi:
 // to‘lov qabul qilinganda hisobot ham darhol yangilanadi.
@@ -295,78 +357,113 @@ const debtSeries = computed(() =>
     tone: a.tone,
     values: ramp((totals.value.debt * a.share) / 100 / 1_000_000, 1.12, 1, 1),
   })),
-)
+);
 
 const slaSlices = computed(() => {
-  const done = totals.value.sla
-  const partial = Math.round((100 - done) * 0.7)
+  const done = totals.value.sla;
+  const partial = Math.round((100 - done) * 0.7);
   return [
-    { label: t('usr.repSlaDone'), value: done, tone: 'ok' as const },
-    { label: t('usr.repSlaPartial'), value: partial, tone: 'warn' as const },
+    { label: t("usr.repSlaDone"), value: done, tone: "ok" as const },
+    { label: t("usr.repSlaPartial"), value: partial, tone: "warn" as const },
     {
-      label: t('usr.repSlaFailed'),
+      label: t("usr.repSlaFailed"),
       value: Math.max(100 - done - partial, 0),
-      tone: 'danger' as const,
+      tone: "danger" as const,
     },
-  ]
-})
+  ];
+});
 
 /** Kommunal sarf portfel bo‘yicha baza va tanlovning GLA ulushi bilan hisoblanadi */
 const utilityBase = computed(() => {
-  const share = PORTFOLIO_TOTALS.gla ? totals.value.gla / PORTFOLIO_TOTALS.gla : 0
+  const share = PORTFOLIO_TOTALS.gla
+    ? totals.value.gla / PORTFOLIO_TOTALS.gla
+    : 0;
   return [
-    { label: t('meterType.electricity'), unit: t('unitOf.kwh'), value: Math.round(125430 * share), tone: 'brand' as const, curve: [1, 0.96, 0.92, 0.95, 1.03, 1.08] },
-    { label: t('meterType.water'), unit: t('unitOf.cbm'), value: Math.round(8760 * share), tone: 'ok' as const, curve: [1, 1.02, 1.05, 1.09, 1.14, 1.18] },
-    { label: t('usr.repHeating'), unit: t('unitOf.gcal'), value: Math.round(12340 * share), tone: 'warn' as const, curve: [1, 0.94, 0.78, 0.52, 0.34, 0.3] },
-  ]
-})
+    {
+      label: t("meterType.electricity"),
+      unit: t("unitOf.kwh"),
+      value: Math.round(125430 * share),
+      tone: "brand" as const,
+      curve: [1, 0.96, 0.92, 0.95, 1.03, 1.08],
+    },
+    {
+      label: t("meterType.water"),
+      unit: t("unitOf.cbm"),
+      value: Math.round(8760 * share),
+      tone: "ok" as const,
+      curve: [1, 1.02, 1.05, 1.09, 1.14, 1.18],
+    },
+    {
+      label: t("usr.repHeating"),
+      unit: t("unitOf.gcal"),
+      value: Math.round(12340 * share),
+      tone: "warn" as const,
+      curve: [1, 0.94, 0.78, 0.52, 0.34, 0.3],
+    },
+  ];
+});
 
 const utilitySeries = computed(() =>
   utilityBase.value.map((u) => ({
-    label: t('usr.repUtilitySeries', { label: u.label, unit: u.unit }),
+    label: t("usr.repUtilitySeries", { label: u.label, unit: u.unit }),
     tone: u.tone,
     values: months.value.map((_, i) =>
       Number((100 * (u.curve[i % u.curve.length] ?? 1)).toFixed(1)),
     ),
   })),
-)
+);
 
 const compareSeries = computed(() => {
   const collection = totals.value.revenue
     ? Math.max(100 - (totals.value.debt / totals.value.revenue) * 100, 0)
-    : 0
+    : 0;
   return [
     {
-      label: t('usr.repOccupancyPct'),
-      tone: 'brand' as const,
+      label: t("usr.repOccupancyPct"),
+      tone: "brand" as const,
       values: ramp(totals.value.occupancy, 0.96, 1, 1),
     },
     {
-      label: t('usr.repSlaPct'),
-      tone: 'ok' as const,
+      label: t("usr.repSlaPct"),
+      tone: "ok" as const,
       values: ramp(totals.value.sla, 0.98, 1, 1),
     },
     {
-      label: t('usr.repCollectionPct'),
-      tone: 'violet' as const,
+      label: t("usr.repCollectionPct"),
+      tone: "violet" as const,
       values: ramp(collection, 0.985, 1, 1),
     },
-  ]
-})
+  ];
+});
 
 const tableColumns = computed(() => [
-  { key: 'name', label: t('field.object') },
-  { key: 'gla', label: t('usr.repGlaCol'), align: 'right' as const, numeric: true },
-  { key: 'occupancy', label: t('field.occupancy'), align: 'right' as const, numeric: true },
-  { key: 'revenue', label: t('usr.repRevenue'), align: 'right' as const, numeric: true },
+  { key: "name", label: t("field.object") },
   {
-    key: 'vacantArea',
-    label: t('usr.repVacantAreaSeries'),
-    align: 'right' as const,
+    key: "gla",
+    label: t("usr.repGlaCol"),
+    align: "right" as const,
     numeric: true,
   },
-  { key: 'sla', label: t('field.sla'), align: 'right' as const, numeric: true },
-])
+  {
+    key: "occupancy",
+    label: t("field.occupancy"),
+    align: "right" as const,
+    numeric: true,
+  },
+  {
+    key: "revenue",
+    label: t("usr.repRevenue"),
+    align: "right" as const,
+    numeric: true,
+  },
+  {
+    key: "vacantArea",
+    label: t("usr.repVacantAreaSeries"),
+    align: "right" as const,
+    numeric: true,
+  },
+  { key: "sla", label: t("field.sla"), align: "right" as const, numeric: true },
+]);
 
 const tableRows = computed(() => {
   const rows = active.value.map((b) => ({
@@ -379,15 +476,18 @@ const tableRows = computed(() => {
     vacantArea: b.vacantArea,
     sla: b.sla,
     total: false,
-  }))
-  if (!rows.length) return rows
-  const sum = totals.value
+  }));
+  if (!rows.length) return rows;
+  const sum = totals.value;
   return [
     ...rows,
     {
-      id: 'summary',
-      name: mode.value === 'single' ? t('usr.repObjectTotal') : t('usr.repTotalAverage'),
-      district: `${t('usr.repObjectCount', { count: sum.count })} • ${periodLabel.value}`,
+      id: "summary",
+      name:
+        mode.value === "single"
+          ? t("usr.repObjectTotal")
+          : t("usr.repTotalAverage"),
+      district: `${t("usr.repObjectCount", { count: sum.count })} • ${periodLabel.value}`,
       gla: sum.gla,
       occupancy: sum.occupancy,
       revenue: sum.revenue,
@@ -395,96 +495,109 @@ const tableRows = computed(() => {
       sla: sum.sla,
       total: true,
     },
-  ]
-})
+  ];
+});
 
 function onRowClick(row: Record<string, unknown>) {
   if (row.total) {
-    mode.value = 'portfolio'
-    return
+    mode.value = "portfolio";
+    return;
   }
-  singleId.value = String(row.id)
-  mode.value = 'single'
+  singleId.value = String(row.id);
+  mode.value = "single";
 }
 
 const QUICK_REPORTS = computed(() => [
-  { id: 'qr-01', title: t('usr.repQuickKpi'), caption: t('usr.repQuickKpiCaption'), icon: 'chart' },
   {
-    id: 'qr-02',
-    title: t('usr.repQuickRevenue'),
-    caption: t('usr.repQuickRevenueCaption'),
-    icon: 'wallet',
+    id: "qr-01",
+    title: t("usr.repQuickKpi"),
+    caption: t("usr.repQuickKpiCaption"),
+    icon: "chart",
   },
   {
-    id: 'qr-03',
-    title: t('usr.repQuickDebt'),
-    caption: t('usr.repQuickDebtCaption'),
-    icon: 'warning',
+    id: "qr-02",
+    title: t("usr.repQuickRevenue"),
+    caption: t("usr.repQuickRevenueCaption"),
+    icon: "wallet",
   },
   {
-    id: 'qr-04',
-    title: t('usr.repQuickSla'),
-    caption: t('usr.repQuickSlaCaption'),
-    icon: 'wrench',
+    id: "qr-03",
+    title: t("usr.repQuickDebt"),
+    caption: t("usr.repQuickDebtCaption"),
+    icon: "warning",
   },
   {
-    id: 'qr-05',
-    title: t('usr.repQuickUtility'),
-    caption: t('usr.repQuickUtilityCaption'),
-    icon: 'meter',
+    id: "qr-04",
+    title: t("usr.repQuickSla"),
+    caption: t("usr.repQuickSlaCaption"),
+    icon: "wrench",
   },
-])
+  {
+    id: "qr-05",
+    title: t("usr.repQuickUtility"),
+    caption: t("usr.repQuickUtilityCaption"),
+    icon: "meter",
+  },
+]);
 
-const EXPORT_FORMATS = ['DOCX', 'CSV']
+const EXPORT_FORMATS = ["DOCX", "CSV"];
 
-const exportOpen = ref(false)
-const exportTitle = ref('')
-const exportFormat = ref('DOCX')
+const exportOpen = ref(false);
+const exportTitle = ref("");
+const exportFormat = ref("DOCX");
 const lastExport = ref<{
-  title: string
-  format: string
-  period: string
-  scope: string
-  fileName: string
-} | null>(null)
+  title: string;
+  format: string;
+  period: string;
+  scope: string;
+  fileName: string;
+} | null>(null);
 
 function openExport(title: string, format: string) {
-  exportTitle.value = title
-  exportFormat.value = format
-  exportOpen.value = true
+  exportTitle.value = title;
+  exportFormat.value = format;
+  exportOpen.value = true;
 }
 
 /** Faylga ekrandagi jadvalning aynan o‘zi tushadi */
 function exportTable(): Array<Array<string | number>> {
   return [
     [
-      t('field.object'),
-      t('usr.repLocationCol'),
-      t('usr.repGlaUnit'),
-      t('usr.repOccupancyUnit'),
-      t('usr.repRevenueUnit'),
-      t('usr.repVacantUnit'),
-      t('usr.repSlaUnit'),
+      t("field.object"),
+      t("usr.repLocationCol"),
+      t("usr.repGlaUnit"),
+      t("usr.repOccupancyUnit"),
+      t("usr.repRevenueUnit"),
+      t("usr.repVacantUnit"),
+      t("usr.repSlaUnit"),
     ],
-    ...tableRows.value.map((r) => [r.name, r.district, r.gla, r.occupancy, r.revenue, r.vacantArea, r.sla]),
-  ]
+    ...tableRows.value.map((r) => [
+      r.name,
+      r.district,
+      r.gla,
+      r.occupancy,
+      r.revenue,
+      r.vacantArea,
+      r.sla,
+    ]),
+  ];
 }
 
 function exportDocument() {
-  const sum = totals.value
+  const sum = totals.value;
   return docxBlob([
-    { text: exportTitle.value, style: 'title' },
-    { text: `${scopeLabel.value} • ${periodLabel.value}`, style: 'subtitle' },
-    { text: t('usr.repKeyMetrics'), style: 'heading' },
-    { text: t('usr.repDocGla', { value: num(sum.gla) }) },
-    { text: t('usr.repDocOccupancy', { value: percent(sum.occupancy) }) },
-    { text: t('usr.repDocVacant', { value: num(sum.vacantArea) }) },
-    { text: t('usr.repDocRevenue', { value: sumShort(sum.revenue) }) },
-    { text: t('usr.repDocDebt', { value: sumShort(sum.debt) }) },
-    { text: t('usr.repDocSla', { value: percent(sum.sla) }) },
-    { text: t('usr.repObjectBreakdown'), style: 'heading' },
+    { text: exportTitle.value, style: "title" },
+    { text: `${scopeLabel.value} • ${periodLabel.value}`, style: "subtitle" },
+    { text: t("usr.repKeyMetrics"), style: "heading" },
+    { text: t("usr.repDocGla", { value: num(sum.gla) }) },
+    { text: t("usr.repDocOccupancy", { value: percent(sum.occupancy) }) },
+    { text: t("usr.repDocVacant", { value: num(sum.vacantArea) }) },
+    { text: t("usr.repDocRevenue", { value: sumShort(sum.revenue) }) },
+    { text: t("usr.repDocDebt", { value: sumShort(sum.debt) }) },
+    { text: t("usr.repDocSla", { value: percent(sum.sla) }) },
+    { text: t("usr.repObjectBreakdown"), style: "heading" },
     ...active.value.map((b) => ({
-      text: t('usr.repDocBuildingLine', {
+      text: t("usr.repDocBuildingLine", {
         name: b.name,
         location: `${b.city}, ${b.district}`,
         gla: num(b.gla),
@@ -495,17 +608,20 @@ function exportDocument() {
       }),
     })),
     {
-      text: t('usr.repDocFooter', { count: sum.count, period: periodLabel.value }),
-      style: 'small',
+      text: t("usr.repDocFooter", {
+        count: sum.count,
+        period: periodLabel.value,
+      }),
+      style: "small",
     },
-  ])
+  ]);
 }
 
 function confirmExport() {
-  const csv = exportFormat.value === 'CSV'
-  const fileName = `${fileSlug(exportTitle.value)}-${fromDate.value}-${toDate.value}.${csv ? 'csv' : 'docx'}`
+  const csv = exportFormat.value === "CSV";
+  const fileName = `${fileSlug(exportTitle.value)}-${fromDate.value}-${toDate.value}.${csv ? "csv" : "docx"}`;
 
-  saveBlob(csv ? csvBlob(exportTable()) : exportDocument(), fileName)
+  saveBlob(csv ? csvBlob(exportTable()) : exportDocument(), fileName);
 
   lastExport.value = {
     title: exportTitle.value,
@@ -513,8 +629,8 @@ function confirmExport() {
     period: periodLabel.value,
     scope: scopeLabel.value,
     fileName,
-  }
-  exportOpen.value = false
+  };
+  exportOpen.value = false;
 }
 </script>
 
@@ -522,12 +638,18 @@ function confirmExport() {
   <AppTopbar
     :title="t('usr.repTitle')"
     :subtitle="t('usr.repCaption')"
-    :breadcrumb="[{ label: t('nav.cabinet'), to: '/' }, { label: t('nav.reports') }]"
+    :breadcrumb="[
+      { label: t('nav.cabinet'), to: '/' },
+      { label: t('nav.reports') },
+    ]"
   >
     <template #actions>
-      <UiButton size="sm" @click="openExport(t('usr.repGeneralAnalytics'), 'DOCX')">
+      <UiButton
+        size="sm"
+        @click="openExport(t('usr.repGeneralAnalytics'), 'DOCX')"
+      >
         <UiIcon name="download" :size="16" />
-        {{ t('common.exportAction') }}
+        {{ t("common.exportAction") }}
       </UiButton>
     </template>
   </AppTopbar>
@@ -535,7 +657,9 @@ function confirmExport() {
   <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-4 sm:p-6">
     <UiCard
       :title="t('usr.repFilters')"
-      :subtitle="t('usr.repCurrentSelection', { scope: scopeLabel, period: periodLabel })"
+      :subtitle="
+        t('usr.repCurrentSelection', { scope: scopeLabel, period: periodLabel })
+      "
     >
       <div class="grid gap-4 lg:grid-cols-[repeat(3,minmax(0,1fr))_auto]">
         <UiField
@@ -581,8 +705,8 @@ function confirmExport() {
                 <UiIcon name="check" :size="15" />
                 {{
                   draftBuildings.length === scopedBuildings.length
-                    ? t('usr.repUnselectAll')
-                    : t('usr.repSelectAll')
+                    ? t("usr.repUnselectAll")
+                    : t("usr.repSelectAll")
                 }}
               </button>
               <label
@@ -597,8 +721,13 @@ function confirmExport() {
                   class="size-4 shrink-0 accent-brand-500"
                 />
                 <span class="min-w-0 flex-1">
-                  <span class="block truncate text-[13px] font-medium text-ink-800">{{ b.name }}</span>
-                  <span class="block truncate text-[12px] text-ink-500">{{ buildingTypeLabel(b.type) }}</span>
+                  <span
+                    class="block truncate text-[13px] font-medium text-ink-800"
+                    >{{ b.name }}</span
+                  >
+                  <span class="block truncate text-[12px] text-ink-500">{{
+                    buildingTypeLabel(b.type)
+                  }}</span>
                 </span>
               </label>
             </div>
@@ -612,21 +741,28 @@ function confirmExport() {
         <div class="flex items-end gap-2.5">
           <UiButton :disabled="rangeInvalid" @click="applyFilters">
             <UiIcon name="filter" :size="16" />
-            {{ t('common.applyFilters') }}
+            {{ t("common.applyFilters") }}
           </UiButton>
-          <UiButton variant="ghost" @click="resetFilters">{{ t('common.reset') }}</UiButton>
+          <UiButton variant="ghost" @click="resetFilters">{{
+            t("common.reset")
+          }}</UiButton>
         </div>
       </div>
 
-      <p v-if="filterChanged" class="mt-3 flex items-center gap-2 text-[13px] font-medium text-warn-700">
+      <p
+        v-if="filterChanged"
+        class="mt-3 flex items-center gap-2 text-[13px] font-medium text-warn-700"
+      >
         <UiIcon name="info" :size="15" />
-        {{ t('usr.repFiltersChanged', { action: t('common.applyFilters') }) }}
+        {{ t("usr.repFiltersChanged", { action: t("common.applyFilters") }) }}
       </p>
     </UiCard>
 
     <section class="flex flex-wrap items-center gap-4">
       <div class="flex items-center gap-3">
-        <span class="text-[13px] font-semibold text-ink-700">{{ t('usr.repViewMode') }}</span>
+        <span class="text-[13px] font-semibold text-ink-700">{{
+          t("usr.repViewMode")
+        }}</span>
         <UiTabs v-model="mode" :tabs="modeTabs" />
       </div>
 
@@ -643,10 +779,10 @@ function confirmExport() {
       >
         <UiIcon name="info" :size="16" class="text-brand-600" />
         <span v-if="mode === 'portfolio'">
-          {{ t('usr.repPortfolioMode', { scope: scopeLabel }) }}
+          {{ t("usr.repPortfolioMode", { scope: scopeLabel }) }}
         </span>
         <span v-else>
-          {{ t('usr.repSingleMode', { name: singleBuilding?.name }) }}
+          {{ t("usr.repSingleMode", { name: singleBuilding?.name }) }}
         </span>
       </p>
     </section>
@@ -656,10 +792,13 @@ function confirmExport() {
       class="flex items-center gap-3 rounded-card bg-surface p-5 text-[14px] text-ink-600 shadow-card ring-1 ring-ink-200/60"
     >
       <UiIcon name="warning" :size="20" class="text-warn-500" />
-      {{ t('usr.repNoMatch', { action: t('common.reset') }) }}
+      {{ t("usr.repNoMatch", { action: t("common.reset") }) }}
     </div>
 
-    <section v-else class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
+    <section
+      v-else
+      class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6"
+    >
       <UiKpi
         :label="t('kpi.glaTotal')"
         :value="num(totals.gla)"
@@ -730,7 +869,9 @@ function confirmExport() {
       >
         {{ rt.label }}
       </button>
-      <p class="ml-auto self-center text-[12px] text-ink-500">{{ activeTab.caption }}</p>
+      <p class="ml-auto self-center text-[12px] text-ink-500">
+        {{ activeTab.caption }}
+      </p>
     </nav>
 
     <UiCard
@@ -740,27 +881,41 @@ function confirmExport() {
       flush
     >
       <template #actions>
-        <UiButton variant="secondary" size="sm" @click="openExport(t('usr.repByObjects'), 'CSV')">
+        <UiButton
+          variant="secondary"
+          size="sm"
+          @click="openExport(t('usr.repByObjects'), 'CSV')"
+        >
           <UiIcon name="download" :size="15" />
           CSV
         </UiButton>
       </template>
 
       <UiTable
+        :page-size="12"
         :columns="tableColumns"
         :rows="tableRows"
         :empty="t('empty.noObjectsForFilter')"
         @row-click="onRowClick"
       >
         <template #cell-name="{ row }">
-          <span class="block text-[14px]" :class="row.total ? 'font-bold text-ink-900' : 'font-semibold text-ink-900'">
+          <span
+            class="block text-[14px]"
+            :class="
+              row.total
+                ? 'font-bold text-ink-900'
+                : 'font-semibold text-ink-900'
+            "
+          >
             {{ row.name }}
           </span>
           <span class="block text-[12px] text-ink-500">{{ row.district }}</span>
         </template>
 
         <template #cell-gla="{ row }">
-          <span :class="row.total ? 'font-bold text-ink-900' : ''">{{ num(row.gla) }}</span>
+          <span :class="row.total ? 'font-bold text-ink-900' : ''">{{
+            num(row.gla)
+          }}</span>
         </template>
 
         <template #cell-occupancy="{ row }">
@@ -770,18 +925,28 @@ function confirmExport() {
           >
             <span
               class="size-2 rounded-full"
-              :class="row.occupancy >= 90 ? 'bg-ok-500' : row.occupancy >= 84 ? 'bg-brand-500' : 'bg-warn-500'"
+              :class="
+                row.occupancy >= 90
+                  ? 'bg-ok-500'
+                  : row.occupancy >= 84
+                    ? 'bg-brand-500'
+                    : 'bg-warn-500'
+              "
             />
             {{ percent(row.occupancy) }}
           </span>
         </template>
 
         <template #cell-revenue="{ row }">
-          <span :class="row.total ? 'font-bold text-ink-900' : ''">{{ moneyShort(row.revenue) }}</span>
+          <span :class="row.total ? 'font-bold text-ink-900' : ''">{{
+            moneyShort(row.revenue)
+          }}</span>
         </template>
 
         <template #cell-vacantArea="{ row }">
-          <span :class="row.total ? 'font-bold text-ink-900' : ''">{{ num(row.vacantArea) }}</span>
+          <span :class="row.total ? 'font-bold text-ink-900' : ''">{{
+            num(row.vacantArea)
+          }}</span>
         </template>
 
         <template #cell-sla="{ row }">
@@ -799,7 +964,10 @@ function confirmExport() {
     </UiCard>
 
     <section v-show="tab === 'bandlik'" class="grid gap-5 xl:grid-cols-2">
-      <UiCard :title="t('reports.vacancyTitle')" :subtitle="t('reports.vacancyCaption')">
+      <UiCard
+        :title="t('reports.vacancyTitle')"
+        :subtitle="t('reports.vacancyCaption')"
+      >
         <UiBars
           :labels="months"
           :series="occupancySeries"
@@ -809,18 +977,35 @@ function confirmExport() {
         />
       </UiCard>
 
-      <UiCard :title="t('usr.repCompareTitle')" :subtitle="t('usr.repCompareCaption')">
+      <UiCard
+        :title="t('usr.repCompareTitle')"
+        :subtitle="t('usr.repCompareCaption')"
+      >
         <UiLine :labels="months" :series="compareSeries" :height="212" />
       </UiCard>
     </section>
 
     <section v-show="tab === 'moliya'" class="grid gap-5 xl:grid-cols-2">
-      <UiCard :title="t('usr.repRevenueTitle')" :subtitle="t('usr.repRevenueCaption')">
-        <UiBars :labels="months" :series="revenueSeries" :height="220" :unit="billionUnit" />
+      <UiCard
+        :title="t('usr.repRevenueTitle')"
+        :subtitle="t('usr.repRevenueCaption')"
+      >
+        <UiBars
+          :labels="months"
+          :series="revenueSeries"
+          :height="220"
+          :unit="billionUnit"
+        />
       </UiCard>
 
       <UiCard :title="t('nav.debts')" :subtitle="t('usr.repDebtCaption')">
-        <UiBars :labels="months" :series="debtSeries" stacked :height="220" :unit="millionUnit" />
+        <UiBars
+          :labels="months"
+          :series="debtSeries"
+          stacked
+          :height="220"
+          :unit="millionUnit"
+        />
       </UiCard>
     </section>
 
@@ -834,16 +1019,24 @@ function confirmExport() {
         />
       </UiCard>
 
-      <UiCard :title="t('usr.repUtilityTitle')" :subtitle="t('usr.repUtilityCaption')">
+      <UiCard
+        :title="t('usr.repUtilityTitle')"
+        :subtitle="t('usr.repUtilityCaption')"
+      >
         <UiLine :labels="months" :series="utilitySeries" :height="212" />
-        <dl class="mt-4 grid grid-cols-2 gap-3 border-t border-ink-100 pt-4 sm:grid-cols-3">
+        <dl
+          class="mt-4 grid grid-cols-2 gap-3 border-t border-ink-100 pt-4 sm:grid-cols-3"
+        >
           <div v-for="u in utilityBase" :key="u.label">
-            <dt class="text-[12px] text-ink-500">{{ u.label }} ({{ u.unit }})</dt>
-            <dd class="tabular mt-0.5 text-sm font-bold text-ink-900">{{ num(u.value) }}</dd>
+            <dt class="text-[12px] text-ink-500">
+              {{ u.label }} ({{ u.unit }})
+            </dt>
+            <dd class="tabular mt-0.5 text-sm font-bold text-ink-900">
+              {{ num(u.value) }}
+            </dd>
           </div>
         </dl>
       </UiCard>
-
     </section>
 
     <UiCard
@@ -859,29 +1052,50 @@ function confirmExport() {
         <UiIcon name="check" :size="16" class="mt-0.5 shrink-0" />
         <span>
           {{
-            t('usr.repExportedPrefix', {
+            t("usr.repExportedPrefix", {
               title: lastExport.title,
               scope: lastExport.scope,
               period: lastExport.period,
             })
           }}
           <span class="tabular font-semibold">{{ lastExport.fileName }}</span>
-          {{ t('usr.repExportedSuffix') }}
+          {{ t("usr.repExportedSuffix") }}
         </span>
       </p>
 
       <ul class="divide-y divide-ink-100">
-        <li v-for="r in QUICK_REPORTS" :key="r.id" class="flex items-center gap-4 px-5 py-3.5">
-          <span class="grid size-10 shrink-0 place-items-center rounded-[10px] bg-brand-50 text-brand-600">
+        <li
+          v-for="r in QUICK_REPORTS"
+          :key="r.id"
+          class="flex items-center gap-4 px-5 py-3.5"
+        >
+          <span
+            class="grid size-10 shrink-0 place-items-center rounded-[10px] bg-brand-50 text-brand-600"
+          >
             <UiIcon :name="r.icon" :size="18" />
           </span>
           <span class="min-w-0 flex-1">
-            <span class="block truncate text-[14px] font-semibold text-ink-900">{{ r.title }}</span>
-            <span class="block truncate text-[12px] text-ink-500">{{ r.caption }}</span>
+            <span
+              class="block truncate text-[14px] font-semibold text-ink-900"
+              >{{ r.title }}</span
+            >
+            <span class="block truncate text-[12px] text-ink-500">{{
+              r.caption
+            }}</span>
           </span>
           <span class="flex shrink-0 gap-2">
-            <UiButton variant="secondary" size="sm" @click="openExport(r.title, 'DOCX')">DOCX</UiButton>
-            <UiButton variant="subtle" size="sm" @click="openExport(r.title, 'CSV')">CSV</UiButton>
+            <UiButton
+              variant="secondary"
+              size="sm"
+              @click="openExport(r.title, 'DOCX')"
+              >DOCX</UiButton
+            >
+            <UiButton
+              variant="subtle"
+              size="sm"
+              @click="openExport(r.title, 'CSV')"
+              >CSV</UiButton
+            >
           </span>
         </li>
       </ul>
@@ -895,21 +1109,29 @@ function confirmExport() {
     >
       <dl class="space-y-3 text-[14px]">
         <div class="flex items-start justify-between gap-4">
-          <dt class="text-ink-500">{{ t('field.report') }}</dt>
-          <dd class="text-right font-semibold text-ink-900">{{ exportTitle }}</dd>
+          <dt class="text-ink-500">{{ t("field.report") }}</dt>
+          <dd class="text-right font-semibold text-ink-900">
+            {{ exportTitle }}
+          </dd>
         </div>
         <div class="flex items-start justify-between gap-4">
-          <dt class="text-ink-500">{{ t('field.period') }}</dt>
-          <dd class="tabular text-right font-semibold text-ink-900">{{ periodLabel }}</dd>
+          <dt class="text-ink-500">{{ t("field.period") }}</dt>
+          <dd class="tabular text-right font-semibold text-ink-900">
+            {{ periodLabel }}
+          </dd>
         </div>
         <div class="flex items-start justify-between gap-4">
-          <dt class="text-ink-500">{{ t('field.coverage') }}</dt>
-          <dd class="text-right font-semibold text-ink-900">{{ scopeLabel }}</dd>
+          <dt class="text-ink-500">{{ t("field.coverage") }}</dt>
+          <dd class="text-right font-semibold text-ink-900">
+            {{ scopeLabel }}
+          </dd>
         </div>
       </dl>
 
       <div class="mt-5">
-        <p class="mb-2 text-[13px] font-semibold text-ink-700">{{ t('field.format') }}</p>
+        <p class="mb-2 text-[13px] font-semibold text-ink-700">
+          {{ t("field.format") }}
+        </p>
         <div class="flex gap-2">
           <button
             v-for="f in EXPORT_FORMATS"
@@ -930,10 +1152,12 @@ function confirmExport() {
       </div>
 
       <template #footer>
-        <UiButton variant="ghost" @click="exportOpen = false">{{ t('common.cancel') }}</UiButton>
+        <UiButton variant="ghost" @click="exportOpen = false">{{
+          t("common.cancel")
+        }}</UiButton>
         <UiButton @click="confirmExport">
           <UiIcon name="download" :size="16" />
-          {{ t('common.download') }}
+          {{ t("common.download") }}
         </UiButton>
       </template>
     </UiModal>

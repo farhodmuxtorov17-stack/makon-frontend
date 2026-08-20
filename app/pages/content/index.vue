@@ -1,66 +1,75 @@
 <script setup lang="ts">
-import { BUILDINGS } from '~/data/buildings'
-import { UNITS, type Unit } from '~/data/units'
-import { dateShort, num, percent } from '~/utils/format'
+import { BUILDINGS } from "~/data/buildings";
+import { UNITS, type Unit } from "~/data/units";
+import { dateShort, num, percent } from "~/utils/format";
 
 interface QueueRow {
-  id: string
-  buildingId: string
-  buildingName: string
-  buildingCode: string
-  floor: number
-  floorName: string
-  units: number
-  withPlan: number
-  withAttrs: number
-  planDone: boolean
-  attrsDone: boolean
-  updated: string
-  codes: string
+  id: string;
+  buildingId: string;
+  buildingName: string;
+  buildingCode: string;
+  floor: number;
+  floorName: string;
+  units: number;
+  withPlan: number;
+  withAttrs: number;
+  planDone: boolean;
+  attrsDone: boolean;
+  updated: string;
+  codes: string;
 }
 
-const auth = useAuthStore()
-const { t } = useI18n()
-const { buildingTypeLabel, columns: labelColumns, floorLabel } = useAppLabels()
+const auth = useAuthStore();
+const { t } = useI18n();
+const { buildingTypeLabel, columns: labelColumns, floorLabel } = useAppLabels();
 
-const query = ref('')
-const fBuilding = ref('all')
-const fState = ref('all')
+const query = ref("");
+const fBuilding = ref("all");
+const fState = ref("all");
 
-const scoped = computed(() => BUILDINGS.filter((b) => auth.inScope(b.id)))
+const scoped = computed(() => BUILDINGS.filter((b) => auth.inScope(b.id)));
 
 function planReady(u: Unit) {
-  return Array.isArray(u.polygon) && u.polygon.length >= 3
+  return Array.isArray(u.polygon) && u.polygon.length >= 3;
 }
 
 function attrsReady(u: Unit) {
-  return Boolean(u.usage) && u.area > 0 && Boolean(u.status) && u.equipment.length > 0
+  return (
+    Boolean(u.usage) &&
+    u.area > 0 &&
+    Boolean(u.status) &&
+    u.equipment.length > 0
+  );
 }
 
 function floorName(floor: number) {
-  return floor < 0 ? t('unitOf.basementNo', { floor: -floor }) : floorLabel(floor)
+  return floor < 0
+    ? t("unitOf.basementNo", { floor: -floor })
+    : floorLabel(floor);
 }
 
 // Kiritilgan qavatlar oxirgi tahrir sanasi bo‘yicha tartiblanadi
 function updatedOn(order: number) {
-  const day = 26 - (order % 18)
-  return `2025-05-${String(day).padStart(2, '0')}`
+  const day = 26 - (order % 18);
+  return `2025-05-${String(day).padStart(2, "0")}`;
 }
 
 const queue = computed<QueueRow[]>(() => {
-  const rows: QueueRow[] = []
-  let order = 0
+  const rows: QueueRow[] = [];
+  let order = 0;
 
   for (const b of scoped.value) {
-    const levels: number[] = []
-    for (let f = b.floors; f >= 1; f -= 1) levels.push(f)
-    for (let k = 1; k <= b.undergroundFloors; k++) levels.push(-k)
+    const levels: number[] = [];
+    for (let f = b.floors; f >= 1; f -= 1) levels.push(f);
+    for (let k = 1; k <= b.undergroundFloors; k++) levels.push(-k);
 
     for (const floor of levels) {
-      const list = UNITS.filter((u) => u.buildingId === b.id && u.floor === floor)
-      const withPlan = list.filter(planReady).length
-      const withAttrs = list.filter(attrsReady).length
-      if (list.length) order += 1
+      const list = UNITS.filter(
+        (u) => u.buildingId === b.id && u.floor === floor,
+      );
+      const withPlan = list.filter(planReady).length;
+      const withAttrs = list.filter(attrsReady).length;
+      if (list.length) order += 1;
 
       rows.push({
         id: `${b.id}-${floor}`,
@@ -74,64 +83,74 @@ const queue = computed<QueueRow[]>(() => {
         withAttrs,
         planDone: list.length > 0 && withPlan === list.length,
         attrsDone: list.length > 0 && withAttrs === list.length,
-        updated: list.length ? updatedOn(order - 1) : '',
-        codes: list.map((u) => u.code).join(' '),
-      })
+        updated: list.length ? updatedOn(order - 1) : "",
+        codes: list.map((u) => u.code).join(" "),
+      });
     }
   }
 
-  return rows
-})
+  return rows;
+});
 
 const kpi = computed(() => {
-  const all = queue.value
-  const drawn = all.filter((r) => r.planDone).length
+  const all = queue.value;
+  const drawn = all.filter((r) => r.planDone).length;
   return {
     total: all.length,
     drawn,
     pending: all.length - drawn,
     attrs: all.filter((r) => !r.attrsDone).length,
     units: all.reduce((s, r) => s + r.units, 0),
-  }
-})
+  };
+});
 
 const buildingOptions = computed(() => [
-  { value: 'all', label: t('filter.allBuildings') },
+  { value: "all", label: t("filter.allBuildings") },
   ...scoped.value.map((b) => ({ value: b.id, label: b.name })),
-])
+]);
 
 const stateOptions = computed(() => [
-  { value: 'all', label: t('tab.withCount', { label: t('tab.all'), count: kpi.value.total }) },
   {
-    value: 'plan',
-    label: t('tab.withCount', { label: t('kpi.planPending'), count: kpi.value.pending }),
+    value: "all",
+    label: t("tab.withCount", { label: t("tab.all"), count: kpi.value.total }),
   },
   {
-    value: 'attrs',
-    label: t('tab.withCount', { label: t('kpi.attributesPending'), count: kpi.value.attrs }),
+    value: "plan",
+    label: t("tab.withCount", {
+      label: t("kpi.planPending"),
+      count: kpi.value.pending,
+    }),
   },
-])
+  {
+    value: "attrs",
+    label: t("tab.withCount", {
+      label: t("kpi.attributesPending"),
+      count: kpi.value.attrs,
+    }),
+  },
+]);
 
 const filtered = computed(() => {
-  const q = query.value.trim().toLowerCase()
+  const q = query.value.trim().toLowerCase();
 
   return queue.value.filter((r) => {
-    if (fBuilding.value !== 'all' && r.buildingId !== fBuilding.value) return false
-    if (fState.value === 'plan' && r.planDone) return false
-    if (fState.value === 'attrs' && r.attrsDone) return false
+    if (fBuilding.value !== "all" && r.buildingId !== fBuilding.value)
+      return false;
+    if (fState.value === "plan" && r.planDone) return false;
+    if (fState.value === "attrs" && r.attrsDone) return false;
     if (q) {
       const haystack =
-        `${r.buildingName} ${r.buildingCode} ${r.floorName} ${r.codes}`.toLowerCase()
-      if (!haystack.includes(q)) return false
+        `${r.buildingName} ${r.buildingCode} ${r.floorName} ${r.codes}`.toLowerCase();
+      if (!haystack.includes(q)) return false;
     }
-    return true
-  })
-})
+    return true;
+  });
+});
 
 const perBuilding = computed(() =>
   scoped.value.map((b) => {
-    const rows = queue.value.filter((r) => r.buildingId === b.id)
-    const drawn = rows.filter((r) => r.planDone).length
+    const rows = queue.value.filter((r) => r.buildingId === b.id);
+    const drawn = rows.filter((r) => r.planDone).length;
     return {
       id: b.id,
       name: b.name,
@@ -140,54 +159,62 @@ const perBuilding = computed(() =>
       drawn,
       units: rows.reduce((s, r) => s + r.units, 0),
       ratio: rows.length ? Math.round((drawn / rows.length) * 100) : 0,
-    }
+    };
   }),
-)
+);
 
 const dirty = computed(
-  () => Boolean(query.value.trim()) || fBuilding.value !== 'all' || fState.value !== 'all',
-)
+  () =>
+    Boolean(query.value.trim()) ||
+    fBuilding.value !== "all" ||
+    fState.value !== "all",
+);
 
 const columns = computed(() =>
   labelColumns([
-    { key: 'buildingName', field: 'building', label: 'Bino', width: '240px' },
-    { key: 'floorName', field: 'floor', label: 'Qavat', width: '160px' },
+    { key: "buildingName", field: "building", label: "Bino", width: "240px" },
+    { key: "floorName", field: "floor", label: "Qavat", width: "160px" },
     {
-      key: 'units',
-      field: 'units',
-      label: 'Unitlar',
-      align: 'right',
+      key: "units",
+      field: "units",
+      label: "Unitlar",
+      align: "right",
       numeric: true,
-      width: '110px',
+      width: "110px",
     },
-    { key: 'plan', field: 'planStatus', label: 'Reja holati', width: '190px' },
-    { key: 'attrs', field: 'attributeStatus', label: 'Atribut holati', width: '210px' },
+    { key: "plan", field: "planStatus", label: "Reja holati", width: "190px" },
     {
-      key: 'updated',
-      field: 'lastUpdate',
-      label: 'Oxirgi yangilanish',
-      align: 'right',
-      width: '160px',
+      key: "attrs",
+      field: "attributeStatus",
+      label: "Atribut holati",
+      width: "210px",
+    },
+    {
+      key: "updated",
+      field: "lastUpdate",
+      label: "Oxirgi yangilanish",
+      align: "right",
+      width: "160px",
     },
   ]),
-)
+);
 
 function floorLink(row: QueueRow) {
-  return `/content/floors?building=${row.buildingId}&floor=${row.floor}`
+  return `/content/floors?building=${row.buildingId}&floor=${row.floor}`;
 }
 
 function setState(value: string) {
-  fState.value = fState.value === value ? 'all' : value
+  fState.value = fState.value === value ? "all" : value;
 }
 
 function setBuilding(id: string) {
-  fBuilding.value = fBuilding.value === id ? 'all' : id
+  fBuilding.value = fBuilding.value === id ? "all" : id;
 }
 
 function resetFilters() {
-  query.value = ''
-  fBuilding.value = 'all'
-  fState.value = 'all'
+  query.value = "";
+  fBuilding.value = "all";
+  fState.value = "all";
 }
 </script>
 
@@ -196,18 +223,23 @@ function resetFilters() {
     <template #actions>
       <UiButton variant="secondary" size="sm" to="/content/units">
         <UiIcon name="clipboard" :size="16" />
-        {{ t('nav.unitAttributes') }}
+        {{ t("nav.unitAttributes") }}
       </UiButton>
       <UiButton size="sm" to="/content/floors">
         <UiIcon name="layers" :size="16" />
-        {{ t('nav.floors') }}
+        {{ t("nav.floors") }}
       </UiButton>
     </template>
   </AppTopbar>
 
   <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-4 sm:p-6">
     <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-      <button type="button" class="block w-full text-left" :aria-pressed="!dirty" @click="resetFilters">
+      <button
+        type="button"
+        class="block w-full text-left"
+        :aria-pressed="!dirty"
+        @click="resetFilters"
+      >
         <UiKpi
           :label="t('kpi.totalFloors')"
           :value="num(kpi.total)"
@@ -260,7 +292,10 @@ function resetFilters() {
       </button>
     </section>
 
-    <UiCard :title="t('cnt.readinessTitle')" :subtitle="t('cnt.readinessCaption')">
+    <UiCard
+      :title="t('cnt.readinessTitle')"
+      :subtitle="t('cnt.readinessCaption')"
+    >
       <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         <button
           v-for="b in perBuilding"
@@ -268,33 +303,50 @@ function resetFilters() {
           type="button"
           class="rounded-field p-4 text-left ring-1 ring-inset transition-colors"
           :class="
-            fBuilding === b.id ? 'bg-brand-50/70 ring-brand-300' : 'ring-ink-200 hover:bg-ink-50'
+            fBuilding === b.id
+              ? 'bg-brand-50/70 ring-brand-300'
+              : 'ring-ink-200 hover:bg-ink-50'
           "
           :aria-pressed="fBuilding === b.id"
           @click="setBuilding(b.id)"
         >
           <span class="flex items-center gap-2.5">
-            <span class="grid size-9 shrink-0 place-items-center rounded-[9px] bg-brand-50 text-brand-600">
+            <span
+              class="grid size-9 shrink-0 place-items-center rounded-[9px] bg-brand-50 text-brand-600"
+            >
               <UiIcon name="building" :size="18" />
             </span>
             <span class="min-w-0 flex-1">
-              <span class="block truncate text-[14px] font-bold text-ink-900">{{ b.name }}</span>
-              <span class="block truncate text-[12px] text-ink-500">{{ b.type }}</span>
+              <span class="block truncate text-[14px] font-bold text-ink-900">{{
+                b.name
+              }}</span>
+              <span class="block truncate text-[12px] text-ink-500">{{
+                b.type
+              }}</span>
             </span>
             <span class="tabular shrink-0 text-[13px] font-bold text-brand-600">
               {{ percent(b.ratio) }}
             </span>
           </span>
 
-          <span class="mt-3 block h-1.5 w-full overflow-hidden rounded-pill bg-ink-100">
-            <span class="block h-full rounded-pill bg-brand-500" :style="{ width: `${b.ratio}%` }" />
+          <span
+            class="mt-3 block h-1.5 w-full overflow-hidden rounded-pill bg-ink-100"
+          >
+            <span
+              class="block h-full rounded-pill bg-brand-500"
+              :style="{ width: `${b.ratio}%` }"
+            />
           </span>
 
-          <span class="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-ink-500">
+          <span
+            class="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-ink-500"
+          >
             <span class="tabular">
-              {{ t('cnt.floorPlansOf', { drawn: b.drawn, total: b.floors }) }}
+              {{ t("cnt.floorPlansOf", { drawn: b.drawn, total: b.floors }) }}
             </span>
-            <span class="tabular">{{ t('cnt.unitsEntered', { count: num(b.units) }) }}</span>
+            <span class="tabular">{{
+              t("cnt.unitsEntered", { count: num(b.units) })
+            }}</span>
           </span>
         </button>
       </div>
@@ -313,22 +365,35 @@ function resetFilters() {
       </template>
 
       <div class="flex flex-wrap items-center gap-3 px-4 pb-4 lg:px-5">
-        <UiInput v-model="query" :placeholder="t('cnt.searchQueue')" class="min-w-[200px] flex-1">
+        <UiInput
+          v-model="query"
+          :placeholder="t('cnt.searchQueue')"
+          class="min-w-[200px] flex-1"
+        >
           <template #prefix>
             <UiIcon name="search" :size="17" />
           </template>
         </UiInput>
 
-        <UiSelect v-model="fBuilding" :options="buildingOptions" class="w-full sm:w-52" />
-        <UiSelect v-model="fState" :options="stateOptions" class="w-full sm:w-60" />
+        <UiSelect
+          v-model="fBuilding"
+          :options="buildingOptions"
+          class="w-full sm:w-52"
+        />
+        <UiSelect
+          v-model="fState"
+          :options="stateOptions"
+          class="w-full sm:w-60"
+        />
 
         <UiButton variant="ghost" :disabled="!dirty" @click="resetFilters">
           <UiIcon name="refresh" :size="15" />
-          {{ t('common.reset') }}
+          {{ t("common.reset") }}
         </UiButton>
       </div>
 
       <UiTable
+        :page-size="10"
         :columns="columns"
         :rows="filtered"
         :to="floorLink"
@@ -336,22 +401,31 @@ function resetFilters() {
       >
         <template #cell-buildingName="{ row }">
           <span class="min-w-0">
-            <span class="block truncate text-[14px] font-semibold text-brand-600">
+            <span
+              class="block truncate text-[14px] font-semibold text-brand-600"
+            >
               {{ row.buildingName }}
             </span>
-            <span class="tabular block truncate text-[12px] text-ink-500">{{ row.buildingCode }}</span>
+            <span class="tabular block truncate text-[12px] text-ink-500">{{
+              row.buildingCode
+            }}</span>
           </span>
         </template>
 
         <template #cell-floorName="{ row }">
-          <span class="flex items-center gap-2 text-[13px] font-semibold text-ink-900">
+          <span
+            class="flex items-center gap-2 text-[13px] font-semibold text-ink-900"
+          >
             <UiIcon name="layers" :size="15" class="text-ink-400" />
             {{ row.floorName }}
           </span>
         </template>
 
         <template #cell-units="{ row }">
-          <span class="tabular" :class="row.units ? 'text-ink-900' : 'text-ink-400'">
+          <span
+            class="tabular"
+            :class="row.units ? 'text-ink-900' : 'text-ink-400'"
+          >
             {{ row.units }}
           </span>
         </template>
@@ -366,7 +440,7 @@ function resetFilters() {
             "
           >
             <UiIcon :name="row.planDone ? 'check' : 'clock'" :size="13" />
-            {{ row.planDone ? t('kpi.planDrawn') : t('kpi.planPending') }}
+            {{ row.planDone ? t("kpi.planDrawn") : t("kpi.planPending") }}
           </span>
         </template>
 
@@ -381,7 +455,7 @@ function resetFilters() {
               "
             >
               <UiIcon :name="row.attrsDone ? 'check' : 'warning'" :size="13" />
-              {{ row.attrsDone ? t('tab.complete') : t('tab.incomplete') }}
+              {{ row.attrsDone ? t("tab.complete") : t("tab.incomplete") }}
             </span>
             <span v-if="row.units" class="tabular text-[12px] text-ink-500">
               {{ row.withAttrs }} / {{ row.units }}
@@ -393,7 +467,9 @@ function resetFilters() {
           <span v-if="row.updated" class="tabular text-[13px] text-ink-600">
             {{ dateShort(row.updated) }}
           </span>
-          <span v-else class="text-[13px] text-ink-400">{{ t('common.notEntered') }}</span>
+          <span v-else class="text-[13px] text-ink-400">{{
+            t("common.notEntered")
+          }}</span>
         </template>
       </UiTable>
 
@@ -401,15 +477,17 @@ function resetFilters() {
         class="flex flex-wrap items-center justify-between gap-3 border-t border-ink-100 px-4 py-4 lg:px-5"
       >
         <p class="text-[13px] text-ink-500">
-          {{ t('cnt.queueSummary') }} <b class="text-ink-800">{{ filtered.length }}</b>
-          {{ t('cnt.floorsSuffix') }} ·
-          <span class="tabular text-ok-600">{{ kpi.drawn }}</span> {{ t('cnt.planReadySuffix') }} ·
+          {{ t("cnt.queueSummary") }}
+          <b class="text-ink-800">{{ filtered.length }}</b>
+          {{ t("cnt.floorsSuffix") }} ·
+          <span class="tabular text-ok-600">{{ kpi.drawn }}</span>
+          {{ t("cnt.planReadySuffix") }} ·
           <span class="tabular text-warn-600">{{ kpi.pending }}</span>
-          {{ t('cnt.planPendingSuffix') }}
+          {{ t("cnt.planPendingSuffix") }}
         </p>
         <UiButton variant="secondary" size="sm" to="/content/floors">
           <UiIcon name="edit" :size="15" />
-          {{ t('cnt.openEditor') }}
+          {{ t("cnt.openEditor") }}
         </UiButton>
       </div>
     </UiCard>
