@@ -59,10 +59,18 @@ export const UNIT_STATUS_COLOR: Record<string, string> = {
  * Bandlik shkalasi: uchta ekranda bir xil chegara va bir xil yozuv.
  * Rang qoidasi `>= 90` yashil, `>= 84` ko‘k, qolgani sariq.
  */
+/*
+ * Bandlik shkalasi reyestrdagi haqiqiy taqsimotga tayanadi: 22 obyektda
+ * qiymatlar 29% dan 95% gacha, o'rtasi 64% atrofida.
+ *
+ * Ilgari chegaralar 90 va 84 edi, ular esa bandlik boshqacha hisoblanadigan
+ * paytdan qolgan. Natijada «84% - 89%» varianti hech qachon birorta obyekt
+ * qaytarmasdi: shu oraliqda bitta ham obyekt yo'q edi.
+ */
 export const OCCUPANCY_BANDS = [
-  { min: 90, labelKey: 'landing.occupancyHigh', label: '90% va yuqori', class: 'bg-ok-500' },
-  { min: 84, labelKey: 'landing.occupancyMid', label: '84% – 89%', class: 'bg-brand-500' },
-  { min: 0, labelKey: 'landing.occupancyLow', label: '84% dan past', class: 'bg-warn-500' },
+  { min: 65, labelKey: 'landing.occupancyHigh', label: '65% va undan yuqori', class: 'bg-ok-500' },
+  { min: 50, labelKey: 'landing.occupancyMid', label: '50% - 64%', class: 'bg-brand-500' },
+  { min: 0, labelKey: 'landing.occupancyLow', label: '50% dan past', class: 'bg-warn-500' },
 ]
 
 export const LISTING_STATUS: Record<string, StatusDef> = {

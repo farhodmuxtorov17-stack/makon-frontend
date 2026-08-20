@@ -190,7 +190,17 @@ function applyStep(key: string) {
     :breadcrumb="[{ label: sectionLabel('contracts') }]"
   >
     <template #actions>
-      <UiButton variant="secondary" size="sm" to="/billing/invoices">
+      <!--
+        Hisob-kitob bo'limi hamma rolga ochiq emas: Operator va bino rahbari
+        u yerga kira olmaydi va havolani bosganda o'z bosh sahifasiga
+        qaytariladi. Shuning uchun havola faqat ochiladigan bo'lsa chiqadi.
+      -->
+      <UiButton
+        v-if="auth.canRoute('/billing/invoices')"
+        variant="secondary"
+        size="sm"
+        to="/billing/invoices"
+      >
         <UiIcon name="wallet" :size="16" />
         {{ sectionLabel('billing') }}
       </UiButton>

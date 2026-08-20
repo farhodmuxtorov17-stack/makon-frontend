@@ -444,9 +444,9 @@
     "mapStatOccupancy": "Bandlik",
     "mapStatVacant": "Bo‘sh maydon",
     "thousandArea": "ming m²",
-    "occupancyHigh": "90% va undan yuqori",
-    "occupancyMid": "84% – 89%",
-    "occupancyLow": "84% dan past",
+    "occupancyHigh": "65% va undan yuqori",
+    "occupancyMid": "50% - 64%",
+    "occupancyLow": "50% dan past",
     "occupancyValueLabel": "% bandlik",
     "allObjects": "Barcha obyektlar",
     "stepsTitle": "Ariza qanday ko‘rib chiqiladi",
@@ -2908,7 +2908,6 @@
     "noUnitsFloorText": "Ushbu qavatda unit yozuvlari yo‘q. Boshqa qavatni tanlang.",
     "unitDetail": "Unit {code}, batafsil",
     "locationOf": "Joylashuv: {floor}, {name}",
-    "createForClient": "Mijoz nomidan ariza ochish",
     "leadStaffHint": "Arizani ijarachi yuboradi, uni Operator qabul qiladi"
   },
   "app2": {

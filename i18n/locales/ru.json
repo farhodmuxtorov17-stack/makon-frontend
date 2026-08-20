@@ -444,9 +444,9 @@
     "mapStatOccupancy": "Заполненность",
     "mapStatVacant": "Свободная площадь",
     "thousandArea": "тыс. m²",
-    "occupancyHigh": "90% и выше",
-    "occupancyMid": "84% – 89%",
-    "occupancyLow": "ниже 84%",
+    "occupancyHigh": "65% и выше",
+    "occupancyMid": "50% - 64%",
+    "occupancyLow": "ниже 50%",
     "occupancyValueLabel": "% заполненности",
     "allObjects": "Все объекты",
     "stepsTitle": "Как рассматривается заявка",
@@ -2908,7 +2908,6 @@
     "noUnitsFloorText": "На этом этаже нет помещений. Выберите другой этаж.",
     "unitDetail": "Помещение {code}, подробно",
     "locationOf": "Расположение: {floor}, {name}",
-    "createForClient": "Оформить заявку от клиента",
     "leadStaffHint": "Заявку отправляет арендатор, принимает её Оператор"
   },
   "app2": {

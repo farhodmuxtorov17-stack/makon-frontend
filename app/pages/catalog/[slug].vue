@@ -65,7 +65,6 @@ const selectedId = ref(startUnit?.id ?? "");
 
 const mainView = ref(0);
 const lightboxOpen = ref(false);
-const offerOpen = ref(false);
 /** Sevimlilar sarlavhadagi nishoncha va katalog ro‘yxati bilan bitta xotirada */
 const favourites = useStorage<string[]>("makon.favourites", []);
 
@@ -351,11 +350,8 @@ function goApply(unitId?: string) {
   const id = unitId ?? selected.value?.id;
   if (!id) return;
   if (!auth.isAuthenticated) return navigateTo(`/ariza?unit=${id}`);
-  if (auth.role !== "TENANT_OWNER") {
-    offerOpen.value = true;
-    return;
-  }
-  return navigateTo(`/cabinet/apply?unit=${id}`);
+  if (auth.role === "TENANT_OWNER")
+    return navigateTo(`/cabinet/apply?unit=${id}`);
 }
 </script>
 
@@ -410,14 +406,15 @@ function goApply(unitId?: string) {
             v-if="
               selected &&
               selected.status === 'VACANT' &&
-              selected.offer !== 'Sotuv'
+              selected.offer !== 'Sotuv' &&
+              leadAction !== 'none'
             "
             size="sm"
             class="xl:hidden"
             @click="goApply(selected.id)"
           >
             <UiIcon name="key" :size="16" />
-            {{ t("apply.cta") }}
+            {{ leadLabel }}
           </UiButton>
         </div>
       </header>
@@ -953,15 +950,26 @@ function goApply(unitId?: string) {
             </template>
 
             <template v-else-if="selected.status === 'VACANT'">
+              <!--
+                Ariza tugmasi xodimga ko'rsatilmaydi: ijaraga beruvchi
+                tomonidagi rol o'z obyektiga o'zi ariza yubormaydi.
+              -->
               <UiButton
+                v-if="leadAction !== 'none'"
                 block
                 size="lg"
                 class="mt-5"
                 @click="goApply(selected.id)"
               >
                 <UiIcon name="key" :size="18" />
-                {{ t("apply.cta") }}
+                {{ leadLabel }}
               </UiButton>
+              <p
+                v-else-if="staffHint"
+                class="mt-5 rounded-field bg-surface-sunken px-4 py-3 text-[12px] leading-relaxed text-ink-600"
+              >
+                {{ staffHint }}
+              </p>
               <p
                 class="mt-2 text-center text-[12px] leading-relaxed text-ink-500"
               >
@@ -1056,59 +1064,6 @@ function goApply(unitId?: string) {
           <UiButton variant="secondary" @click="lightboxOpen = false">
             {{ t("common.close") }}
           </UiButton>
-        </template>
-      </UiModal>
-
-      <UiModal
-        v-model="offerOpen"
-        :title="t('cat.offerModalTitle')"
-        :subtitle="t('cat.offerModalCaption')"
-        size="md"
-      >
-        <div
-          class="flex gap-3 rounded-field bg-brand-50 p-4 ring-1 ring-inset ring-brand-100"
-        >
-          <UiIcon
-            name="shield"
-            :size="20"
-            class="mt-0.5 shrink-0 text-brand-600"
-          />
-          <p class="text-[14px] leading-relaxed text-ink-700">
-            <span v-if="selected" class="font-semibold text-ink-900">
-              {{ building.name }} ·
-              {{ t("cat.unitTitle", { code: selected.code }) }}
-            </span>
-            <span v-else class="font-semibold text-ink-900">{{
-              building.name
-            }}</span>
-            <br />
-            {{ t("cat.offerModalText") }}
-          </p>
-        </div>
-
-        <ul class="mt-4 space-y-2.5">
-          <li
-            v-for="step in [
-              t('cat.offerStep1'),
-              t('cat.offerStep2'),
-              t('cat.offerStep3'),
-            ]"
-            :key="step"
-            class="flex items-start gap-2.5 text-[13px] text-ink-700"
-          >
-            <span
-              class="grid size-5 shrink-0 place-items-center rounded-full bg-ok-50 text-ok-600"
-            >
-              <UiIcon name="check" :size="13" />
-            </span>
-            {{ step }}
-          </li>
-        </ul>
-
-        <template #footer>
-          <UiButton variant="secondary" @click="offerOpen = false">{{
-            t("tour.done")
-          }}</UiButton>
         </template>
       </UiModal>
     </template>

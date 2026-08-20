@@ -304,8 +304,6 @@ function goApply() {
   if (!auth.isAuthenticated) return navigateTo(`/ariza?unit=${unit.id}`);
   if (auth.role === "TENANT_OWNER")
     return navigateTo(`/cabinet/apply?unit=${unit.id}`);
-  if (leadAction.value === "createForClient")
-    return navigateTo("/applications");
 }
 </script>
 

@@ -396,7 +396,12 @@ function downloadAct() {
 <template>
   <AppTopbar :title="pageTitle" :subtitle="t('wo.pageCaption')">
     <template #actions>
-      <UiButton variant="secondary" size="sm" to="/facility/materials">
+      <UiButton
+        v-if="auth.canRoute('/facility/materials')"
+        variant="secondary"
+        size="sm"
+        to="/facility/materials"
+      >
         <UiIcon name="box" :size="16" />
         {{ t("nav.materials") }}
       </UiButton>
@@ -984,6 +989,7 @@ function downloadAct() {
           </p>
 
           <UiButton
+            v-if="auth.canRoute('/facility/materials')"
             variant="ghost"
             size="sm"
             block

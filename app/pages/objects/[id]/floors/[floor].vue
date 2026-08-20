@@ -347,8 +347,6 @@ function goApply() {
   if (!auth.isAuthenticated) return navigateTo(`/ariza?unit=${unit.id}`);
   if (auth.role === "TENANT_OWNER")
     return navigateTo(`/cabinet/apply?unit=${unit.id}`);
-  if (leadAction.value === "createForClient")
-    return navigateTo("/applications");
 }
 </script>
 
@@ -1141,7 +1139,7 @@ function goApply() {
                 @click="goApply"
               >
                 <UiIcon name="key" :size="16" />
-                {{ t("apply.cta") }}
+                {{ leadLabel }}
               </UiButton>
             </div>
 
@@ -1337,7 +1335,7 @@ function goApply() {
             @click="goApply"
           >
             <UiIcon name="key" :size="16" />
-            {{ t("apply.cta") }}
+            {{ leadLabel }}
           </UiButton>
         </template>
       </UiModal>
