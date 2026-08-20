@@ -6,6 +6,9 @@ import { num, area } from '~/utils/format'
 
 definePageMeta({ layout: 'public', fullscreen: true })
 
+const { t } = useI18n()
+const { buildingTypeLabel, floorLabel, priceUnitLabel } = useAppLabels()
+
 interface Listing {
   unit: Unit
   building: Building
@@ -20,14 +23,46 @@ interface Listing {
 const BUILDING_TYPES: Array<{
   value: string
   type: Building['type']
+  /** Ko‘rinadigan nom landing bilan bitta kalitdan olinadi */
+  labelKey: string
   tone: 'brand' | 'ok' | 'warn' | 'danger' | 'info'
   dot: string
 }> = [
-  { value: 'biznes', type: 'Biznes markaz', tone: 'brand', dot: 'bg-brand-500' },
-  { value: 'ofis', type: 'Ofis binosi', tone: 'info', dot: 'bg-info-500' },
-  { value: 'savdo', type: 'Savdo markaz', tone: 'danger', dot: 'bg-danger-500' },
-  { value: 'ombor', type: 'Ombor / logistika', tone: 'warn', dot: 'bg-warn-500' },
-  { value: 'turar', type: 'Turar joy', tone: 'ok', dot: 'bg-ok-500' },
+  {
+    value: 'biznes',
+    type: 'Biznes markaz',
+    labelKey: 'landing.typeBiznes',
+    tone: 'brand',
+    dot: 'bg-brand-500',
+  },
+  {
+    value: 'ofis',
+    type: 'Ofis binosi',
+    labelKey: 'landing.typeOfis',
+    tone: 'info',
+    dot: 'bg-info-500',
+  },
+  {
+    value: 'savdo',
+    type: 'Savdo markaz',
+    labelKey: 'landing.typeSavdo',
+    tone: 'danger',
+    dot: 'bg-danger-500',
+  },
+  {
+    value: 'ombor',
+    type: 'Ombor / logistika',
+    labelKey: 'landing.typeOmbor',
+    tone: 'warn',
+    dot: 'bg-warn-500',
+  },
+  {
+    value: 'turar',
+    type: 'Turar joy',
+    labelKey: 'landing.typeTurar',
+    tone: 'ok',
+    dot: 'bg-ok-500',
+  },
 ]
 
 /**
@@ -37,20 +72,21 @@ const BUILDING_TYPES: Array<{
  * ham turadi va bitta ekranda «Ofis» ikki ma’noni bildirmasligi kerak.
  */
 const USAGE_OPTIONS = [
-  { value: 'Ofis', label: 'Ofis maydoni' },
-  { value: 'Savdo', label: 'Savdo maydoni' },
-  { value: 'Ombor', label: 'Ombor maydoni' },
-  { value: 'Turar joy', label: 'Turar joy maydoni' },
+  { value: 'Ofis', labelKey: 'cat.usageOffice' },
+  { value: 'Savdo', labelKey: 'cat.usageRetail' },
+  { value: 'Ombor', labelKey: 'cat.usageWarehouse' },
+  { value: 'Turar joy', labelKey: 'cat.usageResidential' },
 ]
 
-const usageSelectOptions = [
-  { value: '', label: 'Barcha maqsadlar' },
-  ...USAGE_OPTIONS.map((o) => ({ value: o.value, label: o.label })),
-]
+const usageSelectOptions = computed(() => [
+  { value: '', label: t('filter.allUsages') },
+  ...USAGE_OPTIONS.map((o) => ({ value: o.value, label: t(o.labelKey) })),
+])
 
 /** Unit maqsadining to‘liq yorlig‘i, bino turi bilan chalkashmasligi uchun */
 function usageLabel(value: string) {
-  return USAGE_OPTIONS.find((o) => o.value === value)?.label ?? value
+  const found = USAGE_OPTIONS.find((o) => o.value === value)
+  return found ? t(found.labelKey) : value
 }
 
 /** Sotuv unitlari so‘m/m² da, ijara unitlari so‘m/oy da narxlanadi */
@@ -77,34 +113,44 @@ const MAP_TONE = Object.fromEntries(
   BUILDING_TYPES.map((c) => [c.type, c.tone]),
 ) as Record<string, 'brand' | 'ok' | 'warn' | 'danger' | 'info'>
 
-const MAP_LEGEND = BUILDING_TYPES.map((c) => ({ label: c.type, class: c.dot }))
+const MAP_LEGEND = computed(() =>
+  BUILDING_TYPES.map((c) => ({ label: t(c.labelKey), class: c.dot })),
+)
 
-const SORT_OPTIONS = [
-  { value: 'top', label: 'Mashhurlik bo‘yicha' },
-  { value: 'price-asc', label: 'Narx: o‘sish bo‘yicha' },
-  { value: 'price-desc', label: 'Narx: kamayish bo‘yicha' },
-  { value: 'area-desc', label: 'Maydon: kattadan kichikka' },
-  { value: 'new', label: 'Yangilik bo‘yicha' },
+const SORT_KEYS = [
+  { value: 'top', labelKey: 'sort.popularity' },
+  { value: 'price-asc', labelKey: 'sort.priceAsc' },
+  { value: 'price-desc', labelKey: 'sort.priceDesc' },
+  { value: 'area-desc', labelKey: 'cat.sortAreaBig' },
+  { value: 'new', labelKey: 'sort.newest2' },
 ]
 
-const DISTANCE_OPTIONS = [
-  { value: '', label: 'Cheklovsiz' },
-  { value: '5', label: '5 km gacha' },
-  { value: '10', label: '10 km gacha' },
-  { value: '20', label: '20 km gacha' },
-  { value: '30', label: '30 km gacha' },
+const SORT_OPTIONS = computed(() =>
+  SORT_KEYS.map((o) => ({ value: o.value, label: t(o.labelKey) })),
+)
+
+/** Masofa chegaralari, km */
+const DISTANCE_VALUES = ['', '5', '10', '20', '30']
+
+const DISTANCE_OPTIONS = computed(() =>
+  DISTANCE_VALUES.map((value) => ({
+    value,
+    label: value ? t('cat.distanceUpTo', { n: value }) : t('cat.distanceAny'),
+  })),
+)
+
+const OFFER_KEYS = [
+  { value: 'all', labelKey: 'tab.all' },
+  { value: 'rent', labelKey: 'landing.offerRent' },
+  { value: 'buy', labelKey: 'cat.offerSale' },
 ]
 
-const OFFER_TABS = [
-  { value: 'all', label: 'Barchasi' },
-  { value: 'rent', label: 'Ijaraga' },
-  { value: 'buy', label: 'Sotuv' },
-]
+const OFFER_TABS = computed(() => OFFER_KEYS.map((o) => ({ value: o.value, label: t(o.labelKey) })))
 
 const OFFER_SUMMARY: Record<string, string> = {
-  all: 'Ijara va sotuv takliflari',
-  rent: 'Ijara, oylik to‘lov',
-  buy: 'Sotuv, m² narxi',
+  all: 'cat.summaryAll',
+  rent: 'cat.summaryRent',
+  buy: 'cat.summaryBuy',
 }
 
 const route = useRoute()
@@ -157,9 +203,9 @@ function applyQuery(query: typeof route.query) {
   selectedTypes.value = types
 
   place.value = get('place')
-  distance.value = DISTANCE_OPTIONS.some((o) => o.value === get('dist')) ? get('dist') : ''
-  offer.value = OFFER_TABS.some((o) => o.value === get('offer')) ? get('offer') : 'all'
-  sort.value = SORT_OPTIONS.some((o) => o.value === get('sort')) ? get('sort') : 'top'
+  distance.value = DISTANCE_VALUES.includes(get('dist')) ? get('dist') : ''
+  offer.value = OFFER_KEYS.some((o) => o.value === get('offer')) ? get('offer') : 'all'
+  sort.value = SORT_KEYS.some((o) => o.value === get('sort')) ? get('sort') : 'top'
   mode.value = get('mode') === 'map' ? 'map' : 'list'
   usage.value = USAGE_OPTIONS.some((o) => o.value === get('usage')) ? get('usage') : ''
   onlyFavourites.value = get('fav') === '1'
@@ -298,7 +344,7 @@ const base = computed(() =>
 const typeOptions = computed(() =>
   BUILDING_TYPES.map((c) => ({
     value: c.value,
-    label: c.type,
+    label: t(c.labelKey),
     count: base.value.filter((l) => l.building.type === c.type).length,
   })),
 )
@@ -349,48 +395,50 @@ const mapMarkers = computed(() =>
       lat: g.building.lat,
       lon: g.building.lon,
       label: g.building.name,
-      caption: `${g.building.district} · ${g.building.type}`,
+      caption: `${g.building.district} · ${buildingTypeLabel(g.building.type)}`,
       value: g.items.length,
-      valueLabel: 'ta variant',
+      valueLabel: t('cat.variantsUnit'),
       tone: MAP_TONE[g.building.type] ?? 'brand',
     })),
 )
 
 const mapStats = computed(() => [
-  { label: 'Obyektlar', value: String(mapMarkers.value.length) },
-  { label: 'Variantlar', value: String(matched.value.length) },
+  { label: t('nav.objects'), value: String(mapMarkers.value.length) },
+  { label: t('cat.statVariants'), value: String(matched.value.length) },
 ])
 
 const activeObject = computed(() => BUILDINGS.find((b) => b.id === objectId.value))
 
 const summary = computed(() => {
-  const names = BUILDING_TYPES.filter((c) => selectedTypes.value.includes(c.value)).map(
-    (c) => c.type,
+  const names = BUILDING_TYPES.filter((c) => selectedTypes.value.includes(c.value)).map((c) =>
+    t(c.labelKey),
   )
-  const cats = names.length ? names.join(', ') : 'barcha bino turlari'
-  return `${OFFER_SUMMARY[offer.value] ?? OFFER_SUMMARY.all} · ${cats}`
+  const cats = names.length ? names.join(', ') : t('cat.allTypes')
+  return `${t(OFFER_SUMMARY[offer.value] ?? OFFER_SUMMARY.all!)} · ${cats}`
 })
 
 /** Narx oralig‘ini o‘qiladigan yozuvga aylantiradi: «5 – 15 mln», «15 mln gacha» */
 function rangeLabel(min: string | number, max: string | number) {
   const lo = numberOf(min)
   const hi = numberOf(max)
-  const mln = (v: number) => `${num(Math.round((v / 1000000) * 10) / 10)} mln`
+  const mln = (v: number) =>
+    `${num(Math.round((v / 1000000) * 10) / 10)} ${t('unitOf.million')}`
   if (lo !== null && hi !== null) return `${mln(lo)} – ${mln(hi)}`
-  if (lo !== null) return `${mln(lo)} dan yuqori`
-  if (hi !== null) return `${mln(hi)} gacha`
+  if (lo !== null) return t('cat.rangeFrom', { value: mln(lo) })
+  if (hi !== null) return t('cat.rangeTo', { value: mln(hi) })
   return ''
 }
 
 const chips = computed(() => {
   const out: Array<{ key: string; label: string }> = []
   if (place.value) out.push({ key: 'place', label: place.value.replace('|', ', ') })
-  if (usage.value) out.push({ key: 'usage', label: `Maqsad: ${usageLabel(usage.value)}` })
+  if (usage.value)
+    out.push({ key: 'usage', label: t('cat.chipUsage', { value: usageLabel(usage.value) }) })
   const rent = rangeLabel(rentMin.value, rentMax.value)
-  if (rent) out.push({ key: 'rent-price', label: `Ijara: ${rent} so‘m / oy` })
+  if (rent) out.push({ key: 'rent-price', label: t('cat.chipRent', { value: rent }) })
   const sale = rangeLabel(saleMin.value, saleMax.value)
-  if (sale) out.push({ key: 'sale-price', label: `Sotuv: ${sale} so‘m / m²` })
-  if (onlyFavourites.value) out.push({ key: 'fav', label: 'Faqat sevimlilar' })
+  if (sale) out.push({ key: 'sale-price', label: t('cat.chipSale', { value: sale }) })
+  if (onlyFavourites.value) out.push({ key: 'fav', label: t('cat.chipFavourites') })
   if (activeObject.value) out.push({ key: 'obyekt', label: activeObject.value.name })
   return out
 })
@@ -583,7 +631,7 @@ watch(
           v-model:area-max="areaMax"
           v-model:distance="distance"
           v-model:usage="usage"
-          heading="Toshkent shahri"
+          :heading="t('cat.cityHeading')"
           :summary="summary"
           :chips="chips"
           :types="typeOptions"
@@ -604,10 +652,11 @@ watch(
       <div
         class="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-ink-200 bg-surface px-4 py-3 lg:px-5"
       >
-        <p class="text-[14px] text-ink-600">
-          <span class="tabular font-bold text-ink-900">{{ results.length }}</span>
-          ta mavjud variant
-        </p>
+        <i18n-t keypath="cat.availableCount" tag="p" scope="global" class="text-[14px] text-ink-600">
+          <template #count>
+            <span class="tabular font-bold text-ink-900">{{ results.length }}</span>
+          </template>
+        </i18n-t>
 
         <div class="ml-auto flex flex-wrap items-center gap-2">
           <button
@@ -616,7 +665,7 @@ watch(
             @click="filtersOpen = true"
           >
             <UiIcon name="filter" :size="16" />
-            Filtrlar
+            {{ t('common.filters') }}
             <span
               v-if="activeCount"
               class="tabular rounded-pill bg-brand-500 px-1.5 text-[11px] font-bold leading-4 text-white"
@@ -627,40 +676,40 @@ watch(
 
           <div role="tablist" class="inline-flex gap-1 rounded-field bg-ink-100 p-1 lg:hidden">
             <button
-              v-for="t in [
-                { value: 'list', label: 'Ro‘yxat' },
-                { value: 'map', label: 'Xarita' },
+              v-for="m in [
+                { value: 'list', label: t('view.list') },
+                { value: 'map', label: t('view.map') },
               ]"
-              :key="t.value"
+              :key="m.value"
               type="button"
               role="tab"
-              :aria-selected="mode === t.value"
+              :aria-selected="mode === m.value"
               class="inline-flex min-h-11 items-center rounded-[8px] px-3 text-[13px] font-semibold transition-colors duration-150 md:min-h-9"
               :class="
-                mode === t.value ? 'bg-white text-brand-600 shadow-card' : 'text-ink-600 hover:text-ink-800'
+                mode === m.value ? 'bg-white text-brand-600 shadow-card' : 'text-ink-600 hover:text-ink-800'
               "
-              @click="mode = t.value"
+              @click="mode = m.value"
             >
-              {{ t.label }}
+              {{ m.label }}
             </button>
           </div>
 
           <div role="tablist" class="inline-flex gap-1 rounded-field bg-ink-100 p-1">
             <button
-              v-for="t in OFFER_TABS"
-              :key="t.value"
+              v-for="o in OFFER_TABS"
+              :key="o.value"
               type="button"
               role="tab"
-              :aria-selected="offer === t.value"
+              :aria-selected="offer === o.value"
               class="inline-flex min-h-11 items-center rounded-[8px] px-3 text-[13px] font-semibold transition-colors duration-150 md:min-h-9"
               :class="
-                offer === t.value
+                offer === o.value
                   ? 'bg-white text-brand-600 shadow-card'
                   : 'text-ink-600 hover:text-ink-800'
               "
-              @click="offer = t.value"
+              @click="offer = o.value"
             >
-              {{ t.label }}
+              {{ o.label }}
             </button>
           </div>
         </div>
@@ -676,7 +725,7 @@ watch(
             <button
               type="button"
               class="relative grid size-6 shrink-0 place-items-center rounded-full text-brand-600 transition-colors duration-150 after:absolute after:-inset-[10px] after:content-[''] hover:bg-brand-100 hover:text-brand-800 md:after:hidden"
-              :aria-label="`${c.label} shartini olib tashlash`"
+              :aria-label="t('cat.removeChip', { label: c.label })"
               @click="clearChip(c.key)"
             >
               <UiIcon name="x" :size="12" />
@@ -726,7 +775,9 @@ watch(
                   : 'text-ink-500 hover:bg-white hover:text-danger-500'
               "
               :aria-pressed="favourites.includes(l.unit.id)"
-              :aria-label="`${l.building.name} ${l.unit.code} ni sevimlilarga qo‘shish`"
+              :aria-label="
+                t('landing.favouriteAria', { building: l.building.name, code: l.unit.code })
+              "
               @click.prevent.stop="toggleFavourite(l.unit.id)"
             >
               <svg
@@ -778,7 +829,7 @@ watch(
                 {{ num(l.unit.price) }}
               </span>
               <span class="text-[11px] font-medium text-ink-500 md:text-[12px]">
-                {{ l.unit.priceUnit }}
+                {{ priceUnitLabel(l.unit.priceUnit) }}
               </span>
             </p>
 
@@ -787,7 +838,7 @@ watch(
             >
               <span class="tabular shrink-0 font-bold text-ink-900">{{ area(l.unit.area) }}</span>
               <span class="shrink-0 text-ink-300">·</span>
-              <span class="tabular shrink-0 whitespace-nowrap">{{ l.unit.floor }}-qavat</span>
+              <span class="tabular shrink-0 whitespace-nowrap">{{ floorLabel(l.unit.floor) }}</span>
               <template v-if="l.unit.usage">
                 <span class="hidden shrink-0 text-ink-300 md:inline">·</span>
                 <span class="hidden truncate md:inline">{{ usageLabel(l.unit.usage) }}</span>
@@ -815,9 +866,9 @@ watch(
         <div v-if="!results.length" class="rounded-card bg-surface shadow-card ring-1 ring-ink-200/70">
           <UiEmpty
             icon="search"
-            title="Tanlangan shartlarga mos variant topilmadi"
-            description="Narx, maydon yoki masofa chegaralarini kengaytiring. Barcha bo‘sh joylarni ko‘rish uchun filtrlarni tozalang."
-            action-label="Filtrlarni tozalash"
+            :title="t('empty.noMatchingListing')"
+            :description="t('cat.emptyListText')"
+            :action-label="t('filter.reset')"
             @action="resetFilters"
           />
         </div>
@@ -846,9 +897,9 @@ watch(
       <div v-else class="grid h-full place-items-center bg-surface-sunken px-6">
         <UiEmpty
           icon="location"
-          title="Xaritada ko‘rsatiladigan obyekt qolmadi"
-          description="Joriy shartlar bo‘yicha birorta obyektda bo‘sh joy yo‘q. Chegaralarni kengaytiring."
-          action-label="Filtrlarni tozalash"
+          :title="t('cat.emptyMapTitle')"
+          :description="t('cat.emptyMapText')"
+          :action-label="t('filter.reset')"
           @action="resetFilters"
         />
       </div>
@@ -879,17 +930,17 @@ watch(
           <div
             role="dialog"
             aria-modal="true"
-            aria-label="Filtrlar"
+            :aria-label="t('common.filters')"
             class="scroll-slim absolute inset-x-0 bottom-0 max-h-[86dvh] overflow-y-auto rounded-t-panel bg-surface shadow-pop md:inset-y-0 md:left-0 md:right-auto md:max-h-none md:w-[320px] md:rounded-none"
           >
             <div
               class="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-ink-200 bg-surface px-4 py-3"
             >
-              <p class="text-[16px] font-bold text-ink-900">Filtrlar</p>
+              <p class="text-[16px] font-bold text-ink-900">{{ t('common.filters') }}</p>
               <button
                 type="button"
                 class="grid size-11 place-items-center rounded-field text-ink-500 transition-colors duration-150 hover:bg-ink-100 hover:text-ink-900"
-                aria-label="Filtrlarni yopish"
+                :aria-label="t('cat.closeFilters')"
                 @click="filtersOpen = false"
               >
                 <UiIcon name="x" :size="20" />
@@ -909,7 +960,7 @@ watch(
                 v-model:area-max="areaMax"
                 v-model:distance="distance"
                 v-model:usage="usage"
-                heading="Toshkent shahri"
+                :heading="t('cat.cityHeading')"
                 :summary="summary"
                 :chips="chips"
                 :types="typeOptions"
@@ -926,7 +977,7 @@ watch(
 
             <div class="sticky bottom-0 border-t border-ink-200 bg-surface px-4 py-3">
               <UiButton block @click="filtersOpen = false">
-                {{ results.length }} ta variantni ko‘rish
+                {{ t('cat.viewCount', { count: results.length }) }}
               </UiButton>
             </div>
           </div>

@@ -65,6 +65,7 @@ export type DerivedBuildingKey =
   | 'vacantArea'
   | 'occupiedArea'
   | 'occupancy'
+  | 'monthlyRevenue'
   | 'debt'
   | 'serviceRequests'
 
@@ -80,6 +81,8 @@ export interface BuildingUnitStats {
   /** Shartnoma bo‘yicha egallangan maydon, m² */
   occupiedArea: number
   occupancy: number
+  /** Ijaradagi unitlarning oylik narxi yig‘indisi, so‘m */
+  monthlyRevenue: number
 }
 
 /** Kasr maydonlar yig‘indisidagi suzuvchi nuqta shovqinini olib tashlaydi */
@@ -107,6 +110,15 @@ export function unitStatsOf(buildingId: string): BuildingUnitStats {
    * ta'mirdagi unitlar birinchisida band, ikkinchisida bo'sh edi.
    */
   let occupiedArea = 0
+
+  /*
+   * Oylik ijara tushumi reyestrdan yig'iladi: ijaradagi unitlarning oylik
+   * narxi. Ilgari bu raqam har bir binoda qo'lda yozilgan edi va reyestrga
+   * bog'lanmagan edi, natijada Harmony Residence bitta ham ijara uniti
+   * bo'lmasa ham oyiga 2.28 mlrd so'm tushum ko'rsatardi. Sotuvdagi unit
+   * oylik tushum bermaydi: uning narxi m² uchun bir martalik qiymat.
+   */
+  let monthlyRevenue = 0
   for (const unit of UNITS) {
     if (unit.buildingId !== buildingId) continue
     units += 1
@@ -115,6 +127,7 @@ export function unitStatsOf(buildingId: string): BuildingUnitStats {
       occupiedUnits += 1
       occupiedArea += unit.area
     }
+    if (unit.status === 'RENTED') monthlyRevenue += unit.price
     if (unit.status === 'VACANT') {
       vacantUnits += 1
       vacantArea += unit.area
@@ -133,6 +146,7 @@ export function unitStatsOf(buildingId: string): BuildingUnitStats {
     vacantArea,
     occupiedArea,
     occupancy: gla ? Math.round((occupiedArea / gla) * 100) : 0,
+    monthlyRevenue,
   }
 }
 
@@ -184,6 +198,7 @@ function withRegistryStats(seed: BuildingSeed): Building {
   derive('vacantArea', () => stats.value.vacantArea)
   derive('occupiedArea', () => stats.value.occupiedArea)
   derive('occupancy', () => stats.value.occupancy)
+  derive('monthlyRevenue', () => stats.value.monthlyRevenue)
   derive('debt', () => debt.value)
   derive('serviceRequests', () => requests.value)
 
@@ -204,7 +219,6 @@ const BUILDING_SEEDS: BuildingSeed[] = [
     buildingClass: 'A klass',
     floors: 12,
     undergroundFloors: 2,
-    monthlyRevenue: 3420000000,
     sla: 97,
     lat: 41.3167,
     lon: 69.2833,
@@ -235,7 +249,6 @@ const BUILDING_SEEDS: BuildingSeed[] = [
     buildingClass: 'A klass',
     floors: 6,
     undergroundFloors: 1,
-    monthlyRevenue: 2810000000,
     sla: 95,
     lat: 41.2756,
     lon: 69.2036,
@@ -266,7 +279,6 @@ const BUILDING_SEEDS: BuildingSeed[] = [
     buildingClass: 'B klass',
     floors: 3,
     undergroundFloors: 0,
-    monthlyRevenue: 1920000000,
     sla: 96,
     lat: 41.26,
     lon: 69.59,
@@ -297,7 +309,6 @@ const BUILDING_SEEDS: BuildingSeed[] = [
     buildingClass: 'A klass',
     floors: 16,
     undergroundFloors: 2,
-    monthlyRevenue: 2280000000,
     sla: 94,
     lat: 41.2831,
     lon: 69.25,
@@ -328,7 +339,6 @@ const BUILDING_SEEDS: BuildingSeed[] = [
     buildingClass: 'B+ klass',
     floors: 8,
     undergroundFloors: 1,
-    monthlyRevenue: 2110000000,
     sla: 95,
     lat: 41.345,
     lon: 69.287,
@@ -359,7 +369,6 @@ const BUILDING_SEEDS: BuildingSeed[] = [
     buildingClass: 'B+ klass',
     floors: 4,
     undergroundFloors: 1,
-    monthlyRevenue: 1350000000,
     sla: 94,
     lat: 41.3268,
     lon: 69.2354,
@@ -390,7 +399,6 @@ const BUILDING_SEEDS: BuildingSeed[] = [
     buildingClass: 'A klass',
     floors: 18,
     undergroundFloors: 2,
-    monthlyRevenue: 2784000000,
     sla: 97,
     lat: 41.3379,
     lon: 69.2846,
@@ -421,7 +429,6 @@ const BUILDING_SEEDS: BuildingSeed[] = [
     buildingClass: 'B klass',
     floors: 2,
     undergroundFloors: 0,
-    monthlyRevenue: 1178000000,
     sla: 95,
     lat: 41.2794,
     lon: 69.3418,
@@ -452,7 +459,6 @@ const BUILDING_SEEDS: BuildingSeed[] = [
     buildingClass: 'B+ klass',
     floors: 9,
     undergroundFloors: 1,
-    monthlyRevenue: 1264000000,
     sla: 94,
     lat: 41.2831,
     lon: 69.2043,
@@ -483,7 +489,6 @@ const BUILDING_SEEDS: BuildingSeed[] = [
     buildingClass: 'A klass',
     floors: 14,
     undergroundFloors: 2,
-    monthlyRevenue: 2016000000,
     sla: 95,
     lat: 41.3305,
     lon: 69.3358,
@@ -514,7 +519,6 @@ const BUILDING_SEEDS: BuildingSeed[] = [
     buildingClass: 'B+ klass',
     floors: 2,
     undergroundFloors: 0,
-    monthlyRevenue: 1360000000,
     sla: 96,
     lat: 41.2208,
     lon: 69.2276,
@@ -545,7 +549,6 @@ const BUILDING_SEEDS: BuildingSeed[] = [
     buildingClass: 'B+ klass',
     floors: 10,
     undergroundFloors: 1,
-    monthlyRevenue: 1521000000,
     sla: 93,
     lat: 41.3487,
     lon: 69.2168,
@@ -576,7 +579,6 @@ const BUILDING_SEEDS: BuildingSeed[] = [
     buildingClass: 'B klass',
     floors: 3,
     undergroundFloors: 0,
-    monthlyRevenue: 883000000,
     sla: 93,
     lat: 41.2925,
     lon: 69.1706,
@@ -607,7 +609,6 @@ const BUILDING_SEEDS: BuildingSeed[] = [
     buildingClass: 'C klass',
     floors: 1,
     undergroundFloors: 0,
-    monthlyRevenue: 615000000,
     sla: 92,
     lat: 41.2087,
     lon: 69.3402,
@@ -638,7 +639,6 @@ const BUILDING_SEEDS: BuildingSeed[] = [
     buildingClass: 'A klass',
     floors: 11,
     undergroundFloors: 2,
-    monthlyRevenue: 1584000000,
     sla: 97,
     lat: 41.2947,
     lon: 69.2718,
@@ -669,7 +669,6 @@ const BUILDING_SEEDS: BuildingSeed[] = [
     buildingClass: 'A klass',
     floors: 13,
     undergroundFloors: 2,
-    monthlyRevenue: 1871000000,
     sla: 96,
     lat: 41.2762,
     lon: 69.2437,
@@ -700,7 +699,6 @@ const BUILDING_SEEDS: BuildingSeed[] = [
     buildingClass: 'B+ klass',
     floors: 2,
     undergroundFloors: 0,
-    monthlyRevenue: 1680000000,
     sla: 96,
     lat: 41.2296,
     lon: 69.1042,
@@ -731,7 +729,6 @@ const BUILDING_SEEDS: BuildingSeed[] = [
     buildingClass: 'B klass',
     floors: 6,
     undergroundFloors: 0,
-    monthlyRevenue: 725000000,
     sla: 93,
     lat: 41.3892,
     lon: 69.5187,
@@ -762,7 +759,6 @@ const BUILDING_SEEDS: BuildingSeed[] = [
     buildingClass: 'B+ klass',
     floors: 12,
     undergroundFloors: 1,
-    monthlyRevenue: 1392000000,
     sla: 94,
     lat: 41.2958,
     lon: 69.3216,
@@ -793,7 +789,6 @@ const BUILDING_SEEDS: BuildingSeed[] = [
     buildingClass: 'B klass',
     floors: 7,
     undergroundFloors: 1,
-    monthlyRevenue: 787000000,
     sla: 93,
     lat: 41.3162,
     lon: 69.2287,
@@ -824,7 +819,6 @@ const BUILDING_SEEDS: BuildingSeed[] = [
     buildingClass: 'A klass',
     floors: 4,
     undergroundFloors: 1,
-    monthlyRevenue: 2130000000,
     sla: 97,
     lat: 41.2334,
     lon: 69.2451,
@@ -855,7 +849,6 @@ const BUILDING_SEEDS: BuildingSeed[] = [
     buildingClass: 'A klass',
     floors: 17,
     undergroundFloors: 2,
-    monthlyRevenue: 1904000000,
     sla: 96,
     lat: 41.3634,
     lon: 69.3021,
@@ -890,14 +883,18 @@ function glaWeighted(pick: (b: Building) => number) {
 }
 
 /**
- * Portfel bandligi bino ichidagi bilan bir xil formulada hisoblanadi: jami
- * maydondan bo‘sh maydon chegiriladi. Yaxlitlangan foizlarning o‘rtachasi
- * emas, shuning uchun boshqaruv paneli, hisobotlar va maydon diagrammasi
- * bitta raqamni ko‘rsatadi.
+ * Portfel bandligi bino ichidagi bilan bir xil formulada hisoblanadi:
+ * shartnoma bo‘yicha egallangan maydonning umumiy ijara maydonidagi ulushi.
+ *
+ * Ilgari bu yerda «jami maydondan bo‘sh maydon chegiriladi» yozilgan edi.
+ * Bu boshqa ta’rif: rezervdagi, ta’mirdagi va yashirilgan unitlar bo‘sh
+ * emas, lekin ular bo‘yicha shartnoma ham yo‘q. Natijada boshqaruv paneli
+ * 83%, hisobotlar esa xuddi shu 22 obyekt uchun 62% ko‘rsatardi. Endi
+ * ikkala ekran bitta raqamni beradi.
  */
 function portfolioOccupancy() {
   const gla = sumBy((b) => b.gla)
-  return gla ? Math.round(((gla - sumBy((b) => b.vacantArea)) / gla) * 100) : 0
+  return gla ? Math.round((sumBy((b) => b.occupiedArea) / gla) * 100) : 0
 }
 
 export interface PortfolioTotals {

@@ -4,10 +4,12 @@ import { UNITS, unitsOfFloor, type Unit } from '~/data/units'
 import { CONTRACTS, INVOICES, type Invoice } from '~/data/business'
 import { SERVICE_REQUESTS, type ServiceRequest } from '~/data/operations'
 import { fileSize } from '~/utils/docx'
-import { area, dateLong, dateShort, monthTitle, num, sum, todayIso } from '~/utils/format'
+import { area, dateShort, num, todayIso } from '~/utils/format'
 
 const auth = useAuthStore()
 const lease = useLeaseStore()
+const { t } = useI18n()
+const { unitUsageLabel, money, field, priorityLabel, dateLong, monthTitle } = useAppLabels()
 
 lease.seed()
 
@@ -90,13 +92,13 @@ const nextDueAt = computed(
       .sort()[0] ?? '',
 )
 
-const invoiceColumns = [
-  { key: 'issuedAt', label: 'Sana' },
-  { key: 'code', label: 'Hisob-faktura raqami' },
-  { key: 'period', label: 'Davr' },
-  { key: 'total', label: 'Summa', align: 'right' as const, numeric: true },
-  { key: 'status', label: 'Holat', align: 'right' as const },
-]
+const invoiceColumns = computed(() => [
+  { key: 'issuedAt', label: field('date') },
+  { key: 'code', label: field('invoiceNo') },
+  { key: 'period', label: field('period') },
+  { key: 'total', label: field('amount'), align: 'right' as const, numeric: true },
+  { key: 'status', label: field('status'), align: 'right' as const },
+])
 
 // ---------------------------------------------------------------------------
 // Servis arizalari: operator va ijrochi ekranlari bilan bitta ro‘yxat
@@ -136,20 +138,31 @@ const form = reactive({
 })
 const formError = ref('')
 
-const categoryOptions = [
-  { value: 'Santexnika', label: 'Santexnika' },
-  { value: 'Elektr', label: 'Elektr' },
-  { value: 'Konditsioner', label: 'Konditsioner' },
-  { value: 'Qurilish', label: 'Qurilish' },
-  { value: 'Tozalash', label: 'Tozalash' },
-  { value: 'Boshqa', label: 'Boshqa' },
-]
+/**
+ * Kategoriya ma’lumotda o‘zbekcha qiymat sifatida saqlanadi: qiymat
+ * o‘zgarmaydi, faqat ko‘rinadigan nom lug‘atdan olinadi.
+ */
+const CATEGORY_KEY: Record<string, string> = {
+  Santexnika: 'serviceCategory.plumbing',
+  Elektr: 'serviceCategory.electric',
+  Konditsioner: 'serviceCategory.hvac',
+  Qurilish: 'serviceCategory.construction',
+  Tozalash: 'serviceCategory.cleaning',
+  Boshqa: 'serviceCategory.other',
+}
 
-const priorityOptions = [
-  { value: 'Past', label: 'Past' },
-  { value: 'O‘rtacha', label: 'O‘rtacha' },
-  { value: 'Yuqori', label: 'Yuqori' },
-]
+function categoryLabel(value: string) {
+  const key = CATEGORY_KEY[value]
+  return key ? t(key) : value
+}
+
+const categoryOptions = computed(() =>
+  Object.keys(CATEGORY_KEY).map((value) => ({ value, label: categoryLabel(value) })),
+)
+
+const priorityOptions = computed(() =>
+  ['Past', 'O‘rtacha', 'Yuqori'].map((value) => ({ value, label: priorityLabel(value) })),
+)
 
 const CATEGORY_ICON: Record<string, string> = {
   Santexnika: 'meter',
@@ -202,7 +215,7 @@ function nextRequestNumber() {
 
 function submitRequest() {
   if (form.title.trim().length < 4) {
-    formError.value = 'Ariza mavzusini kamida 4 ta belgidan iborat qilib yozing'
+    formError.value = t('cab.requestTitleError')
     return
   }
   formError.value = ''
@@ -224,7 +237,7 @@ function submitRequest() {
     createdAt: `${TODAY} ${new Date().toTimeString().slice(0, 5)}`,
     dueAt: addDays(TODAY, 7),
     slaBreached: false,
-    description: form.description.trim() || 'Qo‘shimcha izoh ko‘rsatilmagan.',
+    description: form.description.trim() || t('cab.noExtraNote'),
     progress: 0,
     attachments: attachments.value.map((a) => a.name),
   }
@@ -249,7 +262,7 @@ function confirmRequest() {
   if (!r || r.status !== 'TENANT_CONFIRMATION') return
   r.status = 'CLOSED'
   r.progress = 100
-  requestNotice.value = `${r.code} bo‘yicha ish qabul qilindi, ariza yopildi.`
+  requestNotice.value = t('cab.requestConfirmed', { code: r.code })
 }
 
 function returnRequest() {
@@ -257,7 +270,7 @@ function returnRequest() {
   if (!r || r.status !== 'TENANT_CONFIRMATION') return
   r.status = 'RETURNED'
   r.progress = Math.min(r.progress, 80)
-  requestNotice.value = `${r.code} qayta ishlashga qaytarildi, bino xizmati xabardor qilindi.`
+  requestNotice.value = t('cab.requestReturnedNotice', { code: r.code })
 }
 
 // ---------------------------------------------------------------------------
@@ -279,20 +292,24 @@ const documents = computed<CabinetDocLink[]>(() => {
   if (contract) {
     out.push({
       id: 'd-contract',
-      name: 'Ijara shartnomasi',
+      name: t('cab.docLease'),
       code: contract.code,
       at: contract.startsAt,
-      summary: `Unit ${myUnit.value?.code ?? ''} bo‘yicha ijara shartnomasi, ${dateShort(contract.startsAt)} · ${dateShort(contract.endsAt)}.`,
+      summary: t('cab.docLeaseSummary', {
+        unit: myUnit.value?.code ?? '',
+        from: dateShort(contract.startsAt),
+        to: dateShort(contract.endsAt),
+      }),
     })
   }
 
   if (invoice) {
     out.push({
       id: 'd-invoice',
-      name: 'Hisob-faktura',
+      name: t('field.invoice'),
       code: invoice.code,
       at: invoice.issuedAt,
-      summary: `${invoice.period} davri uchun hisob-faktura, jami ${sum(invoice.total)}.`,
+      summary: t('cab.docInvoiceSummary', { period: invoice.period, total: money(invoice.total) }),
     })
   }
 
@@ -300,17 +317,17 @@ const documents = computed<CabinetDocLink[]>(() => {
     out.push(
       {
         id: 'd-requisites',
-        name: 'To‘lov rekvizitlari',
+        name: t('cab.docRequisites'),
         code: 'REK-2025-0044',
         at: '2026-04-17',
-        summary: 'Bank rekvizitlari va to‘lov topshiriqnomasini to‘ldirish tartibi.',
+        summary: t('cab.docRequisitesShort'),
       },
       {
         id: 'd-rules',
-        name: 'Bino ichki tartib-qoidalari',
+        name: t('cab.docRules'),
         code: 'QDL-2025-0007',
         at: '2026-04-17',
-        summary: 'Ish vaqti, kirish tartibi va umumiy zonalardan foydalanish qoidalari.',
+        summary: t('cab.docRulesShort'),
       },
     )
   }
@@ -328,11 +345,11 @@ const MONTH_LAST_READ = (() => {
   return toIso(d)
 })()
 
-const meters = [
-  { id: 'mt-suv', label: 'Suv', unit: 'm³', icon: 'meter', tone: 'brand', last: 125.4, previous: 118.2 },
-  { id: 'mt-elektr', label: 'Elektr', unit: 'kVt-soat', icon: 'sparkle', tone: 'warn', last: 1245.6, previous: 1198.3 },
-  { id: 'mt-issiqlik', label: 'Issiqlik', unit: 'Gkal', icon: 'refresh', tone: 'danger', last: 63.2, previous: 58.1 },
-]
+const meters = computed(() => [
+  { id: 'mt-suv', label: t('meterType.water'), unit: 'm³', icon: 'meter', tone: 'brand', last: 125.4, previous: 118.2 },
+  { id: 'mt-elektr', label: t('meterType.electricity'), unit: 'kVt-soat', icon: 'sparkle', tone: 'warn', last: 1245.6, previous: 1198.3 },
+  { id: 'mt-issiqlik', label: t('meterType.heating'), unit: 'Gkal', icon: 'refresh', tone: 'danger', last: 63.2, previous: 58.1 },
+])
 
 const METER_TONE: Record<string, string> = {
   brand: 'bg-brand-50 text-brand-600',
@@ -356,22 +373,48 @@ const myPlanCenter = computed(() => {
 })
 
 const currentPeriodTitle = computed(() => monthTitle(TODAY))
+
+/* --- Jonli izoh ---
+ * Ijarachi tizimga kamdan-kam kiradi, shuning uchun izoh kabinetni ish
+ * tartibida boshdan oxirigacha ko‘rsatadi: maydon, to‘lov, servis arizasi,
+ * hujjatlar va hisoblagichlar. Har bir qadamda amaldan keyingi natija
+ * aytiladi, shunda nimani kutish kerakligi noaniq qolmaydi.
+ */
+const TOUR_KEYS = ['unit', 'invoice', 'request', 'requests', 'docs', 'meters'] as const
+
+const tourSteps = computed(() =>
+  TOUR_KEYS.map((key) => ({
+    target: `[data-tour="cab-${key}"]`,
+    title: t(`tour.cabinet.${key}.title`),
+    body: t(`tour.cabinet.${key}.body`),
+    after: t(`tour.cabinet.${key}.after`),
+    next: t(`tour.cabinet.${key}.next`),
+  })),
+)
+
+const tourId = computed(() => `cabinet:${auth.role ?? 'guest'}`)
 </script>
 
 <template>
   <AppTopbar
-    :title="firstName ? `Xush kelibsiz, ${firstName}` : 'Kabinet'"
-    :subtitle="`Bugun ${dateLong(TODAY)}`"
+    :title="firstName ? t('cab.welcome', { name: firstName }) : t('cab.title')"
+    :subtitle="t('cab.todayIs', { date: dateLong(TODAY) })"
   >
     <template #actions>
       <UiButton variant="secondary" size="sm" to="/cabinet/invoices">
         <UiIcon name="wallet" :size="16" />
-        To‘lovlarim
+        {{ t('nav.myInvoices') }}
       </UiButton>
-      <UiButton size="sm" :disabled="!myUnit" @click="newRequestOpen = true">
+      <UiButton
+        size="sm"
+        :disabled="!myUnit"
+        data-tour="cab-request"
+        @click="newRequestOpen = true"
+      >
         <UiIcon name="plus" :size="16" />
-        Yangi servis arizasi
+        {{ t('cab.newServiceRequest') }}
       </UiButton>
+      <UiTour v-if="myUnit" :id="tourId" :steps="tourSteps" />
     </template>
   </AppTopbar>
 
@@ -384,12 +427,12 @@ const currentPeriodTitle = computed(() => monthTitle(TODAY))
         <UiIcon name="check" :size="18" />
       </span>
       <p class="min-w-0 flex-1 text-[14px] text-ok-700">
-        <b>{{ createdCode }}</b> raqamli servis arizangiz qabul qilindi va bino xizmatiga yuborildi.
+        <b>{{ createdCode }}</b> {{ t('cab.requestCreatedNotice') }}
       </p>
       <button
         type="button"
         class="rounded-lg p-1.5 text-ok-700 transition-colors hover:bg-ok-100"
-        aria-label="Xabarni yopish"
+        :aria-label="t('common.closeMessage')"
         @click="createdCode = ''"
       >
         <UiIcon name="x" :size="16" />
@@ -399,19 +442,19 @@ const currentPeriodTitle = computed(() => monthTitle(TODAY))
     <UiCard v-if="!myUnit" flush>
       <UiEmpty
         icon="building"
-        title="Maydon biriktirilmagan"
-        :description="`${organization || 'Tashkilotingiz'} nomiga rasmiylashtirilgan unit topilmadi. Bo‘sh maydonlar katalogidan tanlab, ijaraga olish arizasini yuboring: shartnoma faollashgach kabinet to‘liq ishga tushadi.`"
-        action-label="Ijaraga olish arizasi"
+        :title="t('cab.noUnitTitle')"
+        :description="t('cab.noUnitDesc', { org: organization || t('cab.yourOrganization') })"
+        :action-label="t('cab.applyForRent')"
         action-to="/cabinet/apply"
       />
     </UiCard>
 
     <template v-else>
       <section class="grid gap-5 xl:grid-cols-2">
-        <UiCard title="Mening unitlarim" subtitle="Ijaraga olingan asosiy maydon">
+        <UiCard data-tour="cab-unit" :title="t('nav.myUnits')" :subtitle="t('cab.mainRentedUnit')">
           <template #actions>
             <UiButton variant="ghost" size="sm" to="/cabinet/units">
-              Barchasi
+              {{ t('common.all') }}
               <UiIcon name="chevronRight" :size="15" />
             </UiButton>
           </template>
@@ -419,7 +462,7 @@ const currentPeriodTitle = computed(() => monthTitle(TODAY))
           <div class="grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
             <UiPhoto
               name="interior-office"
-              :alt="`Unit ${myUnit.code} ichki ko‘rinishi`"
+              :alt="t('cab.unitInteriorAlt', { code: myUnit.code })"
               ratio="aspect-[16/10]"
               rounded="rounded-field"
               sizes="(max-width: 640px) 100vw, 340px"
@@ -431,13 +474,13 @@ const currentPeriodTitle = computed(() => monthTitle(TODAY))
                 <span class="block text-[14px] font-semibold text-white drop-shadow">
                   Unit {{ myUnit.code }}
                 </span>
-                <span class="block text-[12px] text-white/85">{{ myUnit.usage }}</span>
+                <span class="block text-[12px] text-white/85">{{ unitUsageLabel(myUnit.usage) }}</span>
               </span>
             </UiPhoto>
 
             <div class="flex flex-col">
               <div class="rounded-field bg-surface-sunken p-3 ring-1 ring-ink-200">
-                <svg viewBox="0 0 100 100" class="block h-32 w-full" role="img" aria-label="Qavat rejasi">
+                <svg viewBox="0 0 100 100" class="block h-32 w-full" role="img" :aria-label="t('cab.floorPlan')">
                   <rect x="2" y="2" width="96" height="96" rx="4" fill="#ffffff" stroke="#cbd4e3" stroke-width="1.4" />
                   <rect x="2" y="44" width="96" height="12" fill="#f1f5fb" />
                   <polygon
@@ -460,7 +503,7 @@ const currentPeriodTitle = computed(() => monthTitle(TODAY))
                   </text>
                 </svg>
                 <p class="mt-2 text-center text-[12px] text-ink-500">
-                  {{ myUnit.floor }}-qavat rejasi
+                  {{ t('cab.floorPlanTitle', { floor: myUnit.floor }) }}
                 </p>
               </div>
 
@@ -470,34 +513,35 @@ const currentPeriodTitle = computed(() => monthTitle(TODAY))
               </div>
               <p class="mt-1 text-[13px] text-ink-600">{{ myUnit.tenant ?? organization }}</p>
               <p class="text-[13px] text-ink-500">
-                {{ myBuilding?.name }} · {{ myUnit.floor }}-qavat, {{ myUnit.rooms }} xona
+                {{ myBuilding?.name }} ·
+                {{ t('cab.floorRooms', { floor: myUnit.floor, rooms: myUnit.rooms }) }}
               </p>
 
               <dl class="mt-3 divide-y divide-ink-100 border-t border-ink-100">
                 <div class="flex items-center justify-between py-2">
-                  <dt class="text-[13px] text-ink-500">Umumiy maydon</dt>
+                  <dt class="text-[13px] text-ink-500">{{ field('totalArea') }}</dt>
                   <dd class="tabular text-[13px] font-bold text-ink-900">{{ area(myUnit.area) }}</dd>
                 </div>
                 <div class="flex items-center justify-between py-2">
-                  <dt class="text-[13px] text-ink-500">Shartnoma</dt>
+                  <dt class="text-[13px] text-ink-500">{{ field('contract') }}</dt>
                   <dd class="tabular text-[13px] font-bold text-ink-900">
-                    {{ myContract?.code ?? 'Biriktirilmagan' }}
+                    {{ myContract?.code ?? t('common.notAssigned') }}
                   </dd>
                 </div>
                 <div class="flex items-center justify-between py-2">
-                  <dt class="text-[13px] text-ink-500">Ijara boshlangan sana</dt>
+                  <dt class="text-[13px] text-ink-500">{{ t('cab.leaseStart') }}</dt>
                   <dd class="tabular text-[13px] font-bold text-ink-900">
                     {{ myContract ? dateShort(myContract.startsAt) : '-' }}
                   </dd>
                 </div>
                 <div class="flex items-center justify-between py-2">
-                  <dt class="text-[13px] text-ink-500">Shartnoma yakunlanish sanasi</dt>
+                  <dt class="text-[13px] text-ink-500">{{ t('cab.leaseEnd') }}</dt>
                   <dd class="tabular text-[13px] font-bold text-ink-900">
                     {{ myContract ? dateShort(myContract.endsAt) : '-' }}
                   </dd>
                 </div>
                 <div class="flex items-center justify-between py-2">
-                  <dt class="text-[13px] text-ink-500">Shartnoma holati</dt>
+                  <dt class="text-[13px] text-ink-500">{{ t('cab.contractStatus') }}</dt>
                   <dd>
                     <UiStatus v-if="myContract" kind="contract" :value="myContract.status" size="sm" />
                     <span v-else class="text-[13px] text-ink-500">-</span>
@@ -506,17 +550,22 @@ const currentPeriodTitle = computed(() => monthTitle(TODAY))
               </dl>
 
               <UiButton variant="secondary" size="sm" class="mt-3.5" block to="/cabinet/units">
-                Unit tafsiloti
+                {{ t('cab.unitDetails') }}
                 <UiIcon name="chevronRight" :size="15" />
               </UiButton>
             </div>
           </div>
         </UiCard>
 
-        <UiCard title="To‘lov holati" subtitle="Joriy davr bo‘yicha hisob-kitob" flush>
+        <UiCard
+          data-tour="cab-invoice"
+          :title="t('tour.cabinet.invoice.title')"
+          :subtitle="t('cab.currentPeriodBilling')"
+          flush
+        >
           <template #actions>
             <UiButton variant="ghost" size="sm" to="/cabinet/invoices">
-              Barchasini ko‘rish
+              {{ t('common.viewAll') }}
               <UiIcon name="chevronRight" :size="15" />
             </UiButton>
           </template>
@@ -530,12 +579,12 @@ const currentPeriodTitle = computed(() => monthTitle(TODAY))
                 <UiIcon name="check" :size="18" />
               </span>
               <p class="min-w-0 flex-1 text-[13px] font-semibold text-ok-700">
-                Muddati o‘tgan qarzdorlik yo‘q
+                {{ t('cab.noOverdueDebt') }}
                 <span class="block font-normal text-ok-600">
                   {{
                     nextDueAt
-                      ? `Keyingi to‘lov muddati: ${dateShort(nextDueAt)}`
-                      : 'To‘lanmagan hisob-faktura yo‘q'
+                      ? t('cab.nextDueAt', { date: dateShort(nextDueAt) })
+                      : t('cab.noUnpaidInvoices')
                   }}
                 </span>
               </p>
@@ -548,9 +597,9 @@ const currentPeriodTitle = computed(() => monthTitle(TODAY))
                 <UiIcon name="warning" :size="18" />
               </span>
               <p class="min-w-0 flex-1 text-[13px] font-semibold text-danger-700">
-                Muddati o‘tgan {{ overdueCount }} ta hisob-faktura
+                {{ t('cab.overdueInvoicesCount', { n: overdueCount }) }}
                 <span class="block font-normal text-danger-600">
-                  Kechikkan summa: {{ sum(overdueTotal) }}
+                  {{ t('cab.overdueAmount', { amount: money(overdueTotal) }) }}
                 </span>
               </p>
             </div>
@@ -558,11 +607,15 @@ const currentPeriodTitle = computed(() => monthTitle(TODAY))
             <div class="grid gap-3 sm:grid-cols-2">
               <div class="rounded-field p-4 ring-1 ring-ink-200">
                 <p class="text-[13px] text-ink-500">
-                  {{ currentInvoice ? `${currentInvoice.period} davri hisobi` : 'Joriy davr hisobi' }}
+                  {{
+                    currentInvoice
+                      ? t('cab.periodBill', { period: currentInvoice.period })
+                      : t('cab.currentPeriodBill')
+                  }}
                 </p>
                 <p class="tabular mt-1.5 text-[22px] font-bold leading-none text-ink-900">
                   {{ num(currentInvoice?.total ?? 0) }}
-                  <span class="text-[13px] font-medium text-ink-500">so‘m</span>
+                  <span class="text-[13px] font-medium text-ink-500">{{ t('unitOf.currency') }}</span>
                 </p>
                 <div class="mt-2.5">
                   <UiStatus
@@ -575,17 +628,17 @@ const currentPeriodTitle = computed(() => monthTitle(TODAY))
                 <p class="mt-2 text-[12px] text-ink-500">
                   {{
                     currentInvoice
-                      ? `To‘lov muddati: ${dateShort(currentInvoice.dueAt)}`
-                      : `${currentPeriodTitle} davri uchun hujjat shakllantirilmagan`
+                      ? t('cab.dueAtIs', { date: dateShort(currentInvoice.dueAt) })
+                      : t('cab.noDocForPeriod', { period: currentPeriodTitle })
                   }}
                 </p>
               </div>
 
               <div class="rounded-field p-4 ring-1 ring-ink-200">
-                <p class="text-[13px] text-ink-500">Qarzdorlik summasi</p>
+                <p class="text-[13px] text-ink-500">{{ t('cab.debtAmount') }}</p>
                 <p class="tabular mt-1.5 text-[22px] font-bold leading-none text-ink-900">
                   {{ num(debtTotal) }}
-                  <span class="text-[13px] font-medium text-ink-500">so‘m</span>
+                  <span class="text-[13px] font-medium text-ink-500">{{ t('unitOf.currency') }}</span>
                 </p>
                 <div class="mt-2.5">
                   <span
@@ -593,29 +646,29 @@ const currentPeriodTitle = computed(() => monthTitle(TODAY))
                     class="inline-flex items-center gap-1.5 rounded-pill bg-ok-50 px-2 py-0.5 text-[11px] font-semibold text-ok-700 ring-1 ring-inset ring-ok-100"
                   >
                     <UiIcon name="check" :size="12" />
-                    Qarzdorlik yo‘q
+                    {{ t('empty.noDebt') }}
                   </span>
                   <span
                     v-else
                     class="inline-flex items-center gap-1.5 rounded-pill bg-warn-50 px-2 py-0.5 text-[11px] font-semibold text-warn-700 ring-1 ring-inset ring-warn-100"
                   >
                     <UiIcon name="wallet" :size="12" />
-                    To‘lanmagan qoldiq
+                    {{ t('cab.unpaidBalance') }}
                   </span>
                 </div>
                 <p class="mt-2 text-[12px] text-ink-500">
-                  Muddati o‘tgan hisob-fakturalar: {{ overdueCount }} ta
+                  {{ t('cab.overdueInvoicesLine', { n: overdueCount }) }}
                 </p>
               </div>
             </div>
 
             <div>
-              <p class="mb-2 text-[13px] font-semibold text-ink-700">So‘nggi hisob-fakturalar</p>
+              <p class="mb-2 text-[13px] font-semibold text-ink-700">{{ t('cab.recentInvoices') }}</p>
               <div class="overflow-hidden rounded-field ring-1 ring-ink-200">
                 <UiTable
                   :columns="invoiceColumns"
                   :rows="MY_INVOICES"
-                  empty="Hisob-faktura shakllantirilmagan"
+                  :empty="t('empty.noInvoicesIssued')"
                   :to="() => '/cabinet/invoices'"
                 >
                   <template #cell-issuedAt="{ value }">
@@ -625,7 +678,7 @@ const currentPeriodTitle = computed(() => monthTitle(TODAY))
                     <span class="text-[13px] font-semibold text-ink-900">{{ row.code }}</span>
                   </template>
                   <template #cell-total="{ value }">
-                    {{ sum(Number(value)) }}
+                    {{ money(Number(value)) }}
                   </template>
                   <template #cell-status="{ row }">
                     <UiStatus
@@ -642,10 +695,15 @@ const currentPeriodTitle = computed(() => monthTitle(TODAY))
       </section>
 
       <section class="grid gap-5 xl:grid-cols-3">
-        <UiCard title="Faol servis arizalarim" subtitle="Tashkilotingiz yuborgan murojaatlar" flush>
+        <UiCard
+          data-tour="cab-requests"
+          :title="t('cab.myActiveRequests')"
+          :subtitle="t('cab.myRequestsCaption')"
+          flush
+        >
           <template #actions>
             <span class="rounded-pill bg-brand-50 px-2.5 py-1 text-[12px] font-bold text-brand-700">
-              {{ requests.length }} ta
+              {{ requests.length }} {{ t('unitOf.pcs') }}
             </span>
           </template>
 
@@ -672,14 +730,14 @@ const currentPeriodTitle = computed(() => monthTitle(TODAY))
               </button>
             </li>
             <li v-if="!requests.length" class="px-5 py-10 text-center text-[13px] text-ink-500">
-              Ochiq servis arizasi yo‘q
+              {{ t('empty.noOpenRequests') }}
             </li>
           </ul>
 
           <div class="flex flex-wrap gap-3 p-5 pt-4">
             <UiButton class="min-w-[196px] flex-1" @click="newRequestOpen = true">
               <UiIcon name="plus" :size="17" />
-              Yangi servis arizasi
+              {{ t('cab.newServiceRequest') }}
             </UiButton>
             <button
               type="button"
@@ -689,20 +747,20 @@ const currentPeriodTitle = computed(() => monthTitle(TODAY))
               <UiIcon name="image" :size="18" class="shrink-0 text-ink-400" />
               <span class="min-w-0">
                 <span class="block truncate text-[13px] font-semibold leading-tight text-ink-800">
-                  Rasm qo‘shish
+                  {{ t('cab.addPhoto') }}
                 </span>
                 <span class="block truncate text-[11px] leading-tight text-ink-500">
-                  JPG, PNG (max 10MB)
+                  {{ t('cab.photoHint') }}
                 </span>
               </span>
             </button>
           </div>
         </UiCard>
 
-        <UiCard title="Hujjatlarim" subtitle="Shartnoma va rasmiy hujjatlar" flush>
+        <UiCard data-tour="cab-docs" :title="t('nav.myDocuments')" :subtitle="t('cab.docsCaption')" flush>
           <template #actions>
             <UiButton variant="ghost" size="sm" to="/cabinet/documents">
-              Barchasi
+              {{ t('common.all') }}
               <UiIcon name="chevronRight" :size="15" />
             </UiButton>
           </template>
@@ -721,21 +779,26 @@ const currentPeriodTitle = computed(() => monthTitle(TODAY))
               <NuxtLink
                 :to="`/cabinet/documents?hujjat=${d.code}`"
                 class="grid size-11 shrink-0 place-items-center rounded-field text-brand-600 transition-colors hover:bg-brand-50 md:size-9"
-                :aria-label="`${d.name}: hujjatlar bo‘limida ochish`"
+                :aria-label="t('cab.openInDocsAria', { name: d.name })"
               >
                 <UiIcon name="download" :size="18" />
               </NuxtLink>
             </li>
             <li v-if="!documents.length" class="px-5 py-10 text-center text-[13px] text-ink-500">
-              Hujjat shakllantirilmagan
+              {{ t('empty.noDocumentsIssued') }}
             </li>
           </ul>
         </UiCard>
 
-        <UiCard title="Hisoblagich ko‘rsatkichlari" subtitle="Oxirgi olingan qiymatlar" flush>
+        <UiCard
+          data-tour="cab-meters"
+          :title="t('tour.cabinet.meters.title')"
+          :subtitle="t('cab.lastReadings')"
+          flush
+        >
           <template #actions>
             <UiButton variant="ghost" size="sm" to="/cabinet/meters">
-              Barchasi
+              {{ t('common.all') }}
               <UiIcon name="chevronRight" :size="15" />
             </UiButton>
           </template>
@@ -756,7 +819,7 @@ const currentPeriodTitle = computed(() => monthTitle(TODAY))
                   {{ num(m.last, 2) }} {{ m.unit }}
                 </span>
                 <span class="tabular block text-[12px] text-ink-500">
-                  Oldingi: {{ num(m.previous, 2) }} {{ m.unit }}
+                  {{ t('cab.previousValue', { value: `${num(m.previous, 2)} ${m.unit}` }) }}
                 </span>
               </span>
               <span class="shrink-0 text-right">
@@ -773,8 +836,7 @@ const currentPeriodTitle = computed(() => monthTitle(TODAY))
           <div class="mx-5 mb-5 flex items-start gap-2.5 rounded-field bg-brand-50 px-3.5 py-3">
             <UiIcon name="info" :size="16" class="mt-0.5 shrink-0 text-brand-600" />
             <p class="text-[12px] leading-snug text-brand-700">
-              Ko‘rsatkichlar har oyning 18-sanasida yangilanadi. Qiymatni o‘zingiz ham kiritishingiz
-              mumkin.
+              {{ t('cab.metersInfoShort') }}
             </p>
           </div>
         </UiCard>
@@ -784,17 +846,17 @@ const currentPeriodTitle = computed(() => monthTitle(TODAY))
 
   <UiModal
     v-model="requestOpen"
-    :title="selectedRequest?.title ?? 'Servis arizasi'"
+    :title="selectedRequest?.title ?? t('field.serviceRequest')"
     :subtitle="selectedRequest ? `${selectedRequest.code} · ${selectedRequest.buildingName}` : ''"
   >
     <div v-if="selectedRequest" class="space-y-4">
       <div class="flex flex-wrap items-center gap-2.5">
         <UiStatus kind="service" :value="selectedRequest.status" />
         <span class="rounded-pill bg-ink-100 px-2.5 py-1 text-[12px] font-semibold text-ink-700">
-          {{ selectedRequest.category }}
+          {{ categoryLabel(selectedRequest.category) }}
         </span>
         <span class="rounded-pill bg-warn-50 px-2.5 py-1 text-[12px] font-semibold text-warn-700">
-          Ustuvorlik: {{ selectedRequest.priority }}
+          {{ t('cab.priorityIs', { value: priorityLabel(selectedRequest.priority) }) }}
         </span>
       </div>
 
@@ -810,29 +872,29 @@ const currentPeriodTitle = computed(() => monthTitle(TODAY))
 
       <dl class="divide-y divide-ink-100 rounded-field ring-1 ring-ink-200">
         <div class="flex items-center justify-between px-4 py-2.5">
-          <dt class="text-[13px] text-ink-500">Unit</dt>
+          <dt class="text-[13px] text-ink-500">{{ field('unit') }}</dt>
           <dd class="text-[13px] font-semibold text-ink-900">{{ selectedRequest.unitCode }}</dd>
         </div>
         <div class="flex items-center justify-between px-4 py-2.5">
-          <dt class="text-[13px] text-ink-500">Yaratilgan</dt>
+          <dt class="text-[13px] text-ink-500">{{ field('createdAt') }}</dt>
           <dd class="tabular text-[13px] font-semibold text-ink-900">{{ selectedRequest.createdAt }}</dd>
         </div>
         <div class="flex items-center justify-between px-4 py-2.5">
-          <dt class="text-[13px] text-ink-500">Bajarilish muddati</dt>
+          <dt class="text-[13px] text-ink-500">{{ field('completionDue') }}</dt>
           <dd class="tabular text-[13px] font-semibold text-ink-900">
             {{ dateShort(selectedRequest.dueAt) }}
           </dd>
         </div>
         <div class="flex items-center justify-between px-4 py-2.5">
-          <dt class="text-[13px] text-ink-500">Mas’ul xodim</dt>
+          <dt class="text-[13px] text-ink-500">{{ field('assignee') }}</dt>
           <dd class="text-[13px] font-semibold text-ink-900">
-            {{ selectedRequest.assignee ?? 'Biriktirilmagan' }}
+            {{ selectedRequest.assignee ?? t('cab.noAssignee') }}
           </dd>
         </div>
       </dl>
 
       <div v-if="selectedRequest.attachments?.length">
-        <p class="mb-1.5 text-[13px] text-ink-500">Biriktirilgan rasmlar</p>
+        <p class="mb-1.5 text-[13px] text-ink-500">{{ t('cab.attachedPhotos') }}</p>
         <ul class="flex flex-wrap gap-2">
           <li
             v-for="a in selectedRequest.attachments"
@@ -847,7 +909,7 @@ const currentPeriodTitle = computed(() => monthTitle(TODAY))
 
       <div>
         <div class="mb-1.5 flex items-center justify-between">
-          <span class="text-[13px] text-ink-500">Bajarilish darajasi</span>
+          <span class="text-[13px] text-ink-500">{{ field('progress') }}</span>
           <span class="tabular text-[13px] font-bold text-ink-900">{{ selectedRequest.progress }}%</span>
         </div>
         <div class="h-2 overflow-hidden rounded-pill bg-ink-100">
@@ -860,23 +922,20 @@ const currentPeriodTitle = computed(() => monthTitle(TODAY))
         class="flex items-start gap-2 rounded-field bg-info-50 px-3.5 py-2.5 text-[13px] leading-snug text-info-700"
       >
         <UiIcon name="info" :size="15" class="mt-px shrink-0" />
-        <span class="min-w-0">
-          Ish bajarildi va sizning tasdig‘ingizni kutmoqda. Natijani qabul qiling yoki kamchilik
-          bo‘lsa qayta ishlashga qaytaring.
-        </span>
+        <span class="min-w-0">{{ t('cab.confirmWorkHint') }}</span>
       </p>
     </div>
 
     <template #footer>
-      <UiButton variant="ghost" @click="requestOpen = false">Yopish</UiButton>
+      <UiButton variant="ghost" @click="requestOpen = false">{{ t('common.close') }}</UiButton>
       <template v-if="canDecideRequest">
         <UiButton variant="secondary" @click="returnRequest">
           <UiIcon name="refresh" :size="16" />
-          Qaytarish
+          {{ t('common.return') }}
         </UiButton>
         <UiButton @click="confirmRequest">
           <UiIcon name="check" :size="16" />
-          Tasdiqlash
+          {{ t('common.confirm') }}
         </UiButton>
       </template>
       <UiButton
@@ -890,40 +949,44 @@ const currentPeriodTitle = computed(() => monthTitle(TODAY))
         "
       >
         <UiIcon name="plus" :size="16" />
-        Yangi servis arizasi
+        {{ t('cab.newServiceRequest') }}
       </UiButton>
     </template>
   </UiModal>
 
   <UiModal
     v-model="newRequestOpen"
-    title="Yangi servis arizasi"
+    :title="t('cab.newServiceRequest')"
     :subtitle="myBuilding && myUnit ? `${myBuilding.name} · Unit ${myUnit.code}` : ''"
   >
     <div class="space-y-4">
-      <UiField label="Ariza mavzusi" required :error="formError">
-        <UiInput v-model="form.title" placeholder="Masalan: sanuzelda suv oqmoqda" :invalid="!!formError" />
+      <UiField :label="field('requestSubject')" required :error="formError">
+        <UiInput
+          v-model="form.title"
+          :placeholder="t('cab.requestTitlePlaceholder')"
+          :invalid="!!formError"
+        />
       </UiField>
 
       <div class="grid gap-4 sm:grid-cols-2">
-        <UiField label="Kategoriya" required>
+        <UiField :label="field('category')" required>
           <UiSelect v-model="form.category" :options="categoryOptions" />
         </UiField>
-        <UiField label="Ustuvorlik" required>
+        <UiField :label="field('priority')" required>
           <UiSelect v-model="form.priority" :options="priorityOptions" />
         </UiField>
       </div>
 
-      <UiField label="Batafsil izoh" hint="Muammoni imkon qadar aniq tasvirlab bering">
+      <UiField :label="field('detailedNote')" :hint="t('cab.describeProblemHint')">
         <textarea
           v-model="form.description"
           rows="4"
-          placeholder="Qo‘shimcha ma’lumot"
+          :placeholder="t('common.additionalInfo')"
           class="w-full rounded-field bg-white px-3.5 py-2.5 text-sm text-ink-800 ring-1 ring-inset ring-ink-200 transition-colors placeholder:text-ink-400 hover:ring-ink-300 focus:ring-2 focus:ring-brand-500"
         />
       </UiField>
 
-      <UiField label="Rasm qo‘shish" hint="JPG, PNG (max 10MB)">
+      <UiField :label="t('cab.addPhoto')" :hint="t('cab.photoHint')">
         <div class="space-y-2">
           <ul v-if="attachments.length" class="space-y-1.5">
             <li
@@ -939,7 +1002,7 @@ const currentPeriodTitle = computed(() => monthTitle(TODAY))
               <button
                 type="button"
                 class="grid size-11 shrink-0 place-items-center rounded-lg text-ink-400 transition-colors hover:bg-danger-50 hover:text-danger-600 md:size-9"
-                :aria-label="`${a.name}: biriktirmani olib tashlash`"
+                :aria-label="t('cab.removeAttachmentAria', { name: a.name })"
                 @click="removeAttachment(i)"
               >
                 <UiIcon name="x" :size="14" />
@@ -952,7 +1015,7 @@ const currentPeriodTitle = computed(() => monthTitle(TODAY))
             accept="image/*"
             multiple
             class="sr-only"
-            aria-label="Rasm fayllari"
+            :aria-label="t('cab.photoFilesAria')"
             @change="onFiles"
           />
           <button
@@ -962,9 +1025,9 @@ const currentPeriodTitle = computed(() => monthTitle(TODAY))
           >
             <UiIcon name="image" :size="18" class="shrink-0 text-ink-400" />
             <span class="min-w-0">
-              <span class="block text-[13px] font-semibold text-ink-800">Rasm biriktirish</span>
+              <span class="block text-[13px] font-semibold text-ink-800">{{ t('cab.attachPhoto') }}</span>
               <span class="block text-[12px] text-ink-500">
-                Biriktirilgan: {{ attachments.length }} ta
+                {{ t('cab.attachedCount', { n: attachments.length }) }}
               </span>
             </span>
           </button>
@@ -973,10 +1036,10 @@ const currentPeriodTitle = computed(() => monthTitle(TODAY))
     </div>
 
     <template #footer>
-      <UiButton variant="ghost" @click="newRequestOpen = false">Bekor qilish</UiButton>
+      <UiButton variant="ghost" @click="newRequestOpen = false">{{ t('common.cancel') }}</UiButton>
       <UiButton @click="submitRequest">
         <UiIcon name="send" :size="16" />
-        Arizani yuborish
+        {{ t('apply.submit') }}
       </UiButton>
     </template>
   </UiModal>

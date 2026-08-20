@@ -11,7 +11,7 @@ import {
   type WorkMaterialLine,
 } from '~/data/operations'
 import type { Capability } from '~/types/rbac'
-import { dateShort, sum, todayIso } from '~/utils/format'
+import { dateShort, todayIso } from '~/utils/format'
 
 type ServiceStatus = ServiceRequest['status']
 
@@ -23,13 +23,13 @@ interface MaterialRequestEntry extends MaterialRequest {
 
 interface FlowAction {
   key: string
-  label: string
+  labelKey: string
   next: ServiceStatus
   variant: 'primary' | 'secondary' | 'success'
   icon: string
   progress: number
-  note: string
-  question: string
+  noteKey: string
+  questionKey: string
   /** Amalni bajarish uchun yetarli bo‘lgan huquqlar */
   capabilities: Capability[]
   /** Murojaatchi o‘z arizasini shu bosqichda o‘zi tasdiqlashi mumkin */
@@ -44,6 +44,19 @@ const CONFIRM_ONLY: Capability[] = ['workorder.assign']
 
 const route = useRoute()
 const auth = useAuthStore()
+
+const { t } = useI18n()
+const { money, field, priorityLabel, moduleTitle, tr } = useAppLabels()
+
+/** Kategoriya ma’lumotda o‘zbekcha saqlanadi, ko‘rinadigan nomi lug‘atdan olinadi */
+const CATEGORY_KEY: Record<string, string> = {
+  Santexnika: 'serviceCategory.plumbing',
+  Elektr: 'serviceCategory.electric',
+  Konditsioner: 'serviceCategory.hvac',
+  Qurilish: 'serviceCategory.construction',
+  Tozalash: 'serviceCategory.cleaning',
+  Boshqa: 'serviceCategory.other',
+}
 
 const requests = useState<ServiceRequest[]>('service-requests', () =>
   SERVICE_REQUESTS.map((r) => ({ ...r })),
@@ -119,49 +132,49 @@ function ensureMaterialRequest(r: ServiceRequest) {
     id: `mr-${numbered}`,
     code: `MT-${new Date().getFullYear()}-${numbered}`,
     workOrder: r.code,
-    requester: auth.user?.fullName ?? 'Ijrochi',
+    requester: auth.user?.fullName ?? t('field.executor'),
     items: lines.length,
     amount: lines.reduce((s, l) => s + l.qty * l.price, 0),
     status: 'SUBMITTED',
     createdAt: todayIso(),
     buildingName: r.buildingName,
-    reason: `${r.code} «${r.title}» ishi bo‘yicha material talab qilinadi`,
+    reason: t('svc.materialReason', { code: r.code, title: r.title }),
     lines,
   })
 }
 
-const history = ref<Array<{ label: string; status: ServiceStatus; at: string }>>([])
+const history = ref<Array<{ labelKey: string; status: ServiceStatus; at: string }>>([])
 
 const timeline = computed(() => {
   const r = request.value
   if (!r) return []
   return [
-    ...history.value,
-    { label: 'Ariza qabul qilindi va navbatga qo‘yildi', status: 'NEW' as ServiceStatus, at: `${dateShort(r.createdAt.slice(0, 10))} ${r.createdAt.slice(11)}` },
+    ...history.value.map((h) => ({ label: t(h.labelKey), status: h.status, at: h.at || t('svc.justNow') })),
+    { label: t('svc.timelineCreated'), status: 'NEW' as ServiceStatus, at: `${dateShort(r.createdAt.slice(0, 10))} ${r.createdAt.slice(11)}` },
   ]
 })
 
 const ACCEPT: FlowAction = {
   key: 'accept',
-  label: 'Qabul qilish',
+  labelKey: 'svc.actionAccept',
   next: 'ASSIGNED',
   variant: 'primary',
   icon: 'check',
   progress: 10,
-  note: 'Ariza qabul qilindi va ijrochiga biriktirildi',
-  question: 'Ariza qabul qilinsin va sizga biriktirilsinmi?',
+  noteKey: 'svc.noteAccepted',
+  questionKey: 'svc.askAccept',
   capabilities: ASSIGN_OR_EXECUTE,
 }
 
 const START: FlowAction = {
   key: 'start',
-  label: 'Ishni boshlash',
+  labelKey: 'svc.actionStart',
   next: 'IN_PROGRESS',
   variant: 'primary',
   icon: 'wrench',
   progress: 35,
-  note: 'Ish boshlandi',
-  question: 'Ish boshlandi deb belgilansinmi?',
+  noteKey: 'svc.noteStarted',
+  questionKey: 'svc.askStart',
   capabilities: EXECUTE_ONLY,
 }
 
@@ -174,63 +187,63 @@ const FLOW: Record<string, FlowAction[]> = {
   IN_PROGRESS: [
     {
       key: 'material',
-      label: 'Material so‘rash',
+      labelKey: 'svc.actionMaterial',
       next: 'MATERIAL_PENDING',
       variant: 'secondary',
       icon: 'box',
       progress: 50,
-      note: 'Ombordan material so‘raldi',
-      question: 'Ushbu ariza bo‘yicha ombordan material so‘ralsinmi?',
+      noteKey: 'svc.noteMaterial',
+      questionKey: 'svc.askMaterial',
       capabilities: EXECUTE_ONLY,
     },
     {
       key: 'finish',
-      label: 'Yakunlash',
+      labelKey: 'svc.actionFinish',
       next: 'COMPLETED',
       variant: 'success',
       icon: 'check',
       progress: 100,
-      note: 'Ish yakunlandi',
-      question: 'Ish to‘liq bajarildi va yakunlansinmi?',
+      noteKey: 'svc.noteFinished',
+      questionKey: 'svc.askFinish',
       capabilities: EXECUTE_ONLY,
     },
   ],
   MATERIAL_PENDING: [
     {
       key: 'resume',
-      label: 'Ishni davom ettirish',
+      labelKey: 'svc.actionResume',
       next: 'IN_PROGRESS',
       variant: 'primary',
       icon: 'refresh',
       progress: 60,
-      note: 'Material olindi, ish davom ettirildi',
-      question: 'Material olindi va ish davom ettirilsinmi?',
+      noteKey: 'svc.noteResumed',
+      questionKey: 'svc.askResume',
       capabilities: EXECUTE_ONLY,
     },
   ],
   COMPLETED: [
     {
       key: 'confirm',
-      label: 'Tasdiqlashga yuborish',
+      labelKey: 'svc.actionSendConfirm',
       next: 'TENANT_CONFIRMATION',
       variant: 'primary',
       icon: 'send',
       progress: 100,
-      note: 'Murojaatchi tasdig‘iga yuborildi',
-      question: 'Bajarilgan ish murojaatchi tasdig‘iga yuborilsinmi?',
+      noteKey: 'svc.noteSentToConfirm',
+      questionKey: 'svc.askSendConfirm',
       capabilities: EXECUTE_ONLY,
     },
   ],
   TENANT_CONFIRMATION: [
     {
       key: 'close',
-      label: 'Ishni tasdiqlab yopish',
+      labelKey: 'svc.actionConfirmClose',
       next: 'CLOSED',
       variant: 'success',
       icon: 'check',
       progress: 100,
-      note: 'Murojaatchi ishni tasdiqladi, ariza yopildi',
-      question: 'Bajarilgan ish murojaatchi tomonidan tasdiqlandi va ariza yopilsinmi?',
+      noteKey: 'svc.noteClosed',
+      questionKey: 'svc.askClose',
       capabilities: CONFIRM_ONLY,
       byRequester: true,
     },
@@ -259,8 +272,8 @@ const waitingText = computed(() => {
   const r = request.value
   if (!r) return ''
   if (r.status === 'TENANT_CONFIRMATION')
-    return `Bajarilgan ish murojaatchi (${r.requester}) tasdig‘ini kutmoqda: arizani ijrochi o‘zi yopmaydi.`
-  return 'Bu bosqichdagi amallarni ijrochi bajaradi. Sizning rolingizda ariza faqat kuzatiladi.'
+    return t('svc.waitingConfirm', { requester: r.requester })
+  return t('svc.waitingExecutor')
 })
 
 const pending = ref<FlowAction | null>(null)
@@ -277,10 +290,10 @@ function applyAction() {
   if (action && r && allowedAction(action)) {
     r.status = action.next
     r.progress = Math.max(r.progress, action.progress)
-    if (!r.assignee && canExecute.value) r.assignee = auth.user?.fullName ?? 'Ijrochi'
+    if (!r.assignee && canExecute.value) r.assignee = auth.user?.fullName ?? t('field.executor')
     // SLA buzilgani tarixiy fakt: ish yakunlansa ham belgisi olib tashlanmaydi
     if (action.key === 'material') ensureMaterialRequest(r)
-    history.value.unshift({ label: action.note, status: action.next, at: 'Hozir' })
+    history.value.unshift({ labelKey: action.noteKey, status: action.next, at: '' })
   }
   pending.value = null
 }
@@ -295,30 +308,30 @@ const info = computed(() => {
   const r = request.value
   if (!r) return []
   return [
-    { label: 'Obyekt', value: r.buildingName },
-    { label: 'Unit / joylashuv', value: r.unitCode },
-    { label: 'Murojaatchi', value: r.requester },
-    { label: 'Kategoriya', value: r.category },
-    { label: 'Yaratilgan', value: `${dateShort(r.createdAt.slice(0, 10))} ${r.createdAt.slice(11)}` },
-    { label: 'Bajarish muddati', value: dateShort(r.dueAt) },
-    { label: 'Ijrochi', value: r.assignee ?? 'Biriktirilmagan' },
+    { label: field('object'), value: r.buildingName },
+    { label: t('svc.unitLocation'), value: r.unitCode },
+    { label: field('requester'), value: r.requester },
+    { label: field('category'), value: tr(CATEGORY_KEY[r.category], r.category) },
+    { label: field('createdAt'), value: `${dateShort(r.createdAt.slice(0, 10))} ${r.createdAt.slice(11)}` },
+    { label: field('completeBy'), value: dateShort(r.dueAt) },
+    { label: field('executor'), value: r.assignee ?? t('common.unassigned') },
   ]
 })
 </script>
 
 <template>
   <AppTopbar
-    :title="request?.title ?? 'Ariza topilmadi'"
-    :subtitle="request ? `${request.code} · ${request.buildingName}` : 'So‘ralgan yozuv mavjud emas'"
+    :title="request?.title ?? t('svc.requestNotFound')"
+    :subtitle="request ? `${request.code} · ${request.buildingName}` : t('svc.recordMissing')"
     :breadcrumb="[
-      { label: 'Servis arizalari', to: '/service-requests' },
-      { label: request?.code ?? 'Ariza' },
+      { label: moduleTitle('serviceRequests'), to: '/service-requests' },
+      { label: request?.code ?? t('field.application') },
     ]"
   >
     <template #actions>
       <UiButton variant="secondary" size="sm" to="/service-requests">
         <UiIcon name="chevronLeft" :size="16" />
-        Navbatga qaytish
+        {{ t('svc.backToQueue') }}
       </UiButton>
     </template>
   </AppTopbar>
@@ -353,7 +366,7 @@ const info = computed(() => {
                   />
                   <rect v-else x="1.8" y="4.6" width="8.4" height="2.8" rx="1.4" fill="currentColor" />
                 </svg>
-                {{ request.priority }} ustuvorlik
+                {{ t('svc.priorityValue', { value: priorityLabel(request.priority) }) }}
               </span>
               <span
                 v-if="request.slaBreached"
@@ -362,7 +375,7 @@ const info = computed(() => {
                 <svg class="size-3 shrink-0 text-danger-500" viewBox="0 0 12 12" aria-hidden="true">
                   <path d="M6 1.2 11.4 10.8H.6z" fill="currentColor" />
                 </svg>
-                SLA buzilgan
+                {{ t('svc.slaBreached') }}
               </span>
             </div>
 
@@ -381,7 +394,7 @@ const info = computed(() => {
             </dl>
 
             <div class="mt-5 border-t border-ink-100 pt-5">
-              <h3 class="text-[13px] font-semibold text-ink-700">Muammo tavsifi</h3>
+              <h3 class="text-[13px] font-semibold text-ink-700">{{ t('svc.problemDescription') }}</h3>
               <p class="mt-1.5 text-[14px] leading-relaxed text-ink-600">
                 {{ request.description }}
               </p>
@@ -389,7 +402,7 @@ const info = computed(() => {
 
             <div class="mt-5 border-t border-ink-100 pt-5">
               <div class="flex items-baseline justify-between">
-                <h3 class="text-[13px] font-semibold text-ink-700">Bajarilish darajasi</h3>
+                <h3 class="text-[13px] font-semibold text-ink-700">{{ t('svc.completionLevel') }}</h3>
                 <span class="tabular text-[13px] font-bold text-ink-900">{{ request.progress }}%</span>
               </div>
               <div class="mt-2 h-2.5 overflow-hidden rounded-pill bg-ink-100">
@@ -402,7 +415,7 @@ const info = computed(() => {
             </div>
           </UiCard>
 
-          <UiCard title="Oldin / Keyin" subtitle="Ish joyining holati bo‘yicha qayd">
+          <UiCard :title="t('svc.beforeAfter')" :subtitle="t('svc.beforeAfterHint')">
             <div class="grid gap-4 sm:grid-cols-2">
               <div class="relative overflow-hidden rounded-field ring-1 ring-ink-200">
                 <svg viewBox="0 0 400 240" class="block h-44 w-full" aria-hidden="true">
@@ -420,7 +433,7 @@ const info = computed(() => {
                 <span
                   class="absolute left-3 top-3 rounded-pill bg-ink-900/70 px-2.5 py-1 text-[12px] font-semibold text-white"
                 >
-                  Oldin
+                  {{ t('svc.before') }}
                 </span>
               </div>
 
@@ -442,45 +455,45 @@ const info = computed(() => {
                 <span
                   class="absolute left-3 top-3 rounded-pill bg-ok-600/90 px-2.5 py-1 text-[12px] font-semibold text-white"
                 >
-                  Keyin
+                  {{ t('svc.after') }}
                 </span>
               </div>
             </div>
           </UiCard>
 
           <UiCard
-            title="Ishda ishlatilgan materiallar"
-            :subtitle="`${materials.length} ta pozitsiya`"
+            :title="t('svc.materialsUsed')"
+            :subtitle="t('svc.positionCount', { n: materials.length })"
             flush
             :padded="false"
           >
             <template #actions>
               <UiButton variant="ghost" size="sm" to="/facility/materials">
-                Material so‘rovlari
+                {{ moduleTitle('materials') }}
                 <UiIcon name="chevronRight" :size="15" />
               </UiButton>
             </template>
 
             <UiTable
               :columns="[
-                { key: 'name', label: 'Nomi' },
-                { key: 'qty', label: 'Miqdor', align: 'right', numeric: true },
-                { key: 'unit', label: 'O‘lchov birligi' },
-                { key: 'price', label: 'Narxi', align: 'right', numeric: true },
-                { key: 'total', label: 'Summa', align: 'right', numeric: true },
+                { key: 'name', label: field('name') },
+                { key: 'qty', label: field('quantity'), align: 'right', numeric: true },
+                { key: 'unit', label: field('unitOfMeasure') },
+                { key: 'price', label: field('price'), align: 'right', numeric: true },
+                { key: 'total', label: field('amount'), align: 'right', numeric: true },
               ]"
               :rows="materials.map((m) => ({ ...m, id: m.code, total: m.qty * m.price }))"
-              empty="Bu ariza bo‘yicha material talab qilinmagan"
+              :empty="t('svc.noMaterialsForRequest')"
             >
-              <template #cell-price="{ row }">{{ sum(row.price) }}</template>
+              <template #cell-price="{ row }">{{ money(row.price) }}</template>
               <template #cell-total="{ row }">
-                <span class="font-bold text-ink-900">{{ sum(row.total) }}</span>
+                <span class="font-bold text-ink-900">{{ money(row.total) }}</span>
               </template>
             </UiTable>
 
             <div class="flex items-center justify-between border-t border-ink-200 bg-surface-sunken px-4 py-3.5">
-              <span class="text-[13px] font-semibold text-ink-700">Jami</span>
-              <span class="tabular text-[16px] font-bold text-ink-900">{{ sum(materialsSum) }}</span>
+              <span class="text-[13px] font-semibold text-ink-700">{{ t('common.total') }}</span>
+              <span class="tabular text-[16px] font-bold text-ink-900">{{ money(materialsSum) }}</span>
             </div>
 
             <div
@@ -488,7 +501,7 @@ const info = computed(() => {
               class="flex flex-wrap items-center justify-between gap-2 border-t border-ink-100 px-4 py-3"
             >
               <span class="text-[13px] text-ink-600">
-                Ombor so‘rovi
+                {{ t('svc.warehouseRequest') }}
                 <b class="tabular text-ink-900">{{ materialRequest.code }}</b>
                 · {{ dateShort(materialRequest.createdAt) }}
               </span>
@@ -498,7 +511,7 @@ const info = computed(() => {
         </div>
 
         <div class="min-w-0 space-y-5">
-          <UiCard title="Bajarish nazorati (chek-list)">
+          <UiCard :title="t('svc.checklistTitle')">
             <template #actions>
               <span class="tabular text-[13px] font-bold text-ink-700">
                 {{ doneCount }} / {{ checklist.length }}
@@ -539,14 +552,14 @@ const info = computed(() => {
                     class="shrink-0 text-[12px] font-semibold"
                     :class="c.done ? 'text-ok-600' : 'text-ink-400'"
                   >
-                    {{ c.done ? 'Bajarildi' : 'Kutilmoqda' }}
+                    {{ c.done ? t('svc.done') : t('svc.pending') }}
                   </span>
                 </button>
               </li>
             </ul>
           </UiCard>
 
-          <UiCard title="Ariza bo‘yicha amallar" subtitle="Har bir amal tasdiqdan so‘ng qo‘llanadi">
+          <UiCard :title="t('svc.requestActions')" :subtitle="t('svc.requestActionsHint')">
             <div v-if="actions.length" class="space-y-2.5">
               <UiButton
                 v-for="a in actions"
@@ -556,14 +569,14 @@ const info = computed(() => {
                 @click="pending = a"
               >
                 <UiIcon :name="a.icon" :size="17" />
-                {{ a.label }}
+                {{ t(a.labelKey) }}
               </UiButton>
             </div>
             <p
               v-else-if="isClosed"
               class="rounded-field bg-ok-50 px-4 py-3 text-[13px] font-medium text-ok-700"
             >
-              Ariza yopilgan: qo‘shimcha amal talab etilmaydi.
+              {{ t('svc.closedNoAction') }}
             </p>
             <p
               v-else-if="stageActions.length"
@@ -572,11 +585,11 @@ const info = computed(() => {
               {{ waitingText }}
             </p>
             <p v-else class="rounded-field bg-surface-sunken px-4 py-3 text-[13px] text-ink-600">
-              Joriy bosqichda amal talab etilmaydi.
+              {{ t('svc.noActionAtStage') }}
             </p>
           </UiCard>
 
-          <UiCard title="Ariza harakati" subtitle="Status o‘zgarishlari tarixi" flush :padded="false">
+          <UiCard :title="t('svc.requestTimeline')" :subtitle="t('svc.requestTimelineHint')" flush :padded="false">
             <ul class="divide-y divide-ink-100 border-t border-ink-100">
               <li v-for="(h, i) in timeline" :key="i" class="flex items-start gap-3 px-5 py-3.5">
                 <span
@@ -599,13 +612,13 @@ const info = computed(() => {
 
     <UiCard v-else>
       <div class="py-10 text-center">
-        <p class="text-[16px] font-semibold text-ink-900">Bunday raqamli ariza topilmadi</p>
+        <p class="text-[16px] font-semibold text-ink-900">{{ t('svc.notFoundTitle') }}</p>
         <p class="mt-1.5 text-[13px] text-ink-500">
-          Ariza yopilgan yoki manzil noto‘g‘ri kiritilgan bo‘lishi mumkin.
+          {{ t('svc.notFoundHint') }}
         </p>
         <UiButton class="mt-5" to="/service-requests">
           <UiIcon name="chevronLeft" :size="17" />
-          Arizalar navbatiga qaytish
+          {{ t('svc.backToQueueLong') }}
         </UiButton>
       </div>
     </UiCard>
@@ -613,21 +626,23 @@ const info = computed(() => {
 
   <UiModal
     v-model="confirmOpen"
-    :title="pending?.label ?? 'Amalni tasdiqlash'"
-    subtitle="Amal ariza tarixida qayd etiladi"
+    :title="pending ? t(pending.labelKey) : t('svc.confirmAction')"
+    :subtitle="t('svc.confirmActionHint')"
     size="sm"
   >
-    <p class="text-[14px] leading-relaxed text-ink-700">{{ pending?.question }}</p>
+    <p class="text-[14px] leading-relaxed text-ink-700">
+      {{ pending ? t(pending.questionKey) : '' }}
+    </p>
     <p v-if="request" class="mt-3 rounded-field bg-surface-sunken px-4 py-3 text-[13px] text-ink-600">
       <span class="tabular font-bold text-ink-900">{{ request.code }}</span>
       · {{ request.title }}
     </p>
 
     <template #footer>
-      <UiButton variant="ghost" @click="pending = null">Bekor qilish</UiButton>
+      <UiButton variant="ghost" @click="pending = null">{{ t('common.cancel') }}</UiButton>
       <UiButton :variant="pending?.variant ?? 'primary'" @click="applyAction">
         <UiIcon name="check" :size="16" />
-        Tasdiqlash
+        {{ t('common.confirm') }}
       </UiButton>
     </template>
   </UiModal>

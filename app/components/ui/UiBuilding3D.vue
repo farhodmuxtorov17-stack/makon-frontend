@@ -1,24 +1,46 @@
 <script setup lang="ts">
-import { UNIT_STATUS, UNIT_STATUS_COLOR } from '~/constants/statuses'
+import { UNIT_STATUS_COLOR } from '~/constants/statuses'
 import type { Building } from '~/data/buildings'
+import {
+  STRUCTURE_KIND,
+  sitePlotOf,
+  structuresOf,
+  type Structure,
+  type StructureKind,
+} from '~/data/structures'
 import { unitsOfBuilding, type Unit } from '~/data/units'
 import { area as areaLabel } from '~/utils/format'
 import { buildFloorPlan, type FloorPlan, type PlanRect } from '~/utils/floorPlan'
 
 /**
- * Bino aksonometrik navigatori.
+ * Uchastka navigatori.
  *
- * Geometriya manbai bitta: `buildFloorPlan()`. Har bir daraja uchun o‘sha
+ * Sahna bitta binoni emas, butun uchastkani ko‘rsatadi. Tarkib
+ * `structuresOf()` dan keladi: asosiy bino yoki ombor bloklari, ma’muriy
+ * bino, KPP, qozonxona, avtoturargohlar, konferens markaz, kafe va boshqa
+ * qurilmalar. Har biri o‘z o‘rnida (`x`, `y`) va o‘z o‘lchamida (`width`,
+ * `depth`, `height`) turadi, kamera esa `sitePlotOf()` bergan uchastka
+ * to‘rtburchagiga moslashadi.
+ *
+ * Fasad chizilmaydi, MODELLASHTIRILADI. Har bir yuz mahalliy uch sonli
+ * koordinatada quriladi: `u` yuz bo‘ylab metrda, `h` qavat asosidan
+ * metrda, `z` esa devor tekisligidan chuqurlik. Musbat `z` ichkariga
+ * (deraza chuqurchasi, kirish portali, yuk eshigi), manfiy `z` tashqariga
+ * (mullion, tokcha, karniz, balkon) chiqadi. Proyeksiya bosqichi shu uch
+ * sonni ekranga o‘tkazadi va chuqurlikdagi elementning yon qirralarini ham
+ * chizadi, shuning uchun deraza yassi to‘rtburchak emas, chuqurchada
+ * o‘tirgan bo‘lib ko‘rinadi: bir yon qirrasi yorug‘, ikkinchisi soyada.
+ *
+ * Binoning surati fasadga yopishtirilmaydi. U faqat ma’lumot manbai:
+ * `samplePhoto()` uni kichik kadrga tushirib o‘rtacha ranglarini o‘lchaydi,
+ * material paletasi shu o‘lchovga qarab suriladi. Shu sababli qizg‘ish
+ * g‘ishtli bino iliq, ko‘k shishali minora sovuq tusda chiqadi, lekin
+ * geometriya har doim modeldan quriladi.
+ *
+ * Interyer manbai bitta: `buildFloorPlan()`. Qavat kesib ochilganda o‘sha
  * generator chaqiriladi va 2D qavat rejasi bilan bir xil natija qaytadi:
  * tashqi devor, ichki bo‘linmalar, koridor, xizmat yadrosi, eshiklar va
- * deraza yo‘laklari. Interyer qatlami shu rejadan ko‘tariladi, unit
- * konturlari ham shu rejadan olinadi, shuning uchun 3D dagi qavat 2D
- * chizmadagi qavatning aynan o‘zi bo‘ladi.
- *
- * Bino tashqi hajmi ham shu manbadan chiqadi: tayanch kontur o‘lchami tipik
- * qavat rejasining metrdagi eni va bo‘yiga teng. Reja turi bino turidan
- * olingani uchun ombor uzun va past, savdo markaz keng, ofis va biznes
- * markaz ixcham chiqadi.
+ * deraza yo‘laklari.
  *
  * Proyeksiya: model z o‘qi atrofida `rotation` ga buriladi, so‘ng `tilt`
  * balandlik burchagi bilan ekranga tushiriladi.
@@ -30,14 +52,28 @@ import { buildFloorPlan, type FloorPlan, type PlanRect } from '~/utils/floorPlan
  * ko‘rinadimi degan savol normal bilan C ning skalyar ko‘paytmasi orqali
  * hal qilinadi.
  *
- * Ish unumdorligi: kameradan bog‘liq bo‘lmagan hamma narsa (rejalar, hajm,
- * fasad naqshi, tashqi elementlar, interyer tartibi) alohida memoizatsiya
- * qilingan `computed` larda turadi. Kamera burilganda faqat proyeksiya
- * ishlaydi, ekrandan chiqib ketgan daraja esa umuman qurilmaydi.
+ * Ish unumdorligi: kameradan bog‘liq bo‘lmagan hamma narsa (uchastka
+ * tarkibi, hajmlar, fasad panellari, tashqi elementlar, interyer tartibi)
+ * alohida memoizatsiya qilingan `computed` larda turadi. Kamera burilganda
+ * faqat proyeksiya ishlaydi. Ko‘rinmaydigan yuz, ekrandan chiqqan qurilma
+ * va ochilgan qavat ustidagi daraja umuman qurilmaydi, mayda tafsilot esa
+ * masshtab kichrayganda o‘chadi.
  */
 
 type ViewMode = 'occupancy' | 'interior' | 'wire'
 type Family = 'tower' | 'retail' | 'shed' | 'resi'
+
+/** Fasad retsepti: qurilma turi va bino klassidan tanlanadi */
+type Skin =
+  | 'curtain'
+  | 'office'
+  | 'mall'
+  | 'shed'
+  | 'resi'
+  | 'pavilion'
+  | 'service'
+  | 'pad'
+  | 'pit'
 
 interface Layers {
   walls: boolean
@@ -80,26 +116,7 @@ interface Paint {
 interface FacePart {
   points: string
   fill: string
-  /** Fotosurat ustida turganda bandlik rangi shaffof bo‘yoq bo‘lib qoladi */
   alpha: number
-}
-
-/**
- * Fotosurat yopishtiriladigan tashqi yuz. Bitta yuzga bitta surat tushadi,
- * qavatlar bo‘yicha takrorlanmaydi.
- */
-interface PhotoFace {
-  f: number
-  /** Yuz silueti: yer ustidagi darajalar konturlarining birlashmasi */
-  d: string
-  /** Suratni yuz parallelogrammiga o‘tkazadigan affin matritsa */
-  m: string
-  x: number
-  y: number
-  w: number
-  h: number
-  /** Yuz yorug‘ligiga mos qorayish qatlamining shaffofligi */
-  dark: number
 }
 
 interface UnitShape {
@@ -113,6 +130,7 @@ interface UnitShape {
 }
 
 interface SlabView {
+  key: string
   floor: number
   name: string
   short: string
@@ -139,6 +157,27 @@ interface SlabView {
   aria: string
 }
 
+/** Uchastkadagi bitta qurilmaning chizilgan ko‘rinishi */
+interface StructView {
+  id: string
+  name: string
+  kindLabel: string
+  host: boolean
+  selected: boolean
+  opacity: number
+  slabs: SlabView[]
+  /** Yassi maydon: avtoturargoh qoplamasi va joy chiziqlari */
+  pad: Paint[]
+  outline: string
+  /** Kontur uzuq chiziqda: yer osti hajmi shu bilan ajraladi */
+  dash: boolean
+  tagX: number
+  tagY: number
+  tagW: number
+  tagText: string
+  aria: string
+}
+
 const props = withDefaults(
   defineProps<{
     building: Building
@@ -146,6 +185,8 @@ const props = withDefaults(
     floor?: number
     /** Tanlangan unit identifikatori */
     unit?: string
+    /** Tanlangan qurilma identifikatori, bo‘sh bo‘lsa asosiy qurilma */
+    structure?: string
     mode?: ViewMode
     /** Boshqaruv elementlari va izoh qatorini ko‘rsatish */
     controls?: boolean
@@ -154,6 +195,7 @@ const props = withDefaults(
   {
     floor: 1,
     unit: '',
+    structure: '',
     mode: 'occupancy',
     controls: true,
     heightClass: 'h-[360px] sm:h-[460px] lg:h-[540px] xl:h-[600px]',
@@ -164,46 +206,37 @@ const emit = defineEmits<{
   (e: 'update:floor', value: number): void
   (e: 'update:unit', value: string): void
   (e: 'update:mode', value: ViewMode): void
+  (e: 'update:structure', value: string): void
 }>()
+
+const { buildingTypeLabel, t, statusLabel, floorLabel } = useAppLabels()
 
 const VW = 900
 const VH = 620
 
-const MODES: Array<{ value: ViewMode; label: string; hint: string }> = [
-  {
-    value: 'occupancy',
-    label: 'Bino',
-    hint: 'Fasad yuzasi qavatdagi holatlar ulushiga bo‘linadi. Qavat tanlansa, u to‘q rangda qoladi.',
-  },
-  {
-    value: 'interior',
-    label: 'Interyer',
-    hint: 'Tanlangan qavat ochiladi va uning rejasi ko‘tariladi: devor, eshik, deraza, koridor va xizmat yadrosi.',
-  },
-  {
-    value: 'wire',
-    label: 'Karkas',
-    hint: 'Faqat qirralar. Butun stikning tuzilishi bir qarashda ko‘rinadi.',
-  },
-]
+const MODES = computed<Array<{ value: ViewMode; label: string; hint: string }>>(() => [
+  { value: 'occupancy', label: t('ui.modeSite'), hint: t('ui.modeSiteHint') },
+  { value: 'interior', label: t('ui.modeInterior'), hint: t('ui.modeInteriorHint') },
+  { value: 'wire', label: t('ui.modeWire'), hint: t('ui.modeWireHint') },
+])
 
-const LAYERS: Array<{ key: keyof Layers; label: string }> = [
-  { key: 'walls', label: 'Devor va eshik' },
-  { key: 'windows', label: 'Derazalar' },
-  { key: 'core', label: 'Koridor va yadro' },
-]
+const LAYERS = computed<Array<{ key: keyof Layers; label: string }>>(() => [
+  { key: 'walls', label: t('ui.layerWallsDoors') },
+  { key: 'windows', label: t('ui.layerWindows') },
+  { key: 'core', label: t('ui.layerCore') },
+])
 
 /**
  * Holat legendasi. Rang va nom qavat rejasi bilan bitta jadvaldan olinadi,
  * shuning uchun 3D va 2D ko‘rinishda bir xil bo‘ladi.
  */
-const CATEGORIES: Array<{ key: string; label: string; color: string }> = [
-  { key: 'vacant', label: UNIT_STATUS.VACANT!.label, color: UNIT_STATUS_COLOR.VACANT! },
-  { key: 'rented', label: UNIT_STATUS.RENTED!.label, color: UNIT_STATUS_COLOR.RENTED! },
-  { key: 'sold', label: UNIT_STATUS.SOLD!.label, color: UNIT_STATUS_COLOR.SOLD! },
-  { key: 'reserved', label: UNIT_STATUS.RESERVED!.label, color: UNIT_STATUS_COLOR.RESERVED! },
-  { key: 'other', label: 'Texnik / Boshqa', color: UNIT_STATUS_COLOR.MAINTENANCE! },
-]
+const CATEGORIES = computed<Array<{ key: string; label: string; color: string }>>(() => [
+  { key: 'vacant', label: statusLabel('unit', 'VACANT'), color: UNIT_STATUS_COLOR.VACANT! },
+  { key: 'rented', label: statusLabel('unit', 'RENTED'), color: UNIT_STATUS_COLOR.RENTED! },
+  { key: 'sold', label: statusLabel('unit', 'SOLD'), color: UNIT_STATUS_COLOR.SOLD! },
+  { key: 'reserved', label: statusLabel('unit', 'RESERVED'), color: UNIT_STATUS_COLOR.RESERVED! },
+  { key: 'other', label: t('ui.catOther'), color: UNIT_STATUS_COLOR.MAINTENANCE! },
+])
 
 const CATEGORY_OF: Record<string, string> = {
   VACANT: 'vacant',
@@ -216,17 +249,10 @@ const CATEGORY_OF: Record<string, string> = {
 }
 
 const EMPTY_COLOR = '#AFC0D6'
+/** Xizmat qurilmasining lentasi: bandlik ma’nosi yo‘q, neytral qoladi */
+const SERVICE_COLOR = '#B6C2D2'
 /** Konstruktiv plita qalinligi, m */
 const PLATE_T = 0.34
-
-/** Qavat balandligi, m: bino turiga qarab */
-const FLOOR_HEIGHT: Record<string, number> = {
-  'Biznes markaz': 3.9,
-  'Ofis binosi': 3.7,
-  'Savdo markaz': 5.2,
-  'Ombor / logistika': 6.4,
-  'Turar joy': 3.2,
-}
 
 const FAMILY_OF: Record<string, Family> = {
   'Biznes markaz': 'tower',
@@ -234,6 +260,23 @@ const FAMILY_OF: Record<string, Family> = {
   'Savdo markaz': 'retail',
   'Ombor / logistika': 'shed',
   'Turar joy': 'resi',
+}
+
+/** Qurilma turi qaysi fasad retseptini oladi */
+const SKIN_OF_KIND: Record<StructureKind, Skin> = {
+  main: 'office',
+  warehouse: 'shed',
+  admin: 'office',
+  parkingSurface: 'pad',
+  parkingUnderground: 'pit',
+  checkpoint: 'service',
+  boiler: 'service',
+  cafe: 'pavilion',
+  carwash: 'pavilion',
+  conference: 'pavilion',
+  gym: 'pavilion',
+  retailPavilion: 'pavilion',
+  utility: 'service',
 }
 
 /** Interyer bo‘yoqlari: 2D rejadagi qatlamlar bilan bir xil ma’noda */
@@ -260,26 +303,173 @@ const CORE_TONE: Record<string, string> = {
 const EXT_TONE: Record<string, string> = {
   roof: '#C4CFDE',
   parapet: '#CBD6E3',
+  cornice: '#BAC6D6',
   plant: '#9DACC0',
   canopy: '#8496AC',
   column: '#A6B4C6',
   rail: '#B6C5D8',
-  balcony: '#CFD9E6',
   annex: '#C7D2E0',
   glass: '#8FB6DC',
   apron: '#A8B4C4',
+  ramp: '#9EAAB9',
+  stack: '#98A5B5',
+  mark: '#E8EEF7',
+}
+
+/** Fasad materiallari: har bir retsept o‘z to‘plamini oladi */
+interface Palette {
+  wall: string
+  wallAlt: string
+  spandrel: string
+  glass: string
+  glassAlt: string
+  glassDeep: string
+  mullion: string
+  metal: string
+  base: string
+  accent: string
+  door: string
+}
+
+const SKINS: Skin[] = [
+  'curtain',
+  'office',
+  'mall',
+  'shed',
+  'resi',
+  'pavilion',
+  'service',
+  'pad',
+  'pit',
+]
+
+const PALETTE: Record<Skin, Palette> = {
+  curtain: {
+    wall: '#C6D2E1',
+    wallAlt: '#B7C5D8',
+    spandrel: '#8CA1BC',
+    glass: '#7CA6D0',
+    glassAlt: '#96BBDF',
+    glassDeep: '#5C80A7',
+    mullion: '#8E9FB8',
+    metal: '#AEBCCE',
+    base: '#98A6B7',
+    accent: '#3F6795',
+    door: '#41576D',
+  },
+  office: {
+    wall: '#D4DBE4',
+    wallAlt: '#C2CBD8',
+    spandrel: '#AEB9C8',
+    glass: '#7A9DC1',
+    glassAlt: '#8FB2D3',
+    glassDeep: '#5B7A9B',
+    mullion: '#A4B0C1',
+    metal: '#B7C2D0',
+    base: '#9CA8B6',
+    accent: '#4E6D8E',
+    door: '#44576A',
+  },
+  mall: {
+    wall: '#DBE1EA',
+    wallAlt: '#C6D0DD',
+    spandrel: '#A7B4C5',
+    glass: '#87B0D7',
+    glassAlt: '#A2C5E5',
+    glassDeep: '#6187AD',
+    mullion: '#98A6B8',
+    metal: '#B3BFCE',
+    base: '#96A2B1',
+    accent: '#2F6FBE',
+    door: '#3B546C',
+  },
+  shed: {
+    wall: '#C0C9D5',
+    wallAlt: '#ADB8C5',
+    spandrel: '#9AA6B4',
+    glass: '#88A4BD',
+    glassAlt: '#9AB5CB',
+    glassDeep: '#688097',
+    mullion: '#919EAD',
+    metal: '#A5B1BE',
+    base: '#8B96A2',
+    accent: '#C2703A',
+    door: '#5A697A',
+  },
+  resi: {
+    wall: '#D9D1C6',
+    wallAlt: '#CABFB1',
+    spandrel: '#B9AE9F',
+    glass: '#87A4C1',
+    glassAlt: '#9CB8D1',
+    glassDeep: '#66829E',
+    mullion: '#AFA69A',
+    metal: '#C1C8D0',
+    base: '#A49A8C',
+    accent: '#8A6A4C',
+    door: '#695648',
+  },
+  pavilion: {
+    wall: '#D2DAE5',
+    wallAlt: '#C0CAD8',
+    spandrel: '#A6B3C4',
+    glass: '#84AACE',
+    glassAlt: '#9CBFDE',
+    glassDeep: '#5F84A9',
+    mullion: '#94A2B4',
+    metal: '#AFBBC9',
+    base: '#98A4B2',
+    accent: '#39769C',
+    door: '#41586E',
+  },
+  service: {
+    wall: '#CBD3DD',
+    wallAlt: '#B9C2CF',
+    spandrel: '#A6B0BE',
+    glass: '#82A0BC',
+    glassAlt: '#96B2CB',
+    glassDeep: '#627E99',
+    mullion: '#9AA6B4',
+    metal: '#ACB8C5',
+    base: '#8F9AA7',
+    accent: '#4A657F',
+    door: '#4C5D6E',
+  },
+  pad: {
+    wall: '#B8C2CF',
+    wallAlt: '#AAB5C3',
+    spandrel: '#9EAAB8',
+    glass: '#8FA8C0',
+    glassAlt: '#9FB6CB',
+    glassDeep: '#6F8699',
+    mullion: '#9AA6B3',
+    metal: '#AAB6C3',
+    base: '#8F9AA6',
+    accent: '#E8EEF7',
+    door: '#57677A',
+  },
+  pit: {
+    wall: '#AEB9C7',
+    wallAlt: '#A1ACBB',
+    spandrel: '#96A2B1',
+    glass: '#8AA0B7',
+    glassAlt: '#98AEC3',
+    glassDeep: '#6B8194',
+    mullion: '#93A0AF',
+    metal: '#A3AFBD',
+    base: '#8A95A2',
+    accent: '#5D7086',
+    door: '#4F6072',
+  },
 }
 
 /**
  * Fotosuratning fasad oynasi: surat kengligi va balandligining ulushida.
  *
  * Reyestrdagi suratlarda bino kadr o‘rtasida turadi, tepasida osmon, pastida
- * yo‘l yoki maydoncha bo‘ladi. Devorga butun kadr emas, faqat shu oyna
- * tushiriladi, aks holda fasadning ustida osmon, ostida asfalt paydo bo‘lardi.
- * Chegaralar bino oilasi bo‘yicha tanlangan va reyestrdagi hamma surat
- * bo‘yicha tekshirilgan: oyna ichida silliq yorug‘ maydon, ya’ni osmon yoki
- * oq fon qolmaydi. Balandlik chegarasi qat’iy, kenglik esa yuz nisbatiga
- * qarab shu chegara ichida toraytiriladi, shunda surat cho‘zilmaydi.
+ * yo‘l yoki maydoncha bo‘ladi. Rang o‘lchovi butun kadrdan emas, faqat shu
+ * oynadan olinadi, aks holda o‘rtacha rangga osmon va asfalt qo‘shilib
+ * ketardi. Chegaralar bino oilasi bo‘yicha tanlangan.
  */
 const PHOTO_CROP: Record<Family, { u0: number; u1: number; v0: number; v1: number }> = {
   tower: { u0: 0.3, u1: 0.72, v0: 0.42, v1: 0.72 },
@@ -288,10 +478,7 @@ const PHOTO_CROP: Record<Family, { u0: number; u1: number; v0: number; v1: numbe
   resi: { u0: 0.46, u1: 0.88, v0: 0.26, v1: 0.68 },
 }
 
-/** Surat chiziladigan mahalliy kadr tomoni: matritsa shu kadrni yuzga qo‘yadi */
-const PHOTO_BOX = 100
-
-/** Yorug‘lik yo‘nalishi qat’iy: har bir binoda soya bir xil o‘qiladi */
+/** Yorug‘lik yo‘nalishi qat’iy: har bir uchastkada soya bir xil o‘qiladi */
 const SUN = (() => {
   const az = (-36 * Math.PI) / 180
   const el = (49 * Math.PI) / 180
@@ -301,6 +488,21 @@ const SUN = (() => {
 
 const START_ROTATION = 34
 const START_TILT = 30
+
+/**
+ * Tafsilot chegarasi. Bir metr ekranda shuncha pikseldan kam joy egallasa
+ * deraza chuqurchasi va mullion baribir ko‘rinmaydi, shuning uchun ular
+ * chizilmaydi va o‘rniga bitta lenta qoladi.
+ */
+const DETAIL_MIN_PX = 3.6
+/**
+ * Tortish paytidagi yuza byudjeti. Fasad tafsiloti shu chegaradan oshsa,
+ * kamera harakatlanayotganda soddalashtirilgan ko‘rinish chiziladi va
+ * qo‘yib yuborilgach to‘liq tafsilot qaytadi. Chegara o‘lchov bilan
+ * tanlangan: shu narxdan past uchastka tortilayotganda ham bir kadrni
+ * o‘n millisekunddan tez quradi.
+ */
+const DETAIL_BUDGET = 800
 
 const view = reactive({
   rotation: START_ROTATION,
@@ -312,6 +514,7 @@ const view = reactive({
 
 const hovered = ref<number | null>(null)
 const hoveredUnit = ref('')
+const hoveredStruct = ref('')
 const dragging = ref(false)
 
 let dragX = 0
@@ -345,10 +548,130 @@ function shade(hex: string, amount: number) {
   return `rgb(${mix(r)},${mix(g)},${mix(b)})`
 }
 
-function median(list: number[]) {
-  if (!list.length) return 0
-  const sorted = [...list].sort((a, b) => a - b)
-  return sorted[Math.floor(sorted.length / 2)] ?? 0
+function rgbOf(hex: string): [number, number, number] {
+  const n = Number.parseInt(hex.slice(1), 16)
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255]
+}
+
+function hexOf(r: number, g: number, b: number) {
+  const c = (v: number) => clamp(Math.round(v), 0, 255).toString(16).padStart(2, '0')
+  return `#${c(r)}${c(g)}${c(b)}`
+}
+
+/** Ikki rangni aralashtiradi: t = 0 birinchi rang, t = 1 ikkinchi rang */
+function mixHex(a: string, b: string, t: number) {
+  const p = rgbOf(a)
+  const q = rgbOf(b)
+  const k = clamp(t, 0, 1)
+  return hexOf(p[0] + (q[0] - p[0]) * k, p[1] + (q[1] - p[1]) * k, p[2] + (q[2] - p[2]) * k)
+}
+
+/** To‘yinganlikni pasaytiradi: qurilish materiali kamdan-kam yorqin bo‘ladi */
+function mute(hex: string, k: number) {
+  const [r, g, b] = rgbOf(hex)
+  const y = 0.299 * r + 0.587 * g + 0.114 * b
+  return hexOf(r + (y - r) * k, g + (y - g) * k, b + (y - b) * k)
+}
+
+/** Yorqinlikni belgilangan oraliqqa keltiradi: fasad na qora, na oqarib ketadi */
+function levelTo(hex: string, lo: number, hi: number) {
+  const [r, g, b] = rgbOf(hex)
+  const y = 0.299 * r + 0.587 * g + 0.114 * b
+  const want = clamp(y, lo, hi)
+  if (y < 1) return hexOf(want, want, want)
+  const k = want / y
+  return hexOf(r * k, g * k, b * k)
+}
+
+
+/* ==========================================================================
+   Surat: faqat rang manbai. Kadr kichik holatda o‘qiladi va uchta tus
+   ajratiladi: yorug‘ qoplama, o‘rtacha tus va to‘q oyna. Material paletasi
+   shu o‘lchov tomon suriladi, geometriya esa har doim modeldan quriladi.
+   ========================================================================== */
+
+interface PhotoTone {
+  light: string
+  mid: string
+  dark: string
+}
+
+const photoTone = ref<PhotoTone | null>(null)
+
+const photoSrc = computed(() =>
+  props.building.photo ? assetUrl(`img/${props.building.photo}-md.webp`) : '',
+)
+
+function samplePhoto(src: string, crop: { u0: number; u1: number; v0: number; v1: number }) {
+  photoTone.value = null
+  if (!src || typeof document === 'undefined') return
+
+  const img = new Image()
+  img.decoding = 'async'
+  img.onload = () => {
+    try {
+      const side = 36
+      const canvas = document.createElement('canvas')
+      canvas.width = side
+      canvas.height = side
+      const ctx = canvas.getContext('2d')
+      if (!ctx || !img.naturalWidth || !img.naturalHeight) return
+      ctx.drawImage(
+        img,
+        img.naturalWidth * crop.u0,
+        img.naturalHeight * crop.v0,
+        img.naturalWidth * (crop.u1 - crop.u0),
+        img.naturalHeight * (crop.v1 - crop.v0),
+        0,
+        0,
+        side,
+        side,
+      )
+      const data = ctx.getImageData(0, 0, side, side).data
+      const pix: Array<{ y: number; r: number; g: number; b: number }> = []
+      for (let i = 0; i < data.length; i += 4) {
+        const r = data[i] ?? 0
+        const g = data[i + 1] ?? 0
+        const b = data[i + 2] ?? 0
+        pix.push({ y: 0.299 * r + 0.587 * g + 0.114 * b, r, g, b })
+      }
+      if (pix.length < 16) return
+      pix.sort((p, q) => p.y - q.y)
+
+      /** Yorqinlik bo‘yicha saralangan qatordan bir bo‘lakning o‘rtacha rangi */
+      const band = (a: number, b: number) => {
+        const i0 = Math.floor(pix.length * a)
+        const i1 = Math.max(i0 + 1, Math.floor(pix.length * b))
+        let r = 0
+        let g = 0
+        let bl = 0
+        for (let i = i0; i < i1; i++) {
+          const p = pix[i]!
+          r += p.r
+          g += p.g
+          bl += p.b
+        }
+        const n = i1 - i0
+        return hexOf(r / n, g / n, bl / n)
+      }
+
+      // To‘yinganlik pasaytiriladi va yorqinlik oraliqqa keltiriladi: aks
+      // holda kechki suratdan olingan rang butun uchastkani qoraytirib
+      // yuborardi, quyoshli suratdan olingani esa oqartirib yuborardi
+      photoTone.value = {
+        light: levelTo(mute(band(0.68, 0.94), 0.45), 168, 224),
+        mid: levelTo(mute(band(0.4, 0.64), 0.4), 132, 196),
+        dark: levelTo(mute(band(0.1, 0.32), 0.3), 82, 148),
+      }
+    } catch {
+      // Kadrni o‘qib bo‘lmasa asosiy palitra qoladi
+      photoTone.value = null
+    }
+  }
+  img.onerror = () => {
+    photoTone.value = null
+  }
+  img.src = src
 }
 
 const allUnits = computed(() => unitsOfBuilding(props.building.id))
@@ -356,23 +679,49 @@ const family = computed<Family>(() => FAMILY_OF[props.building.type] ?? 'tower')
 /** A klass: to‘liq shisha fasad. B va C: panjarali deraza va spandrel */
 const glazed = computed(() => /^\s*a/i.test(props.building.buildingClass))
 
-/**
- * Binoning haqiqiy surati. Reyestrdagi nom bo‘sh bo‘lsa yoki fayl yuklanmasa
- * `photoOk` o‘chadi va tashqi ko‘rinish avvalgi bo‘yoq bilan chiziladi.
- */
-const photoSrc = computed(() =>
-  props.building.photo ? assetUrl(`img/${props.building.photo}-md.webp`) : '',
-)
-const photoOk = ref(true)
+/** Asosiy binoning fasad retsepti: bino turi va klassi hal qiladi */
+const mainSkin = computed<Skin>(() => {
+  const fam = family.value
+  if (fam === 'retail') return 'mall'
+  if (fam === 'shed') return 'shed'
+  if (fam === 'resi') return 'resi'
+  return glazed.value ? 'curtain' : 'office'
+})
 
-// Bino almashsa yangi suratga qaytadan urinamiz, aks holda bir marta xato
-// bergan komponent boshqa hech qachon surat ko‘rsatmaydi
-watch(
-  () => props.building.photo,
-  () => {
-    photoOk.value = true
-  },
-)
+watch([photoSrc, family], ([src, fam]) => samplePhoto(src, PHOTO_CROP[fam]), { immediate: true })
+
+/**
+ * Material paletasi. Asosiy qurilma suratdagi rangga kuchliroq, qolgan
+ * qurilmalar zaifroq suriladi: shunda uchastka bitta majmua bo‘lib
+ * o‘qiladi, lekin KPP yoki qozonxona asosiy binoning nusxasiga aylanmaydi.
+ */
+const palettes = computed<Record<Skin, Palette>>(() => {
+  const tone = photoTone.value
+  const lead = mainSkin.value
+  const out = {} as Record<Skin, Palette>
+  for (const key of SKINS) {
+    const base = PALETTE[key]
+    if (!tone) {
+      out[key] = base
+      continue
+    }
+    const k = key === lead ? 0.5 : 0.2
+    out[key] = {
+      wall: mixHex(base.wall, tone.light, k),
+      wallAlt: mixHex(base.wallAlt, tone.mid, k),
+      spandrel: mixHex(base.spandrel, tone.mid, k * 0.8),
+      glass: mixHex(base.glass, tone.dark, k * 0.7),
+      glassAlt: mixHex(base.glassAlt, tone.mid, k * 0.5),
+      glassDeep: mixHex(base.glassDeep, tone.dark, k * 0.85),
+      mullion: mixHex(base.mullion, tone.mid, k * 0.6),
+      metal: mixHex(base.metal, tone.light, k * 0.5),
+      base: mixHex(base.base, tone.mid, k * 0.6),
+      accent: base.accent,
+      door: base.door,
+    }
+  }
+  return out
+})
 
 const levels = computed<LevelInfo[]>(() => {
   const b = props.building
@@ -386,7 +735,7 @@ const levels = computed<LevelInfo[]>(() => {
     const vacant = units.filter((u) => u.status === 'VACANT')
     const vacantArea = vacant.reduce((s, u) => s + u.area, 0)
 
-    const mix: MixItem[] = CATEGORIES.map((c) => {
+    const mix: MixItem[] = CATEGORIES.value.map((c) => {
       const own = units.filter((u) => (CATEGORY_OF[u.status] ?? 'other') === c.key)
       return {
         key: c.key,
@@ -401,11 +750,11 @@ const levels = computed<LevelInfo[]>(() => {
     const mixTotal = mix.reduce((s, m) => s + m.area, 0)
     for (const m of mix) m.share = mixTotal ? m.area / mixTotal : 1 / mix.length
 
-    let label = 'Reja kiritilmagan'
+    let label = t('ui.planNotEntered')
     if (units.length) {
-      if (!vacant.length) label = 'To‘liq band'
-      else if (vacant.length === units.length) label = 'Butunlay bo‘sh'
-      else label = 'Qisman bo‘sh'
+      if (!vacant.length) label = t('ui.fullyOccupied')
+      else if (vacant.length === units.length) label = t('ui.fullyVacant')
+      else label = t('ui.partlyVacant')
     }
 
     return {
@@ -413,7 +762,10 @@ const levels = computed<LevelInfo[]>(() => {
       index,
       // Yer osti darajasi manfiy raqamda turadi, nomi esa tizimning qolgan
       // qismidagi kabi yoziladi: -1 → «1-yer osti qavati»
-      name: floor < 0 ? `${-floor}-yer osti qavati` : `${floor}-qavat`,
+      name:
+        floor < 0
+          ? t('unitOf.floorUnderground', { floor: -floor })
+          : floorLabel(floor),
       short: String(floor),
       underground: floor < 0,
       units,
@@ -426,6 +778,24 @@ const levels = computed<LevelInfo[]>(() => {
       label,
     }
   })
+})
+
+/** Butun uchastka bo‘yicha holatlar ulushi: unit reyestri yo‘q qurilmalarga */
+const siteMix = computed<MixItem[]>(() => {
+  const mix: MixItem[] = CATEGORIES.value.map((c) => {
+    const own = allUnits.value.filter((u) => (CATEGORY_OF[u.status] ?? 'other') === c.key)
+    return {
+      key: c.key,
+      label: c.label,
+      color: c.color,
+      count: own.length,
+      area: own.reduce((s, u) => s + u.area, 0),
+      share: 0,
+    }
+  }).filter((m) => m.count > 0)
+  const total = mix.reduce((s, m) => s + m.area, 0)
+  for (const m of mix) m.share = total ? m.area / total : 1 / mix.length
+  return mix
 })
 
 /**
@@ -450,29 +820,114 @@ const plans = computed(() => {
   return map
 })
 
-/**
- * Tayanch kontur: tipik qavat rejasining metrdagi o‘lchami. Reja bo‘yi bino
- * turiga bog‘liq doimiy qiymat (masalan ofisda ikki tomonlama koridor
- * chuqurligi), eni esa qavat maydonidan chiqadi. Shuning uchun mediana butun
- * stik uchun to‘g‘ri o‘lchamni beradi.
- */
-const envelope = computed(() => {
-  const above = levels.value.filter((l) => !l.underground)
-  const source = above.length ? above : levels.value
-  const list = source
-    .map((l) => plans.value.get(l.floor))
-    .filter((p): p is FloorPlan => p !== undefined)
-  return {
-    w: median(list.map((p) => p.width)) || 30,
-    d: median(list.map((p) => p.height)) || 18,
-    h: FLOOR_HEIGHT[props.building.type] ?? 3.8,
+/* ==========================================================================
+   Uchastka tarkibi: har bir qurilma dunyo koordinatasidagi to‘rtburchakka
+   o‘tkaziladi. Uchastka markazi koordinata boshi bo‘ladi, shuning uchun
+   kamera burilganda sahna joyida qoladi. Reja o‘qi pastga, dunyo o‘qi
+   yuqoriga qaraydi, shu sababli y teskari o‘giriladi.
+   ========================================================================== */
+
+interface SiteItem {
+  s: Structure
+  id: string
+  kind: StructureKind
+  kindLabel: string
+  kindShort: string
+  name: string
+  leasable: boolean
+  skin: Skin
+  host: boolean
+  x0: number
+  y0: number
+  x1: number
+  y1: number
+  cx: number
+  cy: number
+  w: number
+  d: number
+  floors: number
+  under: number
+  storey: number
+  height: number
+}
+
+const site = computed(() => {
+  const b = props.building
+  const list = structuresOf(b.id)
+  const plot = sitePlotOf(b.id)
+  const hx = plot.width / 2
+  const hy = plot.depth / 2
+
+  /*
+   * Qavat relsi, unit konturlari va interyer bitta qurilmaga biriktiriladi:
+   * asosiy binoga, ombor uchastkasida esa eng katta blokka. Reyestrdagi
+   * unitlar aynan o‘sha hajmga tegishli.
+   */
+  let hostId = ''
+  const main = list.find((s) => s.kind === 'main')
+  if (main) {
+    hostId = main.id
+  } else {
+    let best = 0
+    for (const s of list) {
+      if (!STRUCTURE_KIND[s.kind].leasable) continue
+      const size = s.width * s.depth * Math.max(s.floors, 1)
+      if (size > best) {
+        best = size
+        hostId = s.id
+      }
+    }
   }
+
+  const items: SiteItem[] = list.map((s) => {
+    const meta = STRUCTURE_KIND[s.kind]
+    const floors = Math.max(s.floors, 0)
+    return {
+      s,
+      id: s.id,
+      kind: s.kind,
+      kindLabel: meta.label,
+      kindShort: meta.short,
+      name: s.name,
+      leasable: meta.leasable,
+      skin: s.kind === 'main' ? mainSkin.value : SKIN_OF_KIND[s.kind],
+      host: s.id === hostId,
+      x0: s.x - hx,
+      x1: s.x + s.width - hx,
+      y0: hy - (s.y + s.depth),
+      y1: hy - s.y,
+      cx: s.x + s.width / 2 - hx,
+      cy: hy - (s.y + s.depth / 2),
+      w: s.width,
+      d: s.depth,
+      floors,
+      under: s.undergroundFloors,
+      storey: floors > 0 ? s.height / floors : s.height,
+      height: s.height,
+    }
+  })
+
+  return { plot, items, hostId }
 })
 
+const hostItem = computed(() => site.value.items.find((i) => i.host) ?? null)
+
+/** Tanlangan qurilma: tashqaridan boshqarilmasa ichki holat ishlaydi */
+const innerStruct = ref('')
+const activeStructId = computed(() => {
+  const wanted = props.structure || innerStruct.value
+  const items = site.value.items
+  if (wanted && items.some((i) => i.id === wanted)) return wanted
+  return site.value.hostId || items[0]?.id || ''
+})
+const activeStruct = computed(
+  () => site.value.items.find((i) => i.id === activeStructId.value) ?? null,
+)
+
 /* ==========================================================================
-   Hajm: har bir darajaning tayanch konturi, balandligi va bazasi. Bino turi
-   shu yerda hal qiladi. Ofis va biznes markaz ingichka minora, savdo markaz
-   keng past hajm, ombor uzun past korpus, turar joy pog‘onali blok.
+   Hajm: har bir qurilmaning darajalari. Asosiy qurilmada darajalar unit
+   reyestridan chiqadi va yer osti qavatlari ham bo‘ladi, qolganlarida esa
+   qavat soni va balandligi uchastka ma’lumotidan olinadi.
    ========================================================================== */
 
 interface LevelGeom {
@@ -489,68 +944,772 @@ interface LevelGeom {
   top: boolean
 }
 
-const massing = computed(() => {
-  const b = props.building
-  const geo = envelope.value
-  const fam = family.value
+interface VolumeGeom {
+  item: SiteItem
+  rows: LevelInfo[]
+  levels: LevelGeom[]
+  topZ: number
+  botZ: number
+}
+
+/** Unit reyestri yo‘q qurilma uchun soddalashtirilgan daraja yozuvi */
+function plainRow(item: SiteItem, i: number, mix: MixItem[]): LevelInfo {
+  return {
+    floor: i + 1,
+    index: i,
+    name: floorLabel(i + 1),
+    short: String(i + 1),
+    underground: false,
+    units: [],
+    total: 0,
+    totalArea: 0,
+    vacantCount: 0,
+    vacantArea: 0,
+    occupancy: 0,
+    mix: item.leasable ? mix : [],
+    label: item.kindLabel,
+  }
+}
+
+const volumes = computed<VolumeGeom[]>(() => {
+  const s = site.value
   const lv = levels.value
-  const ug = b.undergroundFloors
-  const groundK = fam === 'shed' ? 1.04 : 1.36
-  const lastIndex = lv.length - 1
-  const above = Math.max(b.floors, 1)
-  /** Turar joyda pog‘ona shu qavatdan boshlanadi */
-  const stepFrom = Math.max(2, Math.round(above * 0.62))
+  const b = props.building
+  const fam = family.value
+  const mix = siteMix.value
+  const out: VolumeGeom[] = []
 
-  const out: LevelGeom[] = []
-  let z = -ug * geo.h
-
-  for (let i = 0; i < lv.length; i++) {
-    const info = lv[i]!
-    const under = info.floor < 0
-    const ground = i === ug
-    const top = i === lastIndex
-    const h = under ? geo.h : ground ? geo.h * groundK : geo.h
-
-    let w = geo.w
-    let d = geo.d
-    const ox = 0
-    let oy = 0
-
-    if (under) {
-      // Yer osti darajasi tayanch konturdan kengroq: parkovka plitasi
-      w = geo.w * 1.06
-      d = geo.d * 1.06
-    } else {
-      const j = i - ug
-      if (fam === 'resi' && j >= stepFrom) {
-        const t = clamp((j - stepFrom + 1) / Math.max(above - stepFrom, 1), 0, 1)
-        d = geo.d * (1 - 0.22 * t)
-        oy = (d - geo.d) / 2
-        w = geo.w * (1 - 0.07 * t)
-      } else if (fam === 'tower' && top && above > 3) {
-        w = geo.w * 0.94
-        d = geo.d * 0.94
-      } else if (fam === 'retail' && top && above > 2) {
-        w = geo.w * 0.96
-        d = geo.d * 0.96
-      }
+  for (const item of s.items) {
+    if (item.skin === 'pad') {
+      out.push({ item, rows: [], levels: [], topZ: Math.max(item.height, 0.2), botZ: 0 })
+      continue
+    }
+    if (item.skin === 'pit') {
+      // Yer osti avtoturargohi: yer sathidan pastda, chuqurligi daraja soniga bog‘liq
+      const pitZ = Math.max(item.under, 1) * 3.2
+      out.push({ item, rows: [], levels: [], topZ: 0.12, botZ: -pitZ })
+      continue
     }
 
-    out.push({ floor: info.floor, i, z0: z, h, w, d, ox, oy, ground, under, top })
-    z += h
+    if (item.host && lv.length) {
+      const ug = b.undergroundFloors
+      /*
+       * Qavat balandligi uchastka ma’lumotidagi hajm balandligidan chiqadi,
+       * lekin bo‘luvchi reyestrdagi yer usti qavatlari soni bo‘ladi: unit
+       * kiritilgan har bir qavat chizilishi kerak, hajm esa ma’lumotdagi
+       * balandlikdan oshib ketmasligi kerak.
+       */
+      const rawStorey = item.height / Math.max(b.floors, 1)
+      const storey = rawStorey > 1 ? rawStorey : item.storey > 1 ? item.storey : 3.4
+      const groundK = fam === 'shed' ? 1.04 : 1.3
+      const above = Math.max(b.floors, 1)
+      /** Turar joyda pog‘ona shu qavatdan boshlanadi */
+      const stepFrom = Math.max(2, Math.round(above * 0.62))
+      const lastIndex = lv.length - 1
+      const geom: LevelGeom[] = []
+      let z = -ug * storey
+
+      for (let i = 0; i < lv.length; i++) {
+        const info = lv[i]!
+        const under = info.floor < 0
+        const ground = i === ug
+        const top = i === lastIndex
+        const h = under ? storey : ground ? storey * groundK : storey
+
+        let w = item.w
+        let d = item.d
+        let oy = item.cy
+
+        if (under) {
+          // Yer osti darajasi tayanch konturdan kengroq: parkovka plitasi
+          w = item.w * 1.06
+          d = item.d * 1.06
+        } else {
+          const j = i - ug
+          if (fam === 'resi' && j >= stepFrom) {
+            const t = clamp((j - stepFrom + 1) / Math.max(above - stepFrom, 1), 0, 1)
+            d = item.d * (1 - 0.22 * t)
+            oy = item.cy + (d - item.d) / 2
+            w = item.w * (1 - 0.07 * t)
+          } else if (fam === 'tower' && top && above > 3) {
+            w = item.w * 0.94
+            d = item.d * 0.94
+          } else if (fam === 'retail' && top && above > 2) {
+            w = item.w * 0.96
+            d = item.d * 0.96
+          }
+        }
+
+        geom.push({ floor: info.floor, i, z0: z, h, w, d, ox: item.cx, oy, ground, under, top })
+        z += h
+      }
+
+      const last = geom[geom.length - 1]
+      out.push({
+        item,
+        rows: lv,
+        levels: geom,
+        topZ: last ? last.z0 + last.h : item.height,
+        botZ: -ug * storey,
+      })
+      continue
+    }
+
+    const floors = Math.max(item.floors, 1)
+    const storey = item.height / floors
+    const rows: LevelInfo[] = []
+    const geom: LevelGeom[] = []
+    for (let i = 0; i < floors; i++) {
+      rows.push(plainRow(item, i, mix))
+      geom.push({
+        floor: i + 1,
+        i,
+        z0: i * storey,
+        h: storey,
+        w: item.w,
+        d: item.d,
+        ox: item.cx,
+        oy: item.cy,
+        ground: i === 0,
+        under: false,
+        top: i === floors - 1,
+      })
+    }
+    out.push({ item, rows, levels: geom, topZ: item.height, botZ: 0 })
   }
 
-  const last = out[out.length - 1]
-  const topZ = last ? last.z0 + last.h : geo.h
-  return { levels: out, topZ, family: fam }
+  return out
 })
 
+const hostIndex = computed(() => volumes.value.findIndex((v) => v.item.host))
 const selectedIndex = computed(() => levels.value.findIndex((l) => l.floor === props.floor))
 const selectedLevel = computed(() => levels.value[selectedIndex.value])
 const hoveredLevel = computed(() => levels.value.find((l) => l.floor === hovered.value))
 
-/** Tanlangan qavat kesib ochiladimi */
-const cutaway = computed(() => props.mode === 'interior' && selectedIndex.value >= 0)
+/** Tanlangan qavat kesib ochiladimi: faqat asosiy qurilmada ishlaydi */
+const cutaway = computed(
+  () => props.mode === 'interior' && selectedIndex.value >= 0 && hostIndex.value >= 0,
+)
+
+/* ==========================================================================
+   Fasad modeli.
+
+   Yuz mahalliy koordinatada quriladi: `u` yuz bo‘ylab metrda, `h` qavat
+   asosidan metrda, `z` devor tekisligidan chuqurlik. Har bir panel alohida
+   geometriya: qavat lentasi, spandrel, mullion foni, oyna, deraza tokchasi,
+   kirish portali, yuk eshigi, balkon. Chuqurlikdagi panelning yon qirralari
+   ham chiziladi, shuning uchun deraza yassi to‘rtburchak emas.
+
+   Chizish tartibi qatlam raqami bilan beriladi: avval yassi qoplama, so‘ng
+   chuqurchadagi oyna, keyin tashqariga chiqqan profil va oxirida balkon
+   kabi yirik qo‘shimchalar. Shu tartib qurilish paytida bir marta
+   hisoblanadi, kamera burilganda esa qayta saralash kerak bo‘lmaydi.
+   ========================================================================== */
+
+/** Chizish qatlami: kichik raqam avval chiziladi */
+const F_BASE = 0
+const F_OPEN = 1
+const F_OUT = 2
+const F_ADD = 3
+
+interface FacePane {
+  u0: number
+  u1: number
+  h0: number
+  h1: number
+  /** Devor tekisligidan chuqurlik. Musbat ichkariga, manfiy tashqariga */
+  z: number
+  tone: string
+  lay: number
+  /** 1 bo‘lsa yon qirralar chiziladi va panel hajmli ko‘rinadi */
+  edge: number
+  /** 1 bo‘lsa h0 sathida gorizontal tokcha chiziladi: balkon poli, karniz */
+  ledge: number
+  /** 1 bo‘lsa bandlik ulushlari bilan bo‘yaladi */
+  occ: number
+  /** 0 hamma masshtabda, 1 faqat yaqin, 2 faqat uzoq ko‘rinishda */
+  lod: number
+}
+
+interface PaneOpt {
+  z?: number
+  lay?: number
+  edge?: number
+  ledge?: number
+  occ?: number
+  lod?: number
+}
+
+interface FaceCtx {
+  skin: Skin
+  pal: Palette
+  len: number
+  h: number
+  face: number
+  row: number
+  ground: boolean
+  top: boolean
+  /** Kirish guruhi shu yuzga tushadi */
+  front: boolean
+  /** Uzun yuz: balkon qatori va yuk eshiklari shu tomonda bo‘ladi */
+  long: boolean
+  showOcc: boolean
+  occTone: string
+  bays: Array<[number, number]> | null
+}
+
+function addPane(
+  out: FacePane[],
+  u0: number,
+  u1: number,
+  h0: number,
+  h1: number,
+  tone: string,
+  o: PaneOpt = {},
+) {
+  if (u1 - u0 < 0.06 || h1 - h0 < 0.04) return
+  out.push({
+    u0,
+    u1,
+    h0,
+    h1,
+    z: o.z ?? 0,
+    tone,
+    lay: o.lay ?? F_BASE,
+    edge: o.edge ?? 0,
+    ledge: o.ledge ?? 0,
+    occ: o.occ ?? 0,
+    lod: o.lod ?? 0,
+  })
+}
+
+/** Deraza qadamini yuz uzunligiga tekis bo‘ladi */
+function grid(len: number, mod: number, gap: number): Array<[number, number]> {
+  const n = Math.max(1, Math.round(len / mod))
+  const pitch = len / n
+  const out: Array<[number, number]> = []
+  for (let i = 0; i < n; i++) {
+    const a = i * pitch + gap / 2
+    const b = (i + 1) * pitch - gap / 2
+    if (b - a > 0.12) out.push([a, b])
+  }
+  return out
+}
+
+/**
+ * Oynaning tusi. Qo‘shni oynalar bir xil bo‘lsa fasad yassi chiqadi,
+ * shuning uchun aks etish farqi qat’iy naqsh bilan beriladi: tasodif yo‘q,
+ * shu sababli kamera burilganda ham naqsh o‘zgarmaydi.
+ */
+function glassTone(pal: Palette, i: number, row: number) {
+  const k = (i * 5 + row * 3) % 7
+  if (k === 0 || k === 4) return pal.glassAlt
+  if (k === 6) return pal.glassDeep
+  return pal.glass
+}
+
+/**
+ * Qavat lentasi balandligi. Qavat balandligining o‘ndan biri: bandlik
+ * ranglari uzoqdan ham o‘qiladi, lekin fasad naqshini bosib ketmaydi.
+ */
+function bandOf(h: number) {
+  return clamp(h * 0.1, 0.24, 0.5)
+}
+
+/**
+ * Qavat lentasi. Har bir qavatning ustki qirrasida turadi, shuning uchun
+ * ikki lenta orasidagi masofa aynan qavat balandligiga teng. Ijaraga
+ * beriladigan qurilmada lenta bandlik ulushlariga bo‘linadi.
+ */
+function slabBand(c: FaceCtx, out: FacePane[], bandH: number) {
+  addPane(out, 0, c.len, c.h - bandH, c.h, c.occTone, {
+    z: -0.12,
+    lay: F_OUT,
+    edge: 1,
+    occ: c.showOcc ? 1 : 0,
+  })
+}
+
+/** Kirish qavati: tsokol, vitrina va kirish portali */
+function faceStorefront(c: FaceCtx, out: FacePane[], hh: number) {
+  const { pal, len } = c
+  const plinth = Math.min(0.5, hh * 0.1)
+  const head = hh * 0.88
+  addPane(out, 0, len, 0, plinth, pal.base, { z: -0.07, lay: F_OUT, edge: 1 })
+  addPane(out, 0, len, plinth, hh, pal.mullion, { z: 0.07 })
+  addPane(out, 0, len, head, hh, pal.wall, { z: 0.03 })
+
+  const cells = grid(len, c.skin === 'mall' ? 4.4 : 3.2, 0.26)
+  const mid = Math.floor(cells.length / 2)
+  for (let i = 0; i < cells.length; i++) {
+    const cell = cells[i]!
+    const entry = c.front && (i === mid || (cells.length > 4 && i === mid - 1))
+    if (entry) {
+      // Kirish portali yuzdan chuqurroq o‘tiradi, ichida eshik qanotlari turadi
+      addPane(out, cell[0], cell[1], 0.04, head, pal.glassDeep, { z: 0.62, lay: F_OPEN, edge: 1 })
+      const half = (cell[1] - cell[0]) / 2
+      addPane(out, cell[0] + 0.18, cell[0] + half - 0.05, 0.04, head * 0.72, pal.door, {
+        z: 0.56,
+        lay: F_OPEN,
+        lod: 1,
+      })
+      addPane(out, cell[0] + half + 0.05, cell[1] - 0.18, 0.04, head * 0.72, pal.door, {
+        z: 0.56,
+        lay: F_OPEN,
+        lod: 1,
+      })
+    } else {
+      addPane(out, cell[0], cell[1], plinth, head, glassTone(pal, i, c.row), {
+        z: 0.24,
+        lay: F_OPEN,
+        edge: 1,
+      })
+    }
+  }
+}
+
+/** A klass minora: to‘liq shisha fasad, tor va tez qadam, ingichka mullion */
+function faceCurtain(c: FaceCtx, out: FacePane[]) {
+  const { pal, len, h } = c
+  const bandH = bandOf(h)
+  const hh = h - bandH
+  if (c.ground) {
+    faceStorefront(c, out, hh)
+    slabBand(c, out, bandH)
+    return
+  }
+
+  const sill = hh * 0.2
+  const head = hh * 0.97
+  // Spandrel: plita oldidagi to‘siq paneli
+  addPane(out, 0, len, 0, sill, pal.spandrel, { z: 0.05 })
+  // Oynalar orasidagi vertikal profil shu fondan ko‘rinadi
+  addPane(out, 0, len, sill, head, pal.mullion, { z: 0.08 })
+  addPane(out, 0, len, head, hh, pal.wallAlt, { z: 0.03 })
+
+  const cells = grid(len, 1.5, 0.15)
+  for (let i = 0; i < cells.length; i++) {
+    const cell = cells[i]!
+    addPane(out, cell[0], cell[1], sill + 0.06, head - 0.05, glassTone(pal, i, c.row), {
+      z: 0.16,
+      lay: F_OPEN,
+      edge: 1,
+      lod: 1,
+    })
+  }
+  addPane(out, 0.18, len - 0.18, sill + 0.06, head - 0.05, pal.glass, {
+    z: 0.13,
+    lay: F_OPEN,
+    lod: 2,
+  })
+  // Ko‘ndalang bog‘lam: oyna maydonini ikkiga bo‘ladi
+  const tr = sill + (head - sill) * 0.58
+  addPane(out, 0, len, tr, tr + 0.1, pal.metal, { z: -0.08, lay: F_OUT, lod: 1 })
+  slabBand(c, out, bandH)
+}
+
+/** B va C klass ofis: panjarali teshik deraza, chuqur yon qirra va tokcha */
+function faceOffice(c: FaceCtx, out: FacePane[]) {
+  const { pal, len, h } = c
+  const bandH = bandOf(h)
+  const hh = h - bandH
+  if (c.ground) {
+    faceStorefront(c, out, hh)
+    slabBand(c, out, bandH)
+    return
+  }
+
+  const sill = clamp(hh * 0.26, 0.7, 1.15)
+  const head = hh * 0.9
+  const cells = c.bays && c.bays.length ? c.bays : grid(len, 2.8, 1.05)
+  addPane(out, 0, len, 0, hh, pal.wall, { z: 0.03 })
+
+  for (let i = 0; i < cells.length; i++) {
+    const cell = cells[i]!
+    const a = clamp(cell[0], 0, len)
+    const b = clamp(cell[1], 0, len)
+    if (b - a < 0.4) continue
+    addPane(out, a, b, sill, head, glassTone(pal, i, c.row), { z: 0.3, lay: F_OPEN, edge: 1 })
+    addPane(out, a - 0.1, b + 0.1, sill - 0.14, sill, pal.base, {
+      z: -0.11,
+      lay: F_OUT,
+      edge: 1,
+      lod: 1,
+    })
+    addPane(out, a - 0.1, b + 0.1, head, head + 0.14, pal.wallAlt, {
+      z: -0.05,
+      lay: F_OUT,
+      lod: 1,
+    })
+  }
+  slabBand(c, out, bandH)
+}
+
+/** Savdo markaz: kassetali qoplama, keng vitrina lentasi va reklama paneli */
+function faceMall(c: FaceCtx, out: FacePane[]) {
+  const { pal, len, h } = c
+  const bandH = bandOf(h)
+  const hh = h - bandH
+  if (c.ground) {
+    faceStorefront(c, out, hh)
+    slabBand(c, out, bandH)
+    return
+  }
+
+  const sill = hh * 0.26
+  const head = hh * 0.76
+  addPane(out, 0, len, 0, hh, pal.wall, { z: 0.05, lod: 2 })
+  const cass = grid(len, 2.6, 0.1)
+  for (let i = 0; i < cass.length; i++) {
+    const cell = cass[i]!
+    addPane(out, cell[0], cell[1], 0, hh, i % 2 ? pal.wall : pal.wallAlt, { z: 0.05, lod: 1 })
+  }
+
+  addPane(out, 0, len, sill, head, pal.mullion, { z: 0.09 })
+  const cells = grid(len, 3.6, 0.2)
+  for (let i = 0; i < cells.length; i++) {
+    const cell = cells[i]!
+    addPane(out, cell[0], cell[1], sill + 0.06, head - 0.06, glassTone(pal, i, c.row), {
+      z: 0.22,
+      lay: F_OPEN,
+      edge: 1,
+    })
+  }
+  if (c.front && c.top) {
+    const sh = Math.min(1.3, hh * 0.16)
+    addPane(out, len * 0.1, len * 0.46, head + 0.3, head + 0.3 + sh, pal.accent, {
+      z: -0.18,
+      lay: F_OUT,
+      edge: 1,
+    })
+  }
+  slabBand(c, out, bandH)
+}
+
+/** Ombor bloki: profilli qoplama, tepada lenta deraza, pastda yuk eshiklari */
+function faceShed(c: FaceCtx, out: FacePane[]) {
+  const { pal, len, h } = c
+  const bandH = clamp(h * 0.06, 0.24, 0.5)
+  const hh = h - bandH
+  const plinth = Math.min(1.1, hh * 0.14)
+  addPane(out, 0, len, 0, plinth, pal.base, { z: -0.06, lay: F_OUT, edge: 1 })
+  addPane(out, 0, len, plinth, hh, pal.wall, { z: 0.04 })
+
+  // Profilli qoplama: vertikal qovurg‘alar
+  const ribs = clamp(Math.round(len / 1.7), 3, 56)
+  for (let i = 1; i < ribs; i++) {
+    const x = (len * i) / ribs
+    addPane(out, x - 0.055, x + 0.055, plinth, hh, pal.wallAlt, {
+      z: -0.07,
+      lay: F_OUT,
+      lod: 1,
+    })
+  }
+
+  // Tepadagi lenta deraza: omborda deraza kam va keng bo‘ladi
+  const w0 = hh * 0.72
+  const w1 = hh * 0.87
+  addPane(out, 0.7, len - 0.7, w0, w1, pal.mullion, { z: 0.08 })
+  const strip = grid(len - 1.4, 4.4, 0.22)
+  for (let i = 0; i < strip.length; i++) {
+    const cell = strip[i]!
+    addPane(out, cell[0] + 0.7, cell[1] + 0.7, w0 + 0.06, w1 - 0.06, glassTone(pal, i, c.row), {
+      z: 0.18,
+      lay: F_OPEN,
+      edge: 1,
+      lod: 1,
+    })
+  }
+  addPane(out, 0.8, len - 0.8, w0 + 0.06, w1 - 0.06, pal.glass, { z: 0.14, lay: F_OPEN, lod: 2 })
+
+  if (c.ground && c.long) {
+    const n = clamp(Math.round(len / 9.5), 2, 8)
+    const step = len / n
+    const dw = Math.min(3.6, step * 0.5)
+    const dh = Math.min(4.6, hh * 0.62)
+    for (let i = 0; i < n; i++) {
+      const cc = (i + 0.5) * step
+      addPane(out, cc - dw / 2, cc + dw / 2, plinth, dh, pal.door, {
+        z: 0.36,
+        lay: F_OPEN,
+        edge: 1,
+      })
+      // Seksiyali eshik panellari
+      for (let k = 1; k < 4; k++) {
+        const y = plinth + ((dh - plinth) * k) / 4
+        addPane(out, cc - dw / 2 + 0.06, cc + dw / 2 - 0.06, y - 0.045, y + 0.045, pal.metal, {
+          z: 0.32,
+          lay: F_OPEN,
+          lod: 1,
+        })
+      }
+      // Rezina buferlar
+      addPane(out, cc - dw / 2 - 0.26, cc - dw / 2 - 0.05, plinth, plinth + 1.1, pal.accent, {
+        z: -0.14,
+        lay: F_OUT,
+        edge: 1,
+        lod: 1,
+      })
+      addPane(out, cc + dw / 2 + 0.05, cc + dw / 2 + 0.26, plinth, plinth + 1.1, pal.accent, {
+        z: -0.14,
+        lay: F_OUT,
+        edge: 1,
+        lod: 1,
+      })
+    }
+  }
+  if (c.ground && c.front) {
+    addPane(out, 1.1, 2.3, 0, Math.min(2.2, hh * 0.7), pal.door, { z: 0.18, lay: F_OPEN, edge: 1 })
+  }
+  slabBand(c, out, bandH)
+}
+
+/** Turar joy: g‘isht qoplama, tokchali deraza va balkon qatorlari */
+function faceResi(c: FaceCtx, out: FacePane[]) {
+  const { pal, len, h } = c
+  const bandH = bandOf(h)
+  const hh = h - bandH
+  if (c.ground) {
+    faceStorefront(c, out, hh)
+    slabBand(c, out, bandH)
+    return
+  }
+
+  const sill = clamp(hh * 0.3, 0.8, 1.2)
+  const head = hh * 0.88
+  const cells = c.bays && c.bays.length ? c.bays : grid(len, 3.2, 1.15)
+  addPane(out, 0, len, 0, hh, pal.wall, { z: 0.03 })
+
+  for (let i = 0; i < cells.length; i++) {
+    const cell = cells[i]!
+    const a = clamp(cell[0], 0, len)
+    const b = clamp(cell[1], 0, len)
+    if (b - a < 0.4) continue
+    addPane(out, a, b, sill, head, glassTone(pal, i, c.row), { z: 0.28, lay: F_OPEN, edge: 1 })
+    addPane(out, a - 0.12, b + 0.12, sill - 0.15, sill, pal.base, {
+      z: -0.12,
+      lay: F_OUT,
+      edge: 1,
+      lod: 1,
+    })
+  }
+
+  // Balkon qatorlari: uzun yuzlarda har ikkinchi katak
+  if (c.long) {
+    const bz = Math.min(sill * 0.3, 0.4)
+    for (let i = 0; i < cells.length; i += 2) {
+      const cell = cells[i]!
+      const a = clamp(cell[0] - 0.55, 0, len)
+      const b = clamp(cell[1] + 0.55, 0, len)
+      if (b - a < 1) continue
+      addPane(out, a, b, bz, bz + 1.15, pal.metal, {
+        z: -1.35,
+        lay: F_ADD,
+        edge: 1,
+        ledge: 1,
+      })
+    }
+  }
+  slabBand(c, out, bandH)
+}
+
+/** Pavilyon: bir qavatli shisha hajm, kirish o‘rtada */
+function facePavilion(c: FaceCtx, out: FacePane[]) {
+  const { pal, len, h } = c
+  const bandH = clamp(h * 0.16, 0.32, 0.7)
+  const hh = h - bandH
+  const plinth = Math.min(0.4, hh * 0.12)
+  addPane(out, 0, len, 0, plinth, pal.base, { z: -0.06, lay: F_OUT, edge: 1 })
+  addPane(out, 0, len, plinth, hh, pal.mullion, { z: 0.07 })
+
+  const cells = grid(len, 2.6, 0.18)
+  const mid = Math.floor(cells.length / 2)
+  for (let i = 0; i < cells.length; i++) {
+    const cell = cells[i]!
+    if (c.front && i === mid) {
+      addPane(out, cell[0], cell[1], 0.04, hh * 0.86, pal.door, { z: 0.34, lay: F_OPEN, edge: 1 })
+    } else {
+      addPane(out, cell[0], cell[1], plinth, hh, glassTone(pal, i, c.row), {
+        z: 0.2,
+        lay: F_OPEN,
+        edge: 1,
+      })
+    }
+  }
+  slabBand(c, out, bandH)
+}
+
+/** Xizmat qurilmasi: KPP, qozonxona va texnik blok. Devor yopiq, deraza kam */
+function faceService(c: FaceCtx, out: FacePane[]) {
+  const { pal, len, h } = c
+  const bandH = clamp(h * 0.14, 0.26, 0.5)
+  const hh = h - bandH
+  const plinth = Math.min(0.5, hh * 0.16)
+  addPane(out, 0, len, 0, plinth, pal.base, { z: -0.06, lay: F_OUT, edge: 1 })
+  addPane(out, 0, len, plinth, hh, pal.wall, { z: 0.03 })
+
+  const sill = Math.min(1.05, hh * 0.42)
+  const head = Math.min(hh * 0.84, sill + 1.3)
+  const cells = grid(len, 2.8, 1.5)
+  for (let i = 0; i < cells.length; i++) {
+    const cell = cells[i]!
+    addPane(out, cell[0], cell[1], sill, head, glassTone(pal, i, c.row), {
+      z: 0.22,
+      lay: F_OPEN,
+      edge: 1,
+    })
+  }
+  if (c.front) {
+    const dw = Math.min(1.2, len * 0.24)
+    const cc = Math.max(len * 0.2, dw)
+    addPane(out, cc - dw / 2, cc + dw / 2, 0, Math.min(2.15, hh * 0.82), pal.door, {
+      z: 0.16,
+      lay: F_OPEN,
+      edge: 1,
+    })
+  }
+  slabBand(c, out, bandH)
+}
+
+function buildFace(c: FaceCtx): FacePane[] {
+  const out: FacePane[] = []
+  if (c.len < 0.6 || c.h < 0.4) return out
+  switch (c.skin) {
+    case 'curtain':
+      faceCurtain(c, out)
+      break
+    case 'office':
+      faceOffice(c, out)
+      break
+    case 'mall':
+      faceMall(c, out)
+      break
+    case 'shed':
+      faceShed(c, out)
+      break
+    case 'resi':
+      faceResi(c, out)
+      break
+    case 'pavilion':
+      facePavilion(c, out)
+      break
+    case 'service':
+      faceService(c, out)
+      break
+    default:
+      break
+  }
+  /*
+   * Chizish tartibi shu yerda bir marta belgilanadi. Qatlam ichida chuqurroq
+   * panel avval chiziladi, bir xil chuqurlikdagilar esa rang bo‘yicha
+   * guruhlanadi: shunda proyeksiya bosqichida qo‘shni panellar bitta yo‘lga
+   * birlashadi va SVG tugunlari soni kam qoladi.
+   */
+  out.sort(
+    (a, b) => a.lay - b.lay || b.z - a.z || (a.tone < b.tone ? -1 : a.tone > b.tone ? 1 : 0),
+  )
+  return out
+}
+
+/** Reja deraza yo‘laklari yuz bo‘ylab metrga o‘tkaziladi */
+function baysOf(plan: FloorPlan, lg: LevelGeom, face: number): Array<[number, number]> {
+  const sx = lg.w / plan.width
+  const sy = lg.d / plan.height
+  const eps = 1e-6
+  const out: Array<[number, number]> = []
+  for (const w of plan.windows) {
+    if (Math.abs(w.y2 - w.y1) < eps) {
+      const a = Math.min(w.x1, w.x2)
+      const b = Math.max(w.x1, w.x2)
+      if (Math.abs(w.y1 - plan.height) < eps) {
+        if (face === 0) out.push([a * sx, b * sx])
+      } else if (face === 2) {
+        out.push([(plan.width - b) * sx, (plan.width - a) * sx])
+      }
+    } else {
+      const a = Math.min(w.y1, w.y2)
+      const b = Math.max(w.y1, w.y2)
+      if (Math.abs(w.x1 - plan.width) < eps) {
+        if (face === 1) out.push([(plan.height - b) * sy, (plan.height - a) * sy])
+      } else if (face === 3) {
+        out.push([a * sy, b * sy])
+      }
+    }
+  }
+  return out.sort((p, q) => p[0] - q[0])
+}
+
+/**
+ * Butun uchastkaning fasad panellari. Kameradan bog‘liq emas, shuning uchun
+ * bir marta hisoblanadi. Shu yerda tafsilot narxi ham o‘lchanadi: yaqin
+ * ko‘rinishda nechta yuza chiziladi va uzoq ko‘rinishda nechta qoladi.
+ */
+const facade = computed(() => {
+  const vols = volumes.value
+  const pals = palettes.value
+  const mode = props.mode
+  const planMapAll = plans.value
+  const faces: Array<Array<Array<FacePane[] | null>>> = []
+  let fine = 0
+  let coarse = 0
+
+  for (const vol of vols) {
+    const item = vol.item
+    const perLevel: Array<Array<FacePane[] | null>> = []
+    if (item.skin === 'pad' || item.skin === 'pit') {
+      faces.push(perLevel)
+      continue
+    }
+    const pal = pals[item.skin]
+
+    for (let i = 0; i < vol.levels.length; i++) {
+      const lg = vol.levels[i]!
+      if (lg.under) {
+        perLevel.push([null, null, null, null])
+        continue
+      }
+      const row = vol.rows[i]
+      const dom =
+        row && row.mix.length
+          ? row.mix.reduce((best, m) => (m.area > best.area ? m : best), row.mix[0]!)
+          : null
+      const lease = item.leasable && mode === 'occupancy'
+      const occTone = lease ? (dom ? dom.color : EMPTY_COLOR) : SERVICE_COLOR
+      const plan = item.host ? planMapAll.get(lg.floor) : undefined
+
+      const list: Array<FacePane[] | null> = []
+      for (let f = 0; f < 4; f++) {
+        const len = f % 2 === 0 ? lg.w : lg.d
+        const other = f % 2 === 0 ? lg.d : lg.w
+        const panes = buildFace({
+          skin: item.skin,
+          pal,
+          len,
+          h: lg.h,
+          face: f,
+          row: i,
+          ground: lg.ground,
+          top: lg.top,
+          front: f === 0,
+          long: len >= other,
+          showOcc: lease && !!dom,
+          occTone,
+          bays: plan ? baysOf(plan, lg, f) : null,
+        })
+        list.push(panes)
+        for (const p of panes) {
+          if (p.lod !== 2) fine += p.edge ? 2.4 : 1
+          if (p.lod !== 1) coarse += 1
+        }
+      }
+      perLevel.push(list)
+    }
+    faces.push(perLevel)
+  }
+
+  // Bir vaqtda odatda ikkita yuz ko‘rinadi, shuning uchun narx yarmiga bo‘linadi
+  return { faces, fine: Math.round(fine / 2), coarse: Math.round(coarse / 2) }
+})
 
 /* ==========================================================================
    Reja koordinatasidan dunyo koordinatasiga o‘tkazish. Reja metrda, chap
@@ -604,9 +1763,10 @@ function planMap(lg: LevelGeom, plan: FloorPlan): PlanMap {
 
 /** Tanlangan qavat unit konturlari, reja generatoridan olinadi */
 const selectedShapes = computed(() => {
+  const vol = volumes.value[hostIndex.value]
   const i = selectedIndex.value
   const info = levels.value[i]
-  const lg = massing.value.levels[i]
+  const lg = vol?.levels[i]
   const plan = info ? plans.value.get(info.floor) : undefined
   if (!info || !lg || !plan) return []
 
@@ -618,7 +1778,7 @@ const selectedShapes = computed(() => {
     return {
       id: pu.id,
       code: pu.code,
-      fill: CATEGORIES.find((c) => c.key === key)?.color ?? EMPTY_COLOR,
+      fill: CATEGORIES.value.find((c) => c.key === key)?.color ?? EMPTY_COLOR,
       pts: pu.points.map((p) => to(p[0], p[1])),
     }
   })
@@ -640,9 +1800,10 @@ interface InteriorGeom {
 
 const interiorGeom = computed<InteriorGeom | null>(() => {
   if (!cutaway.value) return null
+  const vol = volumes.value[hostIndex.value]
   const i = selectedIndex.value
   const info = levels.value[i]
-  const lg = massing.value.levels[i]
+  const lg = vol?.levels[i]
   const plan = info ? plans.value.get(info.floor) : undefined
   if (!info || !lg || !plan || !plan.units.length) return null
 
@@ -810,138 +1971,10 @@ const interiorGeom = computed<InteriorGeom | null>(() => {
 })
 
 /* ==========================================================================
-   Fasad naqshi: yuz mahalliy koordinatasidagi to‘rtburchaklar. u yuz bo‘ylab
-   metrda, h qavat asosidan metrda. Tipik qavatda deraza o‘rinlari o‘sha
-   qavat rejasidagi deraza yo‘laklaridan olinadi, shuning uchun tashqi
-   ko‘rinish ham reja bilan bitta manbadan chiqadi.
-   ========================================================================== */
-
-type SkinRole = 'glass' | 'band' | 'shop' | 'entry' | 'dock' | 'louver'
-
-interface SkinRect {
-  u0: number
-  u1: number
-  h0: number
-  h1: number
-  role: SkinRole
-}
-
-/** Reja deraza yo‘laklari yuz bo‘ylab metrga o‘tkaziladi */
-function baysOf(plan: FloorPlan, lg: LevelGeom, face: number): Array<[number, number]> {
-  const sx = lg.w / plan.width
-  const sy = lg.d / plan.height
-  const eps = 1e-6
-  const out: Array<[number, number]> = []
-  for (const w of plan.windows) {
-    if (Math.abs(w.y2 - w.y1) < eps) {
-      const a = Math.min(w.x1, w.x2)
-      const b = Math.max(w.x1, w.x2)
-      if (Math.abs(w.y1 - plan.height) < eps) {
-        if (face === 0) out.push([a * sx, b * sx])
-      } else if (face === 2) {
-        out.push([(plan.width - b) * sx, (plan.width - a) * sx])
-      }
-    } else {
-      const a = Math.min(w.y1, w.y2)
-      const b = Math.max(w.y1, w.y2)
-      if (Math.abs(w.x1 - plan.width) < eps) {
-        if (face === 1) out.push([(plan.height - b) * sy, (plan.height - a) * sy])
-      } else if (face === 3) {
-        out.push([a * sy, b * sy])
-      }
-    }
-  }
-  return out.sort((p, q) => p[0] - q[0])
-}
-
-function skinTypical(bays: Array<[number, number]>, len: number, h: number, full: boolean) {
-  const out: SkinRect[] = []
-  if (full) {
-    // A klass: to‘liq shisha fasad, ingichka mullionlar bo‘shliq bilan beriladi
-    out.push({ u0: 0, u1: len, h0: 0, h1: h * 0.12, role: 'band' })
-    out.push({ u0: 0, u1: len, h0: h * 0.94, h1: h, role: 'band' })
-    for (const [a, b] of bays) {
-      const pad = Math.min(0.34, (b - a) * 0.16)
-      out.push({ u0: a - pad, u1: b + pad, h0: h * 0.12, h1: h * 0.94, role: 'glass' })
-    }
-  } else {
-    // B klass: muntazam panjaradagi teshik deraza va ko‘rinadigan spandrel
-    out.push({ u0: 0, u1: len, h0: 0, h1: h * 0.32, role: 'band' })
-    out.push({ u0: 0, u1: len, h0: h * 0.86, h1: h, role: 'band' })
-    for (const [a, b] of bays) {
-      out.push({ u0: a, u1: b, h0: h * 0.38, h1: h * 0.83, role: 'glass' })
-    }
-  }
-  return out
-}
-
-function skinGround(len: number, h: number, fam: Family, faceIdx: number) {
-  const out: SkinRect[] = []
-
-  if (fam === 'shed') {
-    out.push({ u0: 0, u1: len, h0: 0, h1: 0.26, role: 'band' })
-    out.push({ u0: 0, u1: len, h0: h * 0.86, h1: h, role: 'band' })
-    if (faceIdx === 0 || faceIdx === 2) {
-      // Yuk eshiklari uzun yon tomon bo‘ylab
-      const n = clamp(Math.round(len / 9.5), 2, 8)
-      const g = len / n
-      const dw = Math.min(3.6, g * 0.5)
-      const dh = Math.min(4.6, h * 0.64)
-      for (let i = 0; i < n; i++) {
-        const c = (i + 0.5) * g
-        out.push({ u0: c - dw / 2, u1: c + dw / 2, h0: 0.26, h1: dh, role: 'dock' })
-      }
-    }
-    out.push({ u0: 0.6, u1: len - 0.6, h0: h * 0.72, h1: h * 0.82, role: 'louver' })
-    return out
-  }
-
-  // Kirish qavati: balandroq bo‘y, vitrina va kirish guruhi
-  const n = clamp(Math.round(len / 5.4), 2, 10)
-  const g = len / n
-  const mid = Math.floor(n / 2)
-  out.push({ u0: 0, u1: len, h0: 0, h1: 0.3, role: 'band' })
-  out.push({ u0: 0, u1: len, h0: h * 0.88, h1: h, role: 'band' })
-  for (let i = 0; i < n; i++) {
-    const entry = faceIdx === 0 && (i === mid || (n > 3 && i === mid - 1))
-    out.push({
-      u0: i * g + 0.26,
-      u1: (i + 1) * g - 0.26,
-      h0: 0.3,
-      h1: h * 0.88,
-      role: entry ? 'entry' : 'shop',
-    })
-  }
-  return out
-}
-
-const skin = computed<Array<Array<SkinRect[] | null>>>(() => {
-  const m = massing.value
-  const fam = m.family
-  const full = glazed.value
-
-  return m.levels.map((lg) => {
-    if (lg.under) return [null, null, null, null]
-    if (lg.ground) {
-      return [
-        skinGround(lg.w, lg.h, fam, 0),
-        skinGround(lg.d, lg.h, fam, 1),
-        skinGround(lg.w, lg.h, fam, 2),
-        skinGround(lg.d, lg.h, fam, 3),
-      ]
-    }
-    const plan = plans.value.get(lg.floor)
-    if (!plan) return [null, null, null, null]
-    return [0, 1, 2, 3].map((f) =>
-      skinTypical(baysOf(plan, lg, f), f === 0 || f === 2 ? lg.w : lg.d, lg.h, full),
-    )
-  })
-})
-
-/* ==========================================================================
-   Tashqi elementlar: tom parapeti, kirish soyaboni, balkon, ombor annexi va
-   savdo markaz atriumi. Hammasi dunyo koordinatasidagi to‘rt nuqtali yuzalar,
-   qavatga biriktiriladi va ajratish bilan birga ko‘chadi.
+   Tashqi elementlar: tom parapeti va karnizi, tomdagi texnika bloki, kirish
+   soyaboni, ombor rampasi va yuk maydonchasi, qozonxona quvuri. Hammasi
+   dunyo koordinatasidagi to‘rt nuqtali yuzalar, qavatga biriktiriladi va
+   ajratish bilan birga ko‘chadi.
    ========================================================================== */
 
 interface ExtQuad {
@@ -1012,246 +2045,232 @@ function pushBox(
   })
 }
 
-const extras = computed<ExtQuad[][]>(() => {
-  const m = massing.value
-  const fam = m.family
-  const out: ExtQuad[][] = m.levels.map(() => [])
+const extras = computed(() => {
+  const vols = volumes.value
+  const per: ExtQuad[][][] = []
+  const tops: number[] = []
 
-  for (const lg of m.levels) {
-    if (lg.under) continue
-    const list = out[lg.i]!
-    const X0 = lg.ox - lg.w / 2
-    const X1 = lg.ox + lg.w / 2
-    const Y0 = lg.oy - lg.d / 2
-    const Y1 = lg.oy + lg.d / 2
-    const zTop = lg.h
+  for (const vol of vols) {
+    const item = vol.item
+    const list: ExtQuad[][] = vol.levels.map(() => [])
+    let top = vol.topZ
+    if (item.skin === 'pad' || item.skin === 'pit') {
+      per.push(list)
+      tops.push(top)
+      continue
+    }
 
-    if (lg.ground) {
-      if (fam === 'shed') {
-        // Yuk maydonchasi va qisqa tomonga tirkalgan ofis annexi
-        pushBox(list, X0 + 1.5, Y0 - 3.6, X1 - 1.5, Y0, 0, 1.15, 'apron')
-        const ah = Math.min(7.6, Math.max(m.topZ * 0.68, 4))
-        const ay0 = lg.oy - lg.d * 0.3
-        const ay1 = lg.oy + lg.d * 0.3
-        const ax0 = X0 - Math.min(lg.w * 0.14, 14)
-        pushBox(list, ax0, ay0, X0 + 0.6, ay1, 0, ah, 'annex')
-        pushBox(list, ax0 - 0.35, ay0 - 0.35, X0 + 0.6, ay1 + 0.35, ah, ah + 0.7, 'parapet')
-        for (let r = 0; r < 2; r++) {
-          for (let c = 0; c < 3; c++) {
-            const z0 = 1.2 + r * 3.1
-            const y0 = ay0 + ((c + 0.25) * (ay1 - ay0)) / 3
-            const y1 = ay0 + ((c + 0.75) * (ay1 - ay0)) / 3
-            list.push({
+    for (const lg of vol.levels) {
+      if (lg.under) continue
+      const own = list[lg.i]!
+      const X0 = lg.ox - lg.w / 2
+      const X1 = lg.ox + lg.w / 2
+      const Y0 = lg.oy - lg.d / 2
+      const Y1 = lg.oy + lg.d / 2
+      const zTop = lg.h
+
+      if (lg.ground) {
+        if (item.skin === 'shed') {
+          // Yuk maydonchasi va rampa: dok eshiklari oldida
+          const dock = Math.min(1.15, lg.h * 0.14)
+          pushBox(own, X0 + 1.2, Y0 - 7, X1 - 1.2, Y0 - 3, 0, 0.22, 'apron')
+          own.push({
+            p: [
+              [X0 + 1.2, Y0 - 3, 0.22],
+              [X1 - 1.2, Y0 - 3, 0.22],
+              [X1 - 1.2, Y0, dock],
+              [X0 + 1.2, Y0, dock],
+            ],
+            n: [0, -(dock - 0.22), 3],
+            role: 'ramp',
+          })
+          own.push({
+            p: [
+              [X0 + 1.2, Y0 - 3, 0.22],
+              [X0 + 1.2, Y0, dock],
+              [X0 + 1.2, Y0, 0],
+              [X0 + 1.2, Y0 - 3, 0],
+            ],
+            n: [-1, 0, 0],
+            role: 'ramp',
+          })
+          own.push({
+            p: [
+              [X1 - 1.2, Y0 - 3, 0.22],
+              [X1 - 1.2, Y0, dock],
+              [X1 - 1.2, Y0, 0],
+              [X1 - 1.2, Y0 - 3, 0],
+            ],
+            n: [1, 0, 0],
+            role: 'ramp',
+          })
+        } else if (
+          item.host &&
+          (item.skin === 'curtain' ||
+            item.skin === 'office' ||
+            item.skin === 'mall' ||
+            item.skin === 'resi')
+        ) {
+          // Kirish soyaboni va uni ushlab turgan ustunlar
+          const cw = Math.min(lg.w * 0.42, 16)
+          const cz = lg.h * 0.66
+          pushBox(own, lg.ox - cw / 2, Y0 - 3.2, lg.ox + cw / 2, Y0 + 0.3, cz, cz + 0.4, 'canopy')
+          pushBox(own, lg.ox - cw / 2 + 0.5, Y0 - 2.9, lg.ox - cw / 2 + 1, Y0 - 2.4, 0, cz, 'column')
+          pushBox(own, lg.ox + cw / 2 - 1, Y0 - 2.9, lg.ox + cw / 2 - 0.5, Y0 - 2.4, 0, cz, 'column')
+        }
+
+        if (item.skin === 'mall' && item.host) {
+          // Kirish atriumi: baland shisha hajm, parapet bilan yakunlanadi
+          const aw = Math.min(lg.w * 0.4, 26)
+          const az = lg.h * 1.7
+          pushBox(own, lg.ox - aw / 2, Y0 - 4.6, lg.ox + aw / 2, Y0 + 0.4, 0, az, 'glass')
+          pushBox(
+            own,
+            lg.ox - aw / 2 - 0.4,
+            Y0 - 5,
+            lg.ox + aw / 2 + 0.4,
+            Y0 + 0.4,
+            az,
+            az + 0.9,
+            'parapet',
+          )
+        }
+      }
+
+      if (lg.top) {
+        if (item.skin === 'shed') {
+          // Yassi qiyalikdagi ikki nishabli tom, uchi uzun o‘q bo‘ylab
+          const rise = clamp(lg.d * 0.06, 1.2, 4.5)
+          const ex = 0.7
+          const ax0 = X0 - ex
+          const ax1 = X1 + ex
+          own.push({
+            p: [
+              [ax0, Y0 - ex, zTop],
+              [ax1, Y0 - ex, zTop],
+              [ax1, lg.oy, zTop + rise],
+              [ax0, lg.oy, zTop + rise],
+            ],
+            n: [0, -rise, lg.d / 2],
+            role: 'roof',
+          })
+          own.push({
+            p: [
+              [ax0, Y1 + ex, zTop],
+              [ax1, Y1 + ex, zTop],
+              [ax1, lg.oy, zTop + rise],
+              [ax0, lg.oy, zTop + rise],
+            ],
+            n: [0, rise, lg.d / 2],
+            role: 'roof',
+          })
+          for (const k of [0.34, 0.66]) {
+            const y = Y0 + lg.d * k
+            const zz = zTop + rise * (1 - Math.abs(y - lg.oy) / (lg.d / 2))
+            own.push({
               p: [
-                [ax0 - 0.03, y0, z0 + 1.6],
-                [ax0 - 0.03, y1, z0 + 1.6],
-                [ax0 - 0.03, y1, z0],
-                [ax0 - 0.03, y0, z0],
+                [X0 + lg.w * 0.12, y, zz + 0.05],
+                [X1 - lg.w * 0.12, y, zz + 0.05],
+                [X1 - lg.w * 0.12, y + lg.d * 0.05, zz + 0.05],
+                [X0 + lg.w * 0.12, y + lg.d * 0.05, zz + 0.05],
               ],
-              n: [-1, 0, 0],
+              n: [0, 0, 1],
               role: 'glass',
             })
           }
-        }
-      } else {
-        const cw = Math.min(lg.w * 0.42, 16)
-        const cz = lg.h * 0.64
-        pushBox(list, lg.ox - cw / 2, Y0 - 3.4, lg.ox + cw / 2, Y0 + 0.3, cz, cz + 0.42, 'canopy')
-        pushBox(list, lg.ox - cw / 2 + 0.5, Y0 - 3.1, lg.ox - cw / 2 + 1, Y0 - 2.6, 0, cz, 'column')
-        pushBox(list, lg.ox + cw / 2 - 1, Y0 - 3.1, lg.ox + cw / 2 - 0.5, Y0 - 2.6, 0, cz, 'column')
-      }
-
-      if (fam === 'retail') {
-        // Kirish atriumi: baland shisha hajm, parapet bilan yakunlanadi
-        const aw = Math.min(lg.w * 0.4, 26)
-        const az = lg.h * 1.7
-        pushBox(list, lg.ox - aw / 2, Y0 - 4.6, lg.ox + aw / 2, Y0 + 0.4, 0, az, 'glass')
-        pushBox(
-          list,
-          lg.ox - aw / 2 - 0.4,
-          Y0 - 5,
-          lg.ox + aw / 2 + 0.4,
-          Y0 + 0.4,
-          az,
-          az + 0.9,
-          'parapet',
-        )
-      }
-    }
-
-    // --- turar joy balkonlari
-    if (fam === 'resi' && !lg.ground && !lg.top) {
-      const nb = clamp(Math.round(lg.w / 7), 2, 4)
-      const bw = Math.min(lg.w / (nb * 1.7), 5.2)
-      const dep = 1.35
-      const bz = 0.42
-      for (let i = 0; i < nb; i++) {
-        const c = X0 + ((i + 0.5) * lg.w) / nb
-        for (const side of [0, 2]) {
-          const yEdge = side === 0 ? Y0 : Y1
-          const yOut = side === 0 ? Y0 - dep : Y1 + dep
-          list.push({
-            p: [
-              [c - bw / 2, yEdge, bz],
-              [c + bw / 2, yEdge, bz],
-              [c + bw / 2, yOut, bz],
-              [c - bw / 2, yOut, bz],
-            ],
-            n: [0, 0, 1],
-            role: 'balcony',
-          })
-          list.push({
-            p: [
-              [c - bw / 2, yOut, bz + 1.05],
-              [c + bw / 2, yOut, bz + 1.05],
-              [c + bw / 2, yOut, bz],
-              [c - bw / 2, yOut, bz],
-            ],
-            n: [0, side === 0 ? -1 : 1, 0],
-            role: 'rail',
-          })
-        }
-      }
-    }
-
-    // --- tom
-    if (lg.top) {
-      if (fam === 'shed') {
-        // Yassi qiyalikdagi ikki nishabli tom, uchi uzun o‘q bo‘ylab
-        const rise = clamp(lg.d * 0.06, 1.6, 5.5)
-        const ex = 0.7
-        const ax0 = X0 - ex
-        const ax1 = X1 + ex
-        const ay0 = Y0 - ex
-        const ay1 = Y1 + ex
-        list.push({
-          p: [
-            [ax0, ay0, zTop],
-            [ax1, ay0, zTop],
-            [ax1, lg.oy, zTop + rise],
-            [ax0, lg.oy, zTop + rise],
-          ],
-          n: [0, -rise, lg.d / 2],
-          role: 'roof',
-        })
-        list.push({
-          p: [
-            [ax0, ay1, zTop],
-            [ax1, ay1, zTop],
-            [ax1, lg.oy, zTop + rise],
-            [ax0, lg.oy, zTop + rise],
-          ],
-          n: [0, rise, lg.d / 2],
-          role: 'roof',
-        })
-        for (const k of [0.34, 0.66]) {
-          const y = Y0 + lg.d * k
-          const zz = zTop + rise * (1 - Math.abs(y - lg.oy) / (lg.d / 2))
-          list.push({
-            p: [
-              [X0 + lg.w * 0.12, y, zz + 0.05],
-              [X1 - lg.w * 0.12, y, zz + 0.05],
-              [X1 - lg.w * 0.12, y + lg.d * 0.05, zz + 0.05],
-              [X0 + lg.w * 0.12, y + lg.d * 0.05, zz + 0.05],
-            ],
-            n: [0, 0, 1],
-            role: 'glass',
-          })
-        }
-      } else {
-        const pt2 = 0.42
-        const ph = fam === 'retail' ? 1.7 : fam === 'resi' ? 1.05 : 1.25
-        pushBox(list, X0, Y0, X1, Y0 + pt2, zTop, zTop + ph, 'parapet')
-        pushBox(list, X0, Y1 - pt2, X1, Y1, zTop, zTop + ph, 'parapet')
-        pushBox(list, X0, Y0 + pt2, X0 + pt2, Y1 - pt2, zTop, zTop + ph, 'parapet')
-        pushBox(list, X1 - pt2, Y0 + pt2, X1, Y1 - pt2, zTop, zTop + ph, 'parapet')
-
-        const pw = lg.w * 0.32
-        const pd = lg.d * 0.34
-        pushBox(
-          list,
-          lg.ox - pw / 2,
-          lg.oy - pd / 2,
-          lg.ox + pw / 2,
-          lg.oy + pd / 2,
-          zTop,
-          zTop + (fam === 'resi' ? 2.4 : 2.9),
-          'plant',
-        )
-
-        if (fam === 'resi') {
-          pushBox(
-            list,
-            lg.ox - pw * 0.8,
-            lg.oy - pd * 0.8,
-            lg.ox - pw * 0.8 + 3.2,
-            lg.oy - pd * 0.8 + 3.2,
-            zTop,
-            zTop + 2.6,
-            'plant',
-          )
+          top = Math.max(top, lg.z0 + zTop + rise)
         } else {
-          // Antenna machtasi: tojni belgilaydi
-          const mh = fam === 'retail' ? 4.2 : 6.4
-          pushBox(
-            list,
-            lg.ox - 0.22,
-            lg.oy - 0.22,
-            lg.ox + 0.22,
-            lg.oy + 0.22,
-            zTop + 2.9,
-            zTop + 2.9 + mh,
-            'plant',
-          )
+          // Karniz: parapet ostidan chiqib turadigan lenta
+          const ov = clamp(Math.min(lg.w, lg.d) * 0.02, 0.2, 0.4)
+          const cz = Math.min(0.42, lg.h * 0.12)
+          pushBox(own, X0 - ov, Y0 - ov, X1 + ov, Y0, zTop - cz, zTop, 'cornice')
+          pushBox(own, X0 - ov, Y1, X1 + ov, Y1 + ov, zTop - cz, zTop, 'cornice')
+          pushBox(own, X0 - ov, Y0, X0, Y1, zTop - cz, zTop, 'cornice')
+          pushBox(own, X1, Y0, X1 + ov, Y1, zTop - cz, zTop, 'cornice')
+
+          const pt2 = clamp(Math.min(lg.w, lg.d) * 0.02, 0.3, 0.5)
+          const ph = item.host
+            ? item.skin === 'mall'
+              ? 1.7
+              : item.skin === 'resi'
+                ? 1.05
+                : 1.25
+            : Math.min(0.7, lg.h * 0.16)
+          pushBox(own, X0, Y0, X1, Y0 + pt2, zTop, zTop + ph, 'parapet')
+          pushBox(own, X0, Y1 - pt2, X1, Y1, zTop, zTop + ph, 'parapet')
+          pushBox(own, X0, Y0 + pt2, X0 + pt2, Y1 - pt2, zTop, zTop + ph, 'parapet')
+          pushBox(own, X1 - pt2, Y0 + pt2, X1, Y1 - pt2, zTop, zTop + ph, 'parapet')
+          top = Math.max(top, lg.z0 + zTop + ph)
+
+          if (item.kind === 'boiler') {
+            // Qozonxona quvuri: uchastkada shu qurilma shundan tanilib turadi
+            const sx = lg.ox + lg.w * 0.3
+            const sy = lg.oy + lg.d * 0.24
+            pushBox(own, sx - 0.35, sy - 0.35, sx + 0.35, sy + 0.35, zTop, zTop + 7, 'stack')
+            pushBox(own, sx - 0.5, sy - 0.5, sx + 0.5, sy + 0.5, zTop + 7, zTop + 7.4, 'plant')
+            top = Math.max(top, lg.z0 + zTop + 7.4)
+          } else if (item.host) {
+            // Tomdagi texnika bloki va toj
+            const pw = lg.w * 0.32
+            const pd = lg.d * 0.34
+            const bh = item.skin === 'resi' ? 2.4 : 2.9
+            pushBox(own, lg.ox - pw / 2, lg.oy - pd / 2, lg.ox + pw / 2, lg.oy + pd / 2, zTop, zTop + bh, 'plant')
+            top = Math.max(top, lg.z0 + zTop + bh)
+            if (item.skin === 'resi') {
+              pushBox(
+                own,
+                lg.ox - pw * 0.8,
+                lg.oy - pd * 0.8,
+                lg.ox - pw * 0.8 + 3.2,
+                lg.oy - pd * 0.8 + 3.2,
+                zTop,
+                zTop + 2.6,
+                'plant',
+              )
+            } else {
+              const mh = item.skin === 'mall' ? 4.2 : 6.4
+              pushBox(own, lg.ox - 0.22, lg.oy - 0.22, lg.ox + 0.22, lg.oy + 0.22, zTop + bh, zTop + bh + mh, 'plant')
+              top = Math.max(top, lg.z0 + zTop + bh + mh)
+            }
+          } else if (item.floors > 1 || item.w * item.d > 260) {
+            // Katta yordamchi binoda ham tomda texnika bloki bo‘ladi
+            const pw = Math.min(lg.w * 0.3, 6)
+            const pd = Math.min(lg.d * 0.3, 5)
+            pushBox(own, lg.ox - pw / 2, lg.oy - pd / 2, lg.ox + pw / 2, lg.oy + pd / 2, zTop, zTop + 1.5, 'plant')
+            top = Math.max(top, lg.z0 + zTop + 1.5)
+          }
+        }
+      }
+
+      if (lg.ground) {
+        for (const q of own) {
+          for (const p of q.p) top = Math.max(top, lg.z0 + p[2])
         }
       }
     }
-  }
 
-  return out
-})
-
-/**
- * Kadrga sig‘dirish uchun kerak bo‘ladigan chegaralar. Tom machtasi, kirish
- * soyaboni, ombor annexi va balkon ham hisobga olinadi, shuning uchun hech
- * bir bino chetidan qirqilib qolmaydi. Kameradan bog‘liq emas.
- */
-const bounds = computed(() => {
-  const m = massing.value
-  const ex = extras.value
-  let x0 = Infinity
-  let x1 = -Infinity
-  let y0 = Infinity
-  let y1 = -Infinity
-  /** Har bir darajaning ustki chegarasi: qavat balandligi yoki toj */
-  const tops: number[] = []
-
-  for (const lg of m.levels) {
-    x0 = Math.min(x0, lg.ox - lg.w / 2)
-    x1 = Math.max(x1, lg.ox + lg.w / 2)
-    y0 = Math.min(y0, lg.oy - lg.d / 2)
-    y1 = Math.max(y1, lg.oy + lg.d / 2)
-    let top = lg.h
-    for (const q of ex[lg.i] ?? []) {
-      for (const p of q.p) {
-        if (p[0] < x0) x0 = p[0]
-        if (p[0] > x1) x1 = p[0]
-        if (p[1] < y0) y0 = p[1]
-        if (p[1] > y1) y1 = p[1]
-        if (p[2] > top) top = p[2]
-      }
-    }
+    per.push(list)
     tops.push(top)
   }
 
+  return { per, tops }
+})
+
+/**
+ * Kadrga sig‘dirish chegaralari: butun uchastka to‘rtburchagi. Kameradan
+ * bog‘liq emas, shuning uchun aylantirganda masshtab o‘zgarmaydi.
+ */
+const bounds = computed(() => {
+  const plot = site.value.plot
+  const hw = plot.width / 2 + 5
+  const hd = plot.depth / 2 + 5
   return {
-    cx: (x0 + x1) / 2,
-    cy: (y0 + y1) / 2,
-    hw: (x1 - x0) / 2 || 1,
-    hd: (y1 - y0) / 2 || 1,
+    cx: 0,
+    cy: 0,
+    hw,
+    hd,
     /** Burilishdan qat’i nazar eng katta gorizontal yoyilish yarmi */
-    radius: Math.hypot((x1 - x0) / 2, (y1 - y0) / 2) || 1,
-    tops,
+    radius: Math.hypot(hw, hd) || 1,
   }
 })
 
@@ -1259,16 +2278,6 @@ const bounds = computed(() => {
    Sahna: proyeksiya va bo‘yoq bo‘yicha birlashtirish. Faqat shu bosqich
    kameraga bog‘liq.
    ========================================================================== */
-
-function skinFill(role: SkinRole, amount: number) {
-  if (role === 'glass' || role === 'shop' || role === 'entry') {
-    const base = role === 'entry' ? '#5F86AE' : role === 'shop' ? '#A6CBE8' : '#8FB6DC'
-    return shade(base, amount + 0.12)
-  }
-  if (role === 'dock') return shade('#65758A', amount + 0.06)
-  if (role === 'louver') return shade('#8D9CB0', amount)
-  return shade('#D3DDEA', amount)
-}
 
 /** Chuqurlik bo‘yicha saralaydi va bir xil bo‘yoqli qo‘shnilarni birlashtiradi */
 function mergePaint(raw: Array<{ d: string; f: string; o: number; near: number }>): Paint[] {
@@ -1282,16 +2291,32 @@ function mergePaint(raw: Array<{ d: string; f: string; o: number; near: number }
   return out
 }
 
+/** Yuz bo‘ylab yo‘nalish: f-yuzning `u` o‘qi qo‘shni yuzning normaliga teng */
+const FACE_DIR: Array<[number, number]> = [
+  [1, 0],
+  [0, 1],
+  [-1, 0],
+  [0, -1],
+]
+/** Yuzdan ichkariga qaragan yo‘nalish */
+const FACE_IN: Array<[number, number]> = [
+  [0, 1],
+  [-1, 0],
+  [0, -1],
+  [1, 0],
+]
+
 const scene = computed(() => {
-  const geo = envelope.value
-  const lv = levels.value
-  const m = massing.value
-  const sk = skin.value
+  const vols = volumes.value
+  const fac = facade.value
   const ex = extras.value
-  const ug = props.building.undergroundFloors
+  const pals = palettes.value
   const mode = props.mode
   const inner = interiorGeom.value
   const shapes = selectedShapes.value
+  const hostI = hostIndex.value
+  const activeId = activeStructId.value
+  const ug = props.building.undergroundFloors
 
   const th = (view.rotation * Math.PI) / 180
   const ph = (view.tilt * Math.PI) / 180
@@ -1302,33 +2327,42 @@ const scene = computed(() => {
 
   const sel = selectedIndex.value
   const isCut = inner !== null
-  const step = view.exploded ? geo.h * 1.5 : 0
+  const hostVol = hostI >= 0 ? vols[hostI] : undefined
+  const hostStorey = hostVol?.levels[0]?.h ?? 3.4
+  const step = view.exploded ? hostStorey * 1.5 : 0
   // Tanlangan qavat ustidagi darajalar ko‘tariladi: ichkariga qarash uchun
-  const openLift = isCut ? Math.max(geo.h * 1.15, (inner?.wallH ?? 2.6) * 2.4) : 0
+  const openLift = isCut ? Math.max(hostStorey * 1.15, (inner?.wallH ?? 2.6) * 2.4) : 0
 
-  const zBase = (i: number) => {
-    const lg = m.levels[i]!
+  /** Asosiy qurilma darajasining ko‘tarilgan asosi */
+  const hostZ = (i: number) => {
+    const lg = hostVol?.levels[i]
+    if (!lg) return 0
     let z = lg.z0 + step * (i - ug)
     if (sel >= 0 && i > sel) z += openLift
     return z
   }
+  const hostShift = (i: number) => hostZ(i) - (hostVol?.levels[i]?.z0 ?? 0)
 
   // Kadrga sig‘dirish: masshtab burilishdan qat’i nazar bir xil qoladi
-  // (aylantirganda bino kattalashib-kichraymaydi), markazlash esa joriy
-  // burchak bo‘yicha aniq hisoblanadi.
   const bd = bounds.value
-  const zLow = zBase(0)
-  let zHigh = zLow + geo.h
-  for (let i = 0; i < lv.length; i++) zHigh = Math.max(zHigh, zBase(i) + (bd.tops[i] ?? geo.h))
+  let zLow = 0
+  let zHigh = 4
+  for (let vi = 0; vi < vols.length; vi++) {
+    const vol = vols[vi]!
+    if (vol.botZ < zLow) zLow = vol.botZ
+    let t = ex.tops[vi] ?? vol.topZ
+    if (vi === hostI && vol.levels.length) t += hostShift(vol.levels.length - 1)
+    if (t > zHigh) zHigh = t
+  }
 
   const spanH = bd.radius * 2
   const spanV = Math.max(spanH * sp + (zHigh - zLow) * cp, 1)
-  const s = Math.min((VW * 0.9) / spanH, (VH * 0.88) / spanV) * view.zoom
-  const cx = VW / 2 - (bd.cx * ct - bd.cy * st) * s
-  const cy = VH / 2 + ((bd.cx * st + bd.cy * ct) * sp + ((zLow + zHigh) / 2) * cp) * s
+  const sc = Math.min((VW * 0.9) / spanH, (VH * 0.88) / spanV) * view.zoom
+  const cx = VW / 2
+  const cy = VH / 2 + ((zLow + zHigh) / 2) * cp * sc
 
-  const px = (x: number, y: number) => r1(cx + (x * ct - y * st) * s)
-  const py = (x: number, y: number, z: number) => r1(cy - ((x * st + y * ct) * sp + z * cp) * s)
+  const px = (x: number, y: number) => r1(cx + (x * ct - y * st) * sc)
+  const py = (x: number, y: number, z: number) => r1(cy - ((x * st + y * ct) * sp + z * cp) * sc)
   const pt = (x: number, y: number, z: number) => `${px(x, y)},${py(x, y, z)}`
   const vOf = (x: number, y: number) => x * st + y * ct
 
@@ -1354,8 +2388,6 @@ const scene = computed(() => {
   const topAmount = lightOf(0, 0, 1)
   const topFace = Math.max(topAmount + 0.32, 0.1)
 
-  // Eshik qanoti kabi ingichka qismlar bitta tekis bo‘yoq oladi: bu
-  // masshtabda yuz farqi sezilmaydi
   let sideSum = 0
   let sideN = 0
   for (const f of faceState) {
@@ -1369,500 +2401,662 @@ const scene = computed(() => {
   const face4 = (ax: number, ay: number, bx: number, by: number, q0: number, q1: number) =>
     `M${px(ax, ay)} ${py(ax, ay, q1)}L${px(bx, by)} ${py(bx, by, q1)}L${px(bx, by)} ${py(bx, by, q0)}L${px(ax, ay)} ${py(ax, ay, q0)}Z`
 
-  /* ------------------------------------------------------------------
-     Tashqi ko‘rinish: haqiqiy fotosurat ko‘rinadigan vertikal yuzlarga.
+  /** Ixtiyoriy to‘rt nuqtali yuza: gorizontal tokcha va qopqoqlar uchun */
+  const quad4 = (
+    ax: number,
+    ay: number,
+    az: number,
+    bx: number,
+    by: number,
+    bz: number,
+    cx2: number,
+    cy2: number,
+    cz2: number,
+    dx2: number,
+    dy2: number,
+    dz2: number,
+  ) =>
+    `M${px(ax, ay)} ${py(ax, ay, az)}L${px(bx, by)} ${py(bx, by, bz)}L${px(cx2, cy2)} ${py(cx2, cy2, cz2)}L${px(dx2, dy2)} ${py(dx2, dy2, dz2)}Z`
 
-     Aksonometriyada yuz parallelogramm bo‘lgani uchun surat aniq affin
-     matritsa bilan tushadi. Uchta nuqta yetarli: yuqori chap P0, yuqori
-     o‘ng P1 va pastki chap P2. U = P1 ayirma P0 va V = P2 ayirma P0
-     vektorlari mahalliy kadrning yon tomonlariga aylanadi.
-
-     Surat butun hajm uchun bir marta chiziladi: pastki chegara yer sathi,
-     yuqorisi esa stikning eng baland nuqtasi. Yer osti darajalari qirqib
-     tashlanadi, ular yer ostida turadi.
-     ------------------------------------------------------------------ */
-  const photo: PhotoFace[] = []
-  // Kesim va ajratilgan holatda surat chizilmaydi: u yerda hajm bo‘lingan
-  const usePhoto =
-    mode === 'occupancy' && photoOk.value && photoSrc.value !== '' && !isCut && !view.exploded
-  if (usePhoto) {
-    const crop = PHOTO_CROP[m.family]
-    const vSpan = Math.max(crop.v1 - crop.v0, 0.05)
-    const uMid = (crop.u0 + crop.u1) / 2
-    const uMax = crop.u1 - crop.u0
-    // Oyna balandligi yuzning butun balandligiga tushadi, shuning uchun
-    // kengligi ham yuz nisbatiga qarab olinadi: shunda suratdagi deraza
-    // qatorlari cho‘zilmaydi. Xavfsiz chegaradan kengaymaydi.
-    const uSpanOf = (len: number) =>
-      clamp((vSpan * len) / Math.max(m.topZ, 1), Math.min(0.12, uMax), uMax)
-    const ih = PHOTO_BOX / vSpan
-    const hw = geo.w / 2
-    const hd = geo.d / 2
-    const ring: Array<[number, number]> = [
-      [-hw, -hd],
-      [hw, -hd],
-      [hw, hd],
-      [-hw, hd],
-    ]
-    // Eng yorug‘ yuz tayanch qilib olinadi: qorayish burilishdan qat’i nazar
-    // bir xil o‘qiladi, chunki quyosh yo‘nalishi qo‘zg‘almaydi
-    let bright = -1
-    for (const f of faceState) bright = Math.max(bright, f.amount)
-    /*
-     * Yuz qanchalik qorayadi. Tartib `lightOf` bilan bir xil: quyoshga
-     * qaragan yuz eng ochiq qoladi. Farq yumshoq to‘yinish bilan
-     * kuchaytiriladi, aks holda yonma-yon turgan ikki yuz bir xil zichlikda
-     * chiqib, hajm yassi ko‘rinardi. Yuqori chegara bo‘yoq rejimidagi eng
-     * to‘q yuz bilan bir darajada.
-     */
-    const darkOf = (amount: number) =>
-      Math.round((0.04 + 0.38 * (1 - Math.exp(-8 * (bright - amount)))) * 1000) / 1000
-
-    for (let f = 0; f < 4; f++) {
-      const state = faceState[f]!
-      if (!state.visible) continue
-
-      // Siluet: har bir yer usti darajasi o‘z konturi bilan qo‘shiladi,
-      // shuning uchun pog‘onali turar joyda ham surat hajmdan chiqmaydi
-      const shell: string[] = []
-      for (let i = 0; i < m.levels.length; i++) {
-        const lg = m.levels[i]!
-        if (lg.under) continue
-        const ax0 = lg.ox - lg.w / 2
-        const ax1 = lg.ox + lg.w / 2
-        const ay0 = lg.oy - lg.d / 2
-        const ay1 = lg.oy + lg.d / 2
-        const c: Array<[number, number]> = [
-          [ax0, ay0],
-          [ax1, ay0],
-          [ax1, ay1],
-          [ax0, ay1],
-        ]
-        const a = c[f]!
-        const b = c[(f + 1) % 4]!
-        const q0 = zBase(i)
-        shell.push(face4(a[0], a[1], b[0], b[1], q0, q0 + lg.h))
-      }
-      if (!shell.length) continue
-
-      const a = ring[f]!
-      const b = ring[(f + 1) % 4]!
-      const p0x = px(a[0], a[1])
-      const p0y = py(a[0], a[1], m.topZ)
-      const p1x = px(b[0], b[1])
-      const p1y = py(b[0], b[1], m.topZ)
-      const p2x = px(a[0], a[1])
-      const p2y = py(a[0], a[1], 0)
-      const ux = (p1x - p0x) / PHOTO_BOX
-      const uy = (p1y - p0y) / PHOTO_BOX
-      const vx = (p2x - p0x) / PHOTO_BOX
-      const vy = (p2y - p0y) / PHOTO_BOX
-      const k5 = (n: number) => Math.round(n * 100000) / 100000
-
-      // Yuz uzunligi: 0 va 2 yuzlar kontur eni, 1 va 3 yuzlar chuqurligi
-      const uSpan = uSpanOf(f % 2 === 0 ? geo.w : geo.d)
-      const u0 = uMid - uSpan / 2
-      const iw = PHOTO_BOX / uSpan
-
-      photo.push({
-        f,
-        d: shell.join(''),
-        m: `matrix(${k5(ux)},${k5(uy)},${k5(vx)},${k5(vy)},${p0x},${p0y})`,
-        x: r1(-u0 * iw),
-        y: r1(-crop.v0 * ih),
-        w: r1(iw),
-        h: r1(ih),
-        dark: darkOf(state.amount),
-      })
+  /*
+   * Bo‘yoq keshi. Bir kadrda beshtacha yorug‘lik darajasi va o‘ttizga yaqin
+   * material rangi ishlatiladi, shuning uchun `shade` ni har bir panel uchun
+   * qayta hisoblash o‘rniga natija saqlanadi.
+   */
+  const toneCache = new Map<string, string>()
+  const tint = (hex: string, amount: number) => {
+    const key = `${hex}|${amount}`
+    let got = toneCache.get(key)
+    if (got === undefined) {
+      got = shade(hex, amount)
+      toneCache.set(key, got)
     }
+    return got
   }
-  const photoOn = photo.length > 0
 
-  const slabs: SlabView[] = []
+  /*
+   * Tafsilot ikki bosqichda kamayadi.
+   *
+   * `fine`: bir metr ekranda kam joy egallasa alohida oyna va mullion
+   * baribir ajralmaydi, shuning uchun ular o‘rniga bitta lenta chiziladi.
+   *
+   * `deep`: chuqurlik qirralari eng qimmat qism, bitta panel o‘rniga uchta
+   * yuza beradi. Kamera tortilayotganda byudjetdan oshgan uchastkada shu
+   * qirralar vaqtincha o‘chadi, deraza to‘ri esa joyida qoladi. Shu tufayli
+   * burilish silliq bo‘ladi va qo‘yib yuborilgach hajm darhol qaytadi.
+   */
+  const pxPerM = sc * cp
+  const fine = mode !== 'wire' && pxPerM >= DETAIL_MIN_PX
+  const deep = fine && (!dragging.value || fac.fine <= DETAIL_BUDGET)
 
-  for (let i = 0; i < lv.length; i++) {
-    const info = lv[i]!
-    const lg = m.levels[i]!
-    const z0 = zBase(i)
-    const isSel = i === sel
-    const cutFloor = isSel && isCut
-    const zTop = z0 + (cutFloor ? PLATE_T : lg.h)
-    const above = sel >= 0 && i > sel
+  /** Bir kadrda chizilgan yuzalar soni */
+  let drawn = 0
 
-    const X0 = lg.ox - lg.w / 2
-    const X1 = lg.ox + lg.w / 2
-    const Y0 = lg.oy - lg.d / 2
-    const Y1 = lg.oy + lg.d / 2
-    const corners: Array<[number, number]> = [
-      [X0, Y0],
-      [X1, Y0],
-      [X1, Y1],
-      [X0, Y1],
+  const structs: StructView[] = []
+
+  // Uzoqdagi qurilma avval chiziladi: uchastkada hajmlar kesishmaydi,
+  // shuning uchun markazlar chuqurligi bo‘yicha saralash yetarli
+  const order = vols.map((_, i) => i)
+  order.sort((a, b) => vOf(vols[b]!.item.cx, vols[b]!.item.cy) - vOf(vols[a]!.item.cx, vols[a]!.item.cy))
+
+  for (const vi of order) {
+    const vol = vols[vi]!
+    const item = vol.item
+    const isActive = item.id === activeId
+    const pal = pals[item.skin]
+
+    const bx0 = item.x0
+    const bx1 = item.x1
+    const by0 = item.y0
+    const by1 = item.y1
+    const baseCorners: Array<[number, number]> = [
+      [bx0, by0],
+      [bx1, by0],
+      [bx1, by1],
+      [bx0, by1],
     ]
 
-    // --- ekran chegarasidan tashqarida qolgan daraja umuman qurilmaydi
+    // --- ekran chegarasidan tashqarida qolgan qurilma umuman qurilmaydi
+    let volTop = ex.tops[vi] ?? vol.topZ
+    if (vi === hostI && vol.levels.length) volTop += hostShift(vol.levels.length - 1)
     let minX = Infinity
     let maxX = -Infinity
     let minY = Infinity
     let maxY = -Infinity
-    for (const c of corners) {
-      for (const z of [z0, zTop + (lg.top ? 9 : 0)]) {
-        const ex2 = px(c[0], c[1])
-        const ey2 = py(c[0], c[1], z)
-        if (ex2 < minX) minX = ex2
-        if (ex2 > maxX) maxX = ex2
-        if (ey2 < minY) minY = ey2
-        if (ey2 > maxY) maxY = ey2
+    for (const c of baseCorners) {
+      for (const z of [vol.botZ, volTop]) {
+        const sx = px(c[0], c[1])
+        const sy = py(c[0], c[1], z)
+        if (sx < minX) minX = sx
+        if (sx > maxX) maxX = sx
+        if (sy < minY) minY = sy
+        if (sy > maxY) maxY = sy
       }
     }
-    if (maxX < -24 || minX > VW + 24 || maxY < -24 || minY > VH + 24) continue
+    if (maxX < -30 || minX > VW + 30 || maxY < -30 || minY > VH + 30) continue
 
-    const dominant = info.mix.length
-      ? info.mix.reduce((best, mi) => (mi.area > best.area ? mi : best), info.mix[0]!)
-      : null
+    // --- nishoncha uchun eng o‘ng burchak
+    let tagAnchorX = -Infinity
+    let tagAnchorY = 0
+    for (const c of baseCorners) {
+      const sx = px(c[0], c[1])
+      if (sx > tagAnchorX) {
+        tagAnchorX = sx
+        tagAnchorY = py(c[0], c[1], volTop)
+      }
+    }
+    const tagText = item.name
+    const tagW = Math.min(230, 22 + tagText.length * 7)
 
-    let base = EMPTY_COLOR
-    if (mode === 'occupancy') base = dominant ? dominant.color : EMPTY_COLOR
-    else base = isSel ? '#7FA8F6' : '#C3D2E6'
-    // Yer osti darajasi neytral kul rangda: bandlik ranglari yer ustida qoladi
-    if (lg.under) base = '#BDC8D6'
-
-    const quad = (
-      a: [number, number],
-      b: [number, number],
-      q0: number,
-      q1: number,
-      t0: number,
-      t1: number,
-    ) => {
-      const ax = a[0] + (b[0] - a[0]) * t0
-      const ay = a[1] + (b[1] - a[1]) * t0
-      const bx = a[0] + (b[0] - a[0]) * t1
-      const by = a[1] + (b[1] - a[1]) * t1
-      return `${pt(ax, ay, q1)} ${pt(bx, by, q1)} ${pt(bx, by, q0)} ${pt(ax, ay, q0)}`
+    const view2: StructView = {
+      id: item.id,
+      name: item.name,
+      kindLabel: item.kindLabel,
+      host: item.host,
+      selected: isActive,
+      opacity: mode === 'wire' ? 1 : isActive ? 1 : 0.82,
+      slabs: [],
+      pad: [],
+      outline: '',
+      dash: item.skin === 'pit',
+      tagX: clamp(tagAnchorX + 14, 8, VW - tagW - 8),
+      // Qurilma nomi qavat nishonchasidan yuqorida turadi, aks holda bir
+      // qavatli blokda ikkalasi ustma-ust tushadi
+      tagY: clamp(tagAnchorY - 26, 22, VH - 16),
+      tagW,
+      tagText,
+      aria: `${item.name}, ${item.kindLabel}`,
     }
 
-    /*
-     * Fasad bo‘yog‘ining zichligi. Surat yopishtirilgan yer usti darajalarida
-     * bandlik rangi shaffof filtr bo‘lib qoladi: rang ham o‘qiladi, g‘isht,
-     * shisha va panel ham ko‘rinib turadi. Tanlangan qavatda filtr quyuqroq,
-     * shuning uchun u qo‘shni qavatlardan darrov ajralib turadi. Yer osti
-     * darajasida surat yo‘q, u yerda bo‘yoq to‘liq zichlikda qoladi.
-     */
-    const photoHere = photoOn && !lg.under
-    const partAlpha = photoHere ? (isSel ? 0.56 : 0.3) : 1
-
-    // --- fasad tekisliklari
-    const parts: FacePart[] = []
-    if (mode !== 'wire') {
-      for (let f = 0; f < 4; f++) {
-        const state = faceState[f]!
-        if (!state.visible) continue
-        const a = corners[f]!
-        const b = corners[(f + 1) % 4]!
-        if (mode === 'occupancy' && info.mix.length) {
-          let t = 0
-          for (const mi of info.mix) {
-            const next = Math.min(t + mi.share, 1)
-            if (next > t + 0.001) {
-              parts.push({
-                points: quad(a, b, z0, zTop, t, next),
-                fill: shade(mi.color, state.amount),
-                alpha: partAlpha,
-              })
-            }
-            t = next
-          }
+    // --- yassi maydon: avtoturargoh qoplamasi va joy chiziqlari
+    if (item.skin === 'pad') {
+      const z = 0.04
+      view2.pad.push({
+        d: quad4(bx0, by0, z, bx1, by0, z, bx1, by1, z, bx0, by1, z),
+        f: tint('#93A0AE', topAmount + 0.24),
+        o: 0.96,
+      })
+      const along = item.w >= item.d
+      const span = along ? item.w : item.d
+      const n = clamp(Math.round(span / 2.7), 2, 46)
+      const marks: string[] = []
+      const zm = 0.06
+      for (let i = 1; i < n; i++) {
+        const t = i / n
+        if (along) {
+          const x = bx0 + (bx1 - bx0) * t
+          marks.push(
+            quad4(x - 0.08, by0 + 0.6, zm, x + 0.08, by0 + 0.6, zm, x + 0.08, by1 - 0.6, zm, x - 0.08, by1 - 0.6, zm),
+          )
         } else {
+          const y = by0 + (by1 - by0) * t
+          marks.push(
+            quad4(bx0 + 0.6, y - 0.08, zm, bx1 - 0.6, y - 0.08, zm, bx1 - 0.6, y + 0.08, zm, bx0 + 0.6, y + 0.08, zm),
+          )
+        }
+      }
+      if (marks.length) {
+        view2.pad.push({ d: marks.join(''), f: tint('#E4EBF5', topAmount + 0.3), o: 0.7 })
+        drawn += marks.length + 1
+      }
+      view2.outline = baseCorners.map((c) => pt(c[0], c[1], 0.08)).join(' ')
+      structs.push(view2)
+      continue
+    }
+
+    // --- yer osti avtoturargohi: yer sathidan pastda turadi
+    if (item.skin === 'pit') {
+      const pitZ = vol.botZ
+      const raw: Array<{ d: string; f: string; o: number; near: number }> = []
+      for (let f = 0; f < 4; f++) {
+        const fs = faceState[f]!
+        if (!fs.visible) continue
+        const a = baseCorners[f]!
+        const b = baseCorners[(f + 1) % 4]!
+        raw.push({
+          d: face4(a[0], a[1], b[0], b[1], pitZ, 0),
+          f: tint(pal.wall, fs.amount),
+          o: 1,
+          near: -vOf((a[0] + b[0]) / 2, (a[1] + b[1]) / 2) * cp,
+        })
+      }
+      view2.pad.push(...mergePaint(raw).map((p) => ({ ...p, o: 0.34 })))
+      view2.outline = baseCorners.map((c) => pt(c[0], c[1], 0.02)).join(' ')
+      drawn += raw.length
+      structs.push(view2)
+      continue
+    }
+
+    // --- hajmli qurilma: har bir daraja alohida chiziladi
+    for (let i = 0; i < vol.levels.length; i++) {
+      const lg = vol.levels[i]!
+      const info = vol.rows[i]
+      if (!info) continue
+      const host = vi === hostI
+      const z0 = host ? hostZ(i) : lg.z0
+      const isSel = host && i === sel
+      const cutFloor = isSel && isCut
+      const zTop = z0 + (cutFloor ? PLATE_T : lg.h)
+      const above = host && sel >= 0 && i > sel
+      // Fasad faqat kesim rejimida yashiriladi: ochilgan qavat ustidagi
+      // darajalar ko‘tarilib, ichkariga qarashga xalaqit bermasligi kerak
+      const hideDetail = above && isCut
+
+      const X0 = lg.ox - lg.w / 2
+      const X1 = lg.ox + lg.w / 2
+      const Y0 = lg.oy - lg.d / 2
+      const Y1 = lg.oy + lg.d / 2
+      const corners: Array<[number, number]> = [
+        [X0, Y0],
+        [X1, Y0],
+        [X1, Y1],
+        [X0, Y1],
+      ]
+
+      let lo = Infinity
+      let hi = -Infinity
+      for (const c of corners) {
+        const sy = py(c[0], c[1], zTop)
+        if (sy < lo) lo = sy
+        if (sy > hi) hi = sy
+      }
+      if (hi < -40 || lo > VH + 40) continue
+
+      const dominant = info.mix.length
+        ? info.mix.reduce((best, mi) => (mi.area > best.area ? mi : best), info.mix[0]!)
+        : null
+
+      let base = EMPTY_COLOR
+      if (mode === 'occupancy') {
+        base = dominant ? dominant.color : EMPTY_COLOR
+      } else {
+        base = isSel ? '#7FA8F6' : '#C3D2E6'
+      }
+      if (lg.under) base = '#BDC8D6'
+
+      /*
+       * Fasad orqa foni. Bandlik rangi materialga zaif qo‘shiladi: qavat
+       * holati bir qarashda o‘qiladi, lekin fasad naqshini bosib ketmaydi.
+       * Aniq ulushlar qavat lentasida ko‘rsatiladi.
+       */
+      const backTone =
+        mode === 'occupancy' && !lg.under
+          ? mixHex(pal.wall, base, item.leasable ? 0.2 : 0.06)
+          : base
+
+      const quad = (
+        a: [number, number],
+        b: [number, number],
+        q0: number,
+        q1: number,
+        t0: number,
+        t1: number,
+      ) => {
+        const ax = a[0] + (b[0] - a[0]) * t0
+        const ay = a[1] + (b[1] - a[1]) * t0
+        const bx = a[0] + (b[0] - a[0]) * t1
+        const by = a[1] + (b[1] - a[1]) * t1
+        return `${pt(ax, ay, q1)} ${pt(bx, by, q1)} ${pt(bx, by, q0)} ${pt(ax, ay, q0)}`
+      }
+
+      // --- fasad tekisligi: bosish maydoni va material foni
+      const parts: FacePart[] = []
+      if (mode !== 'wire') {
+        for (let f = 0; f < 4; f++) {
+          const state = faceState[f]!
+          if (!state.visible) continue
+          const a = corners[f]!
+          const b = corners[(f + 1) % 4]!
           parts.push({
             points: quad(a, b, z0, zTop, 0, 1),
-            fill: shade(base, state.amount),
-            alpha: partAlpha,
+            fill: tint(backTone, state.amount),
+            alpha: 1,
           })
+          drawn++
         }
       }
-    }
 
-    // --- fasad naqshi. Ko‘tarilgan va kesilgan darajalarda tafsilot kerak
-    //     emas, surat yopishtirilgan yuzda esa deraza allaqachon suratda bor
-    const skinItems: Paint[] = []
-    if (mode !== 'wire' && !cutFloor && !lg.under && !above && !photoHere) {
-      const facadeAlpha = mode === 'occupancy' ? 0.46 : 0.74
-      const rects = sk[i]!
-      const groups = new Map<string, string[]>()
-      for (let f = 0; f < 4; f++) {
-        const state = faceState[f]!
-        if (!state.visible) continue
-        const list = rects[f]
-        if (!list) continue
-        const a = corners[f]!
-        const b = corners[(f + 1) % 4]!
-        const len = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1
-        const dx = (b[0] - a[0]) / len
-        const dy = (b[1] - a[1]) / len
-        for (const rc of list) {
-          const t0 = clamp(rc.u0, 0, len)
-          const t1 = clamp(rc.u1, 0, len)
-          if (t1 - t0 < 0.06) continue
-          const fill = skinFill(rc.role, state.amount)
-          const d = face4(
-            a[0] + dx * t0,
-            a[1] + dy * t0,
-            a[0] + dx * t1,
-            a[1] + dy * t1,
-            z0 + rc.h0,
-            z0 + rc.h1,
-          )
-          const arr = groups.get(fill)
-          if (arr) arr.push(d)
-          else groups.set(fill, [d])
+      // --- modellashtirilgan fasad: qavat lentasi, spandrel, mullion,
+      //     chuqurchadagi deraza, kirish portali, yuk eshigi, balkon
+      const skinItems: Paint[] = []
+      if (mode !== 'wire' && !cutFloor && !lg.under && !hideDetail) {
+        const faces = fac.faces[vi]?.[i]
+        if (faces) {
+          const bins: Array<Map<string, string[]>> = [new Map(), new Map(), new Map(), new Map()]
+          const put = (lay: number, fill: string, d: string) => {
+            const bin = bins[lay] ?? bins[0]!
+            const arr = bin.get(fill)
+            if (arr) arr.push(d)
+            else bin.set(fill, [d])
+            drawn++
+          }
+
+          for (let f = 0; f < 4; f++) {
+            const state = faceState[f]!
+            if (!state.visible) continue
+            const panes = faces[f]
+            if (!panes || !panes.length) continue
+            const a = corners[f]!
+            const dir = FACE_DIR[f]!
+            const inw = FACE_IN[f]!
+            const ux = dir[0]
+            const uy = dir[1]
+            const nx = inw[0]
+            const ny = inw[1]
+            const sideU = faceState[(f + 1) % 4]!
+            const sideV = faceState[(f + 3) % 4]!
+            const amount = state.amount
+
+            for (const p of panes) {
+              if (fine ? p.lod === 2 : p.lod === 1) continue
+              const q0 = z0 + p.h0
+              const q1 = z0 + p.h1
+              const zz = p.z
+              const ax = a[0] + ux * p.u0 + nx * zz
+              const ay = a[1] + uy * p.u0 + ny * zz
+              const bx = a[0] + ux * p.u1 + nx * zz
+              const by = a[1] + uy * p.u1 + ny * zz
+
+              if (p.occ && info.mix.length > 1) {
+                // Qavat lentasi bandlik ulushlariga bo‘linadi
+                let t = 0
+                for (const mi of info.mix) {
+                  const next = Math.min(t + mi.share, 1)
+                  if (next > t + 0.002) {
+                    put(
+                      p.lay,
+                      tint(mi.color, amount),
+                      face4(
+                        ax + (bx - ax) * t,
+                        ay + (by - ay) * t,
+                        ax + (bx - ax) * next,
+                        ay + (by - ay) * next,
+                        q0,
+                        q1,
+                      ),
+                    )
+                  }
+                  t = next
+                }
+              } else {
+                put(p.lay, tint(p.tone, amount), face4(ax, ay, bx, by, q0, q1))
+              }
+
+              if (!p.edge || !deep || zz === 0) continue
+              const wx0 = a[0] + ux * p.u0
+              const wy0 = a[1] + uy * p.u0
+              const wx1 = a[0] + ux * p.u1
+              const wy1 = a[1] + uy * p.u1
+
+              if (zz > 0) {
+                // Chuqurcha: bir yon qirra yorug‘, ikkinchisi soyada qoladi
+                if (sideU.visible) {
+                  put(p.lay, tint(p.tone, sideU.amount - 0.1), face4(wx0, wy0, ax, ay, q0, q1))
+                }
+                if (sideV.visible) {
+                  put(p.lay, tint(p.tone, sideV.amount - 0.1), face4(wx1, wy1, bx, by, q0, q1))
+                }
+                put(
+                  p.lay,
+                  tint(p.tone, topAmount + 0.08),
+                  quad4(wx0, wy0, q0, wx1, wy1, q0, bx, by, q0, ax, ay, q0),
+                )
+              } else {
+                // Tashqariga chiqqan profil: ustki qopqog‘i yorug‘ chiqadi
+                if (sideV.visible) {
+                  put(p.lay, tint(p.tone, sideV.amount), face4(wx0, wy0, ax, ay, q0, q1))
+                }
+                if (sideU.visible) {
+                  put(p.lay, tint(p.tone, sideU.amount), face4(wx1, wy1, bx, by, q0, q1))
+                }
+                put(
+                  p.lay,
+                  tint(p.tone, topAmount + 0.16),
+                  quad4(wx0, wy0, q1, wx1, wy1, q1, bx, by, q1, ax, ay, q1),
+                )
+                if (p.ledge) {
+                  put(
+                    p.lay,
+                    tint(p.tone, topAmount + 0.06),
+                    quad4(wx0, wy0, q0, wx1, wy1, q0, bx, by, q0, ax, ay, q0),
+                  )
+                }
+              }
+            }
+          }
+
+          for (const bin of bins) {
+            for (const [fill, list] of bin) skinItems.push({ d: list.join(''), f: fill, o: 1 })
+          }
         }
       }
-      for (const [fill, dl] of groups) skinItems.push({ d: dl.join(''), f: fill, o: facadeAlpha })
-    }
 
-    // --- plita ustki yuzasi: yashirin qolganda umuman chizilmaydi
-    const showTop = lg.top || isSel || view.exploded || (isCut && i === sel - 1)
-    const topPoints = showTop
-      ? [pt(X0, Y0, zTop), pt(X1, Y0, zTop), pt(X1, Y1, zTop), pt(X0, Y1, zTop)].join(' ')
-      : ''
-    const topFill = cutFloor
-      ? IT.base
-      : isSel
-        ? '#E9F0FE'
-        : shade(base, Math.max(topAmount + 0.34, 0.14))
+      // --- plita ustki yuzasi: yashirin qolganda umuman chizilmaydi
+      const showTop = lg.top || isSel || (host && view.exploded) || (isCut && host && i === sel - 1)
+      const topPoints = showTop
+        ? [pt(X0, Y0, zTop), pt(X1, Y0, zTop), pt(X1, Y1, zTop), pt(X0, Y1, zTop)].join(' ')
+        : ''
+      // Tom qoplamasi material rangida qoladi: bandlik rangi u yerda zaif
+      // ishora bo‘lib, tomni pushti yoki yashil qilib yubormaydi
+      const roofTone =
+        mode === 'occupancy' && !lg.under ? mixHex(pal.wallAlt, base, 0.08) : backTone
+      const topFill = cutFloor
+        ? IT.base
+        : isSel
+          ? '#E9F0FE'
+          : tint(roofTone, Math.max(topAmount + 0.3, 0.12))
 
-    // --- tanlangan qavat lentasi: rang yagona belgi bo‘lmasligi uchun kontur ham
-    let band = ''
-    if (isSel && !cutFloor && mode !== 'wire') {
-      const bandParts: string[] = []
-      for (let f = 0; f < 4; f++) {
-        if (!faceState[f]!.visible) continue
-        const a = corners[f]!
-        const b = corners[(f + 1) % 4]!
-        const q = quad(a, b, z0 + lg.h * 0.16, z0 + lg.h * 0.84, 0, 1)
-        bandParts.push(`M${q.replace(/ /g, 'L').replace(/,/g, ' ')}Z`)
-      }
-      band = bandParts.join('')
-    }
-
-    const edges: Array<{ d: string; hidden: boolean }> = []
-    if (mode === 'wire') {
-      for (let k = 0; k < 4; k++) {
-        const c = corners[k]!
-        const n = corners[(k + 1) % 4]!
-        edges.push({
-          d: `M${pt(c[0], c[1], zTop).replace(',', ' ')} L${pt(n[0], n[1], zTop).replace(',', ' ')}`,
-          hidden: false,
-        })
-        edges.push({
-          d: `M${pt(c[0], c[1], z0).replace(',', ' ')} L${pt(n[0], n[1], z0).replace(',', ' ')}`,
-          hidden: !faceState[k]!.visible,
-        })
-        edges.push({
-          d: `M${pt(c[0], c[1], z0).replace(',', ' ')} L${pt(c[0], c[1], zTop).replace(',', ' ')}`,
-          hidden: !faceState[k]!.visible && !faceState[(k + 3) % 4]!.visible,
-        })
-      }
-    }
-
-    // --- unit konturlari: faqat tanlangan qavatda
-    const units: UnitShape[] = []
-    if (isSel && mode !== 'wire') {
-      const zu = zTop + 0.02
-      for (const shape of shapes) {
-        let sxSum = 0
-        let sySum = 0
-        const list = shape.pts.map((p) => {
-          sxSum += px(p[0], p[1])
-          sySum += py(p[0], p[1], zu)
-          return pt(p[0], p[1], zu)
-        })
-        const n = Math.max(list.length, 1)
-        units.push({
-          id: shape.id,
-          code: shape.code,
-          points: list.join(' '),
-          fill: shape.fill,
-          cx: r1(sxSum / n),
-          cy: r1(sySum / n),
-          active: shape.id === props.unit,
-        })
-      }
-    }
-
-    // --- interyer: koridor dog‘i, devor, eshik, deraza va xizmat yadrosi
-    const patches: Paint[] = []
-    const interior: Paint[] = []
-    const labels: Array<{ x: number; y: number; text: string }> = []
-    if (cutFloor && inner) {
-      const zf = zTop
-      for (const p of inner.patches) {
-        patches.push({
-          d: `M${p.pts.map((q) => `${px(q[0], q[1])} ${py(q[0], q[1], zf + 0.01)}`).join('L')}Z`,
-          f: p.tone,
-          o: 1,
-        })
+      // --- tanlangan qavat: rang yagona belgi bo‘lmasligi uchun kontur ham
+      let band = ''
+      if (isSel && !cutFloor && mode !== 'wire') {
+        const bandParts: string[] = []
+        for (let f = 0; f < 4; f++) {
+          if (!faceState[f]!.visible) continue
+          const a = corners[f]!
+          const b = corners[(f + 1) % 4]!
+          const q = quad(a, b, z0, z0 + lg.h, 0, 1)
+          bandParts.push(`M${q.replace(/ /g, 'L').replace(/,/g, ' ')}Z`)
+        }
+        band = bandParts.join('')
       }
 
-      const raw: Array<{ d: string; f: string; o: number; near: number }> = []
-      for (const b of inner.boxes) {
-        if (b.face !== undefined && faceState[b.face]!.visible) continue
-        const q0 = zf + b.z0
-        const q1 = zf + b.z1
-        const c: Array<[number, number]> = [
-          [b.x0, b.y0],
-          [b.x1, b.y0],
-          [b.x1, b.y1],
-          [b.x0, b.y1],
-        ]
-        const near = ((q0 + q1) / 2) * sp - vOf((b.x0 + b.x1) / 2, (b.y0 + b.y1) / 2) * cp
-        const first = b.face === undefined ? 0 : (b.face + 2) % 4
-        const last = b.face === undefined ? 3 : first
-        for (let f = first; f <= last; f++) {
-          const fs = faceState[f]!
-          if (!fs.visible) continue
-          const a = c[f]!
-          const n2 = c[(f + 1) % 4]!
-          raw.push({
-            d: face4(a[0], a[1], n2[0], n2[1], q0, q1),
-            f: shade(b.tone, fs.amount),
+      const edges: Array<{ d: string; hidden: boolean }> = []
+      if (mode === 'wire') {
+        for (let k = 0; k < 4; k++) {
+          const c = corners[k]!
+          const n2 = corners[(k + 1) % 4]!
+          edges.push({
+            d: `M${pt(c[0], c[1], zTop).replace(',', ' ')} L${pt(n2[0], n2[1], zTop).replace(',', ' ')}`,
+            hidden: false,
+          })
+          edges.push({
+            d: `M${pt(c[0], c[1], z0).replace(',', ' ')} L${pt(n2[0], n2[1], z0).replace(',', ' ')}`,
+            hidden: !faceState[k]!.visible,
+          })
+          edges.push({
+            d: `M${pt(c[0], c[1], z0).replace(',', ' ')} L${pt(c[0], c[1], zTop).replace(',', ' ')}`,
+            hidden: !faceState[k]!.visible && !faceState[(k + 3) % 4]!.visible,
+          })
+          drawn += 3
+        }
+      }
+
+      // --- unit konturlari: faqat asosiy qurilmaning tanlangan qavatida
+      const units: UnitShape[] = []
+      if (isSel && mode !== 'wire') {
+        const zu = zTop + 0.02
+        for (const shape of shapes) {
+          let sxSum = 0
+          let sySum = 0
+          const list = shape.pts.map((p) => {
+            sxSum += px(p[0], p[1])
+            sySum += py(p[0], p[1], zu)
+            return pt(p[0], p[1], zu)
+          })
+          const n2 = Math.max(list.length, 1)
+          units.push({
+            id: shape.id,
+            code: shape.code,
+            points: list.join(' '),
+            fill: shape.fill,
+            cx: r1(sxSum / n2),
+            cy: r1(sySum / n2),
+            active: shape.id === props.unit,
+          })
+          drawn++
+        }
+      }
+
+      // --- interyer: koridor dog‘i, devor, eshik, deraza va xizmat yadrosi
+      const patches: Paint[] = []
+      const interior: Paint[] = []
+      const labels: Array<{ x: number; y: number; text: string }> = []
+      if (cutFloor && inner) {
+        const zf = zTop
+        for (const p of inner.patches) {
+          patches.push({
+            d: `M${p.pts.map((q) => `${px(q[0], q[1])} ${py(q[0], q[1], zf + 0.01)}`).join('L')}Z`,
+            f: p.tone,
             o: 1,
-            near: near - 0.04,
           })
         }
-        raw.push({
-          d: `M${pt(c[0]![0], c[0]![1], q1).replace(',', ' ')}L${pt(c[1]![0], c[1]![1], q1).replace(',', ' ')}L${pt(c[2]![0], c[2]![1], q1).replace(',', ' ')}L${pt(c[3]![0], c[3]![1], q1).replace(',', ' ')}Z`,
-          f: shade(b.tone, topFace),
-          o: 1,
-          near: near + 0.04,
-        })
-      }
 
-      for (const bl of inner.blades) {
-        raw.push({
-          d: face4(bl.ax, bl.ay, bl.bx, bl.by, zf, zf + bl.z1),
-          f: shade(bl.tone, flatAmount),
-          o: 0.95,
-          near: (zf + bl.z1 / 2) * sp - vOf((bl.ax + bl.bx) / 2, (bl.ay + bl.by) / 2) * cp,
-        })
-      }
-
-      interior.push(...mergePaint(raw))
-
-      for (const l of inner.labels) {
-        labels.push({ x: px(l.x, l.y), y: py(l.x, l.y, zf + l.z), text: l.text })
-      }
-    }
-
-    // --- tashqi elementlar: tom, soyabon, balkon, annex
-    const extraItems: Paint[] = []
-    if (mode !== 'wire' && !lg.under && !above) {
-      const raw: Array<{ d: string; f: string; o: number; near: number }> = []
-      for (const q of ex[i]!) {
-        if (dotC(q.n[0], q.n[1], q.n[2]) <= 0) continue
-        let ax = 0
-        let ay = 0
-        let az = 0
-        for (const p of q.p) {
-          ax += p[0]
-          ay += p[1]
-          az += p[2]
+        const raw: Array<{ d: string; f: string; o: number; near: number }> = []
+        for (const b of inner.boxes) {
+          if (b.face !== undefined && faceState[b.face]!.visible) continue
+          const q0 = zf + b.z0
+          const q1 = zf + b.z1
+          const c: Array<[number, number]> = [
+            [b.x0, b.y0],
+            [b.x1, b.y0],
+            [b.x1, b.y1],
+            [b.x0, b.y1],
+          ]
+          const near = ((q0 + q1) / 2) * sp - vOf((b.x0 + b.x1) / 2, (b.y0 + b.y1) / 2) * cp
+          const first = b.face === undefined ? 0 : (b.face + 2) % 4
+          const last = b.face === undefined ? 3 : first
+          for (let f = first; f <= last; f++) {
+            const fs = faceState[f]!
+            if (!fs.visible) continue
+            const a = c[f]!
+            const n2 = c[(f + 1) % 4]!
+            raw.push({
+              d: face4(a[0], a[1], n2[0], n2[1], q0, q1),
+              f: tint(b.tone, fs.amount),
+              o: 1,
+              near: near - 0.04,
+            })
+          }
+          raw.push({
+            d: `M${pt(c[0]![0], c[0]![1], q1).replace(',', ' ')}L${pt(c[1]![0], c[1]![1], q1).replace(',', ' ')}L${pt(c[2]![0], c[2]![1], q1).replace(',', ' ')}L${pt(c[3]![0], c[3]![1], q1).replace(',', ' ')}Z`,
+            f: tint(b.tone, topFace),
+            o: 1,
+            near: near + 0.04,
+          })
         }
-        const k = q.p.length || 1
-        raw.push({
-          d: `M${q.p.map((p) => `${px(p[0], p[1])} ${py(p[0], p[1], z0 + p[2])}`).join('L')}Z`,
-          f: shade(EXT_TONE[q.role] ?? '#C4CFDE', lightOf(q.n[0], q.n[1], q.n[2])),
-          o: 1,
-          near: (z0 + az / k) * sp - vOf(ax / k, ay / k) * cp,
-        })
+
+        for (const bl of inner.blades) {
+          raw.push({
+            d: face4(bl.ax, bl.ay, bl.bx, bl.by, zf, zf + bl.z1),
+            f: tint(bl.tone, flatAmount),
+            o: 0.95,
+            near: (zf + bl.z1 / 2) * sp - vOf((bl.ax + bl.bx) / 2, (bl.ay + bl.by) / 2) * cp,
+          })
+        }
+
+        drawn += raw.length
+        interior.push(...mergePaint(raw))
+
+        for (const l of inner.labels) {
+          labels.push({ x: px(l.x, l.y), y: py(l.x, l.y, zf + l.z), text: l.text })
+        }
       }
-      extraItems.push(...mergePaint(raw))
+
+      // --- tashqi elementlar: tom, karniz, parapet, soyabon, rampa, quvur
+      const extraItems: Paint[] = []
+      if (mode !== 'wire' && !lg.under && !hideDetail) {
+        const list = ex.per[vi]?.[i]
+        if (list && list.length) {
+          const raw: Array<{ d: string; f: string; o: number; near: number }> = []
+          for (const q of list) {
+            if (dotC(q.n[0], q.n[1], q.n[2]) <= 0) continue
+            let sx = 0
+            let sy = 0
+            let sz = 0
+            for (const p of q.p) {
+              sx += p[0]
+              sy += p[1]
+              sz += p[2]
+            }
+            const k = q.p.length || 1
+            raw.push({
+              d: `M${q.p.map((p) => `${px(p[0], p[1])} ${py(p[0], p[1], z0 + p[2])}`).join('L')}Z`,
+              f: tint(EXT_TONE[q.role] ?? '#C4CFDE', lightOf(q.n[0], q.n[1], q.n[2])),
+              o: 1,
+              near: (z0 + sz / k) * sp - vOf(sx / k, sy / k) * cp,
+            })
+          }
+          drawn += raw.length
+          extraItems.push(...mergePaint(raw))
+        }
+      }
+
+      let anchorX = -Infinity
+      let anchorY = 0
+      for (const c of corners) {
+        const cxp = px(c[0], c[1])
+        if (cxp > anchorX) {
+          anchorX = cxp
+          anchorY = py(c[0], c[1], zTop)
+        }
+      }
+      const labelW = isSel ? 152 : 44
+      const labelX = clamp(anchorX + 16, 8, VW - labelW - 8)
+      const labelY = clamp(anchorY, 24, VH - 12)
+
+      view2.slabs.push({
+        key: `${item.id}-${info.floor}`,
+        floor: info.floor,
+        name: info.name,
+        short: info.short,
+        underground: info.underground,
+        selected: isSel,
+        // Tanlangan qavat to‘q qoladi. Kesim rejimida ochilgan qavat
+        // ustidagi darajalar deyarli shaffof bo‘ladi, oddiy rejimda esa
+        // fasad oqarib ketmasligi uchun farq kichik qoladi
+        opacity: !host || sel < 0 || isSel ? 1 : isCut ? (above ? 0.2 : 0.62) : 0.94,
+        parts,
+        skin: skinItems,
+        topPoints,
+        topFill,
+        band,
+        edges,
+        units,
+        patches,
+        interior,
+        labels,
+        extras: extraItems,
+        anchorX,
+        anchorY,
+        labelX,
+        labelY,
+        labelW,
+        aria: host
+          ? t('ui.slabAria', {
+              name: info.name,
+              total: info.total,
+              occupancy: info.occupancy,
+              label: info.label,
+            })
+          : `${item.name}, ${info.name}`,
+      })
     }
 
-    let anchorX = -Infinity
-    let anchorY = 0
-    for (const c of corners) {
-      const cxp = px(c[0], c[1])
-      if (cxp > anchorX) {
-        anchorX = cxp
-        anchorY = py(c[0], c[1], zTop)
-      }
+    if (isActive && mode !== 'wire') {
+      view2.outline = baseCorners.map((c) => pt(c[0], c[1], 0.05)).join(' ')
     }
-    const labelW = isSel ? 152 : 44
-    const labelX = clamp(anchorX + 16, 8, VW - labelW - 8)
-    const labelY = clamp(anchorY, 24, VH - 12)
-
-    slabs.push({
-      floor: info.floor,
-      name: info.name,
-      short: info.short,
-      underground: info.underground,
-      selected: isSel,
-      // Tanlangan qavat to‘q qoladi, qolganlari shaffofroq: ochilgan qavat
-      // ustidagi darajalar esa deyarli shaffof bo‘ladi
-      opacity: sel < 0 || isSel ? 1 : isCut && above ? 0.22 : 0.62,
-      parts,
-      skin: skinItems,
-      topPoints,
-      topFill,
-      band,
-      edges,
-      units,
-      patches,
-      interior,
-      labels,
-      extras: extraItems,
-      anchorX,
-      anchorY,
-      labelX,
-      labelY,
-      labelW,
-      aria: `${info.name}, ${info.total} unit, bandlik ${info.occupancy} foiz, ${info.label}`,
-    })
+    structs.push(view2)
   }
 
-  // --- yer sathi: to‘r va quyosh yo‘nalishidagi soya. Maydonchaning o‘lchami
-  //     binoning haqiqiy chegarasidan chiqadi, shuning uchun uzun ombor ham,
-  //     ixcham minora ham bir xil nisbatdagi zamin ustida turadi.
-  const gx0 = bd.cx - bd.hw * 1.5
-  const gx1 = bd.cx + bd.hw * 1.5
-  const gy0 = bd.cy - bd.hd * 1.5
-  const gy1 = bd.cy + bd.hd * 1.5
-  const grid: string[] = []
-  const divisions = 6
+  // --- uchastka sathi: to‘r va quyosh yo‘nalishidagi soyalar
+  const gx0 = -bd.hw
+  const gx1 = bd.hw
+  const gy0 = -bd.hd
+  const gy1 = bd.hd
+  const gridLines: string[] = []
+  const divisions = 8
   for (let i = 0; i <= divisions; i++) {
     const x = gx0 + ((gx1 - gx0) * i) / divisions
-    grid.push(`M${px(x, gy0)} ${py(x, gy0, 0)} L${px(x, gy1)} ${py(x, gy1, 0)}`)
+    gridLines.push(`M${px(x, gy0)} ${py(x, gy0, 0)} L${px(x, gy1)} ${py(x, gy1, 0)}`)
     const y = gy0 + ((gy1 - gy0) * i) / divisions
-    grid.push(`M${px(gx0, y)} ${py(gx0, y, 0)} L${px(gx1, y)} ${py(gx1, y, 0)}`)
+    gridLines.push(`M${px(gx0, y)} ${py(gx0, y, 0)} L${px(gx1, y)} ${py(gx1, y, 0)}`)
   }
   const plane = [pt(gx0, gy0, 0), pt(gx1, gy0, 0), pt(gx1, gy1, 0), pt(gx0, gy1, 0)].join(' ')
 
   // Soya: kontur nuqtalari quyosh yo‘nalishi bo‘yicha siljiydi, ikki
   // to‘plamning qavariq qobig‘i olinadi
-  const shadow = (() => {
-    const hw = geo.w / 2
-    const hd = geo.d / 2
-    const base: Array<[number, number]> = [
-      [-hw, -hd],
-      [hw, -hd],
-      [hw, hd],
-      [-hw, hd],
+  const sunK = clamp(1 / Math.max(SUN.z, 0.16), 0, 3.4)
+  const cross = (o: [number, number], a: [number, number], b: [number, number]) =>
+    (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
+  const shadows: string[] = []
+  for (let vi = 0; vi < vols.length; vi++) {
+    const vol = vols[vi]!
+    const item = vol.item
+    if (item.skin === 'pit' || item.skin === 'pad') continue
+    const hTop = vol.topZ
+    const offX = -SUN.x * hTop * sunK
+    const offY = -SUN.y * hTop * sunK
+    const rect: Array<[number, number]> = [
+      [item.x0, item.y0],
+      [item.x1, item.y0],
+      [item.x1, item.y1],
+      [item.x0, item.y1],
     ]
-    const k = clamp(1 / Math.max(SUN.z, 0.16), 0, 3.4)
-    const offX = -SUN.x * m.topZ * k
-    const offY = -SUN.y * m.topZ * k
-    const pts = base.concat(base.map((p) => [p[0] + offX, p[1] + offY] as [number, number]))
+    const pts = rect.concat(rect.map((p) => [p[0] + offX, p[1] + offY] as [number, number]))
     pts.sort((a, b) => a[0] - b[0] || a[1] - b[1])
-    const cross = (o: [number, number], a: [number, number], b: [number, number]) =>
-      (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
     const lower: Array<[number, number]> = []
     for (const p of pts) {
-      while (
-        lower.length >= 2 &&
-        cross(lower[lower.length - 2]!, lower[lower.length - 1]!, p) <= 0
-      ) {
+      while (lower.length >= 2 && cross(lower[lower.length - 2]!, lower[lower.length - 1]!, p) <= 0) {
         lower.pop()
       }
       lower.push(p)
@@ -1870,39 +3064,47 @@ const scene = computed(() => {
     const upper: Array<[number, number]> = []
     for (let i = pts.length - 1; i >= 0; i--) {
       const p = pts[i]!
-      while (
-        upper.length >= 2 &&
-        cross(upper[upper.length - 2]!, upper[upper.length - 1]!, p) <= 0
-      ) {
+      while (upper.length >= 2 && cross(upper[upper.length - 2]!, upper[upper.length - 1]!, p) <= 0) {
         upper.pop()
       }
       upper.push(p)
     }
     lower.pop()
     upper.pop()
-    return lower
-      .concat(upper)
-      .map((p) => pt(p[0], p[1], 0))
-      .join(' ')
-  })()
+    shadows.push(
+      lower
+        .concat(upper)
+        .map((p) => pt(p[0], p[1], 0))
+        .join(' '),
+    )
+  }
 
   return {
-    slabs,
-    photo,
-    grid,
+    structs,
+    gridLines,
     plane,
-    shadow,
+    shadows,
+    /** Chizilgan yuzalar soni: o‘lchov uchun ko‘rinishga yozib qo‘yiladi */
+    drawn,
+    /** Yaqin ko‘rinishdagi taxminiy narx: tafsilot chegarasi shu bilan solishtiriladi */
+    cost: fac.fine,
+    scale: Math.round(pxPerM * 10) / 10,
     groundMark: {
-      x: clamp(px(gx0, gy1), 14, VW - 90),
+      x: clamp(px(gx0, gy1), 14, VW - 96),
       y: clamp(py(gx0, gy1, 0), 20, VH - 14),
     },
   }
 })
 
+/* ==========================================================================
+   Izoh oynachalari, legenda va qurilma kartochkasi
+   ========================================================================== */
+
 const tooltip = computed(() => {
   const info = hoveredLevel.value
   if (!info || info.floor === props.floor) return null
-  const slab = scene.value.slabs.find((s) => s.floor === info.floor)
+  const host = scene.value.structs.find((s) => s.host)
+  const slab = host?.slabs.find((s) => s.floor === info.floor)
   if (!slab) return null
   const w = 184
   return {
@@ -1910,8 +3112,12 @@ const tooltip = computed(() => {
     y: clamp(slab.anchorY - 60, 8, VH - 80),
     w,
     name: info.name,
-    units: info.total ? `${info.total} unit · ${info.vacantCount} bo‘sh` : info.label,
-    occupancy: info.total ? `Bandlik ${info.occupancy}%` : 'Ma’lumot yo‘q',
+    units: info.total
+      ? t('ui.tipUnits', { total: info.total, vacant: info.vacantCount })
+      : info.label,
+    occupancy: info.total
+      ? t('ui.tipOccupancy', { value: info.occupancy })
+      : t('common.empty'),
   }
 })
 
@@ -1920,15 +3126,16 @@ const roomTip = computed(() => {
   if (!hoveredUnit.value) return null
   const u = selectedLevel.value?.units.find((x) => x.id === hoveredUnit.value)
   if (!u) return null
-  const shape = scene.value.slabs.find((sl) => sl.selected)?.units.find((x) => x.id === u.id)
+  const host = scene.value.structs.find((s) => s.host)
+  const shape = host?.slabs.find((sl) => sl.selected)?.units.find((x) => x.id === u.id)
   if (!shape) return null
-  const cat = CATEGORIES.find((c) => c.key === (CATEGORY_OF[u.status] ?? 'other'))
+  const cat = CATEGORIES.value.find((c) => c.key === (CATEGORY_OF[u.status] ?? 'other'))
   const w = 178
   return {
     x: clamp(shape.cx + 12, 8, VW - w - 8),
     y: clamp(shape.cy - 82, 8, VH - 88),
     w,
-    code: `Unit ${u.code}`,
+    code: t('ui.unitCode', { code: u.code }),
     area: areaLabel(u.area),
     status: cat?.label ?? '',
     color: cat?.color ?? EMPTY_COLOR,
@@ -1941,25 +3148,75 @@ const legend = computed(() => {
     const key = CATEGORY_OF[u.status] ?? 'other'
     totals.set(key, (totals.get(key) ?? 0) + 1)
   }
-  return CATEGORIES.map((c) => ({ ...c, count: totals.get(c.key) ?? 0 }))
+  return CATEGORIES.value.map((c) => ({ ...c, count: totals.get(c.key) ?? 0 }))
 })
 
-const modeHint = computed(() => MODES.find((m) => m.value === props.mode)?.hint ?? '')
+const modeHint = computed(() => MODES.value.find((m) => m.value === props.mode)?.hint ?? '')
 
-/** Bino turi va klassidan kelib chiqqan tashqi ko‘rinish izohi */
-const envelopeNote = computed(() => {
+/** Uchastka tarkibi: pastdagi tanlash lentasi shu ro‘yxatdan quriladi */
+const structureList = computed(() =>
+  site.value.items.map((i) => ({
+    id: i.id,
+    name: i.name,
+    short: i.kindShort,
+    kind: i.kindLabel,
+    leasable: i.leasable,
+    host: i.host,
+  })),
+)
+
+const vacantSummary = computed(() => {
+  const list = allUnits.value
+  if (!list.length) return ''
+  const free = list.filter((u) => u.status === 'VACANT')
+  if (!free.length) return t('ui.noVacantUnits')
+  return t('ui.vacantSummary', {
+    count: free.length,
+    area: areaLabel(free.reduce((s, u) => s + u.area, 0)),
+  })
+})
+
+/** Tanlangan qurilma kartochkasi: nomi, turi, o‘lchami va bo‘sh maydoni */
+const activeInfo = computed(() => {
+  const item = activeStruct.value
+  if (!item) return null
+  const s = item.s
+  const facts: string[] = [`${Math.round(item.w)} × ${Math.round(item.d)} m`]
+  if (item.floors > 0) facts.push(t('ui.factFloors', { count: item.floors }))
+  if (s.undergroundFloors) facts.push(t('ui.factUnderground', { count: s.undergroundFloors }))
+  if (s.gla) facts.push(t('ui.factGla', { area: areaLabel(s.gla) }))
+  if (s.parkingSpaces) facts.push(t('ui.factParking', { count: s.parkingSpaces }))
+  return {
+    name: item.name,
+    kind: item.kindLabel,
+    leasable: item.leasable,
+    host: item.host,
+    note: s.note,
+    facts: facts.join(' · '),
+    vacant: item.host ? vacantSummary.value : '',
+  }
+})
+
+const siteNote = computed(() => {
+  const s = site.value
   const b = props.building
+  const lease = s.items.filter((i) => i.leasable).length
   const shape =
     family.value === 'tower'
-      ? 'ingichka minora, kirish soyaboni va tomdagi toj'
+      ? t('ui.shapeTower')
       : family.value === 'retail'
-        ? 'keng past hajm, baland shisha atrium va parapet'
+        ? t('ui.shapeRetail')
         : family.value === 'shed'
-          ? 'uzun past korpus, yuk eshiklari va ofis annexi'
-          : 'pog‘onali turar joy bloki, balkonlar va terrasa'
-  const fac = glazed.value ? 'to‘liq shisha fasad' : 'panjarali deraza va spandrel'
-  const env = envelope.value
-  return `${b.type}: ${shape}. ${b.buildingClass}: ${fac}. Tayanch kontur ${Math.round(env.w)} × ${Math.round(env.d)} m, qavat balandligi ${env.h} m.`
+          ? t('ui.shapeShed')
+          : t('ui.shapeResi')
+  return t('ui.siteNote', {
+    type: buildingTypeLabel(b.type),
+    count: s.items.length,
+    lease,
+    width: Math.round(s.plot.width),
+    depth: Math.round(s.plot.depth),
+    shape,
+  })
 })
 
 /* ==========================================================================
@@ -1989,12 +3246,33 @@ watch(
   },
 )
 
-/**
- * Qavat bosilganda darhol o'sha qavatning ichi ochiladi. Ilgari bosish faqat
- * qavatni ajratardi va rejani ko'rish uchun yana bir necha qadam kerak edi.
- */
-function pickFloor(floor: number) {
+// Obyekt almashsa tanlov asosiy qurilmaga qaytadi
+watch(
+  () => props.building.id,
+  () => {
+    innerStruct.value = ''
+    hoveredStruct.value = ''
+  },
+)
+
+/** Qurilma tanlanadi: kartochkada nomi, turi, maydoni va bo‘sh maydoni chiqadi */
+function pickStruct(id: string) {
   if (blockClick) return
+  innerStruct.value = id
+  emit('update:structure', id)
+}
+
+/**
+ * Qurilma bosilganda avval o‘zi tanlanadi. Allaqachon tanlangan asosiy
+ * qurilmada esa bosilgan qavatning ichi darhol ochiladi.
+ */
+function pickFloor(floor: number, id: string, host: boolean) {
+  if (blockClick) return
+  if (activeStructId.value !== id) {
+    pickStruct(id)
+    return
+  }
+  if (!host) return
   emit('update:floor', floor)
   if (props.mode !== 'interior') emit('update:mode', 'interior')
 }
@@ -2053,7 +3331,7 @@ function onUp(event: PointerEvent) {
 }
 
 function onWheel(event: WheelEvent) {
-  zoomBy(event.deltaY > 0 ? -0.12 : 0.12)
+  zoomBy(event.deltaY > 0 ? -0.14 : 0.14)
 }
 
 function spin(delta: number) {
@@ -2061,7 +3339,7 @@ function spin(delta: number) {
 }
 
 function zoomBy(delta: number) {
-  view.zoom = Math.round(clamp(view.zoom + delta, 0.6, 2.6) * 100) / 100
+  view.zoom = Math.round(clamp(view.zoom + delta, 0.6, 3.6) * 100) / 100
 }
 
 function resetView() {
@@ -2087,46 +3365,50 @@ function toggleLayer(key: keyof Layers) {
         class="w-full touch-pan-y select-none"
         :class="[heightClass, dragging ? 'cursor-grabbing' : 'cursor-grab']"
         role="img"
-        :aria-label="`${building.name} aksonometrik ko‘rinishi. Burilish ${Math.round(view.rotation)} daraja, nishab ${Math.round(view.tilt)} daraja. Qavat tanlash uchun chapdagi relsdan foydalaning.`"
+        :data-quads="scene.drawn"
+        :data-scale="scene.scale"
+        :data-cost="scene.cost"
+        :aria-label="
+          t('ui.sceneAria', {
+            name: building.name,
+            count: structureList.length,
+            rotation: Math.round(view.rotation),
+            tilt: Math.round(view.tilt),
+          })
+        "
         @pointerdown="onDown"
         @pointermove="onMove"
         @pointerup="onUp"
         @pointercancel="onUp"
         @wheel.prevent="onWheel"
-        @pointerleave="(hovered = null), (hoveredUnit = '')"
+        @pointerleave="(hovered = null), (hoveredUnit = ''), (hoveredStruct = '')"
       >
         <defs>
           <filter :id="`mkn-shadow-${building.id}`" x="-60%" y="-80%" width="240%" height="280%">
             <feGaussianBlur stdDeviation="9" />
           </filter>
-
-          <!-- Surat yuz konturidan chiqmasligi uchun qirqim -->
-          <clipPath
-            v-for="fc in scene.photo"
-            :id="`mkn-face-${building.id}-${fc.f}`"
-            :key="`cp${fc.f}`"
-          >
-            <path :d="fc.d" />
-          </clipPath>
         </defs>
 
-        <!-- Yer sathi: to‘r va quyosh yo‘nalishidagi soya -->
+        <!-- Uchastka sathi: to‘r va quyosh yo‘nalishidagi soyalar -->
         <polygon :points="scene.plane" fill="#0256F7" fill-opacity="0.035" />
         <path
-          v-for="(g, gi) in scene.grid"
+          v-for="(g, gi) in scene.gridLines"
           :key="`g${gi}`"
           :d="g"
           stroke="#94A2B8"
-          stroke-opacity="0.26"
+          stroke-opacity="0.24"
           stroke-width="0.8"
           fill="none"
         />
-        <polygon
-          :points="scene.shadow"
-          fill="#131C2B"
-          fill-opacity="0.16"
-          :filter="`url(#mkn-shadow-${building.id})`"
-        />
+        <g :filter="`url(#mkn-shadow-${building.id})`">
+          <polygon
+            v-for="(sh, si) in scene.shadows"
+            :key="`sh${si}`"
+            :points="sh"
+            fill="#131C2B"
+            fill-opacity="0.15"
+          />
+        </g>
 
         <text
           v-if="building.undergroundFloors"
@@ -2136,217 +3418,244 @@ function toggleLayer(key: keyof Layers) {
           font-weight="600"
           fill="#64748B"
         >
-          Yer sathi
+          {{ t('ui.groundLevel') }}
         </text>
 
         <!--
-          Binoning haqiqiy surati. Har bir ko‘rinadigan yuzga bitta surat
-          tushadi va butun hajmni qoplaydi, qavatlar bo‘yicha takrorlanmaydi.
-          Ustidagi qorayish qatlami yon yuzlarni ajratadi, aks holda hajm
-          yassi ko‘rinardi. Qavat bo‘yoqlari keyin, shaffof filtr bo‘lib
-          chiziladi, shuning uchun bandlik ma’lumoti yo‘qolmaydi.
+          Uchastkadagi qurilmalar. Tartib chuqurlik bo‘yicha: uzoqdagi hajm
+          avval chiziladi. Har bir qurilma alohida guruh, shuning uchun uni
+          bosib tanlash va xiralashtirish mumkin.
         -->
-        <g v-if="scene.photo.length" class="pointer-events-none">
-          <g
-            v-for="fc in scene.photo"
-            :key="`ph${fc.f}`"
-            :clip-path="`url(#mkn-face-${building.id}-${fc.f})`"
-          >
-            <image
-              :href="photoSrc"
-              :x="fc.x"
-              :y="fc.y"
-              :width="fc.w"
-              :height="fc.h"
-              :transform="fc.m"
-              preserveAspectRatio="none"
-              @error="photoOk = false"
-            />
-          </g>
-          <path
-            v-for="fc in scene.photo"
-            :key="`sh${fc.f}`"
-            :d="fc.d"
-            fill="#0B1220"
-            :fill-opacity="fc.dark"
-          />
-        </g>
-
-        <!-- Plitalar pastdan yuqoriga chiziladi: kamera doim tepadan qaraydi -->
         <g
-          v-for="slab in scene.slabs"
-          :key="slab.floor"
+          v-for="st in scene.structs"
+          :key="st.id"
           class="cursor-pointer"
-          :opacity="slab.opacity"
-          @pointerenter="hovered = slab.floor"
-          @click="pickFloor(slab.floor)"
+          :opacity="st.opacity"
+          @pointerenter="hoveredStruct = st.id"
+          @click="pickStruct(st.id)"
         >
-          <title>{{ slab.aria }}</title>
+          <title>{{ st.aria }}</title>
 
-          <template v-if="mode === 'wire'">
-            <path
-              v-for="(e, ei) in slab.edges"
-              :key="ei"
-              :d="e.d"
-              fill="none"
-              :stroke="slab.selected ? '#0256F7' : '#48566B'"
-              :stroke-width="slab.selected ? 1.8 : 1"
-              :stroke-opacity="e.hidden ? 0.2 : 0.9"
-              :stroke-dasharray="e.hidden ? '4 4' : undefined"
-              stroke-linecap="round"
-            />
-          </template>
+          <!-- Yassi maydon: avtoturargoh qoplamasi, joy chiziqlari, yer osti hajmi -->
+          <path
+            v-for="(p, pi) in st.pad"
+            :key="`p${pi}`"
+            :d="p.d"
+            :fill="p.f"
+            :fill-opacity="p.o"
+          />
+          <polygon
+            v-if="st.outline"
+            :points="st.outline"
+            fill="none"
+            :stroke="st.selected ? '#0256F7' : '#7C8BA1'"
+            :stroke-width="st.selected ? 2.2 : 1.1"
+            :stroke-dasharray="st.dash ? '8 6' : undefined"
+            class="pointer-events-none"
+          />
 
-          <template v-else>
-            <polygon
-              v-for="(p, pi) in slab.parts"
-              :key="pi"
-              :points="p.points"
-              :fill="p.fill"
-              :fill-opacity="p.alpha"
-              stroke="#FFFFFF"
-              stroke-width="0.6"
-              stroke-opacity="0.4"
-            />
-
-            <!-- Fasad: deraza qatorlari, mullion va spandrel -->
-            <path
-              v-for="(sk2, si) in slab.skin"
-              :key="`s${si}`"
-              :d="sk2.d"
-              :fill="sk2.f"
-              :fill-opacity="sk2.o"
-              class="pointer-events-none"
-            />
-
-            <!-- Tanlangan qavat lentasi -->
-            <path
-              v-if="slab.band"
-              :d="slab.band"
-              fill="#0256F7"
-              fill-opacity="0.3"
-              stroke="#0139B0"
-              stroke-width="1.6"
-              class="pointer-events-none"
-            />
-
-            <polygon
-              v-if="slab.topPoints"
-              :points="slab.topPoints"
-              :fill="slab.topFill"
-              :stroke="slab.selected ? '#0256F7' : '#94A2B8'"
-              :stroke-width="slab.selected ? 2.2 : 0.9"
-              :stroke-opacity="slab.selected ? 1 : 0.5"
-              :stroke-dasharray="slab.underground ? '7 5' : undefined"
-            />
-
-            <!-- Koridor pol dog‘i -->
-            <path
-              v-for="(p, pi) in slab.patches"
-              :key="`c${pi}`"
-              :d="p.d"
-              :fill="p.f"
-              class="pointer-events-none"
-            />
-          </template>
-
-          <!-- Unit konturlari plita ustki yuzasiga tushiriladi -->
+          <!-- Plitalar pastdan yuqoriga chiziladi: kamera doim tepadan qaraydi -->
           <g
-            v-for="u in slab.units"
-            :key="u.id"
-            @click.stop="pickUnit(slab.floor, u.id)"
-            @pointerenter="hoveredUnit = u.id"
-            @pointerleave="hoveredUnit === u.id ? (hoveredUnit = '') : null"
+            v-for="slab in st.slabs"
+            :key="slab.key"
+            :opacity="slab.opacity"
+            @pointerenter="st.host ? (hovered = slab.floor) : null"
+            @click.stop="pickFloor(slab.floor, st.id, st.host)"
           >
-            <title>{{ u.code }}</title>
-            <polygon
-              :points="u.points"
-              :fill="u.fill"
-              :fill-opacity="
-                u.active ? 0.92 : hoveredUnit === u.id ? 0.86 : slab.interior.length ? 0.44 : 0.74
-              "
-              :stroke="u.active ? '#0139B0' : hoveredUnit === u.id ? '#0256F7' : '#FFFFFF'"
-              :stroke-width="u.active ? 2.4 : hoveredUnit === u.id ? 1.9 : 0.9"
-            />
-            <text
-              v-if="!slab.interior.length"
-              :x="u.cx"
-              :y="u.cy + 4"
-              text-anchor="middle"
-              font-size="11"
-              font-weight="700"
-              :fill="u.active ? '#FFFFFF' : '#131C2B'"
+            <title>{{ slab.aria }}</title>
+
+            <template v-if="mode === 'wire'">
+              <path
+                v-for="(e, ei) in slab.edges"
+                :key="ei"
+                :d="e.d"
+                fill="none"
+                :stroke="slab.selected ? '#0256F7' : '#48566B'"
+                :stroke-width="slab.selected ? 1.8 : 1"
+                :stroke-opacity="e.hidden ? 0.2 : 0.9"
+                :stroke-dasharray="e.hidden ? '4 4' : undefined"
+                stroke-linecap="round"
+              />
+            </template>
+
+            <template v-else>
+              <polygon
+                v-for="(p, pi) in slab.parts"
+                :key="pi"
+                :points="p.points"
+                :fill="p.fill"
+                :fill-opacity="p.alpha"
+              />
+
+              <!-- Modellashtirilgan fasad: qavat lentasi, spandrel, mullion,
+                   chuqurchadagi deraza, kirish portali, yuk eshigi, balkon -->
+              <path
+                v-for="(sk, si) in slab.skin"
+                :key="`s${si}`"
+                :d="sk.d"
+                :fill="sk.f"
+                :fill-opacity="sk.o"
+                class="pointer-events-none"
+              />
+
+              <!-- Tanlangan qavat: yengil bo‘yoq va aniq kontur -->
+              <path
+                v-if="slab.band"
+                :d="slab.band"
+                fill="#0256F7"
+                fill-opacity="0.14"
+                stroke="#0139B0"
+                stroke-width="1.8"
+                class="pointer-events-none"
+              />
+
+              <polygon
+                v-if="slab.topPoints"
+                :points="slab.topPoints"
+                :fill="slab.topFill"
+                :stroke="slab.selected ? '#0256F7' : '#94A2B8'"
+                :stroke-width="slab.selected ? 2.2 : 0.9"
+                :stroke-opacity="slab.selected ? 1 : 0.5"
+                :stroke-dasharray="slab.underground ? '7 5' : undefined"
+              />
+
+              <!-- Koridor pol dog‘i -->
+              <path
+                v-for="(p, pi) in slab.patches"
+                :key="`c${pi}`"
+                :d="p.d"
+                :fill="p.f"
+                class="pointer-events-none"
+              />
+            </template>
+
+            <!-- Unit konturlari plita ustki yuzasiga tushiriladi -->
+            <g
+              v-for="u in slab.units"
+              :key="u.id"
+              @click.stop="pickUnit(slab.floor, u.id)"
+              @pointerenter="hoveredUnit = u.id"
+              @pointerleave="hoveredUnit === u.id ? (hoveredUnit = '') : null"
+            >
+              <title>{{ u.code }}</title>
+              <polygon
+                :points="u.points"
+                :fill="u.fill"
+                :fill-opacity="
+                  u.active ? 0.92 : hoveredUnit === u.id ? 0.86 : slab.interior.length ? 0.44 : 0.74
+                "
+                :stroke="u.active ? '#0139B0' : hoveredUnit === u.id ? '#0256F7' : '#FFFFFF'"
+                :stroke-width="u.active ? 2.4 : hoveredUnit === u.id ? 1.9 : 0.9"
+              />
+              <text
+                v-if="!slab.interior.length"
+                :x="u.cx"
+                :y="u.cy + 4"
+                text-anchor="middle"
+                font-size="11"
+                font-weight="700"
+                :fill="u.active ? '#FFFFFF' : '#131C2B'"
+                class="pointer-events-none"
+              >
+                {{ u.code }}
+              </text>
+            </g>
+
+            <!-- Devor, eshik, deraza va xizmat yadrosi: chuqurlik bo‘yicha
+                 saralangan va bo‘yoq bo‘yicha birlashtirilgan qismlar -->
+            <g v-if="slab.interior.length" class="pointer-events-none">
+              <path
+                v-for="(it, ii) in slab.interior"
+                :key="ii"
+                :d="it.d"
+                :fill="it.f"
+                :fill-opacity="it.o"
+              />
+              <text
+                v-for="(l, li) in slab.labels"
+                :key="`l${li}`"
+                :x="l.x"
+                :y="l.y"
+                text-anchor="middle"
+                font-size="10.5"
+                font-weight="700"
+                fill="#31435C"
+                stroke="#FFFFFF"
+                stroke-width="3"
+                paint-order="stroke"
+              >
+                {{ l.text }}
+              </text>
+            </g>
+
+            <!-- Tom, karniz, parapet, soyabon, rampa va quvur -->
+            <g v-if="slab.extras.length" class="pointer-events-none">
+              <path
+                v-for="(it, xi) in slab.extras"
+                :key="`x${xi}`"
+                :d="it.d"
+                :fill="it.f"
+                stroke="#FFFFFF"
+                stroke-width="0.5"
+                stroke-opacity="0.3"
+              />
+            </g>
+
+            <g
+              v-if="st.host && (slab.selected || hovered === slab.floor)"
               class="pointer-events-none"
             >
-              {{ u.code }}
-            </text>
+              <path
+                :d="`M${slab.anchorX} ${slab.anchorY} L${slab.labelX} ${slab.labelY - 4}`"
+                stroke="#94A2B8"
+                stroke-width="1"
+                fill="none"
+              />
+              <rect
+                :x="slab.labelX"
+                :y="slab.labelY - 16"
+                :width="slab.labelW"
+                height="24"
+                rx="12"
+                :fill="slab.selected ? '#0256F7' : '#FFFFFF'"
+                :stroke="slab.selected ? '#0256F7' : '#E2E8F2'"
+                stroke-width="1"
+              />
+              <text
+                :x="slab.labelX + 11"
+                :y="slab.labelY + 1"
+                font-size="12"
+                font-weight="700"
+                :fill="slab.selected ? '#FFFFFF' : '#354152'"
+              >
+                {{ slab.selected ? slab.name : slab.short }}
+              </text>
+            </g>
           </g>
 
-          <!-- Devor, eshik, deraza va xizmat yadrosi: chuqurlik bo‘yicha
-               saralangan va bo‘yoq bo‘yicha birlashtirilgan qismlar -->
-          <g v-if="slab.interior.length" class="pointer-events-none">
-            <path
-              v-for="(it, ii) in slab.interior"
-              :key="ii"
-              :d="it.d"
-              :fill="it.f"
-              :fill-opacity="it.o"
-            />
-            <text
-              v-for="(l, li) in slab.labels"
-              :key="`l${li}`"
-              :x="l.x"
-              :y="l.y"
-              text-anchor="middle"
-              font-size="10.5"
-              font-weight="700"
-              fill="#31435C"
-              stroke="#FFFFFF"
-              stroke-width="3"
-              paint-order="stroke"
-            >
-              {{ l.text }}
-            </text>
-          </g>
-
-          <!-- Tom, parapet, soyabon, balkon va annex -->
-          <g v-if="slab.extras.length" class="pointer-events-none">
-            <path
-              v-for="(it, xi) in slab.extras"
-              :key="`x${xi}`"
-              :d="it.d"
-              :fill="it.f"
-              stroke="#FFFFFF"
-              stroke-width="0.5"
-              stroke-opacity="0.34"
-            />
-          </g>
-
-          <g v-if="slab.selected || hovered === slab.floor" class="pointer-events-none">
-            <path
-              :d="`M${slab.anchorX} ${slab.anchorY} L${slab.labelX} ${slab.labelY - 4}`"
-              stroke="#94A2B8"
-              stroke-width="1"
-              fill="none"
-            />
+          <!-- Qurilma nishonchasi: tanlangan va sichqoncha ostidagi hajmda -->
+          <g
+            v-if="mode !== 'wire' && (st.selected || hoveredStruct === st.id)"
+            class="pointer-events-none"
+          >
             <rect
-              :x="slab.labelX"
-              :y="slab.labelY - 16"
-              :width="slab.labelW"
-              height="24"
-              rx="12"
-              :fill="slab.selected ? '#0256F7' : '#FFFFFF'"
-              :stroke="slab.selected ? '#0256F7' : '#E2E8F2'"
+              :x="st.tagX"
+              :y="st.tagY - 15"
+              :width="st.tagW"
+              height="23"
+              rx="11"
+              :fill="st.selected ? '#131C2B' : '#FFFFFF'"
+              :stroke="st.selected ? '#131C2B' : '#E2E8F2'"
               stroke-width="1"
             />
             <text
-              :x="slab.labelX + 11"
-              :y="slab.labelY + 1"
+              :x="st.tagX + 11"
+              :y="st.tagY + 1"
               font-size="12"
               font-weight="700"
-              :fill="slab.selected ? '#FFFFFF' : '#354152'"
+              :fill="st.selected ? '#FFFFFF' : '#354152'"
             >
-              {{ slab.selected ? slab.name : slab.short }}
+              {{ st.tagText }}
             </text>
           </g>
         </g>
@@ -2409,12 +3718,12 @@ function toggleLayer(key: keyof Layers) {
         </g>
       </svg>
 
-      <!-- Qavat relsi: navigatorning asosiy boshqaruvi, doim ko‘rinib turadi -->
+      <!-- Qavat relsi: asosiy binoning qavatlari, doim ko‘rinib turadi -->
       <div
         ref="railRef"
         class="scroll-slim absolute left-2 top-1/2 flex max-h-[88%] w-[62px] -translate-y-1/2 flex-col gap-0.5 overflow-y-auto rounded-field bg-surface/94 p-1 shadow-card ring-1 ring-ink-200/70 backdrop-blur"
         role="group"
-        aria-label="Qavat tanlash relsi"
+        :aria-label="t('ui.railAria', { name: hostItem?.name ?? building.name })"
         @keydown.up.prevent="stepFloor(1)"
         @keydown.down.prevent="stepFloor(-1)"
       >
@@ -2434,7 +3743,9 @@ function toggleLayer(key: keyof Layers) {
                 ? 'bg-brand-500 text-white'
                 : 'text-ink-700 hover:bg-brand-50 hover:text-brand-700'
             "
-            :aria-label="`${l.name}, ${l.total} unit, bandlik ${l.occupancy} foiz`"
+            :aria-label="
+              t('ui.railFloorAria', { name: l.name, total: l.total, occupancy: l.occupancy })
+            "
             :aria-pressed="l.floor === floor"
             @click="emit('update:floor', l.floor)"
             @pointerenter="hovered = l.floor"
@@ -2463,7 +3774,7 @@ function toggleLayer(key: keyof Layers) {
         v-if="controls"
         class="absolute right-2 top-2 flex gap-0.5 rounded-field bg-surface/94 p-1 shadow-card ring-1 ring-ink-200/70 backdrop-blur"
         role="group"
-        aria-label="Ko‘rinish rejimi"
+        :aria-label="t('ui.viewModeAria')"
       >
         <button
           v-for="m in MODES"
@@ -2487,12 +3798,12 @@ function toggleLayer(key: keyof Layers) {
         v-if="controls"
         class="absolute bottom-2 right-2 flex gap-0.5 rounded-field bg-surface/94 p-1 shadow-card ring-1 ring-ink-200/70 backdrop-blur"
         role="group"
-        aria-label="Kamera boshqaruvi"
+        :aria-label="t('ui.cameraAria')"
       >
         <button
           type="button"
           class="grid size-10 place-items-center rounded-[8px] text-ink-600 transition-colors hover:bg-brand-50 hover:text-brand-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500"
-          aria-label="Chapga burish"
+          :aria-label="t('ui.turnLeft')"
           @click.stop="spin(-20)"
         >
           <UiIcon name="refresh" :size="18" />
@@ -2500,7 +3811,7 @@ function toggleLayer(key: keyof Layers) {
         <button
           type="button"
           class="grid size-10 place-items-center rounded-[8px] text-ink-600 transition-colors hover:bg-brand-50 hover:text-brand-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500"
-          aria-label="O‘ngga burish"
+          :aria-label="t('ui.turnRight')"
           @click.stop="spin(20)"
         >
           <UiIcon name="refresh" :size="18" class="-scale-x-100" />
@@ -2509,30 +3820,80 @@ function toggleLayer(key: keyof Layers) {
         <button
           type="button"
           class="grid size-10 place-items-center rounded-[8px] text-ink-600 transition-colors hover:bg-brand-50 hover:text-brand-600 disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500"
-          aria-label="Yaqinlashtirish"
-          :disabled="view.zoom >= 2.6"
-          @click.stop="zoomBy(0.2)"
+          :aria-label="t('ui.zoomIn')"
+          :disabled="view.zoom >= 3.6"
+          @click.stop="zoomBy(0.25)"
         >
           <UiIcon name="plus" :size="18" />
         </button>
         <button
           type="button"
           class="grid size-10 place-items-center rounded-[8px] text-ink-600 transition-colors hover:bg-brand-50 hover:text-brand-600 disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500"
-          aria-label="Uzoqlashtirish"
+          :aria-label="t('ui.zoomOut')"
           :disabled="view.zoom <= 0.6"
-          @click.stop="zoomBy(-0.2)"
+          @click.stop="zoomBy(-0.25)"
         >
           <UiIcon name="minus" :size="18" />
         </button>
         <button
           type="button"
           class="grid size-10 place-items-center rounded-[8px] text-ink-600 transition-colors hover:bg-brand-50 hover:text-brand-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500"
-          aria-label="Ko‘rinishni boshlang‘ich holatga qaytarish"
+          :aria-label="t('ui.resetViewAria')"
           @click.stop="resetView"
         >
           <UiIcon name="target" :size="18" />
         </button>
       </div>
+    </div>
+
+    <!-- Uchastka tarkibi: qurilmani ro‘yxatdan ham tanlash mumkin -->
+    <div v-if="controls" class="scroll-slim -mx-1 mt-3 overflow-x-auto px-1">
+      <div class="flex w-max items-center gap-1.5" role="group" :aria-label="t('ui.siteStructuresAria')">
+        <button
+          v-for="s in structureList"
+          :key="s.id"
+          type="button"
+          class="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-field px-3 text-[12px] font-semibold ring-1 ring-inset transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500"
+          :class="
+            s.id === activeStructId
+              ? 'bg-brand-500 text-white ring-brand-500'
+              : 'bg-surface text-ink-700 ring-ink-200 hover:bg-ink-50'
+          "
+          :aria-pressed="s.id === activeStructId"
+          :title="s.kind"
+          @click="pickStruct(s.id)"
+          @pointerenter="hoveredStruct = s.id"
+          @pointerleave="hoveredStruct === s.id ? (hoveredStruct = '') : null"
+        >
+          <span
+            class="size-2 shrink-0 rounded-full"
+            :class="
+              s.id === activeStructId ? 'bg-white/80' : s.leasable ? 'bg-brand-500' : 'bg-ink-300'
+            "
+          />
+          {{ s.name }}
+        </button>
+      </div>
+    </div>
+
+    <!-- Tanlangan qurilma kartochkasi -->
+    <div
+      v-if="controls && activeInfo"
+      class="mt-2.5 rounded-field bg-surface-sunken px-3 py-2.5 ring-1 ring-inset ring-ink-200"
+    >
+      <div class="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+        <span class="text-[13px] font-bold text-ink-900">{{ activeInfo.name }}</span>
+        <span
+          class="rounded-pill bg-surface px-2 py-0.5 text-[11px] font-semibold text-ink-600 ring-1 ring-inset ring-ink-200"
+        >
+          {{ activeInfo.kind }}
+        </span>
+      </div>
+      <p class="tabular mt-1 text-[12px] text-ink-600">{{ activeInfo.facts }}</p>
+      <p v-if="activeInfo.vacant" class="mt-0.5 text-[12px] font-semibold text-ok-700">
+        {{ activeInfo.vacant }}
+      </p>
+      <p class="mt-0.5 text-[12px] leading-relaxed text-ink-500">{{ activeInfo.note }}</p>
     </div>
 
     <!-- Qatlamlar: faqat interyer rejimida ma’noga ega -->
@@ -2549,7 +3910,7 @@ function toggleLayer(key: keyof Layers) {
         @click="view.exploded = !view.exploded"
       >
         <UiIcon name="layers" :size="15" />
-        Qavatlarni ajratish
+        {{ t('ui.explodeFloors') }}
       </button>
 
       <template v-if="mode === 'interior'">
@@ -2595,12 +3956,11 @@ function toggleLayer(key: keyof Layers) {
       {{ modeHint }}
     </p>
     <p v-if="controls" class="mt-1 text-[12px] leading-relaxed text-ink-500">
-      Ko‘rinishni tortib aylantiring, g‘ildirak bilan masshtabni o‘zgartiring, chapdagi relsdan
-      qavat tanlang.
-      <span v-if="selectedLevel"> Tanlangan: {{ selectedLevel.name }}.</span>
+      {{ t('ui.dragHint') }}
+      <span v-if="selectedLevel"> {{ t('ui.selectedFloor', { name: selectedLevel.name }) }}</span>
     </p>
     <p v-if="controls" class="mt-1 text-[12px] leading-relaxed text-ink-500">
-      {{ envelopeNote }}
+      {{ siteNote }}
     </p>
   </div>
 </template>

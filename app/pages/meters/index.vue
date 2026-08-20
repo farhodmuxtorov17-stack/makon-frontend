@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { BUILDINGS } from '~/data/buildings'
-import { tariffLinesFor } from '~/data/business'
+import { BUILDINGS } from "~/data/buildings";
+import { tariffLinesFor } from "~/data/business";
 import {
   METERS,
   buildUtilitySummary,
@@ -9,85 +9,145 @@ import {
   isVerificationSoon,
   meterStateLabel,
   type Meter,
-} from '~/data/operations'
-import { dateShort, num, sum } from '~/utils/format'
+} from "~/data/operations";
+import { dateShort, num } from "~/utils/format";
 
-const auth = useAuthStore()
+const auth = useAuthStore();
+
+const { t } = useI18n();
+const { money, field, moduleTitle, tr, measureLabel } = useAppLabels();
+
+/** Hisoblagich turi reyestrda o‘zbekcha saqlanadi, nomi lug‘atdan olinadi */
+const TYPE_KEY: Record<string, string> = {
+  Elektr: "meterType.electricity",
+  Suv: "meterType.water",
+  Gaz: "meterType.gas",
+  Issiqlik: "meterType.heating",
+};
+
+/** Kommunal karta yorlig‘i reyestrdan keladi */
+const UTILITY_KEY: Record<string, string> = {
+  "Elektr energiyasi": "meterType.electricPower",
+  Suv: "meterType.water",
+  Gaz: "meterType.gas",
+  Issiqlik: "meterType.heating",
+};
+
+/** Jadvaldagi holat yozuvi ham reyestr matnidan lug‘atga bog‘lanadi */
+const STATE_KEY: Record<string, string> = {
+  "Qiyoslash muddati o‘tgan": "svc.meterStateOverdue",
+  Faol: "svc.meterStateActive",
+  "Ta’mirda": "svc.meterStateRepair",
+};
+
+/** Hisoblagich holati tanlangan tilda */
+function stateName(meter: Meter) {
+  const label = meterStateLabel(meter);
+  return tr(STATE_KEY[label], label);
+}
+
+/**
+ * Ko'rsatkichni joyida o'lchagan odam kiritadi: texnik xizmat xodimi va bino
+ * rahbari. Super rahbar sahifani ko'radi, lekin o'zi raqam yozmaydi, aks holda
+ * hisob-fakturaga kim kiritgani noaniq bo'lib qoladi.
+ */
+const canEnter = computed(() => auth.can("meter.read"));
 
 /** Hisoblagichlar faqat biriktirilgan obyektlar bo‘yicha ko‘rinadi */
-const scopedNames = new Set(BUILDINGS.filter((b) => auth.inScope(b.id)).map((b) => b.name))
+const scopedNames = new Set(
+  BUILDINGS.filter((b) => auth.inScope(b.id)).map((b) => b.name),
+);
 
 interface Reading {
-  at: string
-  value: number
-  consumption: number
-  note: string
+  at: string;
+  value: number;
+  consumption: number;
+  /** Erkin matn: foydalanuvchi yozgan izoh */
+  note: string;
+  /** Tayyor izoh lug‘at kaliti orqali beriladi */
+  noteKey?: string;
 }
 
 const meters = ref<Meter[]>(
   METERS.filter((m) => scopedNames.has(m.buildingName)).map((m) => ({ ...m })),
-)
+);
 
-const STEPS = [0.88, 1.06, 0.95, 1.12, 1]
+const STEPS = [0.88, 1.06, 0.95, 1.12, 1];
 
 function decimalsOf(m: Meter) {
-  return Number.isInteger(m.lastReading) && Number.isInteger(m.previousReading) ? 0 : 1
+  return Number.isInteger(m.lastReading) && Number.isInteger(m.previousReading)
+    ? 0
+    : 1;
 }
 
 function roundTo(value: number, decimals: number) {
-  const f = 10 ** decimals
-  return Math.round(value * f) / f
+  const f = 10 ** decimals;
+  return Math.round(value * f) / f;
 }
 
 function monthsBack(iso: string, back: number) {
-  const d = new Date(`${iso}T00:00:00`)
-  d.setMonth(d.getMonth() - back)
-  return d.toISOString().slice(0, 10)
+  const d = new Date(`${iso}T00:00:00`);
+  d.setMonth(d.getMonth() - back);
+  return d.toISOString().slice(0, 10);
 }
 
 function seedReadings(m: Meter): Reading[] {
-  const dec = decimalsOf(m)
-  const delta = m.lastReading - m.previousReading
-  const values: number[] = [m.lastReading]
+  const dec = decimalsOf(m);
+  const delta = m.lastReading - m.previousReading;
+  const values: number[] = [m.lastReading];
   for (let i = STEPS.length - 1; i >= 0; i--) {
-    values.unshift(roundTo(values[0]! - roundTo(delta * STEPS[i]!, dec), dec))
+    values.unshift(roundTo(values[0]! - roundTo(delta * STEPS[i]!, dec), dec));
   }
   return values.map((value, i) => ({
     at: monthsBack(m.readAt, values.length - 1 - i),
     value,
     consumption: i === 0 ? 0 : roundTo(value - values[i - 1]!, dec),
-    note: i === values.length - 1 ? 'Oxirgi qiyoslash' : 'Oylik ko‘rsatkich',
-  }))
+    note: "",
+    noteKey:
+      i === values.length - 1 ? "svc.readingLastCheck" : "svc.readingMonthly",
+  }));
 }
 
 const readings = ref<Record<string, Reading[]>>(
   Object.fromEntries(METERS.map((m) => [m.id, seedReadings(m)])),
-)
+);
 
-const query = ref('')
-const fBuilding = ref('all')
-const fType = ref('all')
+const query = ref("");
+const fBuilding = ref("all");
+const fType = ref("all");
 
 const buildingOptions = computed(() => [
-  { value: 'all', label: 'Barcha binolar' },
-  ...[...new Set(meters.value.map((m) => m.buildingName))].map((b) => ({ value: b, label: b })),
-])
+  { value: "all", label: t("filter.allBuildings") },
+  ...[...new Set(meters.value.map((m) => m.buildingName))].map((b) => ({
+    value: b,
+    label: b,
+  })),
+]);
 
 const typeOptions = computed(() => [
-  { value: 'all', label: 'Barcha turlar' },
-  ...[...new Set(meters.value.map((m) => m.type))].map((t) => ({ value: t, label: t })),
-])
+  { value: "all", label: t("filter.allTypes") },
+  ...[...new Set(meters.value.map((m) => m.type))].map((type) => ({
+    value: type,
+    label: tr(TYPE_KEY[type], type),
+  })),
+]);
 
 const filtered = computed(() => {
-  const q = query.value.trim().toLowerCase()
+  const q = query.value.trim().toLowerCase();
   return meters.value.filter((m) => {
-    if (fBuilding.value !== 'all' && m.buildingName !== fBuilding.value) return false
-    if (fType.value !== 'all' && m.type !== fType.value) return false
-    if (q && ![m.code, m.serial, m.location, m.buildingName].some((v) => v.toLowerCase().includes(q)))
-      return false
-    return true
-  })
-})
+    if (fBuilding.value !== "all" && m.buildingName !== fBuilding.value)
+      return false;
+    if (fType.value !== "all" && m.type !== fType.value) return false;
+    if (
+      q &&
+      ![m.code, m.serial, m.location, m.buildingName].some((v) =>
+        v.toLowerCase().includes(q),
+      )
+    )
+      return false;
+    return true;
+  });
+});
 
 /**
  * Jadval qatori holatni ham o‘zi bilan olib yuradi: qiyoslash muddati
@@ -97,70 +157,84 @@ const rows = computed(() =>
   filtered.value.map((m) => ({
     ...m,
     usage: roundTo(m.lastReading - m.previousReading, decimalsOf(m)),
-    state: meterStateLabel(m),
+    state: stateName(m),
     overdue: isVerificationOverdue(m),
     soon: isVerificationSoon(m),
     daysLeft: daysToVerification(m),
   })),
-)
+);
 
 /** Holat nishonchasi: muddat o‘tgani ta’mir holatidan ustun turadi */
-function stateBadge(row: { overdue: boolean; status: Meter['status'] }): string {
-  if (row.overdue) return 'bg-danger-50 text-danger-700 ring-danger-100'
-  return row.status === 'ACTIVE'
-    ? 'bg-ok-50 text-ok-700 ring-ok-100'
-    : 'bg-warn-50 text-warn-700 ring-warn-100'
+function stateBadge(row: {
+  overdue: boolean;
+  status: Meter["status"];
+}): string {
+  if (row.overdue) return "bg-danger-50 text-danger-700 ring-danger-100";
+  return row.status === "ACTIVE"
+    ? "bg-ok-50 text-ok-700 ring-ok-100"
+    : "bg-warn-50 text-warn-700 ring-warn-100";
 }
 
 const dirty = computed(
-  () => !!query.value.trim() || fBuilding.value !== 'all' || fType.value !== 'all',
-)
+  () =>
+    !!query.value.trim() || fBuilding.value !== "all" || fType.value !== "all",
+);
 
 function resetFilters() {
-  query.value = ''
-  fBuilding.value = 'all'
-  fType.value = 'all'
+  query.value = "";
+  fBuilding.value = "all";
+  fType.value = "all";
 }
 
-const columns = [
-  { key: 'code', label: 'Kodi', width: '148px' },
-  { key: 'type', label: 'Turi' },
-  { key: 'serial', label: 'Seriya' },
-  { key: 'buildingName', label: 'Bino' },
-  { key: 'location', label: 'Joylashuv' },
-  { key: 'lastReading', label: 'Oxirgi ko‘rsatkich', align: 'right' as const, numeric: true },
-  { key: 'usage', label: 'Sarf', align: 'right' as const, numeric: true },
-  { key: 'verifyAt', label: 'Qiyoslash sanasi' },
-  { key: 'status', label: 'Holat' },
-]
+const columns = computed(() => [
+  { key: "code", label: field("code"), width: "148px" },
+  { key: "type", label: field("type") },
+  { key: "serial", label: field("serial") },
+  { key: "buildingName", label: field("building") },
+  { key: "location", label: field("location") },
+  {
+    key: "lastReading",
+    label: field("lastReading"),
+    align: "right" as const,
+    numeric: true,
+  },
+  {
+    key: "usage",
+    label: field("consumption"),
+    align: "right" as const,
+    numeric: true,
+  },
+  { key: "verifyAt", label: field("verifiedAt") },
+  { key: "status", label: field("status") },
+]);
 
 const TYPE_TONE: Record<string, string> = {
-  Elektr: 'bg-warn-50 text-warn-700 ring-warn-100',
-  Suv: 'bg-brand-50 text-brand-700 ring-brand-200',
-  Gaz: 'bg-info-50 text-info-700 ring-info-100',
-  Issiqlik: 'bg-danger-50 text-danger-700 ring-danger-100',
-}
+  Elektr: "bg-warn-50 text-warn-700 ring-warn-100",
+  Suv: "bg-brand-50 text-brand-700 ring-brand-200",
+  Gaz: "bg-info-50 text-info-700 ring-info-100",
+  Issiqlik: "bg-danger-50 text-danger-700 ring-danger-100",
+};
 
 /**
  * Kommunal kartalar ekrandagi ro‘yxatdan hisoblanadi: ko‘rsatkich kiritilsa
  * karta ham, jadval qatori ham bir vaqtda yangilanadi.
  */
-const utilityCards = computed(() => buildUtilitySummary(meters.value))
+const utilityCards = computed(() => buildUtilitySummary(meters.value));
 
-const UTILITY_TONE: Record<string, 'warn' | 'brand' | 'violet' | 'danger'> = {
-  'Elektr energiyasi': 'warn',
-  Suv: 'brand',
-  Gaz: 'violet',
-  Issiqlik: 'danger',
-}
+const UTILITY_TONE: Record<string, "warn" | "brand" | "violet" | "danger"> = {
+  "Elektr energiyasi": "warn",
+  Suv: "brand",
+  Gaz: "violet",
+  Issiqlik: "danger",
+};
 
 /** Karta bosilganda jadval shu tur bo‘yicha filtrlanadi */
-const TYPE_BY_LABEL: Record<string, Meter['type']> = {
-  'Elektr energiyasi': 'Elektr',
-  Suv: 'Suv',
-  Gaz: 'Gaz',
-  Issiqlik: 'Issiqlik',
-}
+const TYPE_BY_LABEL: Record<string, Meter["type"]> = {
+  "Elektr energiyasi": "Elektr",
+  Suv: "Suv",
+  Gaz: "Gaz",
+  Issiqlik: "Issiqlik",
+};
 
 /**
  * Ko‘rsatkich bo‘yicha hisob-faktura qatori. Miqdor ham, summa ham
@@ -168,113 +242,125 @@ const TYPE_BY_LABEL: Record<string, Meter['type']> = {
  * sarf va hisob-fakturadagi kommunal qator bitta raqamni beradi.
  */
 function tariffLineOf(m: Meter) {
-  return tariffLinesFor([m], m.buildingName, 0).find((l) => l.meter === m.code) ?? null
+  return (
+    tariffLinesFor([m], m.buildingName, 0).find((l) => l.meter === m.code) ??
+    null
+  );
 }
 
-const detail = ref<Meter | null>(null)
+const detail = ref<Meter | null>(null);
 const detailOpen = computed({
   get: () => detail.value !== null,
   set: (v: boolean) => {
-    if (!v) detail.value = null
+    if (!v) detail.value = null;
   },
-})
+});
 
-const detailReadings = computed(() => (detail.value ? (readings.value[detail.value.id] ?? []) : []))
-const chartLabels = computed(() => detailReadings.value.map((r) => dateShort(r.at)))
+const detailReadings = computed(() =>
+  detail.value ? (readings.value[detail.value.id] ?? []) : [],
+);
+const chartLabels = computed(() =>
+  detailReadings.value.map((r) => dateShort(r.at)),
+);
 const chartSeries = computed(() => [
   {
-    label: 'Sarf',
-    tone: 'brand' as const,
+    label: field("consumption"),
+    tone: "brand" as const,
     values: detailReadings.value.map((r) => r.consumption),
     fill: true,
   },
-])
+]);
 
 function openMeter(row: Record<string, unknown>) {
-  detail.value = meters.value.find((m) => m.id === String(row.id)) ?? null
+  detail.value = meters.value.find((m) => m.id === String(row.id)) ?? null;
 }
 
-const entryOpen = ref(false)
-const entryMeter = ref(METERS[0]!.id)
-const entryDate = ref(METERS[0]!.readAt)
-const entryValue = ref<string | number>(METERS[0]!.lastReading)
-const entryNote = ref('')
+const entryOpen = ref(false);
+const entryMeter = ref(METERS[0]!.id);
+const entryDate = ref(METERS[0]!.readAt);
+const entryValue = ref<string | number>(METERS[0]!.lastReading);
+const entryNote = ref("");
 
 /** Ko‘rsatkich suratlari: haqiqiy fayllar */
-const entryPhotos = ref<Array<{ file: File; url: string }>>([])
-const entryInput = ref<HTMLInputElement | null>(null)
-const PHOTO_LIMIT = 3
+const entryPhotos = ref<Array<{ file: File; url: string }>>([]);
+const entryInput = ref<HTMLInputElement | null>(null);
+const PHOTO_LIMIT = 3;
 
 function pickEntryPhotos() {
-  entryInput.value?.click()
+  entryInput.value?.click();
 }
 
 function onEntryPhotos(event: Event) {
-  const target = event.target as HTMLInputElement
-  const picked = Array.from(target.files ?? [])
-  target.value = ''
+  const target = event.target as HTMLInputElement;
+  const picked = Array.from(target.files ?? []);
+  target.value = "";
   for (const file of picked) {
-    if (entryPhotos.value.length >= PHOTO_LIMIT) break
-    entryPhotos.value.push({ file, url: URL.createObjectURL(file) })
+    if (entryPhotos.value.length >= PHOTO_LIMIT) break;
+    entryPhotos.value.push({ file, url: URL.createObjectURL(file) });
   }
 }
 
 function removeEntryPhoto(index: number) {
-  const gone = entryPhotos.value.splice(index, 1)[0]
-  if (gone) URL.revokeObjectURL(gone.url)
+  const gone = entryPhotos.value.splice(index, 1)[0];
+  if (gone) URL.revokeObjectURL(gone.url);
 }
 
 function clearEntryPhotos() {
-  for (const p of entryPhotos.value) URL.revokeObjectURL(p.url)
-  entryPhotos.value = []
+  for (const p of entryPhotos.value) URL.revokeObjectURL(p.url);
+  entryPhotos.value = [];
 }
 
-onBeforeUnmount(clearEntryPhotos)
+onBeforeUnmount(clearEntryPhotos);
 
-const activeMeter = computed(() => meters.value.find((m) => m.id === entryMeter.value) ?? null)
+const activeMeter = computed(
+  () => meters.value.find((m) => m.id === entryMeter.value) ?? null,
+);
 
 watch(entryMeter, () => {
-  const m = activeMeter.value
+  const m = activeMeter.value;
   if (m) {
-    entryValue.value = m.lastReading
-    entryDate.value = m.readAt
+    entryValue.value = m.lastReading;
+    entryDate.value = m.readAt;
   }
-})
+});
 
 const entryError = computed(() => {
-  const m = activeMeter.value
-  if (!m) return 'Hisoblagichni tanlang'
-  const value = Number(entryValue.value)
-  if (!entryValue.value && entryValue.value !== 0) return 'Joriy qiymatni kiriting'
-  if (Number.isNaN(value)) return 'Qiymat raqam bo‘lishi kerak'
+  const m = activeMeter.value;
+  if (!m) return t("svc.errPickMeter");
+  const value = Number(entryValue.value);
+  if (!entryValue.value && entryValue.value !== 0)
+    return t("svc.errEnterValue");
+  if (Number.isNaN(value)) return t("svc.errValueNumber");
   if (value < m.lastReading)
-    return `Joriy qiymat oxirgi ko‘rsatkichdan (${num(m.lastReading, decimalsOf(m))} ${m.unit}) kam bo‘lmasligi kerak`
-  if (!entryDate.value) return 'Sanani kiriting'
-  return ''
-})
+    return t("svc.errValueTooLow", {
+      value: `${num(m.lastReading, decimalsOf(m))} ${m.unit}`,
+    });
+  if (!entryDate.value) return t("svc.errEnterDate");
+  return "";
+});
 
 const entryUsage = computed(() => {
-  const m = activeMeter.value
-  if (!m || entryError.value) return 0
-  return roundTo(Number(entryValue.value) - m.lastReading, decimalsOf(m))
-})
+  const m = activeMeter.value;
+  if (!m || entryError.value) return 0;
+  return roundTo(Number(entryValue.value) - m.lastReading, decimalsOf(m));
+});
 
 /** Kiritilayotgan ko‘rsatkich bo‘yicha hisob-fakturaga tushadigan qator */
 const entryTariffLine = computed(() => {
-  const m = activeMeter.value
-  if (!m || entryError.value) return null
+  const m = activeMeter.value;
+  if (!m || entryError.value) return null;
   return tariffLineOf({
     ...m,
     previousReading: m.lastReading,
     lastReading: roundTo(Number(entryValue.value), decimalsOf(m)),
-  })
-})
+  });
+});
 
 function saveReading() {
-  const m = activeMeter.value
-  if (!m || entryError.value) return
-  const dec = decimalsOf(m)
-  const value = roundTo(Number(entryValue.value), dec)
+  const m = activeMeter.value;
+  if (!m || entryError.value) return;
+  const dec = decimalsOf(m);
+  const value = roundTo(Number(entryValue.value), dec);
   readings.value[m.id] = [
     ...(readings.value[m.id] ?? []),
     {
@@ -282,47 +368,44 @@ function saveReading() {
       value,
       consumption: roundTo(value - m.lastReading, dec),
       note:
-        (entryNote.value.trim() || 'Qo‘lda kiritilgan ko‘rsatkich') +
+        (entryNote.value.trim() || t("svc.manualReading")) +
         (entryPhotos.value.length > 0
-          ? ` Suratlar: ${entryPhotos.value.map((p) => p.file.name).join(', ')}.`
-          : ''),
+          ? ` ${t("svc.photosAttached", { files: entryPhotos.value.map((p) => p.file.name).join(", ") })}`
+          : ""),
     },
-  ]
-  m.previousReading = m.lastReading
-  m.lastReading = value
-  m.readAt = entryDate.value
+  ];
+  m.previousReading = m.lastReading;
+  m.lastReading = value;
+  m.readAt = entryDate.value;
 
   /*
    * Ko‘rsatkich reyestrdagi yozuvga ham yoziladi: billing davri kommunal
    * qatorni aynan shu sarfdan hisoblaydi, aks holda kiritilgan qiymat
    * hisob-fakturaga hech qachon tushmasdi.
    */
-  const source = METERS.find((x) => x.id === m.id)
+  const source = METERS.find((x) => x.id === m.id);
   if (source) {
-    source.previousReading = m.previousReading
-    source.lastReading = m.lastReading
-    source.readAt = m.readAt
+    source.previousReading = m.previousReading;
+    source.lastReading = m.lastReading;
+    source.readAt = m.readAt;
   }
 
-  entryNote.value = ''
-  clearEntryPhotos()
-  entryOpen.value = false
+  entryNote.value = "";
+  clearEntryPhotos();
+  entryOpen.value = false;
 }
 </script>
 
 <template>
-  <AppTopbar
-    title="Hisoblagichlar reyestri"
-    subtitle="Ko‘rsatkichlarni qayd etish, sarf tahlili va qiyoslash muddatlari"
-  >
+  <AppTopbar :title="t('svc.metersTitle')" :subtitle="t('svc.metersCaption')">
     <template #actions>
       <UiButton variant="secondary" size="sm" to="/service-requests">
         <UiIcon name="wrench" :size="16" />
-        Servis arizalari
+        {{ moduleTitle("serviceRequests") }}
       </UiButton>
-      <UiButton size="sm" @click="entryOpen = true">
+      <UiButton v-if="canEnter" size="sm" @click="entryOpen = true">
         <UiIcon name="plus" :size="16" />
-        Ko‘rsatkich kiritish
+        {{ t("svc.enterReading") }}
       </UiButton>
     </template>
   </AppTopbar>
@@ -332,9 +415,9 @@ function saveReading() {
       <UiKpi
         v-for="u in utilityCards"
         :key="u.label"
-        :label="u.label"
+        :label="tr(UTILITY_KEY[u.label], u.label)"
         :value="u.value"
-        :unit="u.unit"
+        :unit="measureLabel(u.unit)"
         :delta="u.delta"
         :icon="u.icon"
         :tone="UTILITY_TONE[u.label] ?? 'brand'"
@@ -344,22 +427,29 @@ function saveReading() {
     </section>
 
     <UiCard
-      title="Hisoblagichlar"
-      :subtitle="`${rows.length} ta hisoblagich ko‘rsatilmoqda`"
+      :title="moduleTitle('meters')"
+      :subtitle="t('svc.meterCount', { n: rows.length })"
       flush
       :padded="false"
     >
       <template #actions>
-        <UiButton variant="secondary" size="sm" @click="entryOpen = true">
+        <UiButton
+          v-if="canEnter"
+          variant="secondary"
+          size="sm"
+          @click="entryOpen = true"
+        >
           <UiIcon name="edit" :size="16" />
-          Ko‘rsatkich kiritish
+          {{ t("svc.enterReading") }}
         </UiButton>
       </template>
 
-      <div class="grid gap-3 border-t border-ink-100 bg-surface-sunken px-5 py-4 lg:grid-cols-4">
+      <div
+        class="grid gap-3 border-t border-ink-100 bg-surface-sunken px-5 py-4 lg:grid-cols-4"
+      >
         <UiInput
           v-model="query"
-          placeholder="Kod, seriya yoki joylashuv bo‘yicha qidirish"
+          :placeholder="t('svc.meterSearchPlaceholder')"
           class="lg:col-span-2"
         >
           <template #prefix>
@@ -369,9 +459,14 @@ function saveReading() {
         <UiSelect v-model="fBuilding" :options="buildingOptions" />
         <div class="flex items-center gap-2">
           <UiSelect v-model="fType" :options="typeOptions" class="flex-1" />
-          <UiButton v-if="dirty" variant="ghost" size="sm" @click="resetFilters">
+          <UiButton
+            v-if="dirty"
+            variant="ghost"
+            size="sm"
+            @click="resetFilters"
+          >
             <UiIcon name="refresh" :size="16" />
-            Tozalash
+            {{ t("common.reset") }}
           </UiButton>
         </div>
       </div>
@@ -379,11 +474,13 @@ function saveReading() {
       <UiTable
         :columns="columns"
         :rows="rows"
-        empty="Tanlangan shartga mos hisoblagich topilmadi"
+        :empty="t('empty.noMatchingMeters')"
         @row-click="openMeter"
       >
         <template #cell-code="{ row }">
-          <span class="tabular text-[13px] font-bold text-ink-900">{{ row.code }}</span>
+          <span class="tabular text-[13px] font-bold text-ink-900">{{
+            row.code
+          }}</span>
         </template>
 
         <template #cell-type="{ row }">
@@ -392,7 +489,7 @@ function saveReading() {
             :class="TYPE_TONE[row.type]"
           >
             <UiIcon name="meter" :size="13" />
-            {{ row.type }}
+            {{ tr(TYPE_KEY[row.type], row.type) }}
           </span>
         </template>
 
@@ -402,7 +499,9 @@ function saveReading() {
 
         <template #cell-lastReading="{ row }">
           {{ num(row.lastReading, Number.isInteger(row.lastReading) ? 0 : 1) }}
-          <span class="text-[12px] font-normal text-ink-500">{{ row.unit }}</span>
+          <span class="text-[12px] font-normal text-ink-500">{{
+            row.unit
+          }}</span>
         </template>
 
         <template #cell-usage="{ row }">
@@ -412,17 +511,20 @@ function saveReading() {
         </template>
 
         <template #cell-verifyAt="{ row }">
-          <span class="tabular block" :class="row.overdue ? 'font-bold text-danger-700' : ''">
+          <span
+            class="tabular block"
+            :class="row.overdue ? 'font-bold text-danger-700' : ''"
+          >
             {{ dateShort(row.verifyAt) }}
           </span>
           <span
             v-if="row.overdue"
             class="block text-[12px] font-semibold text-danger-600"
           >
-            {{ -row.daysLeft }} kun kechikdi
+            {{ t("svc.daysLate", { n: -row.daysLeft }) }}
           </span>
           <span v-else-if="row.soon" class="block text-[12px] text-warn-600">
-            {{ row.daysLeft }} kun qoldi
+            {{ t("svc.daysLeft", { n: row.daysLeft }) }}
           </span>
         </template>
 
@@ -431,8 +533,17 @@ function saveReading() {
             class="inline-flex items-center gap-1.5 rounded-pill px-2.5 py-1 text-xs font-semibold ring-1 ring-inset"
             :class="stateBadge(row)"
           >
-            <svg class="size-3 shrink-0" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-              <path v-if="row.overdue" d="M6 1.2 11.4 10.8H.6z" fill="currentColor" />
+            <svg
+              class="size-3 shrink-0"
+              viewBox="0 0 12 12"
+              fill="none"
+              aria-hidden="true"
+            >
+              <path
+                v-if="row.overdue"
+                d="M6 1.2 11.4 10.8H.6z"
+                fill="currentColor"
+              />
               <path
                 v-else-if="row.status === 'ACTIVE'"
                 d="M2.6 6.3 5 8.7l4.4-5"
@@ -451,56 +562,82 @@ function saveReading() {
         </template>
       </UiTable>
 
-      <div class="border-t border-ink-200 bg-surface-sunken px-5 py-3.5 text-[13px] text-ink-600">
-        Qator ustiga bosilsa ko‘rsatkichlar tarixi va sarf grafigi ochiladi
+      <div
+        class="border-t border-ink-200 bg-surface-sunken px-5 py-3.5 text-[13px] text-ink-600"
+      >
+        {{ t("svc.rowClickHint") }}
       </div>
     </UiCard>
   </main>
 
   <UiModal
     v-model="detailOpen"
-    :title="detail ? `${detail.code} · ko‘rsatkichlar tarixi` : 'Hisoblagich'"
-    :subtitle="detail ? `${detail.buildingName} · ${detail.location}` : undefined"
+    :title="
+      detail ? t('svc.readingHistoryOf', { code: detail.code }) : field('meter')
+    "
+    :subtitle="
+      detail ? `${detail.buildingName} · ${detail.location}` : undefined
+    "
     size="lg"
   >
     <div v-if="detail" class="space-y-5">
       <div class="flex flex-wrap items-center gap-3">
         <span
           class="inline-flex items-center gap-1.5 rounded-pill px-2.5 py-1 text-xs font-semibold ring-1 ring-inset"
-          :class="stateBadge({ overdue: isVerificationOverdue(detail), status: detail.status })"
+          :class="
+            stateBadge({
+              overdue: isVerificationOverdue(detail),
+              status: detail.status,
+            })
+          "
         >
-          {{ meterStateLabel(detail) }}
+          {{ stateName(detail) }}
         </span>
         <span
           class="inline-flex items-center gap-1.5 rounded-pill px-2.5 py-1 text-xs font-semibold ring-1 ring-inset"
           :class="TYPE_TONE[detail.type]"
         >
           <UiIcon name="meter" :size="13" />
-          {{ detail.type }}
+          {{ tr(TYPE_KEY[detail.type], detail.type) }}
         </span>
-        <span class="tabular text-[13px] text-ink-500">Seriya: {{ detail.serial }}</span>
+        <span class="tabular text-[13px] text-ink-500">
+          {{ t("svc.serialInline", { value: detail.serial }) }}
+        </span>
       </div>
 
       <div class="grid gap-4 sm:grid-cols-3">
         <div class="rounded-field bg-surface-sunken p-4">
-          <p class="text-[12px] text-ink-500">Oxirgi ko‘rsatkich</p>
+          <p class="text-[12px] text-ink-500">{{ field("lastReading") }}</p>
           <p class="tabular mt-1 text-[18px] font-bold text-ink-900">
             {{ num(detail.lastReading, decimalsOf(detail)) }}
-            <span class="text-[13px] font-medium text-ink-500">{{ detail.unit }}</span>
+            <span class="text-[13px] font-medium text-ink-500">{{
+              measureLabel(detail.unit)
+            }}</span>
           </p>
         </div>
         <div class="rounded-field bg-surface-sunken p-4">
-          <p class="text-[12px] text-ink-500">Oxirgi sarf</p>
+          <p class="text-[12px] text-ink-500">{{ t("svc.lastConsumption") }}</p>
           <p class="tabular mt-1 text-[18px] font-bold text-brand-600">
-            {{ num(detail.lastReading - detail.previousReading, decimalsOf(detail)) }}
-            <span class="text-[13px] font-medium text-ink-500">{{ detail.unit }}</span>
+            {{
+              num(
+                detail.lastReading - detail.previousReading,
+                decimalsOf(detail),
+              )
+            }}
+            <span class="text-[13px] font-medium text-ink-500">{{
+              measureLabel(detail.unit)
+            }}</span>
           </p>
         </div>
         <div class="rounded-field bg-surface-sunken p-4">
-          <p class="text-[12px] text-ink-500">Navbatdagi qiyoslash</p>
+          <p class="text-[12px] text-ink-500">
+            {{ t("svc.nextVerification") }}
+          </p>
           <p
             class="tabular mt-1 text-[18px] font-bold"
-            :class="isVerificationOverdue(detail) ? 'text-danger-700' : 'text-ink-900'"
+            :class="
+              isVerificationOverdue(detail) ? 'text-danger-700' : 'text-ink-900'
+            "
           >
             {{ dateShort(detail.verifyAt) }}
           </p>
@@ -508,7 +645,9 @@ function saveReading() {
             v-if="isVerificationOverdue(detail)"
             class="mt-1 text-[12px] font-semibold text-danger-600"
           >
-            Muddat {{ -daysToVerification(detail) }} kun oldin tugagan
+            {{
+              t("svc.verificationExpired", { n: -daysToVerification(detail) })
+            }}
           </p>
         </div>
       </div>
@@ -518,45 +657,73 @@ function saveReading() {
         class="rounded-field bg-brand-50 px-4 py-3.5 ring-1 ring-inset ring-brand-100"
       >
         <p class="text-[13px] font-semibold text-brand-700">
-          Joriy davr hisob-fakturasidagi kommunal qator
+          {{ t("svc.invoiceUtilityLine") }}
         </p>
         <p class="tabular mt-1 text-[14px] text-ink-800">
           {{ tariffLineOf(detail)!.service }} ·
           {{ num(tariffLineOf(detail)!.qty, decimalsOf(detail)) }}
-          {{ tariffLineOf(detail)!.unit }} × {{ sum(tariffLineOf(detail)!.tariff) }} =
-          <b class="text-ink-900">{{ sum(tariffLineOf(detail)!.sum) }}</b>
+          {{ measureLabel(tariffLineOf(detail)!.unit) }} ×
+          {{ money(tariffLineOf(detail)!.tariff) }} =
+          <b class="text-ink-900">{{ money(tariffLineOf(detail)!.sum) }}</b>
         </p>
       </div>
 
       <div>
-        <h3 class="text-[13px] font-semibold text-ink-700">Sarf dinamikasi</h3>
+        <h3 class="text-[13px] font-semibold text-ink-700">
+          {{ t("svc.consumptionDynamics") }}
+        </h3>
         <div class="mt-3">
           <UiLine :labels="chartLabels" :series="chartSeries" :height="180" />
         </div>
       </div>
 
       <div>
-        <h3 class="text-[13px] font-semibold text-ink-700">Ko‘rsatkichlar tarixi</h3>
+        <h3 class="text-[13px] font-semibold text-ink-700">
+          {{ t("svc.readingHistory") }}
+        </h3>
         <div class="mt-3 overflow-hidden rounded-field ring-1 ring-ink-200">
           <UiTable
             :columns="[
-              { key: 'at', label: 'Sana' },
-              { key: 'value', label: 'Ko‘rsatkich', align: 'right', numeric: true },
-              { key: 'consumption', label: 'Sarf', align: 'right', numeric: true },
-              { key: 'note', label: 'Izoh' },
+              { key: 'at', label: field('date') },
+              {
+                key: 'value',
+                label: field('reading'),
+                align: 'right',
+                numeric: true,
+              },
+              {
+                key: 'consumption',
+                label: field('consumption'),
+                align: 'right',
+                numeric: true,
+              },
+              { key: 'note', label: t('common.note') },
             ]"
-            :rows="[...detailReadings].reverse().map((r) => ({ ...r, id: r.at }))"
+            :rows="
+              [...detailReadings].reverse().map((r) => ({ ...r, id: r.at }))
+            "
           >
             <template #cell-at="{ row }">
               <span class="tabular">{{ dateShort(row.at) }}</span>
             </template>
             <template #cell-value="{ row }">
-              {{ num(row.value, decimalsOf(detail)) }} {{ detail.unit }}
+              {{ num(row.value, decimalsOf(detail)) }}
+              {{ measureLabel(detail.unit) }}
             </template>
             <template #cell-consumption="{ row }">
-              <span :class="row.consumption > 0 ? 'font-bold text-brand-600' : 'text-ink-400'">
-                {{ row.consumption > 0 ? '+' : '' }}{{ num(row.consumption, decimalsOf(detail)) }}
+              <span
+                :class="
+                  row.consumption > 0
+                    ? 'font-bold text-brand-600'
+                    : 'text-ink-400'
+                "
+              >
+                {{ row.consumption > 0 ? "+" : ""
+                }}{{ num(row.consumption, decimalsOf(detail)) }}
               </span>
+            </template>
+            <template #cell-note="{ row }">
+              {{ row.noteKey ? t(String(row.noteKey)) : row.note }}
             </template>
           </UiTable>
         </div>
@@ -564,43 +731,55 @@ function saveReading() {
     </div>
 
     <template #footer>
-      <UiButton variant="ghost" @click="detail = null">Yopish</UiButton>
+      <UiButton variant="ghost" @click="detail = null">{{
+        t("common.close")
+      }}</UiButton>
       <UiButton
+        v-if="canEnter"
         @click="
-          ((entryMeter = detail?.id ?? entryMeter), (detail = null), (entryOpen = true))
+          ((entryMeter = detail?.id ?? entryMeter),
+          (detail = null),
+          (entryOpen = true))
         "
       >
         <UiIcon name="plus" :size="16" />
-        Ko‘rsatkich kiritish
+        {{ t("svc.enterReading") }}
       </UiButton>
     </template>
   </UiModal>
 
   <UiModal
     v-model="entryOpen"
-    title="Ko‘rsatkich kiritish"
-    subtitle="Qo‘lda kiritilgan ko‘rsatkich monitoringda darhol aks etadi"
+    :title="t('svc.enterReading')"
+    :subtitle="t('svc.enterReadingHint')"
   >
     <div class="space-y-4">
-      <UiField label="Hisoblagich" required>
+      <UiField :label="field('meter')" required>
         <UiSelect
           v-model="entryMeter"
-          :options="meters.map((m) => ({ value: m.id, label: `${m.code} · ${m.buildingName}` }))"
+          :options="
+            meters.map((m) => ({
+              value: m.id,
+              label: `${m.code} · ${m.buildingName}`,
+            }))
+          "
         />
       </UiField>
 
       <div class="grid gap-4 sm:grid-cols-2">
-        <UiField label="Sana" required>
+        <UiField :label="field('date')" required>
           <UiInput v-model="entryDate" type="date" />
         </UiField>
 
         <UiField
-          label="Joriy qiymat"
+          :label="field('current')"
           required
           :error="entryError"
           :hint="
             activeMeter
-              ? `Oldingi ko‘rsatkich: ${num(activeMeter.lastReading, decimalsOf(activeMeter))} ${activeMeter.unit}`
+              ? t('svc.previousReadingValue', {
+                  value: `${num(activeMeter.lastReading, decimalsOf(activeMeter))} ${activeMeter.unit}`,
+                })
               : undefined
           "
         >
@@ -618,43 +797,50 @@ function saveReading() {
         class="space-y-2 rounded-field bg-brand-50 px-4 py-3"
       >
         <div class="flex items-center justify-between">
-          <span class="text-[13px] font-medium text-brand-700">Hisoblangan sarf</span>
+          <span class="text-[13px] font-medium text-brand-700">
+            {{ t("svc.calculatedConsumption") }}
+          </span>
           <span class="tabular text-[16px] font-bold text-brand-700">
-            +{{ num(entryUsage, decimalsOf(activeMeter)) }} {{ activeMeter.unit }}
+            +{{ num(entryUsage, decimalsOf(activeMeter)) }}
+            {{ measureLabel(activeMeter.unit) }}
           </span>
         </div>
         <p v-if="entryTariffLine" class="text-[13px] text-ink-700">
-          Joriy davr hisob-fakturasiga «{{ entryTariffLine.service }}» qatori sifatida tushadi:
-          {{ num(entryTariffLine.qty, decimalsOf(activeMeter)) }} {{ entryTariffLine.unit }} ×
-          {{ sum(entryTariffLine.tariff) }} =
-          <b class="text-ink-900">{{ sum(entryTariffLine.sum) }}</b>
+          {{ t("svc.invoiceLineNote", { service: entryTariffLine.service }) }}
+          {{ num(entryTariffLine.qty, decimalsOf(activeMeter)) }}
+          {{ measureLabel(entryTariffLine.unit) }} × {{ money(entryTariffLine.tariff) }} =
+          <b class="text-ink-900">{{ money(entryTariffLine.sum) }}</b>
         </p>
         <p v-else class="text-[13px] text-ink-600">
-          Bu tur bo‘yicha tarif belgilanmagan, ko‘rsatkich faqat monitoringda qayd etiladi.
+          {{ t("svc.noTariffNote") }}
         </p>
       </div>
 
-      <UiField label="Izoh">
+      <UiField :label="t('common.note')">
         <textarea
           v-model="entryNote"
           rows="2"
-          placeholder="Masalan: asosiy suv tuguni"
+          :placeholder="t('svc.notePlaceholder')"
           class="scroll-slim w-full rounded-field bg-white px-3.5 py-2.5 text-sm text-ink-800 ring-1 ring-inset ring-ink-200 transition-colors placeholder:text-ink-400 hover:ring-ink-300 focus:ring-2 focus:ring-brand-500"
         />
       </UiField>
 
-      <UiField label="Hisoblagich surati" hint="Ko‘rsatkich sifatini tasdiqlash uchun surat biriktiring">
+      <UiField :label="t('svc.meterPhoto')" :hint="t('svc.meterPhotoHint')">
         <div class="flex flex-wrap gap-3">
           <div
             v-for="(p, i) in entryPhotos"
             :key="`${p.file.name}-${i}`"
             class="relative size-24 overflow-hidden rounded-field ring-1 ring-ink-200"
           >
-            <img :src="p.url" :alt="p.file.name" class="size-full object-cover" />
+            <img
+              :src="p.url"
+              :alt="p.file.name"
+              class="size-full object-cover"
+            />
             <button
               type="button"
               class="absolute right-1 top-1 grid size-8 place-items-center rounded-full bg-ink-900/60 text-white transition-colors hover:bg-danger-600 md:size-6"
-              :aria-label="`${p.file.name}: suratni olib tashlash`"
+              :aria-label="t('svc.removeShot', { name: p.file.name })"
               @click="removeEntryPhoto(i)"
             >
               <UiIcon name="x" :size="13" />
@@ -667,7 +853,7 @@ function saveReading() {
             accept="image/*"
             multiple
             class="sr-only"
-            aria-label="Hisoblagich suratlari"
+            :aria-label="t('svc.meterPhotos')"
             @change="onEntryPhotos"
           />
 
@@ -675,12 +861,31 @@ function saveReading() {
             v-if="entryPhotos.length < PHOTO_LIMIT"
             type="button"
             class="grid size-24 place-items-center rounded-field border-2 border-dashed border-ink-300 bg-ink-50 text-ink-500 transition-colors hover:border-brand-400 hover:bg-brand-50 hover:text-brand-600"
-            aria-label="Hisoblagich surati qo‘shish"
+            :aria-label="t('svc.addMeterPhoto')"
             @click="pickEntryPhotos"
           >
-            <svg viewBox="0 0 32 32" class="size-8" fill="none" aria-hidden="true">
-              <rect x="3" y="7" width="26" height="18" rx="3" stroke="currentColor" stroke-width="1.8" />
-              <circle cx="16" cy="16" r="4.6" stroke="currentColor" stroke-width="1.8" />
+            <svg
+              viewBox="0 0 32 32"
+              class="size-8"
+              fill="none"
+              aria-hidden="true"
+            >
+              <rect
+                x="3"
+                y="7"
+                width="26"
+                height="18"
+                rx="3"
+                stroke="currentColor"
+                stroke-width="1.8"
+              />
+              <circle
+                cx="16"
+                cy="16"
+                r="4.6"
+                stroke="currentColor"
+                stroke-width="1.8"
+              />
               <path
                 d="M16 12.6v6.8M12.6 16h6.8"
                 stroke="currentColor"
@@ -694,10 +899,12 @@ function saveReading() {
     </div>
 
     <template #footer>
-      <UiButton variant="ghost" @click="entryOpen = false">Bekor qilish</UiButton>
+      <UiButton variant="ghost" @click="entryOpen = false">{{
+        t("common.cancel")
+      }}</UiButton>
       <UiButton :disabled="!!entryError" variant="success" @click="saveReading">
         <UiIcon name="check" :size="16" />
-        Saqlash
+        {{ t("common.save") }}
       </UiButton>
     </template>
   </UiModal>

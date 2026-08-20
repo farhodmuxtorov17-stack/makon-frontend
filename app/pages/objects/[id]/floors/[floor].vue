@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { buildingById } from '~/data/buildings'
 import { unitsOfFloor, type Unit } from '~/data/units'
-import { UNIT_STATUS, UNIT_STATUS_COLOR } from '~/constants/statuses'
+import { UNIT_STATUS_COLOR } from '~/constants/statuses'
 import { area, num, percent } from '~/utils/format'
 import { buildFloorPlan } from '~/utils/floorPlan'
 
 const route = useRoute()
 const auth = useAuthStore()
+const { t } = useI18n()
+const { unitUsageLabel, field, statusLabel, moduleTitle, priceUnitLabel } = useAppLabels()
 const { action: leadAction, label: leadLabel, staffHint } = useLeadAction()
 
 const id = computed(() => String(route.params.id))
@@ -73,7 +75,9 @@ watch(
  * ikkalasi ham bitta sahifaga olib borardi.
  */
 function floorName(floor: number) {
-  return floor < 0 ? `${-floor}-yer osti qavati` : `${floor}-qavat`
+  return floor < 0
+    ? t('obj.undergroundFloorNo', { floor: -floor })
+    : t('unitOf.floorNo', { floor })
 }
 
 const floorTitle = computed(() => floorName(floorNo.value))
@@ -90,7 +94,9 @@ const floorOptions = computed(() => {
     // Reja kiritilmagan qavat yashirilmaydi, lekin ochiq aytiladi
     return {
       value: String(floor),
-      label: count ? `${name} · ${count} unit` : `${name} · reja kiritilmagan`,
+      label: count
+        ? t('obj.floorOptionUnits', { name, count })
+        : t('obj.floorOptionNoPlan', { name }),
     }
   })
 })
@@ -195,16 +201,16 @@ const bayLabels = computed(() => {
 const scaleBar = computed(() => {
   const target = plan.value.width / 5
   const step = [1, 2, 5, 10, 20, 50].find((v) => v >= target) ?? 50
-  return { metres: step, label: `${step} m` }
+  return { metres: step, label: `${step} ${t('unitOf.metre')}` }
 })
 
 /** Reja ostidagi o‘lcham zanjiri: qavatning tashqi eni va bo‘yi */
 const planLabel = computed(() => {
   const p = plan.value
   return {
-    width: `${p.width.toFixed(1)} m`,
-    height: `${p.height.toFixed(1)} m`,
-    gross: `${num(Math.round(p.grossArea))} m²`,
+    width: `${p.width.toFixed(1)} ${t('unitOf.metre')}`,
+    height: `${p.height.toFixed(1)} ${t('unitOf.metre')}`,
+    gross: `${num(Math.round(p.grossArea))} ${t('unitOf.sqm')}`,
     efficiency: `${Math.round(p.efficiency * 100)}%`,
   }
 })
@@ -298,18 +304,18 @@ function resetPlan() {
 }
 
 function contractLabel(unit: Unit) {
-  if (unit.contractCode) return `Shartnoma imzolangan · ${unit.contractCode}`
-  if (unit.status === 'RESERVED') return 'Rezervda, shartnoma tayyorlanmoqda'
-  if (unit.status === 'MAINTENANCE') return 'Ta’mir ishlari tugagunicha to‘xtatilgan'
-  if (unit.status === 'VACANT') return 'Shartnoma rasmiylashtirilmagan'
-  return 'Shartnoma ma’lumotlari kiritilmagan'
+  if (unit.contractCode) return t('obj.contractSigned', { code: unit.contractCode })
+  if (unit.status === 'RESERVED') return t('obj.contractReserved')
+  if (unit.status === 'MAINTENANCE') return t('obj.contractMaintenance')
+  if (unit.status === 'VACANT') return t('obj.contractNone')
+  return t('obj.contractUnknown')
 }
 
 /** Ariza oynasi sarlavhasida narx faqat moliya huquqi bilan ko‘rinadi */
 const applySubtitle = computed(() => {
   const u = selected.value
   if (!u) return ''
-  const base = `${area(u.area)} · ${u.usage}`
+  const base = `${area(u.area)} · ${unitUsageLabel(u.usage)}`
   return showFinance.value ? `${base} · ${num(u.price)} ${u.priceUnit}` : base
 })
 
@@ -338,8 +344,11 @@ function goApply() {
 <template>
   <template v-if="!building">
     <AppTopbar
-      title="Obyekt topilmadi"
-      :breadcrumb="[{ label: 'Obyektlar', to: '/objects' }, { label: 'Topilmadi' }]"
+      :title="t('empty.noObjects')"
+      :breadcrumb="[
+        { label: moduleTitle('objects'), to: '/objects' },
+        { label: t('obj.notFoundCrumb') },
+      ]"
     />
     <main class="scroll-slim flex-1 overflow-y-auto p-4 sm:p-6">
       <UiCard>
@@ -347,13 +356,13 @@ function goApply() {
           <span class="grid size-14 place-items-center rounded-full bg-warn-50 text-warn-600">
             <UiIcon name="warning" :size="26" />
           </span>
-          <p class="text-[16px] font-bold text-ink-900">Obyekt mavjud emas</p>
+          <p class="text-[16px] font-bold text-ink-900">{{ t('obj.missingShort') }}</p>
           <p class="max-w-sm text-[13px] leading-relaxed text-ink-500">
-            Havola eskirgan yoki obyekt sizga biriktirilmagan bo‘lishi mumkin.
+            {{ t('obj.missingHint') }}
           </p>
           <UiButton to="/objects">
             <UiIcon name="chevronLeft" :size="16" />
-            Obyektlar reyestri
+            {{ t('obj.title') }}
           </UiButton>
         </div>
       </UiCard>
@@ -362,10 +371,10 @@ function goApply() {
 
   <template v-else>
     <AppTopbar
-      :title="`${floorTitle} rejasi`"
-      :subtitle="`${building.name} · xona va unitlar bo‘yicha chuqur ko‘rish`"
+      :title="t('obj.floorPlanOf', { floor: floorTitle })"
+      :subtitle="t('obj.floorPlanCaption', { name: building.name })"
       :breadcrumb="[
-        { label: 'Obyektlar', to: '/objects' },
+        { label: moduleTitle('objects'), to: '/objects' },
         { label: building.name, to: `/objects/${building.id}` },
         { label: floorTitle },
       ]"
@@ -373,11 +382,11 @@ function goApply() {
       <template #actions>
         <UiButton variant="secondary" size="sm" :to="`/objects/${building.id}/3d`">
           <UiIcon name="cube" :size="16" />
-          3D navigator
+          {{ t('obj.navigator3d') }}
         </UiButton>
         <UiButton variant="secondary" size="sm" :to="`/objects/${building.id}`">
           <UiIcon name="doc" :size="16" />
-          Bino pasporti
+          {{ t('obj.passport') }}
         </UiButton>
       </template>
     </AppTopbar>
@@ -386,8 +395,8 @@ function goApply() {
       <section class="grid gap-5 xl:grid-cols-[minmax(0,1fr)_368px]">
         <div class="min-w-0 space-y-5">
           <UiCard
-            :title="`${floorTitle} rejasi`"
-            :subtitle="`${units.length} ta unit · ${area(stats.total)} umumiy maydon`"
+            :title="t('obj.floorPlanOf', { floor: floorTitle })"
+            :subtitle="t('obj.floorPlanUnits', { n: units.length, area: area(stats.total) })"
             flush
             :padded="false"
           >
@@ -408,7 +417,7 @@ function goApply() {
                   <button
                     type="button"
                     class="grid size-11 md:size-9 place-items-center rounded-[8px] text-ink-600 transition-colors hover:bg-brand-50 hover:text-brand-600 disabled:opacity-40"
-                    aria-label="Yaqinlashtirish"
+                    :aria-label="t('common.zoomIn')"
                     :disabled="zoom >= 3"
                     @click="zoomIn"
                   >
@@ -417,7 +426,7 @@ function goApply() {
                   <button
                     type="button"
                     class="grid size-11 md:size-9 place-items-center rounded-[8px] text-ink-600 transition-colors hover:bg-brand-50 hover:text-brand-600 disabled:opacity-40"
-                    aria-label="Uzoqlashtirish"
+                    :aria-label="t('common.zoomOut')"
                     :disabled="zoom <= 0.5"
                     @click="zoomOut"
                   >
@@ -434,7 +443,7 @@ function goApply() {
                     type="button"
                     class="grid size-11 md:size-9 place-items-center rounded-[8px] transition-colors hover:bg-brand-50 hover:text-brand-600"
                     :class="fitMode ? 'text-brand-600' : 'text-ink-600'"
-                    aria-label="Rejaga moslashtirish"
+                    :aria-label="t('obj.fitPlan')"
                     @click="fitPlan"
                   >
                     <svg class="size-[18px]" viewBox="0 0 20 20" fill="none" aria-hidden="true">
@@ -449,7 +458,7 @@ function goApply() {
                   <button
                     type="button"
                     class="grid size-11 md:size-9 place-items-center rounded-[8px] text-ink-600 transition-colors hover:bg-brand-50 hover:text-brand-600"
-                    aria-label="Qayta tiklash"
+                    :aria-label="t('common.resetView')"
                     @click="resetPlan"
                   >
                     <UiIcon name="refresh" :size="17" />
@@ -467,7 +476,13 @@ function goApply() {
                   :viewBox="viewBox"
                   class="h-[440px] w-full"
                   role="img"
-                  :aria-label="`${floorTitle} rejasi, ${planLabel.width} × ${planLabel.height}`"
+                  :aria-label="
+                    t('obj.planAria', {
+                      floor: floorTitle,
+                      width: planLabel.width,
+                      height: planLabel.height,
+                    })
+                  "
                 >
                   <defs>
                     <pattern
@@ -510,7 +525,7 @@ function goApply() {
                     fill="#8494AC"
                     letter-spacing="0.3"
                   >
-                    KORIDOR
+                    {{ t('obj.corridor') }}
                   </text>
 
                   <!-- Xizmat yadrosi shtrixlanadi -->
@@ -800,7 +815,7 @@ function goApply() {
                       fill="#54617A"
                       font-weight="700"
                     >
-                      SH
+                      {{ t('obj.north') }}
                     </text>
                   </g>
                   <g :transform="`translate(0 ${plan.height + margin * 0.92})`">
@@ -838,10 +853,10 @@ function goApply() {
                   </span>
                   <div>
                     <p class="text-[14px] font-bold text-ink-900">
-                      Ushbu qavat bo‘yicha reja kiritilmagan
+                      {{ t('obj.floorNoPlanTitle') }}
                     </p>
                     <p class="mt-1 text-[13px] text-ink-500">
-                      Rejasi mavjud qavatlardan birini tanlang.
+                      {{ t('obj.floorNoPlanText') }}
                     </p>
                   </div>
                   <div v-if="floorsWithPlan.length" class="flex flex-wrap justify-center gap-2">
@@ -852,7 +867,8 @@ function goApply() {
                       size="sm"
                       :to="`/objects/${building.id}/floors/${f.floor}`"
                     >
-                      {{ f.floor }}-qavat · {{ f.count }} unit
+                      {{ t('unitOf.floorNo', { floor: f.floor }) }} ·
+                      {{ t('obj.unitsOf', { n: f.count }) }}
                     </UiButton>
                   </div>
                 </div>
@@ -872,29 +888,52 @@ function goApply() {
                   @click="toggleStatus(l)"
                 >
                   <span class="size-2.5 rounded-full" :style="{ background: STATUS_FILL[l] }" />
-                  {{ UNIT_STATUS[l]?.label }}
+                  {{ statusLabel('unit', l) }}
                   <span class="tabular opacity-70">{{ legendCount(l) }}</span>
                 </button>
 
                 <span v-if="activeStatuses.length" class="text-[12px] text-ink-500">
-                  Rejada faqat tanlangan holatlar ajratib ko‘rsatilmoqda
+                  {{ t('obj.legendFilterHint') }}
                 </span>
               </div>
             </div>
           </UiCard>
 
           <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <UiKpi label="Umumiy maydon" :value="num(stats.total, 2)" unit="m²" icon="layers" tone="brand" />
-            <UiKpi label="Band maydon" :value="num(stats.occupied, 2)" unit="m²" icon="check" tone="ok" />
-            <UiKpi label="Bo‘sh maydon" :value="num(stats.vacant, 2)" unit="m²" icon="box" tone="warn" />
-            <UiKpi label="Qavat bandligi" :value="percent(stats.occupancy)" icon="chart" tone="violet" />
+            <UiKpi
+              :label="t('kpi.totalArea')"
+              :value="num(stats.total, 2)"
+              :unit="t('unitOf.sqm')"
+              icon="layers"
+              tone="brand"
+            />
+            <UiKpi
+              :label="t('kpi.occupiedArea')"
+              :value="num(stats.occupied, 2)"
+              :unit="t('unitOf.sqm')"
+              icon="check"
+              tone="ok"
+            />
+            <UiKpi
+              :label="t('kpi.vacantArea')"
+              :value="num(stats.vacant, 2)"
+              :unit="t('unitOf.sqm')"
+              icon="box"
+              tone="warn"
+            />
+            <UiKpi
+              :label="t('kpi.floorOccupancy')"
+              :value="percent(stats.occupancy)"
+              icon="chart"
+              tone="violet"
+            />
           </section>
         </div>
 
         <div class="min-w-0 xl:sticky xl:top-[88px] xl:self-start">
           <UiCard
             v-if="selected"
-            :title="`Unit ${selected.code}`"
+            :title="t('obj.unitOf', { code: selected.code })"
             :subtitle="`${building.name} · ${floorTitle}`"
           >
             <UiStatus kind="unit" :value="selected.status" />
@@ -903,7 +942,7 @@ function goApply() {
               <div class="flex items-start gap-4 py-2.5">
                 <dt class="flex w-[128px] shrink-0 items-center gap-2 text-[13px] text-ink-500">
                   <UiIcon name="layers" :size="15" />
-                  Maydoni
+                  {{ field('area') }}
                 </dt>
                 <dd class="tabular min-w-0 flex-1 text-[13px] font-bold text-ink-900">
                   {{ area(selected.area) }}
@@ -912,16 +951,16 @@ function goApply() {
               <div class="flex items-start gap-4 py-2.5">
                 <dt class="flex w-[128px] shrink-0 items-center gap-2 text-[13px] text-ink-500">
                   <UiIcon name="box" :size="15" />
-                  Turi
+                  {{ field('type') }}
                 </dt>
                 <dd class="min-w-0 flex-1 text-[13px] font-semibold text-ink-900">
-                  {{ selected.usage }} · {{ selected.rooms }} xona
+                  {{ unitUsageLabel(selected.usage) }} · {{ t('obj.roomsOf', { n: selected.rooms }) }}
                 </dd>
               </div>
               <div v-if="showFinance" class="flex items-start gap-4 py-2.5">
                 <dt class="flex w-[128px] shrink-0 items-center gap-2 text-[13px] text-ink-500">
                   <UiIcon name="user" :size="15" />
-                  Ijarachi / Xaridor
+                  {{ field('tenantBuyer') }}
                 </dt>
                 <dd class="min-w-0 flex-1 text-[13px] font-semibold text-ink-900">
                   {{ selected.tenant ?? '-' }}
@@ -930,16 +969,16 @@ function goApply() {
               <div v-if="showFinance" class="flex items-start gap-4 py-2.5">
                 <dt class="flex w-[128px] shrink-0 items-center gap-2 text-[13px] text-ink-500">
                   <UiIcon name="wallet" :size="15" />
-                  Narxi
+                  {{ field('price') }}
                 </dt>
                 <dd class="tabular min-w-0 flex-1 text-[13px] font-bold text-brand-600">
-                  {{ num(selected.price) }} {{ selected.priceUnit }}
+                  {{ num(selected.price) }} {{ priceUnitLabel(selected.priceUnit) }}
                 </dd>
               </div>
               <div class="flex items-start gap-4 py-2.5">
                 <dt class="flex w-[128px] shrink-0 items-center gap-2 text-[13px] text-ink-500">
                   <UiIcon name="wrench" :size="15" />
-                  Jihozlar
+                  {{ field('equipment') }}
                 </dt>
                 <dd class="min-w-0 flex-1">
                   <span class="flex flex-wrap gap-1.5">
@@ -956,7 +995,7 @@ function goApply() {
               <div v-if="showFinance" class="flex items-start gap-4 py-2.5">
                 <dt class="flex w-[128px] shrink-0 items-center gap-2 text-[13px] text-ink-500">
                   <UiIcon name="clipboard" :size="15" />
-                  Shartnoma holati
+                  {{ t('obj.contractStatus') }}
                 </dt>
                 <dd
                   class="min-w-0 flex-1 text-[13px] font-semibold"
@@ -968,7 +1007,7 @@ function goApply() {
               <div class="flex items-start gap-4 py-2.5">
                 <dt class="flex w-[128px] shrink-0 items-center gap-2 text-[13px] text-ink-500">
                   <UiIcon name="doc" :size="15" />
-                  Taklif turi
+                  {{ field('offer') }}
                 </dt>
                 <dd class="min-w-0 flex-1 text-[13px] font-semibold text-ink-900">
                   {{ selected.offer }}
@@ -979,19 +1018,19 @@ function goApply() {
             <div class="mt-5 grid gap-3" :class="selected.status === 'VACANT' ? 'grid-cols-2' : ''">
               <UiButton variant="secondary" @click="viewOpen = true">
                 <UiIcon name="eye" :size="16" />
-                Ko‘rish
+                {{ t('common.view') }}
               </UiButton>
               <UiButton
                 v-if="selected.status === 'VACANT' && leadAction !== 'none'"
                 @click="goApply"
               >
                 <UiIcon name="key" :size="16" />
-                Ariza yuborish
+                {{ t('apply.cta') }}
               </UiButton>
             </div>
 
             <div v-if="units.length > 1" class="mt-5 border-t border-ink-100 pt-4">
-              <p class="mb-2 text-[12px] font-semibold text-ink-500">Qavatdagi unitlar</p>
+              <p class="mb-2 text-[12px] font-semibold text-ink-500">{{ t('obj.floorUnits') }}</p>
               <div class="flex flex-wrap gap-1.5">
                 <button
                   v-for="u in units"
@@ -1011,13 +1050,13 @@ function goApply() {
             </div>
           </UiCard>
 
-          <UiCard v-else title="Unit kartasi" subtitle="Ma’lumot uchun unit tanlang">
+          <UiCard v-else :title="t('obj.unitCard')" :subtitle="t('obj.pickUnitInfo')">
             <div class="flex flex-col items-center gap-3 py-10 text-center">
               <span class="grid size-12 place-items-center rounded-full bg-ink-100 text-ink-500">
                 <UiIcon name="box" :size="22" />
               </span>
               <p class="text-[13px] text-ink-500">
-                Ushbu qavatda unit yozuvlari yo‘q. Boshqa qavatni tanlang.
+                {{ t('obj.noUnitsFloorText') }}
               </p>
             </div>
           </UiCard>
@@ -1027,13 +1066,13 @@ function goApply() {
       <UiModal
         v-if="selected"
         v-model="viewOpen"
-        :title="`Unit ${selected.code}, batafsil`"
+        :title="t('obj.unitDetail', { code: selected.code })"
         :subtitle="`${building.name} · ${floorTitle}`"
         size="lg"
       >
         <div class="grid gap-5 sm:grid-cols-2">
           <div class="rounded-field bg-surface-sunken p-3 ring-1 ring-inset ring-ink-100">
-            <svg viewBox="0 0 100 100" class="h-[210px] w-full" role="img" aria-label="Joylashuv">
+            <svg viewBox="0 0 100 100" class="h-[210px] w-full" role="img" :aria-label="field('location')">
               <rect x="1.5" y="3" width="97" height="94" rx="1.2" fill="#FFFFFF" stroke="#E2E8F2" stroke-width="0.7" />
               <polygon
                 v-for="s in shapes"
@@ -1056,43 +1095,43 @@ function goApply() {
               </text>
             </svg>
             <p class="mt-2 text-center text-[12px] text-ink-500">
-              Joylashuv: {{ floorTitle }}, {{ building.name }}
+              {{ t('obj.locationOf', { floor: floorTitle, name: building.name }) }}
             </p>
           </div>
 
           <dl class="divide-y divide-ink-100">
             <div class="flex items-center justify-between gap-4 py-2.5">
-              <dt class="text-[13px] text-ink-500">Holati</dt>
+              <dt class="text-[13px] text-ink-500">{{ field('status') }}</dt>
               <dd><UiStatus kind="unit" :value="selected.status" size="sm" /></dd>
             </div>
             <div class="flex items-center justify-between gap-4 py-2.5">
-              <dt class="text-[13px] text-ink-500">Maydoni</dt>
+              <dt class="text-[13px] text-ink-500">{{ field('area') }}</dt>
               <dd class="tabular text-[13px] font-bold text-ink-900">{{ area(selected.area) }}</dd>
             </div>
             <div class="flex items-center justify-between gap-4 py-2.5">
-              <dt class="text-[13px] text-ink-500">Xonalar</dt>
+              <dt class="text-[13px] text-ink-500">{{ field('rooms') }}</dt>
               <dd class="tabular text-[13px] font-semibold text-ink-900">{{ selected.rooms }}</dd>
             </div>
             <div class="flex items-center justify-between gap-4 py-2.5">
-              <dt class="text-[13px] text-ink-500">Turi</dt>
-              <dd class="text-[13px] font-semibold text-ink-900">{{ selected.usage }}</dd>
+              <dt class="text-[13px] text-ink-500">{{ field('type') }}</dt>
+              <dd class="text-[13px] font-semibold text-ink-900">{{ unitUsageLabel(selected.usage) }}</dd>
             </div>
             <div class="flex items-center justify-between gap-4 py-2.5">
-              <dt class="text-[13px] text-ink-500">Taklif</dt>
+              <dt class="text-[13px] text-ink-500">{{ field('offerShort') }}</dt>
               <dd class="text-[13px] font-semibold text-ink-900">{{ selected.offer }}</dd>
             </div>
             <div v-if="showFinance" class="flex items-center justify-between gap-4 py-2.5">
-              <dt class="text-[13px] text-ink-500">Narxi</dt>
+              <dt class="text-[13px] text-ink-500">{{ field('price') }}</dt>
               <dd class="tabular text-[13px] font-bold text-brand-600">
-                {{ num(selected.price) }} {{ selected.priceUnit }}
+                {{ num(selected.price) }} {{ priceUnitLabel(selected.priceUnit) }}
               </dd>
             </div>
             <div v-if="showFinance" class="flex items-center justify-between gap-4 py-2.5">
-              <dt class="text-[13px] text-ink-500">Ijarachi / Xaridor</dt>
+              <dt class="text-[13px] text-ink-500">{{ field('tenantBuyer') }}</dt>
               <dd class="text-[13px] font-semibold text-ink-900">{{ selected.tenant ?? '-' }}</dd>
             </div>
             <div v-if="showFinance" class="flex items-start justify-between gap-4 py-2.5">
-              <dt class="text-[13px] text-ink-500">Shartnoma</dt>
+              <dt class="text-[13px] text-ink-500">{{ field('contract') }}</dt>
               <dd class="max-w-[60%] text-right text-[13px] font-semibold text-ink-900">
                 {{ contractLabel(selected) }}
               </dd>
@@ -1101,7 +1140,7 @@ function goApply() {
         </div>
 
         <div class="mt-5 border-t border-ink-100 pt-4">
-          <p class="mb-2 text-[13px] font-semibold text-ink-700">Jihozlar</p>
+          <p class="mb-2 text-[13px] font-semibold text-ink-700">{{ field('equipment') }}</p>
           <div class="flex flex-wrap gap-2">
             <span
               v-for="e in selected.equipment"
@@ -1115,13 +1154,13 @@ function goApply() {
         </div>
 
         <template #footer>
-          <UiButton variant="ghost" @click="viewOpen = false">Yopish</UiButton>
+          <UiButton variant="ghost" @click="viewOpen = false">{{ t('common.close') }}</UiButton>
           <UiButton
                 v-if="selected.status === 'VACANT' && leadAction !== 'none'"
                 @click="goApply"
               >
             <UiIcon name="key" :size="16" />
-            Ariza yuborish
+            {{ t('apply.cta') }}
           </UiButton>
         </template>
       </UiModal>
@@ -1129,25 +1168,23 @@ function goApply() {
       <UiModal
         v-if="selected"
         v-model="applyOpen"
-        :title="`Ariza yuborish: Unit ${selected.code}`"
+        :title="t('obj.applyForUnit', { code: selected.code })"
         :subtitle="applySubtitle"
       >
         <div class="flex gap-3 rounded-field bg-brand-50 p-4 ring-1 ring-inset ring-brand-100">
           <UiIcon name="info" :size="20" class="mt-0.5 shrink-0 text-brand-600" />
           <p class="text-[14px] leading-relaxed text-ink-700">
-            Ijaraga olish arizasini tashkilot vakili o‘zining shaxsiy kabinetidan yuboradi.
-            Ariza kelib tushishi bilan u sizning arizalar navbatingizda paydo bo‘ladi va
-            kommersiya taklifini shu yerda tuzasiz.
+            {{ t('obj.applyFlowText') }}
           </p>
         </div>
 
         <ol class="mt-4 space-y-3">
           <li
             v-for="(s, i) in [
-              'Ijarachi katalogdan unitni tanlab ariza yuboradi',
-              'Bino rahbari kommersiya taklifi va to‘lov grafigini tasdiqlaydi',
-              'Buxgalter moliyaviy shartlarni tasdiqlaydi, tizim qoralama tuzadi',
-              'Didox orqali ikki tomon imzolaydi va shartnoma aktivlashtiriladi',
+              t('obj.applyStep1'),
+              t('obj.applyStep2'),
+              t('obj.applyStep3'),
+              t('obj.applyStep4'),
             ]"
             :key="s"
             class="flex gap-3"
@@ -1162,10 +1199,10 @@ function goApply() {
         </ol>
 
         <template #footer>
-          <UiButton variant="ghost" @click="applyOpen = false">Yopish</UiButton>
+          <UiButton variant="ghost" @click="applyOpen = false">{{ t('common.close') }}</UiButton>
           <UiButton v-if="canOpenApplications" variant="secondary" to="/applications">
             <UiIcon name="clipboard" :size="16" />
-            Arizalar navbati
+            {{ t('obj.applicationsQueue') }}
           </UiButton>
         </template>
       </UiModal>

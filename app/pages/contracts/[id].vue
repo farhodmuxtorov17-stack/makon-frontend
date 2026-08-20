@@ -3,11 +3,12 @@ import { BUILDINGS } from '~/data/buildings'
 import AppTopbar from '~/components/layout/AppTopbar.vue'
 import { CONTRACTS, INVOICES, type Contract } from '~/data/business'
 import { docxBlob, fileSize, saveBlob, type DocxLine } from '~/utils/docx'
-import { dateLong, dateShort, num, sum } from '~/utils/format'
+import { dateShort, num, sum } from '~/utils/format'
 
 const route = useRoute()
 const auth = useAuthStore()
 const registry = reactive(CONTRACTS)
+const { money, t, dateLong, field, sectionLabel, moduleTitle, statusLabel, unitOf } = useAppLabels()
 
 /**
  * Bino doirasi kartochkada ham tekshiriladi. Ilgari faqat ro'yxat
@@ -28,6 +29,48 @@ const documentOpen = ref(false)
 const activeDocument = ref<{ name: string; size: string; type: string } | null>(null)
 
 /**
+ * Ma’lumotda o‘zbekcha qiymat sifatida saqlanadigan ro‘yxatlar: shartnoma
+ * turi, bosqich nomi va to‘lov shakli. Qiymatning o‘zi o‘zgarmaydi (holat
+ * mashinasi va solishtirish ishlashda qoladi), faqat ko‘rinadigan nom
+ * tanlangan tilga bog‘lanadi.
+ */
+const TYPE_KEY: Record<string, string> = {
+  Ijara: 'ctr.typeRent',
+  Sotuv: 'ctr.typeSale',
+}
+
+/** «Ijara shartnomasi» / «Договор аренды»: sarlavhadagi qaratqich shakli */
+const TYPE_OF_KEY: Record<string, string> = {
+  Ijara: 'ctr.typeRentOf',
+  Sotuv: 'ctr.typeSaleOf',
+}
+
+const STEP_KEY: Record<string, string> = {
+  Yaratildi: 'ctr.step.created',
+  Kelishildi: 'ctr.step.agreed',
+  Imzolandi: 'ctr.step.signed',
+  Faollashdi: 'ctr.step.active',
+  'Muddati tugadi': 'ctr.step.expired',
+  Uzaytirildi: 'ctr.step.extended',
+}
+
+const PAYMENT_KEY: Record<string, string> = {
+  'Bir martalik to‘lov': 'ctr.payOneTime',
+  'Choraklik to‘lov': 'ctr.payQuarterly',
+  'Oylik oldindan to‘lov': 'ctr.payMonthlyPrepaid',
+}
+
+function labelOf(map: Record<string, string>, value: string) {
+  const key = map[value]
+  return key ? t(key) : value
+}
+
+const typeLabel = (value: string) => labelOf(TYPE_KEY, value)
+const typeOfLabel = (value: string) => labelOf(TYPE_OF_KEY, value)
+const stepLabel = (value: string) => labelOf(STEP_KEY, value)
+const paymentLabel = (value: string) => labelOf(PAYMENT_KEY, value)
+
+/**
  * Reyestrdagi shartnoma bosqichlari. Ijara oqimidan kelgan shartnoma bu yerga
  * allaqachon faol holatda tushadi; reyestrda qo‘lda ochilgan shartnoma esa shu
  * sahifadagi amallar bilan bosqichma-bosqich yuritiladi. Ilgari bu yerda faqat
@@ -35,15 +78,15 @@ const activeDocument = ref<{ name: string; size: string; type: string } | null>(
  * holatidan hech qachon chiqmasdi.
  */
 const agreementStep = computed(
-  () => contract.value?.timeline.find((t) => t.label === 'Kelishildi') ?? null,
+  () => contract.value?.timeline.find((s) => s.label === 'Kelishildi') ?? null,
 )
 
 const signedStep = computed(
-  () => contract.value?.timeline.find((t) => t.label === 'Imzolandi') ?? null,
+  () => contract.value?.timeline.find((s) => s.label === 'Imzolandi') ?? null,
 )
 
 const activeStep = computed(
-  () => contract.value?.timeline.find((t) => t.label === 'Faollashdi') ?? null,
+  () => contract.value?.timeline.find((s) => s.label === 'Faollashdi') ?? null,
 )
 
 const isAgreed = computed(() => agreementStep.value?.done === true)
@@ -88,30 +131,38 @@ function contractHead(c: Contract, title: string): DocxLine[] {
     { text: 'Makon Property Group', style: 'subtitle' },
     { text: title, style: 'title' },
     { text: `${c.code} · ${dateShort(c.startsAt)}`, style: 'subtitle' },
-    { text: 'Tomonlar va obyekt', style: 'heading' },
-    { text: `Ijaraga beruvchi: Makon Property Group` },
-    { text: `Ijarachi: ${c.tenant}` },
-    { text: `Obyekt: ${c.buildingName}, ${c.unitCode}` },
-    { text: `Shartnoma turi: ${c.type}` },
+    { text: t('ctr.docParties'), style: 'heading' },
+    { text: t('ctr.docLessor', { name: 'Makon Property Group' }) },
+    { text: t('ctr.docTenant', { name: c.tenant }) },
+    { text: t('ctr.docObject', { value: `${c.buildingName}, ${c.unitCode}` }) },
+    { text: t('ctr.docType', { value: typeLabel(c.type) }) },
   ]
 }
 
 function documentLines(c: Contract, name: string): DocxLine[] {
   return [
     ...contractHead(c, name),
-    { text: 'Shartlar', style: 'heading' },
-    { text: `Boshlanish sanasi: ${dateLong(c.startsAt)}` },
+    { text: t('ctr.docTerms'), style: 'heading' },
+    { text: t('ctr.docStart', { value: dateLong(c.startsAt) }) },
     {
-      text: `Tugash sanasi: ${c.endsAt === '-' ? 'muddatsiz' : dateLong(c.endsAt)}`,
+      text: t('ctr.docEnd', {
+        value: c.endsAt === '-' ? t('ctr.openEndedLower') : dateLong(c.endsAt),
+      }),
     },
-    { text: `Shartnoma miqdori: ${sum(c.amount)}` },
-    { text: `To‘lov shakli: ${c.paymentTerm}` },
-    { text: 'Bosqichlar', style: 'heading' },
-    ...c.timeline.map((t) => ({
-      text: `${t.label}: ${t.done ? `bajarildi, ${t.date === '-' ? 'sana belgilanmagan' : dateShort(t.date)}, ${t.actor}` : 'kutilmoqda'}`,
+    { text: t('ctr.docAmount', { value: sum(c.amount) }) },
+    { text: t('ctr.docPaymentTerm', { value: paymentLabel(c.paymentTerm) }) },
+    { text: t('ctr.docSteps'), style: 'heading' },
+    ...c.timeline.map((s) => ({
+      text: s.done
+        ? t('ctr.docStepDone', {
+            label: stepLabel(s.label),
+            date: s.date === '-' ? t('ctr.docDateNotSet') : dateShort(s.date),
+            actor: s.actor,
+          })
+        : t('ctr.docStepPending', { label: stepLabel(s.label) }),
     })),
-    { text: 'Ijaraga beruvchi: imzo va muhr', style: 'small' },
-    { text: 'Ijarachi: imzo va muhr', style: 'small' },
+    { text: t('ctr.docLessorSign'), style: 'small' },
+    { text: t('ctr.docTenantSign'), style: 'small' },
   ]
 }
 
@@ -122,18 +173,22 @@ function actCode(c: Contract) {
 
 function actLines(c: Contract): DocxLine[] {
   return [
-    ...contractHead(c, 'Kelishuv dalolatnomasi'),
-    { text: 'Kelishuv qaydi', style: 'heading' },
-    { text: `Dalolatnoma raqami: ${actCode(c)}` },
-    { text: `Kelishuv sanasi: ${approveDate.value === '-' ? 'belgilanmagan' : dateLong(approveDate.value)}` },
-    { text: `Kelishuvni qayd etgan shaxs: ${approver.value}` },
-    { text: `Shartnoma miqdori: ${sum(c.amount)}` },
-    { text: `Joriy holat: ${c.status}` },
+    ...contractHead(c, t('ctr.actTitle')),
+    { text: t('ctr.docAgreementRecord'), style: 'heading' },
+    { text: t('ctr.docActNo', { value: actCode(c) }) },
     {
-      text: 'Hujjat ichki kelishuvni qayd etadi. Imzolash Didox orqali, tashqi xizmatda bajariladi.',
+      text: t('ctr.docAgreementDate', {
+        value: approveDate.value === '-' ? t('ctr.docNotSet') : dateLong(approveDate.value),
+      }),
     },
-    { text: 'Ijaraga beruvchi: imzo va muhr', style: 'small' },
-    { text: 'Ijarachi: imzo va muhr', style: 'small' },
+    { text: t('ctr.docApprovedBy', { name: approver.value }) },
+    { text: t('ctr.docAmount', { value: sum(c.amount) }) },
+    { text: t('ctr.docCurrentStatus', { value: statusLabel('contract', c.status) }) },
+    {
+      text: t('ctr.docDidoxNote'),
+    },
+    { text: t('ctr.docLessorSign'), style: 'small' },
+    { text: t('ctr.docTenantSign'), style: 'small' },
   ]
 }
 
@@ -154,7 +209,7 @@ function downloadDocument() {
   const base = d.name.replace(/\.[^.]+$/, '')
   const fileName = `${base}.docx`
   saveBlob(docxBlob(documentLines(c, base)), fileName)
-  banner.value = `${fileName} fayli saqlandi.`
+  banner.value = t('ctr.fileSaved', { file: fileName })
   documentOpen.value = false
 }
 
@@ -163,13 +218,13 @@ function downloadAct() {
   if (!c) return
   const fileName = `${actCode(c)}.docx`
   saveBlob(docxBlob(actLines(c)), fileName)
-  banner.value = `${fileName} fayli saqlandi.`
+  banner.value = t('ctr.fileSaved', { file: fileName })
   actOpen.value = false
 }
 
 /** Bosqichni bajarilgan deb belgilaydi va mas’ul bilan sanani yozadi */
 function completeStep(label: string) {
-  const step = contract.value?.timeline.find((t) => t.label === label)
+  const step = contract.value?.timeline.find((s) => s.label === label)
   if (!step || step.done) return
   step.done = true
   step.date = todayIso()
@@ -183,7 +238,7 @@ function approveContract() {
   const person = currentApprover.value
   completeStep('Kelishildi')
   if (c.status === 'DRAFT') c.status = 'REVIEW'
-  banner.value = `${c.code} shartnomasi bo‘yicha kelishuv ${person} nomiga qayd etildi. Imzolash Didox orqali davom etadi.`
+  banner.value = t('ctr.bannerAgreed', { code: c.code, person })
   approveOpen.value = false
 }
 
@@ -196,7 +251,7 @@ function markSigned() {
   if (!c || !isAgreed.value || isSigned.value) return
   completeStep('Imzolandi')
   c.status = 'SIGNED'
-  banner.value = `${c.code} shartnomasi imzolangan deb belgilandi. Endi uni faollashtirish mumkin.`
+  banner.value = t('ctr.bannerSigned', { code: c.code })
 }
 
 /** Faollashtirish: shartnoma reyestrda amaldagi hujjatga aylanadi */
@@ -205,7 +260,7 @@ function activateContract() {
   if (!c || !isSigned.value || isActive.value) return
   completeStep('Faollashdi')
   c.status = 'ACTIVE'
-  banner.value = `${c.code} shartnomasi faollashtirildi va reyestrda amalda deb ko‘rsatiladi.`
+  banner.value = t('ctr.bannerActivated', { code: c.code })
 }
 
 const DOC_TONE: Record<string, string> = {
@@ -217,33 +272,37 @@ const DOC_TONE: Record<string, string> = {
 
 <template>
   <AppTopbar
-    :title="contract ? contract.code : 'Shartnoma topilmadi'"
-    :subtitle="contract ? `${contract.type} shartnomasi · ${contract.tenant}` : ''"
+    :title="contract ? contract.code : t('ctr.notFound')"
+    :subtitle="
+      contract
+        ? t('ctr.contractOfType', { type: typeOfLabel(contract.type), tenant: contract.tenant })
+        : ''
+    "
     :breadcrumb="[
-      { label: 'Shartnomalar', to: '/contracts' },
-      { label: contract ? contract.code : 'Topilmadi' },
+      { label: sectionLabel('contracts'), to: '/contracts' },
+      { label: contract ? contract.code : t('ctr.notFoundShort') },
     ]"
   >
     <template #actions>
       <UiButton variant="secondary" size="sm" to="/contracts">
         <UiIcon name="chevronLeft" :size="16" />
-        Reyestrga qaytish
+        {{ t('ctr.backToRegistry') }}
       </UiButton>
       <UiButton v-if="contract" variant="secondary" size="sm" to="/billing/invoices">
         <UiIcon name="wallet" :size="16" />
-        Hisob-fakturalar
+        {{ moduleTitle('invoices') }}
       </UiButton>
     </template>
   </AppTopbar>
 
   <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-4 sm:p-6">
-    <UiCard v-if="!contract" title="Shartnoma topilmadi">
+    <UiCard v-if="!contract" :title="t('ctr.notFound')">
       <p class="text-[14px] text-ink-600">
-        So‘ralgan shartnoma reyestrda mavjud emas yoki arxivga o‘tkazilgan.
+        {{ t('ctr.notFoundText') }}
       </p>
       <UiButton class="mt-4" to="/contracts">
         <UiIcon name="contract" :size="16" />
-        Shartnomalar reyestri
+        {{ t('ctr.registryTitle') }}
       </UiButton>
     </UiCard>
 
@@ -257,7 +316,7 @@ const DOC_TONE: Record<string, string> = {
         <button
           type="button"
           class="rounded-lg p-1 text-ok-700 transition-colors hover:bg-ok-100"
-          aria-label="Xabarni yopish"
+          :aria-label="t('common.closeMessage')"
           @click="banner = ''"
         >
           <UiIcon name="x" :size="16" />
@@ -266,50 +325,54 @@ const DOC_TONE: Record<string, string> = {
 
       <section class="grid gap-5 xl:grid-cols-3">
         <div class="min-w-0 space-y-5 xl:col-span-2">
-          <UiCard title="Shartnoma tafsilotlari" subtitle="Asosiy shartlar va tomonlar">
+          <UiCard :title="t('ctr.detailsTitle')" :subtitle="t('ctr.detailsCaption')">
             <template #actions>
               <UiStatus kind="contract" :value="contract.status" />
             </template>
 
             <dl class="divide-y divide-ink-100">
               <div class="flex items-baseline justify-between gap-6 py-3">
-                <dt class="text-[13px] text-ink-500">Turi</dt>
-                <dd class="text-[14px] font-semibold text-ink-900">{{ contract.type }}</dd>
+                <dt class="text-[13px] text-ink-500">{{ field('type') }}</dt>
+                <dd class="text-[14px] font-semibold text-ink-900">
+                  {{ typeLabel(contract.type) }}
+                </dd>
               </div>
               <div class="flex items-baseline justify-between gap-6 py-3">
-                <dt class="text-[13px] text-ink-500">Yuridik shaxs / Ijarachi</dt>
+                <dt class="text-[13px] text-ink-500">{{ field('legalTenant') }}</dt>
                 <dd class="text-[14px] font-semibold text-ink-900">{{ contract.tenant }}</dd>
               </div>
               <div class="flex items-baseline justify-between gap-6 py-3">
-                <dt class="text-[13px] text-ink-500">Obyekt</dt>
+                <dt class="text-[13px] text-ink-500">{{ field('object') }}</dt>
                 <dd class="text-right text-[14px] font-semibold text-ink-900">
                   {{ contract.buildingName }}, {{ contract.unitCode }}
                 </dd>
               </div>
               <div class="flex items-baseline justify-between gap-6 py-3">
-                <dt class="text-[13px] text-ink-500">Boshlanish sanasi</dt>
+                <dt class="text-[13px] text-ink-500">{{ field('startDate') }}</dt>
                 <dd class="text-[14px] font-semibold text-ink-900">
                   {{ dateLong(contract.startsAt) }}
                 </dd>
               </div>
               <div class="flex items-baseline justify-between gap-6 py-3">
-                <dt class="text-[13px] text-ink-500">Tugash sanasi</dt>
+                <dt class="text-[13px] text-ink-500">{{ field('endDate') }}</dt>
                 <dd class="text-[14px] font-semibold text-ink-900">
-                  {{ contract.endsAt === '-' ? 'Muddatsiz' : dateLong(contract.endsAt) }}
+                  {{ contract.endsAt === '-' ? t('ctr.openEnded') : dateLong(contract.endsAt) }}
                 </dd>
               </div>
               <div class="flex items-baseline justify-between gap-6 py-3">
-                <dt class="text-[13px] text-ink-500">Shartnoma miqdori</dt>
+                <dt class="text-[13px] text-ink-500">{{ t('ctr.contractAmount') }}</dt>
                 <dd class="tabular text-[14px] font-bold text-ink-900">
-                  {{ sum(contract.amount) }}
+                  {{ money(contract.amount) }}
                 </dd>
               </div>
               <div class="flex items-baseline justify-between gap-6 py-3">
-                <dt class="text-[13px] text-ink-500">To‘lov shakli</dt>
-                <dd class="text-[14px] font-semibold text-ink-900">{{ contract.paymentTerm }}</dd>
+                <dt class="text-[13px] text-ink-500">{{ field('paymentTerm') }}</dt>
+                <dd class="text-[14px] font-semibold text-ink-900">
+                  {{ paymentLabel(contract.paymentTerm) }}
+                </dd>
               </div>
               <div class="flex items-baseline justify-between gap-6 py-3">
-                <dt class="text-[13px] text-ink-500">Kelishuvni qayd etgan shaxs</dt>
+                <dt class="text-[13px] text-ink-500">{{ t('ctr.approvedBy') }}</dt>
                 <dd class="text-right text-[14px] font-semibold text-ink-900">
                   <template v-if="isAgreed">
                     {{ approver }}
@@ -318,7 +381,7 @@ const DOC_TONE: Record<string, string> = {
                     </span>
                   </template>
                   <span v-else class="text-[13px] font-medium text-ink-500">
-                    Kelishuv kutilmoqda
+                    {{ t('ctr.agreementPending') }}
                   </span>
                 </dd>
               </div>
@@ -326,13 +389,13 @@ const DOC_TONE: Record<string, string> = {
           </UiCard>
 
           <UiCard
-            title="Ilova qilingan hujjatlar"
-            :subtitle="`${num(contract.documents.length)} ta fayl biriktirilgan`"
+            :title="t('ctr.documentsTitle')"
+            :subtitle="t('ctr.filesAttached', { n: num(contract.documents.length) })"
             flush
             :padded="false"
           >
             <p v-if="!contract.documents.length" class="px-5 py-6 text-[13px] text-ink-500">
-              Hujjat biriktirilmagan.
+              {{ t('empty.noAttachedDocuments') }}
             </p>
             <ul v-else class="divide-y divide-ink-100 border-t border-ink-100">
               <li
@@ -356,17 +419,17 @@ const DOC_TONE: Record<string, string> = {
                 </span>
                 <UiButton variant="secondary" size="sm" @click="openDocument(d)">
                   <UiIcon name="download" :size="15" />
-                  Yuklab olish
+                  {{ t('common.download') }}
                 </UiButton>
               </li>
             </ul>
           </UiCard>
 
-          <UiCard title="Shartnoma jarayoni" subtitle="Bosqichlar, sanalar va mas’ul shaxslar">
+          <UiCard :title="t('ctr.processTitle')" :subtitle="t('ctr.processCaption')">
             <ol class="space-y-0">
               <li
-                v-for="(t, i) in contract.timeline"
-                :key="t.label"
+                v-for="(step, i) in contract.timeline"
+                :key="step.label"
                 class="flex gap-4"
                 :class="i < contract.timeline.length - 1 ? 'pb-5' : ''"
               >
@@ -374,30 +437,31 @@ const DOC_TONE: Record<string, string> = {
                   <span
                     class="grid size-9 shrink-0 place-items-center rounded-full ring-1"
                     :class="
-                      t.done
+                      step.done
                         ? 'bg-ok-50 text-ok-600 ring-ok-100'
                         : 'bg-ink-50 text-ink-400 ring-ink-200'
                     "
                   >
-                    <UiIcon :name="t.done ? 'check' : 'clock'" :size="17" />
+                    <UiIcon :name="step.done ? 'check' : 'clock'" :size="17" />
                   </span>
                   <span
                     v-if="i < contract.timeline.length - 1"
                     class="mt-1 w-px flex-1"
-                    :class="t.done ? 'bg-ok-100' : 'bg-ink-200'"
+                    :class="step.done ? 'bg-ok-100' : 'bg-ink-200'"
                   />
                 </div>
                 <div class="min-w-0 flex-1 pt-1">
-                  <p class="text-[14px] font-bold text-ink-900">{{ t.label }}</p>
+                  <p class="text-[14px] font-bold text-ink-900">{{ stepLabel(step.label) }}</p>
                   <p class="mt-0.5 text-[13px] text-ink-500">
-                    {{ t.date === '-' ? 'Sana belgilanmagan' : dateLong(t.date) }} · {{ t.actor }}
+                    {{ step.date === '-' ? t('ctr.dateNotSet') : dateLong(step.date) }} ·
+                    {{ step.actor }}
                   </p>
                 </div>
                 <span
                   class="shrink-0 self-start rounded-pill px-2.5 py-1 text-[12px] font-semibold"
-                  :class="t.done ? 'bg-ok-50 text-ok-700' : 'bg-ink-100 text-ink-600'"
+                  :class="step.done ? 'bg-ok-50 text-ok-700' : 'bg-ink-100 text-ink-600'"
                 >
-                  {{ t.done ? 'Bajarildi' : 'Kutilmoqda' }}
+                  {{ step.done ? t('common.done') : t('common.pending') }}
                 </span>
               </li>
             </ol>
@@ -405,35 +469,31 @@ const DOC_TONE: Record<string, string> = {
         </div>
 
         <div class="min-w-0 space-y-5">
-          <UiCard title="Shartnomani yuritish" subtitle="Kelishuv, imzo va faollashtirish qaydi">
+          <UiCard :title="t('ctr.manageTitle')" :subtitle="t('ctr.manageCaption')">
             <div class="rounded-field bg-surface-sunken p-4">
               <div class="flex items-center justify-between gap-3">
-                <span class="text-[13px] text-ink-500">Joriy holat</span>
+                <span class="text-[13px] text-ink-500">{{ field('currentStatus') }}</span>
                 <UiStatus kind="contract" :value="contract.status" size="sm" />
               </div>
               <p class="mt-2 text-[13px] leading-relaxed text-ink-600">
                 {{
                   isAgreed
-                    ? `Shartlar ${dateShort(approveDate)} sanasida ${approver} tomonidan kelishilgan deb qayd etilgan.`
-                    : 'Shartnoma shartlarni kelishishni kutmoqda. Kelishuv qayd etilgach hujjat imzolashga tayyorlanadi.'
+                    ? t('ctr.agreedNote', { date: dateShort(approveDate), person: approver })
+                    : t('ctr.agreementWaitNote')
                 }}
               </p>
               <p class="mt-2 text-[13px] leading-relaxed text-ink-600">
-                {{
-                  isSigned
-                    ? 'Hujjat Didox orqali imzolangan.'
-                    : 'Imzolash Didox orqali, tashqi xizmatda bajariladi. Imzolangan nusxa qaytgach shu yerda qayd etiladi.'
-                }}
+                {{ isSigned ? t('ctr.signedNote') : t('ctr.signWaitNote') }}
               </p>
               <p v-if="isActive" class="mt-2 text-[13px] leading-relaxed text-ok-700">
-                Shartnoma faollashtirilgan va reyestrda amalda deb ko‘rsatiladi.
+                {{ t('ctr.activeNote') }}
               </p>
             </div>
 
             <template v-if="canManage">
               <UiButton v-if="!isAgreed" class="mt-4" size="lg" block @click="approveOpen = true">
                 <UiIcon name="check" :size="18" />
-                Kelishuvni qayd etish
+                {{ t('ctr.recordAgreement') }}
               </UiButton>
 
               <UiButton
@@ -444,7 +504,7 @@ const DOC_TONE: Record<string, string> = {
                 @click="markSigned"
               >
                 <UiIcon name="edit" :size="18" />
-                Imzolangan deb belgilash
+                {{ t('ctr.markSigned') }}
               </UiButton>
 
               <UiButton
@@ -456,7 +516,7 @@ const DOC_TONE: Record<string, string> = {
                 @click="activateContract"
               >
                 <UiIcon name="check" :size="18" />
-                Faollashtirish
+                {{ t('ctr.activate') }}
               </UiButton>
             </template>
 
@@ -465,7 +525,7 @@ const DOC_TONE: Record<string, string> = {
               class="mt-4 flex items-center justify-center gap-2 rounded-field bg-ink-100 px-3 py-2.5 text-[13px] font-semibold text-ink-600"
             >
               <UiIcon name="eye" :size="15" />
-              Faqat kuzatuv: shartnomani yuritish huquqi yo‘q
+              {{ t('ctr.readOnlyNote') }}
             </p>
 
             <UiButton
@@ -477,28 +537,28 @@ const DOC_TONE: Record<string, string> = {
               @click="actOpen = true"
             >
               <UiIcon name="doc" :size="18" />
-              Kelishuv dalolatnomasini ko‘rish
+              {{ t('ctr.viewAct') }}
             </UiButton>
           </UiCard>
 
-          <UiCard title="Moliyaviy holat" subtitle="Ijarachi bo‘yicha hisob-fakturalar" flush :padded="false">
+          <UiCard :title="t('ctr.financeTitle')" :subtitle="t('ctr.financeCaption')" flush :padded="false">
             <div class="grid grid-cols-2 gap-3 px-5 pb-4">
               <div class="rounded-field bg-surface-sunken p-3">
-                <p class="text-[12px] text-ink-500">Hujjatlar</p>
+                <p class="text-[12px] text-ink-500">{{ t('navShort.documents') }}</p>
                 <p class="tabular mt-0.5 text-sm font-bold text-ink-900">
-                  {{ num(relatedInvoices.length) }} ta
+                  {{ num(relatedInvoices.length) }} {{ unitOf('pcs') }}
                 </p>
               </div>
               <div class="rounded-field bg-surface-sunken p-3">
-                <p class="text-[12px] text-ink-500">Qarzdorlik</p>
+                <p class="text-[12px] text-ink-500">{{ field('debt') }}</p>
                 <p class="tabular mt-0.5 text-sm font-bold text-danger-600">
-                  {{ sum(relatedDebt) }}
+                  {{ money(relatedDebt) }}
                 </p>
               </div>
             </div>
 
             <p v-if="!relatedInvoices.length" class="border-t border-ink-100 px-5 py-5 text-[13px] text-ink-500">
-              Ushbu ijarachi bo‘yicha hisob-faktura shakllantirilmagan.
+              {{ t('ctr.noInvoicesForTenant') }}
             </p>
             <ul v-else class="divide-y divide-ink-100 border-t border-ink-100">
               <li v-for="i in relatedInvoices" :key="i.id" class="px-5 py-3">
@@ -512,7 +572,7 @@ const DOC_TONE: Record<string, string> = {
                     <span class="block text-[12px] text-ink-500">{{ i.period }}</span>
                   </span>
                   <span class="tabular shrink-0 text-[13px] font-bold text-ink-900">
-                    {{ sum(i.total) }}
+                    {{ money(i.total) }}
                   </span>
                   <UiStatus kind="invoice" :value="i.status" size="sm" />
                 </NuxtLink>
@@ -525,48 +585,46 @@ const DOC_TONE: Record<string, string> = {
       <UiModal
         v-model="approveOpen"
         size="sm"
-        title="Kelishuvni qayd etish"
+        :title="t('ctr.recordAgreement')"
         :subtitle="contract.code"
       >
         <p class="text-[14px] leading-relaxed text-ink-700">
-          Kelishuv faqat tizim ichida qayd etiladi: dalolatnomaga kelishuvni qayd etgan shaxsning
-          ismi va sana yoziladi. Hujjat imzolanmaydi va faollashtirilmaydi, imzolash Didox orqali
-          alohida bajariladi.
+          {{ t('ctr.approveModalText') }}
         </p>
         <dl class="mt-4 divide-y divide-ink-100 rounded-field bg-surface-sunken px-4">
           <div class="flex items-baseline justify-between gap-4 py-2.5">
-            <dt class="text-[13px] text-ink-500">Tomon</dt>
+            <dt class="text-[13px] text-ink-500">{{ field('party') }}</dt>
             <dd class="text-[14px] font-semibold text-ink-900">{{ contract.tenant }}</dd>
           </div>
           <div class="flex items-baseline justify-between gap-4 py-2.5">
-            <dt class="text-[13px] text-ink-500">Kelishuvni qayd etuvchi</dt>
+            <dt class="text-[13px] text-ink-500">{{ t('ctr.approvedByNow') }}</dt>
             <dd class="text-[14px] font-semibold text-ink-900">{{ currentApprover }}</dd>
           </div>
           <div class="flex items-baseline justify-between gap-4 py-2.5">
-            <dt class="text-[13px] text-ink-500">Kelishuv sanasi</dt>
+            <dt class="text-[13px] text-ink-500">{{ t('ctr.agreementDate') }}</dt>
             <dd class="tabular text-[14px] font-semibold text-ink-900">
               {{ dateShort(todayIso()) }}
             </dd>
           </div>
           <div class="flex items-baseline justify-between gap-4 py-2.5">
-            <dt class="text-[13px] text-ink-500">Miqdor</dt>
+            <dt class="text-[13px] text-ink-500">{{ t('ctr.amount') }}</dt>
             <dd class="tabular text-[14px] font-semibold text-ink-900">
-              {{ sum(contract.amount) }}
+              {{ money(contract.amount) }}
             </dd>
           </div>
           <div class="flex items-baseline justify-between gap-4 py-2.5">
-            <dt class="text-[13px] text-ink-500">Amal qilish muddati</dt>
+            <dt class="text-[13px] text-ink-500">{{ field('validity') }}</dt>
             <dd class="text-[14px] font-semibold text-ink-900">
-              {{ dateShort(contract.startsAt) }} · {{ contract.endsAt === '-' ? 'muddatsiz' : dateShort(contract.endsAt) }}
+              {{ dateShort(contract.startsAt) }} · {{ contract.endsAt === '-' ? t('ctr.openEndedLower') : dateShort(contract.endsAt) }}
             </dd>
           </div>
         </dl>
 
         <template #footer>
-          <UiButton variant="ghost" @click="approveOpen = false">Bekor qilish</UiButton>
+          <UiButton variant="ghost" @click="approveOpen = false">{{ t('common.cancel') }}</UiButton>
           <UiButton variant="success" @click="approveContract">
             <UiIcon name="check" :size="16" />
-            Kelishuvni qayd etish
+            {{ t('ctr.recordAgreement') }}
           </UiButton>
         </template>
       </UiModal>
@@ -574,39 +632,39 @@ const DOC_TONE: Record<string, string> = {
       <UiModal
         v-model="actOpen"
         size="sm"
-        title="Kelishuv dalolatnomasi"
+        :title="t('ctr.actTitle')"
         :subtitle="contract.code"
       >
         <dl class="divide-y divide-ink-100">
           <div class="flex items-baseline justify-between gap-4 py-2.5">
-            <dt class="text-[13px] text-ink-500">Kelishuv sanasi</dt>
+            <dt class="text-[13px] text-ink-500">{{ t('ctr.agreementDate') }}</dt>
             <dd class="text-[14px] font-semibold text-ink-900">{{ dateLong(approveDate) }}</dd>
           </div>
           <div class="flex items-baseline justify-between gap-4 py-2.5">
-            <dt class="text-[13px] text-ink-500">Kelishuvni qayd etgan shaxs</dt>
+            <dt class="text-[13px] text-ink-500">{{ t('ctr.approvedBy') }}</dt>
             <dd class="text-[14px] font-semibold text-ink-900">{{ approver }}</dd>
           </div>
           <div class="flex items-baseline justify-between gap-4 py-2.5">
-            <dt class="text-[13px] text-ink-500">Tomon</dt>
+            <dt class="text-[13px] text-ink-500">{{ field('party') }}</dt>
             <dd class="text-[14px] font-semibold text-ink-900">{{ contract.tenant }}</dd>
           </div>
           <div class="flex items-baseline justify-between gap-4 py-2.5">
-            <dt class="text-[13px] text-ink-500">Dalolatnoma raqami</dt>
+            <dt class="text-[13px] text-ink-500">{{ field('actNo') }}</dt>
             <dd class="tabular text-[14px] font-semibold text-ink-900">
               {{ actCode(contract) }}
             </dd>
           </div>
           <div class="flex items-baseline justify-between gap-4 py-2.5">
-            <dt class="text-[13px] text-ink-500">Holati</dt>
+            <dt class="text-[13px] text-ink-500">{{ field('status') }}</dt>
             <dd><UiStatus kind="contract" :value="contract.status" size="sm" /></dd>
           </div>
         </dl>
 
         <template #footer>
-          <UiButton variant="ghost" @click="actOpen = false">Yopish</UiButton>
+          <UiButton variant="ghost" @click="actOpen = false">{{ t('common.close') }}</UiButton>
           <UiButton @click="downloadAct">
             <UiIcon name="download" :size="16" />
-            Yuklab olish
+            {{ t('common.download') }}
           </UiButton>
         </template>
       </UiModal>
@@ -614,7 +672,7 @@ const DOC_TONE: Record<string, string> = {
       <UiModal
         v-model="documentOpen"
         size="sm"
-        title="Hujjatni yuklab olish"
+        :title="t('ctr.downloadDocument')"
         :subtitle="activeDocument ? activeDocument.name : ''"
       >
         <div v-if="activeDocument" class="flex items-center gap-4">
@@ -633,10 +691,10 @@ const DOC_TONE: Record<string, string> = {
         </div>
 
         <template #footer>
-          <UiButton variant="ghost" @click="documentOpen = false">Bekor qilish</UiButton>
+          <UiButton variant="ghost" @click="documentOpen = false">{{ t('common.cancel') }}</UiButton>
           <UiButton @click="downloadDocument">
             <UiIcon name="download" :size="16" />
-            Yuklab olish
+            {{ t('common.download') }}
           </UiButton>
         </template>
       </UiModal>

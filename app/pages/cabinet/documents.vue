@@ -13,8 +13,73 @@ import { area, dateShort, monthTitle, num, sum } from '~/utils/format'
 
 const auth = useAuthStore()
 const lease = useLeaseStore()
+const { t } = useI18n()
+const { field, statusLabel, monthName } = useAppLabels()
 
 lease.seed()
+
+/** Hisob davri ma’lumotda «Avgust 2026» ko‘rinishida saqlanadi */
+const UZ_MONTHS = [
+  'Yanvar',
+  'Fevral',
+  'Mart',
+  'Aprel',
+  'May',
+  'Iyun',
+  'Iyul',
+  'Avgust',
+  'Sentabr',
+  'Oktabr',
+  'Noyabr',
+  'Dekabr',
+]
+
+/** «Avgust 2026» → tanlangan tildagi davr nomi */
+function periodLabel(label: string) {
+  const [month, year] = String(label ?? '').split(' ')
+  const index = UZ_MONTHS.indexOf(month ?? '')
+  if (index < 0 || !year) return label
+  return t('dateFormat.monthTitle', { month: monthName(index + 1), year })
+}
+
+/**
+ * Ma’lumotda o‘zbekcha qiymat sifatida saqlanadigan ro‘yxatlar: qiymat
+ * o‘zgarmaydi (filtr ishlashda qoladi), faqat ko‘rinadigan nom tarjima qilinadi.
+ */
+const PAYMENT_TERM_KEY: Record<string, string> = {
+  'Bir martalik to‘lov': 'paymentTerm.oneTime',
+  'Choraklik to‘lov': 'paymentTerm.quarterly',
+  'Oylik oldindan to‘lov': 'paymentTerm.monthlyAdvance',
+}
+
+const METER_TYPE_KEY: Record<string, string> = {
+  Suv: 'meterType.water',
+  Elektr: 'meterType.electricity',
+  Issiqlik: 'meterType.heating',
+}
+
+const METER_PLACE_KEY: Record<string, string> = {
+  'sanuzel tuguni': 'meterPlace.water',
+  'kirish shchiti': 'meterPlace.electricity',
+  'issiqlik tuguni': 'meterPlace.heating',
+}
+
+const CATEGORY_KEY: Record<string, string> = {
+  Shartnoma: 'field.contract',
+  Dalolatnoma: 'cab.catAct',
+  'Hisob-faktura': 'field.invoice',
+  Qoidalar: 'cab.catRules',
+}
+
+function labelOf(map: Record<string, string>, value: string) {
+  const key = map[value]
+  return key ? t(key) : value
+}
+
+const paymentTermLabel = (value: string) => labelOf(PAYMENT_TERM_KEY, value)
+const meterTypeLabel = (value: string) => labelOf(METER_TYPE_KEY, value)
+const meterPlaceLabel = (value: string) => labelOf(METER_PLACE_KEY, value)
+const categoryLabel = (value: string) => labelOf(CATEGORY_KEY, value)
 
 /** Kabinet faqat kirgan foydalanuvchining tashkiloti bilan ishlaydi */
 const organization = computed(() => auth.user?.organization ?? '')
@@ -87,12 +152,12 @@ const tenantParty = computed<PartyRequisites>(() => {
 
 function partyRows(p: PartyRequisites) {
   return [
-    { label: 'Nomi', value: p.name },
+    { label: field('name'), value: p.name },
     { label: 'STIR', value: p.stir },
-    { label: 'Yuridik manzil', value: p.address },
-    { label: 'Bank', value: p.bank },
-    { label: 'Hisob raqami', value: p.account },
-    { label: 'Rahbar', value: p.director },
+    { label: field('legalAddress'), value: p.address },
+    { label: field('bank'), value: p.bank },
+    { label: field('account'), value: p.account },
+    { label: field('director'), value: p.director },
   ].filter((r) => r.value)
 }
 
@@ -127,6 +192,8 @@ type DocFormat = 'DOCX' | 'CSV'
 interface CabinetDocument {
   id: string
   name: string
+  /** Fayl nomi uchun barqaror lotin qismi: tarjima bilan o‘zgarmaydi */
+  slug: string
   code: string
   category: DocCategory
   /** Hujjat tarkibini quruvchi shakl */
@@ -201,57 +268,67 @@ const DOCUMENTS = computed<CabinetDocument[]>(() => {
       {
         ...base,
         id: `${c.id}-contract`,
-        name: 'Ijara shartnomasi',
+        name: t('cab.docLease'),
+        slug: 'ijara-shartnomasi',
         code: c.code,
         category: 'Shartnoma',
         kind: 'contract',
         format: 'DOCX',
         at: c.startsAt,
-        summary: `${building} · Unit ${unitCode} bo‘yicha ijara shartnomasi, ${dateShort(c.startsAt)} dan ${dateShort(c.endsAt)} gacha.`,
+        summary: t('cab.sumContract', {
+          building,
+          unit: unitCode,
+          from: dateShort(c.startsAt),
+          to: dateShort(c.endsAt),
+        }),
       },
       {
         ...base,
         id: `${c.id}-schedule`,
-        name: 'To‘lov jadvali',
+        name: t('cab.docSchedule'),
+        slug: 'to-lov-jadvali',
         code: c.code,
         category: 'Shartnoma',
         kind: 'schedule',
         format: 'CSV',
         at: c.startsAt,
-        summary: `Shartnoma muddati davomidagi to‘lov davrlari, ${c.paymentTerm.toLowerCase()}.`,
+        summary: t('cab.sumSchedule', { term: paymentTermLabel(c.paymentTerm).toLowerCase() }),
       },
       {
         ...base,
         id: `${c.id}-handover`,
-        name: 'Qabul-topshirish akti',
+        name: t('cab.docHandover'),
+        slug: 'qabul-topshirish-akti',
         code: `DLT${code}`,
         category: 'Dalolatnoma',
         kind: 'handover',
         format: 'DOCX',
         at: c.startsAt,
-        summary: `Unit ${unitCode} ijarachiga topshirilganda tuzilgan dalolatnoma.`,
+        summary: t('cab.sumHandover', { unit: unitCode }),
       },
       {
         ...base,
         id: `${c.id}-equipment`,
-        name: 'Jihozlar ro‘yxati dalolatnomasi',
+        name: t('cab.docEquipment'),
+        slug: 'jihozlar-royxati-dalolatnomasi',
         code: `JIH${code}`,
         category: 'Dalolatnoma',
         kind: 'equipment',
         format: 'DOCX',
         at: c.startsAt,
-        summary: `Unit ${unitCode} bilan birga topshirilgan jihozlar ro‘yxati va holati.`,
+        summary: t('cab.sumEquipment', { unit: unitCode }),
       },
       {
         ...base,
         id: `${c.id}-meters`,
-        name: 'Hisoblagich ko‘rsatkichlari dalolatnomasi',
+        name: t('cab.docMeters'),
+        slug: 'hisoblagich-korsatkichlari-dalolatnomasi',
         code: `HSB${code}`,
         category: 'Dalolatnoma',
         kind: 'meters',
         format: 'DOCX',
         at: c.startsAt,
-        summary: 'Suv, elektr va issiqlik hisoblagichlarining boshlang‘ich ko‘rsatkichlari.',
+        summary: t('cab.sumMeters'),
       },
     )
   }
@@ -260,7 +337,8 @@ const DOCUMENTS = computed<CabinetDocument[]>(() => {
     const u = unitOf(i.unitCode)
     out.push({
       id: `${i.id}-invoice`,
-      name: 'Hisob-faktura',
+      name: t('field.invoice'),
+      slug: 'hisob-faktura',
       code: i.code,
       category: 'Hisob-faktura',
       kind: 'invoice',
@@ -270,7 +348,11 @@ const DOCUMENTS = computed<CabinetDocument[]>(() => {
       invoiceCode: i.code,
       format: 'DOCX',
       at: i.issuedAt,
-      summary: `${i.period} davri uchun ${i.buildingName} · ${i.unitCode} bo‘yicha hisob-faktura.`,
+      summary: t('cab.sumInvoice', {
+        period: periodLabel(i.period),
+        building: i.buildingName,
+        unit: i.unitCode,
+      }),
     })
   }
 
@@ -284,7 +366,8 @@ const DOCUMENTS = computed<CabinetDocument[]>(() => {
     out.push(
       {
         id: 'gen-requisites',
-        name: 'To‘lov rekvizitlari',
+        name: t('cab.docRequisites'),
+        slug: 'to-lov-rekvizitlari',
         code: 'REK-2025-0044',
         category: 'Qoidalar',
         kind: 'requisites',
@@ -292,11 +375,12 @@ const DOCUMENTS = computed<CabinetDocument[]>(() => {
         buildingName: building,
         format: 'DOCX',
         at: '2026-04-17',
-        summary: 'Ijaraga beruvchining bank rekvizitlari va to‘lov topshiriqnomasini to‘ldirish tartibi.',
+        summary: t('cab.sumRequisites'),
       },
       {
         id: 'gen-rules',
-        name: 'Bino ichki tartib-qoidalari',
+        name: t('cab.docRules'),
+        slug: 'bino-ichki-tartib-qoidalari',
         code: 'QDL-2025-0007',
         category: 'Qoidalar',
         kind: 'rules',
@@ -304,11 +388,12 @@ const DOCUMENTS = computed<CabinetDocument[]>(() => {
         buildingName: building,
         format: 'DOCX',
         at: '2026-04-17',
-        summary: 'Ish vaqti, kirish tartibi, umumiy zonalardan foydalanish qoidalari.',
+        summary: t('cab.sumRules'),
       },
       {
         id: 'gen-fire',
-        name: 'Yong‘in xavfsizligi yo‘riqnomasi',
+        name: t('cab.docFire'),
+        slug: 'yong-in-xavfsizligi-yo-riqnomasi',
         code: 'QDL-2025-0011',
         category: 'Qoidalar',
         kind: 'fire',
@@ -316,7 +401,7 @@ const DOCUMENTS = computed<CabinetDocument[]>(() => {
         buildingName: building,
         format: 'DOCX',
         at: '2026-04-17',
-        summary: 'Evakuatsiya rejasi va yong‘in xavfsizligi bo‘yicha talablar.',
+        summary: t('cab.sumFire'),
       },
     )
   }
@@ -338,17 +423,21 @@ const query = ref('')
 const categoryTabs = computed(() => {
   const count = (key: DocCategory) => DOCUMENTS.value.filter((d) => d.category === key).length
   return [
-    { value: 'all', label: 'Barchasi', count: DOCUMENTS.value.length },
-    { value: 'Shartnoma', label: 'Shartnoma', count: count('Shartnoma') },
-    { value: 'Dalolatnoma', label: 'Dalolatnoma', count: count('Dalolatnoma') },
-    { value: 'Hisob-faktura', label: 'Hisob-faktura', count: count('Hisob-faktura') },
-    { value: 'Qoidalar', label: 'Qoidalar', count: count('Qoidalar') },
+    { value: 'all', label: t('tab.all'), count: DOCUMENTS.value.length },
+    { value: 'Shartnoma', label: categoryLabel('Shartnoma'), count: count('Shartnoma') },
+    { value: 'Dalolatnoma', label: categoryLabel('Dalolatnoma'), count: count('Dalolatnoma') },
+    {
+      value: 'Hisob-faktura',
+      label: categoryLabel('Hisob-faktura'),
+      count: count('Hisob-faktura'),
+    },
+    { value: 'Qoidalar', label: categoryLabel('Qoidalar'), count: count('Qoidalar') },
   ]
 })
 
 /** Filtrda faqat haqiqatan yaratiladigan formatlar ko‘rinadi */
 const formatOptions = computed(() => [
-  { value: 'all', label: 'Barcha formatlar' },
+  { value: 'all', label: t('filter.allFormats') },
   ...[...new Set(DOCUMENTS.value.map((d) => d.format))].map((f) => ({ value: f, label: f })),
 ])
 
@@ -377,23 +466,23 @@ function headerLines(d: CabinetDocument): DocxLine[] {
 
 function signatureLines(): DocxLine[] {
   return [
-    { text: `Ijaraga beruvchi: ${landlord.value.director} _______________ M.O‘.`, style: 'small' },
-    { text: `Ijarachi: ${tenantParty.value.director} _______________ M.O‘.`, style: 'small' },
+    { text: t('cab.docSignLandlord', { name: landlord.value.director }), style: 'small' },
+    { text: t('cab.docSignTenant', { name: tenantParty.value.director }), style: 'small' },
   ]
 }
 
 function objectLines(d: CabinetDocument): DocxLine[] {
   const u = unitOfDoc(d)
   const rows: DocxLine[] = [
-    { text: 'Ijara obyekti', style: 'heading' },
-    { text: `Obyekt: ${d.buildingName ?? '-'}` },
-    { text: `Unit: ${d.unitCode}` },
+    { text: t('cab.leaseObject'), style: 'heading' },
+    { text: t('cab.docObject', { value: d.buildingName ?? '-' }) },
+    { text: t('cab.docUnit', { value: d.unitCode }) },
   ]
   if (u) {
     rows.push(
-      { text: `Maydon: ${area(u.area)}` },
-      { text: `Qavat: ${u.floor}-qavat, xonalar soni: ${u.rooms} ta` },
-      { text: `Tayinlanishi: ${u.usage || '-'}` },
+      { text: t('cab.docArea', { value: area(u.area) }) },
+      { text: t('cab.docFloorRooms', { floor: u.floor, rooms: u.rooms }) },
+      { text: t('cab.docPurpose', { value: u.usage || '-' }) },
     )
   }
   return rows
@@ -430,21 +519,37 @@ function scheduleRows(c: Contract) {
 
 function documentRows(d: CabinetDocument): Array<Array<string | number>> {
   const c = contractOf(d)
-  if (!c) return [['Ma’lumot topilmadi']]
+  if (!c) return [[t('cab.dataNotFound')]]
   const rows = scheduleRows(c)
   const head: Array<Array<string | number>> = [
-    [`To‘lov jadvali · ${c.code}`],
-    [`Ijaraga beruvchi: ${landlord.value.name} · STIR ${landlord.value.stir}`],
-    [`Ijarachi: ${tenantParty.value.name} · STIR ${tenantParty.value.stir}`],
-    [`Obyekt: ${d.buildingName ?? '-'} · Unit ${d.unitCode}`],
+    [t('cab.csvScheduleTitle', { code: c.code })],
+    [t('cab.csvLandlord', { name: landlord.value.name, stir: landlord.value.stir })],
+    [t('cab.csvTenant', { name: tenantParty.value.name, stir: tenantParty.value.stir })],
+    [t('cab.docObject', { value: `${d.buildingName ?? '-'} · Unit ${d.unitCode}` })],
     [],
-    ['№', 'Davr', 'To‘lov sanasi', 'Ijara, so‘m', 'Servis, so‘m', `QQS ${VAT_RATE}%, so‘m`, 'Jami, so‘m'],
+    [
+      '№',
+      field('period'),
+      t('cab.csvPayDate'),
+      t('cab.csvRent'),
+      t('cab.csvService'),
+      t('cab.csvVat', { rate: VAT_RATE }),
+      t('cab.csvTotal'),
+    ],
   ]
   for (const r of rows) {
-    head.push([r.no, r.label, dateShort(r.dueAt), r.rent, r.service, vatOf(r.total), r.total])
+    head.push([
+      r.no,
+      periodLabel(r.label),
+      dateShort(r.dueAt),
+      r.rent,
+      r.service,
+      vatOf(r.total),
+      r.total,
+    ])
   }
   const total = rows.reduce((a, r) => a + r.total, 0)
-  head.push([], ['Jami', '', '', '', '', vatOf(total), total])
+  head.push([], [t('common.total'), '', '', '', '', vatOf(total), total])
   return head
 }
 
@@ -457,86 +562,126 @@ function documentLines(d: CabinetDocument): DocxLine[] {
     const months = monthsBetween(c.startsAt, c.endsAt)
     const monthly = monthlyRentOf(c)
     lines.push(
-      ...partyLines('Ijaraga beruvchi', landlord.value),
-      ...partyLines('Ijarachi', tenantParty.value),
+      ...partyLines(field('landlord'), landlord.value),
+      ...partyLines(field('tenant'), tenantParty.value),
       ...objectLines(d),
-      { text: 'Shartnoma shartlari', style: 'heading' },
-      { text: `Shartnoma raqami: ${c.code}` },
-      { text: `Amal qilish muddati: ${dateShort(c.startsAt)} · ${dateShort(c.endsAt)} (${months} oy)` },
-      { text: `Oylik ijara to‘lovi: ${sum(monthly)} (QQS ${VAT_RATE}% kiritilgan: ${sum(vatOf(monthly))})` },
-      { text: `Muddat bo‘yicha jami: ${sum(monthly * months)}` },
-      { text: `To‘lov shakli: ${c.paymentTerm}` },
-      { text: `Shartnoma holati: ${c.status === 'ACTIVE' ? 'Faol' : c.status}` },
-      { text: 'Tomonlarning majburiyatlari', style: 'heading' },
+      { text: t('cab.contractTerms'), style: 'heading' },
+      { text: t('cab.docContractNo', { value: c.code }) },
       {
-        text: 'Ijaraga beruvchi maydonni shartnomada ko‘rsatilgan holatda topshiradi, muhandislik tizimlari ishlashini ta’minlaydi va oyning birinchi ish kunida hisob-faktura taqdim etadi.',
+        text: t('cab.docValidity', {
+          from: dateShort(c.startsAt),
+          to: dateShort(c.endsAt),
+          months,
+        }),
       },
       {
-        text: 'Ijarachi to‘lovni hisob-fakturada ko‘rsatilgan muddatda amalga oshiradi, maydondan shartnomada belgilangan maqsadda foydalanadi va bino ichki tartib-qoidalariga rioya qiladi.',
+        text: t('cab.docMonthlyRent', {
+          value: sum(monthly),
+          rate: VAT_RATE,
+          vat: sum(vatOf(monthly)),
+        }),
       },
+      { text: t('cab.docTermTotal', { value: sum(monthly * months) }) },
+      { text: t('cab.docPaymentForm', { value: paymentTermLabel(c.paymentTerm) }) },
+      { text: t('cab.docContractStatus', { value: statusLabel('contract', c.status) }) },
+      { text: t('cab.partyObligations'), style: 'heading' },
+      { text: t('cab.obligationLandlord') },
+      { text: t('cab.obligationTenant') },
     )
   } else if (d.kind === 'handover') {
     lines.push(
-      { text: 'Tomonlar', style: 'heading' },
-      { text: `Topshirdi: ${landlord.value.name}, vakil ${landlord.value.director}` },
-      { text: `Qabul qildi: ${tenantParty.value.name}, vakil ${tenantParty.value.director}` },
-      { text: `Topshirish sanasi: ${dateShort(d.at)}` },
-      ...(c ? [{ text: `Shartnoma: ${c.code}` }] : []),
-      ...objectLines(d),
-      { text: 'Topshiriladigan pozitsiyalar', style: 'heading' },
-      { text: `1. Ijara maydoni · ${u ? area(u.area) : '-'} · holati: foydalanishga yaroqli` },
-      { text: `2. Kirish eshigi va qulf tizimi · 1 komplekt · holati: ishchi holatda` },
-      { text: `3. Muhandislik chiqishlari (elektr, suv, ventilyatsiya) · holati: ulangan` },
-      { text: `4. Kalitlar · 2 komplekt · topshirildi` },
-      { text: 'Xulosa', style: 'heading' },
+      { text: t('cab.parties'), style: 'heading' },
       {
-        text: 'Maydon ko‘zdan kechirildi, yashirin nuqsonlar aniqlanmadi. Tomonlarning bir-biriga da’vosi yo‘q.',
+        text: t('cab.docHandedBy', {
+          name: landlord.value.name,
+          director: landlord.value.director,
+        }),
       },
+      {
+        text: t('cab.docReceivedBy', {
+          name: tenantParty.value.name,
+          director: tenantParty.value.director,
+        }),
+      },
+      { text: t('cab.docHandoverDate', { value: dateShort(d.at) }) },
+      ...(c ? [{ text: t('cab.docContract', { value: c.code }) }] : []),
+      ...objectLines(d),
+      { text: t('cab.handoverItems'), style: 'heading' },
+      { text: t('cab.handoverItem1', { area: u ? area(u.area) : '-' }) },
+      { text: t('cab.handoverItem2') },
+      { text: t('cab.handoverItem3') },
+      { text: t('cab.handoverItem4') },
+      { text: t('cab.conclusion'), style: 'heading' },
+      { text: t('cab.handoverConclusion') },
     )
   } else if (d.kind === 'equipment') {
     lines.push(
-      { text: 'Tomonlar', style: 'heading' },
-      { text: `Topshirdi: ${landlord.value.name}, vakil ${landlord.value.director}` },
-      { text: `Qabul qildi: ${tenantParty.value.name}, vakil ${tenantParty.value.director}` },
-      { text: `Topshirish sanasi: ${dateShort(d.at)}` },
+      { text: t('cab.parties'), style: 'heading' },
+      {
+        text: t('cab.docHandedBy', {
+          name: landlord.value.name,
+          director: landlord.value.director,
+        }),
+      },
+      {
+        text: t('cab.docReceivedBy', {
+          name: tenantParty.value.name,
+          director: tenantParty.value.director,
+        }),
+      },
+      { text: t('cab.docHandoverDate', { value: dateShort(d.at) }) },
       ...objectLines(d),
-      { text: 'Jihozlar ro‘yxati', style: 'heading' },
+      { text: t('cab.equipmentList'), style: 'heading' },
     )
     const equipment = u?.equipment ?? []
     if (equipment.length) {
       equipment.forEach((e, index) => {
-        lines.push({ text: `${index + 1}. ${e} · 1 dona · holati: ishchi holatda` })
+        lines.push({ text: t('cab.equipmentItem', { no: index + 1, name: e }) })
       })
     } else {
-      lines.push({ text: 'Unit bo‘yicha jihoz ro‘yxatga olinmagan.' })
+      lines.push({ text: t('cab.noEquipment') })
     }
     lines.push(
-      { text: 'Xulosa', style: 'heading' },
-      {
-        text: 'Yuqorida sanab o‘tilgan jihozlar ijarachiga ishchi holatda topshirildi va shartnoma tugaganda shu holatda qaytariladi.',
-      },
+      { text: t('cab.conclusion'), style: 'heading' },
+      { text: t('cab.equipmentConclusion') },
     )
   } else if (d.kind === 'meters') {
     lines.push(
-      { text: 'Tomonlar', style: 'heading' },
-      { text: `Topshirdi: ${landlord.value.name}, vakil ${landlord.value.director}` },
-      { text: `Qabul qildi: ${tenantParty.value.name}, vakil ${tenantParty.value.director}` },
-      { text: `Qayd etilgan sana: ${dateShort(d.at)}` },
+      { text: t('cab.parties'), style: 'heading' },
+      {
+        text: t('cab.docHandedBy', {
+          name: landlord.value.name,
+          director: landlord.value.director,
+        }),
+      },
+      {
+        text: t('cab.docReceivedBy', {
+          name: tenantParty.value.name,
+          director: tenantParty.value.director,
+        }),
+      },
+      { text: t('cab.docRecordedDate', { value: dateShort(d.at) }) },
       ...objectLines(d),
-      { text: 'Boshlang‘ich ko‘rsatkichlar', style: 'heading' },
+      { text: t('cab.initialReadings'), style: 'heading' },
     )
     HANDOVER_METERS.forEach((m, index) => {
       lines.push({
-        text:
-          `${index + 1}. ${m.type} · ${m.code} · zavod raqami ${m.serial} · ` +
-          `joylashuvi: ${d.unitCode}-unit, ${m.place} · ko‘rsatkich: ${num(m.reading, 2)} ${m.unit}`,
+        text: t('cab.meterDocLine', {
+          no: index + 1,
+          type: meterTypeLabel(m.type),
+          code: m.code,
+          serial: m.serial,
+          location: t('cab.meterLocation', {
+            unit: d.unitCode,
+            place: meterPlaceLabel(m.place),
+          }),
+          reading: `${num(m.reading, 2)} ${m.unit}`,
+        }),
       })
     })
     lines.push(
-      { text: 'Xulosa', style: 'heading' },
-      {
-        text: 'Ko‘rsatkichlar tomonlar ishtirokida olindi va keyingi davr sarfini hisoblash uchun boshlang‘ich qiymat sifatida qabul qilinadi.',
-      },
+      { text: t('cab.conclusion'), style: 'heading' },
+      { text: t('cab.metersConclusion') },
     )
   } else if (d.kind === 'invoice') {
     const inv = invoiceOf(d)
@@ -551,95 +696,120 @@ function documentLines(d: CabinetDocument): DocxLine[] {
       const rent = Math.min(monthly || inv.total, inv.total)
       const rest = inv.total - rent
       lines.push(
-        ...partyLines('Yetkazib beruvchi (ijaraga beruvchi)', landlord.value),
-        ...partyLines('Xaridor (ijarachi)', tenantParty.value),
-        { text: 'Hisob ma’lumotlari', style: 'heading' },
-        { text: `Obyekt: ${inv.buildingName} · ${inv.unitCode}` },
-        { text: `Hisob davri: ${inv.period}` },
-        { text: `Berilgan sana: ${dateShort(inv.issuedAt)}` },
-        { text: `To‘lov muddati: ${dateShort(inv.dueAt)}` },
+        ...partyLines(t('cab.supplierLandlord'), landlord.value),
+        ...partyLines(t('cab.buyerTenant'), tenantParty.value),
+        { text: t('cab.invoiceInfo'), style: 'heading' },
+        { text: t('cab.docObject', { value: `${inv.buildingName} · ${inv.unitCode}` }) },
+        { text: t('cab.docBillingPeriod', { value: periodLabel(inv.period) }) },
+        { text: t('cab.docIssuedAt', { value: dateShort(inv.issuedAt) }) },
+        { text: t('cab.docDueAt', { value: dateShort(inv.dueAt) }) },
         ...(invContract
           ? [
-              { text: `Shartnoma: ${invContract.code} · ${dateShort(invContract.startsAt)}` },
-              { text: `To‘lov shakli: ${invContract.paymentTerm}` },
+              {
+                text: t('cab.docContract', {
+                  value: `${invContract.code} · ${dateShort(invContract.startsAt)}`,
+                }),
+              },
+              {
+                text: t('cab.docPaymentForm', {
+                  value: paymentTermLabel(invContract.paymentTerm),
+                }),
+              },
             ]
           : []),
-        { text: 'Xizmatlar', style: 'heading' },
+        { text: t('cab.services'), style: 'heading' },
         {
-          text: `1. Ijara to‘lovi · 1 oy × ${sum(rent)} · QQS ${VAT_RATE}%: ${sum(vatOf(rent))} · jami ${sum(rent)}`,
+          text: t('cab.docServiceLine', {
+            no: 1,
+            service: t('cab.rentPayment'),
+            qty: 1,
+            unit: t('unitOf.month'),
+            tariff: sum(rent),
+            rate: VAT_RATE,
+            vat: sum(vatOf(rent)),
+            total: sum(rent),
+          }),
         },
       )
       if (rest > 0) {
         lines.push({
-          text: `2. Servis va boshqaruv xizmati · 1 oy × ${sum(rest)} · QQS ${VAT_RATE}%: ${sum(vatOf(rest))} · jami ${sum(rest)}`,
+          text: t('cab.docServiceLine', {
+            no: 2,
+            service: t('cab.serviceAndManagement'),
+            qty: 1,
+            unit: t('unitOf.month'),
+            tariff: sum(rest),
+            rate: VAT_RATE,
+            vat: sum(vatOf(rest)),
+            total: sum(rest),
+          }),
         })
       }
       lines.push(
-        { text: 'Yakun', style: 'heading' },
-        { text: `QQS siz jami: ${sum(inv.total - vatOf(inv.total))}` },
-        { text: `QQS (${VAT_RATE}%): ${sum(vatOf(inv.total))}` },
-        { text: `Jami to‘lov: ${sum(inv.total)}` },
-        { text: `To‘langan: ${sum(inv.paid)}` },
-        { text: `Qoldiq: ${sum(Math.max(inv.total - inv.paid, 0))}` },
+        { text: t('cab.summary'), style: 'heading' },
+        { text: t('cab.docNetTotal', { value: sum(inv.total - vatOf(inv.total)) }) },
+        { text: t('cab.docVat', { rate: VAT_RATE, value: sum(vatOf(inv.total)) }) },
+        { text: t('cab.docTotalPayment', { value: sum(inv.total) }) },
+        { text: t('cab.docPaid', { value: sum(inv.paid) }) },
+        { text: t('cab.docBalance', { value: sum(Math.max(inv.total - inv.paid, 0)) }) },
       )
     }
   } else if (d.kind === 'requisites') {
     lines.push(
-      ...partyLines('Ijaraga beruvchi rekvizitlari', landlord.value),
-      ...partyLines('To‘lovchi rekvizitlari', tenantParty.value),
-      { text: 'To‘lov topshiriqnomasini to‘ldirish tartibi', style: 'heading' },
-      { text: `1. Benefitsiar: ${landlord.value.name}, STIR ${landlord.value.stir}.` },
-      { text: `2. Hisob raqami: ${landlord.value.account}, bank: ${landlord.value.bank}.` },
+      ...partyLines(t('cab.landlordRequisites'), landlord.value),
+      ...partyLines(t('cab.payerRequisites'), tenantParty.value),
+      { text: t('cab.paymentOrderRules'), style: 'heading' },
+      { text: t('cab.payRule1', { name: landlord.value.name, stir: landlord.value.stir }) },
+      { text: t('cab.payRule2', { account: landlord.value.account, bank: landlord.value.bank }) },
       {
-        text: `3. To‘lov maqsadi: hisob-faktura raqami va davri ko‘rsatiladi, masalan «${myInvoices.value[0]?.code ?? 'INV-YYYY-NNNN'} bo‘yicha ijara to‘lovi».`,
+        text: t('cab.payRule3', {
+          code: myInvoices.value[0]?.code ?? 'INV-YYYY-NNNN',
+        }),
       },
-      {
-        text: `4. Summa hisob-fakturada ko‘rsatilgan qiymatga teng bo‘lishi kerak, QQS (${VAT_RATE}%) summaga kiritilgan.`,
-      },
-      {
-        text: '5. To‘lov hisob-fakturada ko‘rsatilgan muddatgacha amalga oshiriladi, kechikkan kunlar uchun shartnomada belgilangan penya hisoblanadi.',
-      },
+      { text: t('cab.payRule4', { rate: VAT_RATE }) },
+      { text: t('cab.payRule5') },
     )
     if (myContracts.value.length) {
-      lines.push({ text: 'Amaldagi shartnomalar', style: 'heading' })
+      lines.push({ text: t('cab.activeContracts'), style: 'heading' })
       myContracts.value.forEach((x, index) => {
         lines.push({
-          text: `${index + 1}. ${x.code} · Unit ${unitCodeOf(x.unitCode)} · ${x.paymentTerm}`,
+          text: t('cab.contractLine', {
+            no: index + 1,
+            code: x.code,
+            unit: unitCodeOf(x.unitCode),
+            term: paymentTermLabel(x.paymentTerm),
+          }),
         })
       })
     }
   } else if (d.kind === 'rules') {
     lines.push(
-      { text: 'Umumiy qoidalar', style: 'heading' },
-      { text: `Obyekt: ${d.buildingName ?? '-'}` },
-      { text: '1. Ish vaqti: dushanba–juma 08:00–20:00, shanba 09:00–17:00. Boshqa vaqtda kirish navbatchi orqali rasmiylashtiriladi.' },
-      { text: '2. Kirish tartibi: xodimlar ruxsatnoma kartasi bilan, mehmonlar qabulxonada ro‘yxatdan o‘tib kiradi.' },
-      { text: '3. Umumiy zonalar (koridor, lift, sanuzel, avtoturargoh) barcha ijarachilar uchun umumiy, ularni band qilish taqiqlanadi.' },
-      { text: '4. Ta’mir va montaj ishlari bino xizmati bilan oldindan kelishiladi va ish vaqtidan tashqari bajariladi.' },
-      { text: '5. Nosozlik yoki avariya holati kabinetdagi servis arizasi orqali xabar qilinadi.' },
-      { text: '6. Binoda chekish faqat belgilangan joylarda ruxsat etiladi.' },
-      { text: 'Javobgarlik', style: 'heading' },
-      {
-        text: 'Qoidalar buzilgan taqdirda bino rahbari yozma ogohlantirish beradi, takroriy holatda yetkazilgan zarar ijarachi hisobidan qoplanadi.',
-      },
+      { text: t('cab.generalRules'), style: 'heading' },
+      { text: t('cab.docObject', { value: d.buildingName ?? '-' }) },
+      { text: t('cab.rule1') },
+      { text: t('cab.rule2') },
+      { text: t('cab.rule3') },
+      { text: t('cab.rule4') },
+      { text: t('cab.rule5') },
+      { text: t('cab.rule6') },
+      { text: t('cab.liability'), style: 'heading' },
+      { text: t('cab.rulesLiability') },
     )
   } else if (d.kind === 'fire') {
     lines.push(
-      { text: 'Talablar', style: 'heading' },
-      { text: `Obyekt: ${d.buildingName ?? '-'}` },
-      { text: '1. Evakuatsiya yo‘llari va zaxira chiqish eshiklari doimo bo‘sh saqlanadi.' },
-      { text: '2. Har bir maydonda yong‘in o‘chirgich bo‘lishi va uning tekshiruv muddati amal qilishi shart.' },
-      { text: '3. Yong‘in datchiklari va avtomatik o‘chirish tizimini o‘chirish yoki to‘sish taqiqlanadi.' },
-      { text: '4. Elektr uzatgichlarni ortiqcha yuklash va vaqtinchalik simlardan foydalanish man etiladi.' },
-      { text: '5. Yong‘in signali berilganda xodimlar eng yaqin evakuatsiya chiqishi orqali yig‘ilish nuqtasiga chiqadi.' },
-      { text: 'Mas’uliyat', style: 'heading' },
-      {
-        text: 'Har bir ijarachi o‘z maydonida yong‘in xavfsizligi uchun mas’ul xodimni tayinlaydi va uning ma’lumotini bino xizmatiga taqdim etadi.',
-      },
+      { text: t('cab.requirements'), style: 'heading' },
+      { text: t('cab.docObject', { value: d.buildingName ?? '-' }) },
+      { text: t('cab.fire1') },
+      { text: t('cab.fire2') },
+      { text: t('cab.fire3') },
+      { text: t('cab.fire4') },
+      { text: t('cab.fire5') },
+      { text: t('cab.responsibility'), style: 'heading' },
+      { text: t('cab.fireResponsibility') },
     )
   }
 
-  lines.push({ text: 'Mazmuni', style: 'heading' }, { text: d.summary })
+  lines.push({ text: t('cab.contentSection'), style: 'heading' }, { text: d.summary })
 
   if (d.kind !== 'requisites' && d.kind !== 'rules' && d.kind !== 'fire') {
     lines.push(...signatureLines())
@@ -655,7 +825,7 @@ function blobOf(d: CabinetDocument) {
 
 /** Fayl nomi hujjat nomini ham, kodini ham o‘z ichiga oladi: nusxalar bosib ketmaydi */
 function fileNameOf(d: CabinetDocument) {
-  return `${fileSlug(d.name)}-${d.code}.${d.format.toLowerCase()}`
+  return `${fileSlug(d.slug)}-${d.code}.${d.format.toLowerCase()}`
 }
 
 const filtered = computed(() =>
@@ -677,15 +847,15 @@ const rows = computed(() =>
   filtered.value.map((d) => ({ ...d, size: fileSize(blobOf(d).size) })),
 )
 
-const columns = [
-  { key: 'name', label: 'Hujjat nomi' },
-  { key: 'category', label: 'Kategoriya' },
-  { key: 'unitCode', label: 'Unit' },
-  { key: 'format', label: 'Format' },
-  { key: 'size', label: 'Hajmi', align: 'right' as const },
-  { key: 'at', label: 'Sana', align: 'right' as const },
-  { key: 'actions', label: 'Amallar', align: 'right' as const },
-]
+const columns = computed(() => [
+  { key: 'name', label: field('documentName') },
+  { key: 'category', label: field('category') },
+  { key: 'unitCode', label: field('unit') },
+  { key: 'format', label: field('format') },
+  { key: 'size', label: field('size'), align: 'right' as const },
+  { key: 'at', label: field('date'), align: 'right' as const },
+  { key: 'actions', label: field('actions'), align: 'right' as const },
+])
 
 const previewOpen = ref(false)
 const downloadOpen = ref(false)
@@ -744,18 +914,18 @@ onMounted(() => {
 
 <template>
   <AppTopbar
-    title="Hujjatlarim"
-    subtitle="Shartnomalar, dalolatnomalar, hisob-fakturalar va qoidalar"
-    :breadcrumb="[{ label: 'Kabinet', to: '/cabinet' }, { label: 'Hujjatlarim' }]"
+    :title="t('nav.myDocuments')"
+    :subtitle="t('cab.documentsCaption')"
+    :breadcrumb="[{ label: t('cab.title'), to: '/cabinet' }, { label: t('nav.myDocuments') }]"
   >
     <template #actions>
       <UiButton variant="secondary" size="sm" to="/cabinet/invoices">
         <UiIcon name="wallet" :size="16" />
-        To‘lovlarim
+        {{ t('nav.myInvoices') }}
       </UiButton>
       <UiButton size="sm" to="/cabinet/units">
         <UiIcon name="building" :size="16" />
-        Mening unitlarim
+        {{ t('nav.myUnits') }}
       </UiButton>
     </template>
   </AppTopbar>
@@ -763,35 +933,40 @@ onMounted(() => {
   <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-4 sm:p-6">
     <section v-if="DOCUMENTS.length" class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <button
-        v-for="t in categoryTabs.slice(1)"
-        :key="t.value"
+        v-for="c in categoryTabs.slice(1)"
+        :key="c.value"
         type="button"
         class="rounded-card bg-surface p-4 text-left shadow-card ring-1 transition-all hover:shadow-panel"
-        :class="category === t.value ? 'ring-2 ring-brand-500' : 'ring-ink-200/60 hover:ring-brand-300'"
-        @click="category = category === t.value ? 'all' : t.value"
+        :class="category === c.value ? 'ring-2 ring-brand-500' : 'ring-ink-200/60 hover:ring-brand-300'"
+        @click="category = category === c.value ? 'all' : c.value"
       >
         <div class="flex items-start justify-between gap-3">
-          <span class="grid size-10 place-items-center rounded-[10px]" :class="CATEGORY_TONE[t.value]">
+          <span class="grid size-10 place-items-center rounded-[10px]" :class="CATEGORY_TONE[c.value]">
             <UiIcon name="doc" :size="19" />
           </span>
-          <span class="tabular text-[22px] font-bold leading-none text-ink-900">{{ t.count }}</span>
+          <span class="tabular text-[22px] font-bold leading-none text-ink-900">{{ c.count }}</span>
         </div>
-        <p class="mt-3 text-[14px] font-semibold text-ink-900">{{ t.label }}</p>
-        <p class="mt-0.5 text-[12px] text-ink-500">Kategoriya bo‘yicha filtrlash</p>
+        <p class="mt-3 text-[14px] font-semibold text-ink-900">{{ c.label }}</p>
+        <p class="mt-0.5 text-[12px] text-ink-500">{{ t('cab.filterByCategory') }}</p>
       </button>
     </section>
 
     <UiCard
-      title="Hujjatlar ro‘yxati"
-      :subtitle="`${organization || 'Tashkilot'} · ${filtered.length} ta hujjat`"
+      :title="t('cab.documentsList')"
+      :subtitle="
+        t('cab.documentsSubtitle', {
+          org: organization || t('field.organization'),
+          n: filtered.length,
+        })
+      "
       flush
     >
       <UiEmpty
         v-if="!DOCUMENTS.length"
         icon="doc"
-        title="Hujjat topilmadi"
-        description="Tashkilotingiz nomiga rasmiylashtirilgan shartnoma yoki hisob-faktura bo‘lmaguncha bu bo‘lim bo‘sh turadi. Maydon uchun ariza yuboring, shartnoma faollashgach hujjatlar shu yerda paydo bo‘ladi."
-        action-label="Ijaraga olish arizasi"
+        :title="t('empty.noDocumentsFound')"
+        :description="t('cab.noDocumentsDesc')"
+        :action-label="t('cab.applyForRent')"
         action-to="/cabinet/apply"
       />
 
@@ -799,7 +974,11 @@ onMounted(() => {
         <div class="flex flex-wrap items-center gap-3 px-5 pb-4">
           <UiTabs v-model="category" :tabs="categoryTabs" />
           <UiSelect v-model="format" :options="formatOptions" size="sm" class="w-44" />
-          <UiInput v-model="query" placeholder="Hujjat nomi yoki raqami bo‘yicha qidirish" class="w-full sm:w-80">
+          <UiInput
+            v-model="query"
+            :placeholder="t('cab.docSearchPlaceholder')"
+            class="w-full sm:w-80"
+          >
             <template #prefix><UiIcon name="search" :size="16" /></template>
           </UiInput>
         </div>
@@ -807,7 +986,7 @@ onMounted(() => {
         <UiTable
           :columns="columns"
           :rows="rows"
-          empty="Tanlangan filtr bo‘yicha hujjat topilmadi"
+          :empty="t('empty.noDocumentsForFilter')"
           @row-click="(row) => openPreview(docById(row.id))"
         >
           <template #cell-name="{ row }">
@@ -826,11 +1005,13 @@ onMounted(() => {
           </template>
           <template #cell-category="{ value }">
             <span class="rounded-pill bg-ink-100 px-2.5 py-1 text-[12px] font-semibold text-ink-700">
-              {{ value }}
+              {{ categoryLabel(String(value)) }}
             </span>
           </template>
           <template #cell-unitCode="{ value }">
-            <span class="text-[13px]">{{ value === 'Umumiy' ? 'Umumiy' : `Unit ${value}` }}</span>
+            <span class="text-[13px]">
+              {{ value === 'Umumiy' ? t('common.general') : `Unit ${value}` }}
+            </span>
           </template>
           <template #cell-format="{ value }">
             <span class="tabular text-[13px] font-semibold text-ink-700">{{ value }}</span>
@@ -843,7 +1024,7 @@ onMounted(() => {
               <button
                 type="button"
                 class="grid size-11 place-items-center rounded-field text-ink-500 transition-colors hover:bg-ink-100 hover:text-ink-800 md:size-9"
-                :aria-label="`${row.name}, ko‘rish`"
+                :aria-label="t('cab.viewAria', { name: row.name })"
                 @click.stop="openPreview(docById(row.id))"
               >
                 <UiIcon name="eye" :size="17" />
@@ -851,7 +1032,7 @@ onMounted(() => {
               <button
                 type="button"
                 class="grid size-11 place-items-center rounded-field text-brand-600 transition-colors hover:bg-brand-50 md:size-9"
-                :aria-label="`${row.name}, yuklab olish`"
+                :aria-label="t('cab.downloadAria', { name: row.name })"
                 @click.stop="openDownload(docById(row.id))"
               >
                 <UiIcon name="download" :size="17" />
@@ -865,7 +1046,7 @@ onMounted(() => {
 
   <UiModal
     v-model="previewOpen"
-    :title="selected?.name ?? 'Hujjat'"
+    :title="selected?.name ?? field('document')"
     :subtitle="selected ? `${selected.code} · ${selected.format} · ${outputFile?.size ?? ''}` : ''"
     size="lg"
   >
@@ -935,7 +1116,7 @@ onMounted(() => {
     </div>
 
     <template #footer>
-      <UiButton variant="ghost" @click="previewOpen = false">Yopish</UiButton>
+      <UiButton variant="ghost" @click="previewOpen = false">{{ t('common.close') }}</UiButton>
       <UiButton
         variant="secondary"
         @click="
@@ -946,14 +1127,14 @@ onMounted(() => {
         "
       >
         <UiIcon name="download" :size="16" />
-        Yuklab olish
+        {{ t('common.download') }}
       </UiButton>
     </template>
   </UiModal>
 
   <UiModal
     v-model="downloadOpen"
-    title="Hujjatni yuklab olish"
+    :title="t('cab.downloadDocument')"
     :subtitle="selected ? selected.name : ''"
     size="sm"
   >
@@ -977,22 +1158,20 @@ onMounted(() => {
 
       <p v-if="!savedFile" class="text-[13px] text-ink-600">
         {{
-          selected.format === 'CSV'
-            ? 'Jadval CSV ko‘rinishida yig‘iladi va Excel dasturida ochiladi.'
-            : 'Hujjat nusxasi Word ko‘rinishida yig‘iladi va brauzeringiz orqali saqlanadi.'
+          selected.format === 'CSV' ? t('cab.csvHint') : t('cab.docxHint')
         }}
       </p>
       <p v-else class="flex items-start gap-2 text-[13px] font-semibold text-ok-700">
         <UiIcon name="check" :size="16" class="mt-px shrink-0" />
-        <span class="min-w-0">{{ savedFile }} fayli saqlandi.</span>
+        <span class="min-w-0">{{ t('cab.fileSaved', { name: savedFile }) }}</span>
       </p>
     </div>
 
     <template #footer>
-      <UiButton variant="ghost" @click="downloadOpen = false">Yopish</UiButton>
+      <UiButton variant="ghost" @click="downloadOpen = false">{{ t('common.close') }}</UiButton>
       <UiButton @click="downloadDocument">
         <UiIcon name="download" :size="16" />
-        Yuklab olish
+        {{ t('common.download') }}
       </UiButton>
     </template>
   </UiModal>

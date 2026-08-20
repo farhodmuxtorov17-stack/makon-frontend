@@ -5,7 +5,7 @@ import {
   STOCK_ITEMS,
   type StockItem,
 } from '~/data/operations'
-import { dateShort, num, sum, sumShort } from '~/utils/format'
+import { dateShort, num } from '~/utils/format'
 
 type MovementKind = 'IN' | 'OUT' | 'MOVE'
 
@@ -43,6 +43,8 @@ interface SeedMovement {
 }
 
 const auth = useAuthStore()
+
+const { money, moneyShort, t, field, moduleTitle } = useAppLabels()
 
 const CURRENT_DAY = '2025-05-18'
 const PERIOD_START = '2025-05-01'
@@ -267,30 +269,31 @@ const movements = ref<Movement[]>(
   ),
 )
 
-const KIND_META: Record<MovementKind, { label: string; icon: string; badge: string; mark: string }> =
-  {
-    IN: {
-      label: 'Kirim',
-      icon: 'arrowUp',
-      badge: 'bg-ok-50 text-ok-700 ring-ok-100',
-      mark: 'text-ok-600',
-    },
-    OUT: {
-      label: 'Chiqim',
-      icon: 'arrowDown',
-      badge: 'bg-danger-50 text-danger-700 ring-danger-100',
-      mark: 'text-danger-600',
-    },
-    MOVE: {
-      label: 'Ko‘chirish',
-      icon: 'refresh',
-      badge: 'bg-info-50 text-info-700 ring-info-100',
-      mark: 'text-info-600',
-    },
-  }
+const KIND_META = computed<
+  Record<MovementKind, { label: string; icon: string; badge: string; mark: string }>
+>(() => ({
+  IN: {
+    label: t('movement.in'),
+    icon: 'arrowUp',
+    badge: 'bg-ok-50 text-ok-700 ring-ok-100',
+    mark: 'text-ok-600',
+  },
+  OUT: {
+    label: t('movement.out'),
+    icon: 'arrowDown',
+    badge: 'bg-danger-50 text-danger-700 ring-danger-100',
+    mark: 'text-danger-600',
+  },
+  MOVE: {
+    label: t('movement.transfer'),
+    icon: 'refresh',
+    badge: 'bg-info-50 text-info-700 ring-info-100',
+    mark: 'text-info-600',
+  },
+}))
 
 function kindMeta(kind: string) {
-  return KIND_META[kind as MovementKind] ?? KIND_META.MOVE
+  return KIND_META.value[kind as MovementKind] ?? KIND_META.value.MOVE
 }
 
 const from = ref(PERIOD_START)
@@ -300,15 +303,15 @@ const fWarehouse = ref('all')
 const onlyOpen = ref(false)
 const query = ref('')
 
-const kindOptions = [
-  { value: 'all', label: 'Barcha turlar' },
-  { value: 'IN', label: 'Kirim' },
-  { value: 'OUT', label: 'Chiqim' },
-  { value: 'MOVE', label: 'Ko‘chirish' },
-]
+const kindOptions = computed(() => [
+  { value: 'all', label: t('filter.allTypes') },
+  { value: 'IN', label: t('movement.in') },
+  { value: 'OUT', label: t('movement.out') },
+  { value: 'MOVE', label: t('movement.transfer') },
+])
 
 const warehouseOptions = computed(() => [
-  { value: 'all', label: 'Barcha omborlar' },
+  { value: 'all', label: t('filter.allWarehouses') },
   ...warehouses.value.map((w) => ({ value: w, label: w })),
 ])
 
@@ -385,16 +388,16 @@ const periodValue = computed(() =>
   filtered.value.reduce((s, m) => s + m.qty * m.price, 0),
 )
 
-const columns = [
-  { key: 'date', label: 'Sana', width: '108px' },
-  { key: 'doc', label: 'Hujjat raqami', width: '150px' },
-  { key: 'kind', label: 'Turi', width: '132px' },
-  { key: 'itemName', label: 'Pozitsiya' },
-  { key: 'qty', label: 'Miqdor', align: 'right' as const, numeric: true },
-  { key: 'warehouse', label: 'Ombor' },
-  { key: 'who', label: 'Kim' },
-  { key: 'basis', label: 'Asos', width: '150px' },
-]
+const columns = computed(() => [
+  { key: 'date', label: field('date', 'Sana'), width: '108px' },
+  { key: 'doc', label: field('documentNo', 'Hujjat raqami'), width: '150px' },
+  { key: 'kind', label: field('type', 'Turi'), width: '132px' },
+  { key: 'itemName', label: field('position', 'Pozitsiya') },
+  { key: 'qty', label: field('quantity', 'Miqdor'), align: 'right' as const, numeric: true },
+  { key: 'warehouse', label: field('warehouse', 'Ombor') },
+  { key: 'who', label: field('who', 'Kim') },
+  { key: 'basis', label: field('basis', 'Asos'), width: '150px' },
+])
 
 function nextDoc(prefix: string) {
   const seq = movements.value
@@ -458,19 +461,19 @@ function saveReceive() {
   const item = receivePool.value.find((i) => i.id === receiveItem.value)
   const qty = Number(receiveQty.value)
   if (!item) {
-    receiveError.value = 'Pozitsiyani tanlang'
+    receiveError.value = t('whs.selectPosition')
     return
   }
   if (!qty || qty < 1) {
-    receiveError.value = 'Miqdor 1 dan kam bo‘lmasligi kerak'
+    receiveError.value = t('whs.qtyMin')
     return
   }
   if (!receiveParty.value.trim()) {
-    receiveError.value = 'Yetkazib beruvchi nomini kiriting'
+    receiveError.value = t('whs.supplierRequired')
     return
   }
   if (!receiveDoc.value.trim()) {
-    receiveError.value = 'Hujjat raqamini kiriting'
+    receiveError.value = t('whs.docNoRequired')
     return
   }
   item.qty += qty
@@ -489,7 +492,7 @@ function saveReceive() {
     target: '',
     who: auth.user?.fullName ?? OPERATOR,
     party: receiveParty.value.trim(),
-    basis: 'Yetkazib beruvchi hujjati',
+    basis: t('whs.supplierDoc'),
     open: true,
   }
   movements.value.unshift(created)
@@ -524,10 +527,13 @@ const recipientOptions = [
 ].map((r) => ({ value: r, label: r }))
 issueRecipient.value = recipientOptions[0]!.value
 
-const basisOptions = [
+const basisOptions = computed(() => [
   ...SERVICE_REQUESTS.map((r) => ({ value: r.code, label: `${r.code} · ${r.title}` })),
-  ...MATERIAL_REQUESTS.map((r) => ({ value: r.code, label: `${r.code} · material so‘rovi` })),
-]
+  ...MATERIAL_REQUESTS.map((r) => ({
+    value: r.code,
+    label: `${r.code} · ${t('whs.materialRequestLower')}`,
+  })),
+])
 
 const issueSelected = computed(() => issuePool.value.find((i) => i.id === issueItem.value) ?? null)
 
@@ -540,15 +546,15 @@ function saveIssue() {
   const item = issueSelected.value
   const qty = Number(issueQty.value)
   if (!item) {
-    issueError.value = 'Pozitsiyani tanlang'
+    issueError.value = t('whs.selectPosition')
     return
   }
   if (!qty || qty < 1) {
-    issueError.value = 'Miqdor 1 dan kam bo‘lmasligi kerak'
+    issueError.value = t('whs.qtyMin')
     return
   }
   if (qty > item.qty) {
-    issueError.value = `Omborda faqat ${num(item.qty)} ${item.unit} mavjud`
+    issueError.value = t('whs.onlyAvailable', { qty: num(item.qty), unit: item.unit })
     return
   }
   item.qty -= qty
@@ -581,19 +587,22 @@ function saveIssue() {
 
 <template>
   <AppTopbar
-    title="Kirim va chiqim"
-    subtitle="Ombor harakati jurnali va elektron nakladnoylar"
-    :breadcrumb="[{ label: 'Ombor', to: '/warehouse' }, { label: 'Kirim va chiqim' }]"
+    :title="moduleTitle('movements', 'Kirim va chiqim')"
+    :subtitle="t('whs.mvCaption')"
+    :breadcrumb="[
+      { label: field('warehouse', 'Ombor'), to: '/warehouse' },
+      { label: moduleTitle('movements', 'Kirim va chiqim') },
+    ]"
   >
     <template #actions>
       <template v-if="auth.can('warehouse.issue')">
         <UiButton variant="secondary" size="sm" @click="openReceive">
           <UiIcon name="download" :size="16" />
-          Kirim qayd etish
+          {{ t('whs.mvRecordIn') }}
         </UiButton>
         <UiButton size="sm" @click="openIssue">
           <UiIcon name="send" :size="16" />
-          Chiqim qayd etish
+          {{ t('whs.mvRecordOut') }}
         </UiButton>
       </template>
       <span
@@ -601,7 +610,7 @@ function saveIssue() {
         class="inline-flex items-center gap-1.5 rounded-pill bg-ink-100 px-3 py-1.5 text-[13px] font-semibold text-ink-600 ring-1 ring-inset ring-ink-200"
       >
         <UiIcon name="eye" :size="15" />
-        Kuzatuv rejimi
+        {{ t('tour.warehouse.watch.title') }}
       </span>
     </template>
   </AppTopbar>
@@ -609,28 +618,34 @@ function saveIssue() {
   <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-4 sm:p-6">
     <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <UiKpi
-        label="Bugungi kirim"
+        :label="t('kpi.inToday')"
         :value="num(todayIn)"
-        unit="birlik"
+        :unit="t('unitOf.piece')"
         icon="arrowUp"
         tone="ok"
         class="cursor-pointer"
         @click="((fKind = 'IN'), setPeriod(0))"
       />
       <UiKpi
-        label="Bugungi chiqim"
+        :label="t('kpi.outToday')"
         :value="num(todayOut)"
-        unit="birlik"
+        :unit="t('unitOf.piece')"
         icon="arrowDown"
         tone="danger"
         class="cursor-pointer"
         @click="((fKind = 'OUT'), setPeriod(0))"
       />
-      <UiKpi label="Joriy qoldiq" :value="num(balance)" unit="birlik" icon="box" tone="brand" />
       <UiKpi
-        label="Ochiq nakladnoylar"
+        :label="t('kpi.currentBalance')"
+        :value="num(balance)"
+        :unit="t('unitOf.piece')"
+        icon="box"
+        tone="brand"
+      />
+      <UiKpi
+        :label="t('kpi.openWaybills')"
         :value="num(openDocs)"
-        unit="hujjat"
+        :unit="t('whs.docWord')"
         icon="doc"
         tone="warn"
         class="cursor-pointer"
@@ -639,32 +654,32 @@ function saveIssue() {
     </section>
 
     <UiCard
-      title="Harakat jurnali"
-      :subtitle="`${rows.length} ta yozuv · ${sumShort(periodValue)}`"
+      :title="t('whs.mvJournal')"
+      :subtitle="`${t('whs.recordCount', { n: rows.length })} · ${moneyShort(periodValue)}`"
       flush
       :padded="false"
     >
       <template #actions>
         <UiButton variant="ghost" size="sm" to="/warehouse">
           <UiIcon name="box" :size="16" />
-          Ombor qoldig‘i
+          {{ t('kpi.stockBalance') }}
         </UiButton>
       </template>
 
       <div class="space-y-3 border-t border-ink-100 bg-surface-sunken px-5 py-4">
         <div class="grid gap-3 lg:grid-cols-4">
           <div class="grid gap-2 sm:grid-cols-2 lg:col-span-2">
-            <UiField label="Davr boshi" for="mv-from">
+            <UiField :label="t('whs.periodFrom')" for="mv-from">
               <UiInput id="mv-from" v-model="from" type="date" />
             </UiField>
-            <UiField label="Davr oxiri" for="mv-to">
+            <UiField :label="t('whs.periodTo')" for="mv-to">
               <UiInput id="mv-to" v-model="to" type="date" />
             </UiField>
           </div>
-          <UiField label="Harakat turi">
+          <UiField :label="t('whs.mvKind')">
             <UiSelect v-model="fKind" :options="kindOptions" />
           </UiField>
-          <UiField label="Ombor">
+          <UiField :label="field('warehouse', 'Ombor')">
             <UiSelect v-model="fWarehouse" :options="warehouseOptions" />
           </UiField>
         </div>
@@ -672,7 +687,7 @@ function saveIssue() {
         <div class="grid gap-3 lg:grid-cols-4">
           <UiInput
             v-model="query"
-            placeholder="Hujjat, pozitsiya yoki asos bo‘yicha qidirish"
+            :placeholder="t('whs.mvSearch')"
             class="lg:col-span-2"
           >
             <template #prefix>
@@ -691,21 +706,21 @@ function saveIssue() {
               "
               @click="setPeriod(0)"
             >
-              Bugun
+              {{ t('filter.today') }}
             </button>
             <button
               type="button"
               class="rounded-pill bg-surface px-3 py-2 text-[13px] font-semibold text-ink-600 ring-1 ring-inset ring-ink-200 transition-colors hover:ring-brand-300"
               @click="setPeriod(7)"
             >
-              7 kun
+              {{ t('filter.week') }}
             </button>
             <button
               type="button"
               class="rounded-pill bg-surface px-3 py-2 text-[13px] font-semibold text-ink-600 ring-1 ring-inset ring-ink-200 transition-colors hover:ring-brand-300"
               @click="setPeriod(-1)"
             >
-              Butun davr
+              {{ t('filter.allTime') }}
             </button>
             <button
               type="button"
@@ -719,11 +734,11 @@ function saveIssue() {
               @click="onlyOpen = !onlyOpen"
             >
               <UiIcon name="doc" :size="14" />
-              Faqat ochiq
+              {{ t('filter.onlyOpen') }}
             </button>
             <UiButton v-if="dirty" variant="ghost" size="sm" @click="resetFilters">
               <UiIcon name="refresh" :size="16" />
-              Tozalash
+              {{ t('common.reset') }}
             </UiButton>
           </div>
         </div>
@@ -732,7 +747,7 @@ function saveIssue() {
       <UiTable
         :columns="columns"
         :rows="rows"
-        empty="Tanlangan davr va shartga mos harakat topilmadi"
+        :empty="t('whs.mvEmpty')"
         @row-click="openDetail"
       >
         <template #cell-date="{ row }">
@@ -746,7 +761,7 @@ function saveIssue() {
               v-if="row.open"
               class="rounded-pill bg-warn-50 px-1.5 py-0.5 text-[11px] font-bold text-warn-700 ring-1 ring-inset ring-warn-100"
             >
-              ochiq
+              {{ t('whs.openBadge') }}
             </span>
           </span>
         </template>
@@ -787,48 +802,48 @@ function saveIssue() {
         class="flex flex-wrap items-center justify-between gap-2 border-t border-ink-200 bg-surface-sunken px-5 py-3.5"
       >
         <span class="text-[13px] text-ink-600">
-          Qator ustiga bosilsa hujjatning elektron nakladnoyi ochiladi
+          {{ t('whs.mvRowHint') }}
         </span>
-        <span class="tabular text-[14px] font-bold text-ink-900">{{ sum(periodValue) }}</span>
+        <span class="tabular text-[14px] font-bold text-ink-900">{{ money(periodValue) }}</span>
       </div>
     </UiCard>
   </main>
 
   <UiModal
     v-model="receiveOpen"
-    title="Kirim qayd etish"
-    subtitle="Omborga qabul qilingan material yoki jihozni hujjatlashtiring"
+    :title="t('whs.mvRecordIn')"
+    :subtitle="t('whs.mvRecordInCaption')"
   >
     <div class="space-y-4">
       <div class="grid gap-4 sm:grid-cols-2">
-        <UiField label="Ombor" required>
+        <UiField :label="field('warehouse', 'Ombor')" required>
           <UiSelect
             v-model="receiveWarehouse"
             :options="warehouses.map((w) => ({ value: w, label: w }))"
           />
         </UiField>
-        <UiField label="Hujjat raqami" required hint="Raqam avtomatik taklif etiladi">
+        <UiField :label="field('documentNo', 'Hujjat raqami')" required :hint="t('whs.docNoAutoHint')">
           <UiInput v-model="receiveDoc" />
         </UiField>
       </div>
 
       <div class="grid gap-4 sm:grid-cols-2">
-        <UiField label="Pozitsiya" required>
+        <UiField :label="field('position', 'Pozitsiya')" required>
           <UiSelect
             v-model="receiveItem"
             :options="receivePool.map((i) => ({ value: i.id, label: `${i.name} (${i.code})` }))"
           />
         </UiField>
-        <UiField label="Miqdor" required>
+        <UiField :label="field('quantity', 'Miqdor')" required>
           <UiInput v-model="receiveQty" type="number" />
         </UiField>
       </div>
 
       <div class="grid gap-4 sm:grid-cols-2">
-        <UiField label="Yetkazib beruvchi" required>
-          <UiInput v-model="receiveParty" placeholder="Tashkilot nomi" />
+        <UiField :label="field('supplier', 'Yetkazib beruvchi')" required>
+          <UiInput v-model="receiveParty" :placeholder="t('apply.orgLabel')" />
         </UiField>
-        <UiField label="Sana" required>
+        <UiField :label="field('date', 'Sana')" required>
           <UiInput v-model="receiveDate" type="date" />
         </UiField>
       </div>
@@ -837,28 +852,28 @@ function saveIssue() {
     </div>
 
     <template #footer>
-      <UiButton variant="ghost" @click="receiveOpen = false">Bekor qilish</UiButton>
+      <UiButton variant="ghost" @click="receiveOpen = false">{{ t('common.cancel') }}</UiButton>
       <UiButton variant="success" @click="saveReceive">
         <UiIcon name="check" :size="16" />
-        Kirimni qayd etish
+        {{ t('whs.mvSaveIn') }}
       </UiButton>
     </template>
   </UiModal>
 
   <UiModal
     v-model="issueOpen"
-    title="Chiqim qayd etish"
-    subtitle="Chiqim qayd etilgach elektron nakladnoy shakllantiriladi"
+    :title="t('whs.mvRecordOut')"
+    :subtitle="t('whs.mvRecordOutCaption')"
   >
     <div class="space-y-4">
       <div class="grid gap-4 sm:grid-cols-2">
-        <UiField label="Ombor" required>
+        <UiField :label="field('warehouse', 'Ombor')" required>
           <UiSelect
             v-model="issueWarehouse"
             :options="warehouses.map((w) => ({ value: w, label: w }))"
           />
         </UiField>
-        <UiField label="Pozitsiya" required>
+        <UiField :label="field('position', 'Pozitsiya')" required>
           <UiSelect
             v-model="issueItem"
             :options="issuePool.map((i) => ({ value: i.id, label: `${i.name} (${i.code})` }))"
@@ -868,22 +883,22 @@ function saveIssue() {
 
       <div class="grid gap-4 sm:grid-cols-2">
         <UiField
-          label="Miqdor"
+          :label="field('quantity', 'Miqdor')"
           required
           :hint="
             issueSelected
-              ? `Omborda ${num(issueSelected.qty)} ${issueSelected.unit} mavjud`
-              : 'Pozitsiya tanlanmagan'
+              ? t('whs.inStockHint', { qty: num(issueSelected.qty), unit: issueSelected.unit })
+              : t('whs.noPositionSelected')
           "
         >
           <UiInput v-model="issueQty" type="number" />
         </UiField>
-        <UiField label="Oluvchi" required>
+        <UiField :label="field('receiver', 'Oluvchi')" required>
           <UiSelect v-model="issueRecipient" :options="recipientOptions" />
         </UiField>
       </div>
 
-      <UiField label="Asos" required hint="Ish topshirig‘i yoki material so‘rovi kodi">
+      <UiField :label="field('basis', 'Asos')" required :hint="t('whs.basisHint')">
         <UiSelect v-model="issueBasis" :options="basisOptions" />
       </UiField>
 
@@ -891,20 +906,18 @@ function saveIssue() {
     </div>
 
     <template #footer>
-      <UiButton variant="ghost" @click="issueOpen = false">Bekor qilish</UiButton>
+      <UiButton variant="ghost" @click="issueOpen = false">{{ t('common.cancel') }}</UiButton>
       <UiButton @click="saveIssue">
         <UiIcon name="check" :size="16" />
-        Chiqimni qayd etish
+        {{ t('whs.mvSaveOut') }}
       </UiButton>
     </template>
   </UiModal>
 
   <UiModal
     v-model="detailOpen"
-    :title="`Elektron nakladnoy ${detail?.doc ?? ''}`"
-    :subtitle="
-      detailFresh ? 'Hujjat shakllantirildi va jurnalga yozildi' : 'Hujjatning to‘liq ko‘rinishi'
-    "
+    :title="t('whs.waybillWithCode', { code: detail?.doc ?? '' })"
+    :subtitle="detailFresh ? t('whs.waybillCreated') : t('whs.waybillFull')"
     size="lg"
   >
     <div v-if="detail" class="space-y-4">
@@ -913,13 +926,13 @@ function saveIssue() {
         class="flex items-start gap-2 rounded-field bg-ok-50 px-3.5 py-3 text-[13px] text-ok-700"
       >
         <UiIcon name="check" :size="16" class="mt-0.5 shrink-0" />
-        {{ kindMeta(detail.kind).label }} qayd etildi, ombor qoldig‘i yangilandi.
+        {{ t('whs.mvRecordedNote', { kind: kindMeta(detail.kind).label }) }}
       </p>
 
       <div class="rounded-field bg-white p-5 ring-1 ring-ink-200 sm:p-6">
         <div class="flex flex-wrap items-start justify-between gap-4 border-b border-ink-200 pb-4">
           <div class="min-w-0">
-            <p class="text-[18px] font-bold text-ink-900">Elektron nakladnoy</p>
+            <p class="text-[18px] font-bold text-ink-900">{{ t('whs.waybill') }}</p>
             <p class="tabular mt-1 text-[13px] text-ink-500">
               {{ detail.doc }} · {{ dateShort(detail.date) }}
             </p>
@@ -942,17 +955,17 @@ function saveIssue() {
 
         <dl class="mt-4 grid gap-x-6 gap-y-3 sm:grid-cols-2">
           <div class="flex justify-between gap-3 border-b border-ink-100 pb-2">
-            <dt class="text-[13px] text-ink-500">Ombor</dt>
+            <dt class="text-[13px] text-ink-500">{{ field('warehouse', 'Ombor') }}</dt>
             <dd class="text-right text-[13px] font-semibold text-ink-900">{{ detail.warehouse }}</dd>
           </div>
           <div class="flex justify-between gap-3 border-b border-ink-100 pb-2">
             <dt class="text-[13px] text-ink-500">
               {{
                 detail.kind === 'IN'
-                  ? 'Yetkazib beruvchi'
+                  ? field('supplier', 'Yetkazib beruvchi')
                   : detail.kind === 'OUT'
-                    ? 'Oluvchi'
-                    : 'Qabul qiluvchi ombor'
+                    ? field('receiver', 'Oluvchi')
+                    : t('whs.receivingWarehouse')
               }}
             </dt>
             <dd class="text-right text-[13px] font-semibold text-ink-900">
@@ -960,13 +973,13 @@ function saveIssue() {
             </dd>
           </div>
           <div class="flex justify-between gap-3 border-b border-ink-100 pb-2">
-            <dt class="text-[13px] text-ink-500">Asos</dt>
+            <dt class="text-[13px] text-ink-500">{{ field('basis', 'Asos') }}</dt>
             <dd class="tabular text-right text-[13px] font-semibold text-brand-600">
               {{ detail.basis }}
             </dd>
           </div>
           <div class="flex justify-between gap-3 border-b border-ink-100 pb-2">
-            <dt class="text-[13px] text-ink-500">Mas’ul omborchi</dt>
+            <dt class="text-[13px] text-ink-500">{{ t('whs.responsibleStorekeeper') }}</dt>
             <dd class="text-right text-[13px] font-semibold text-ink-900">{{ detail.who }}</dd>
           </div>
         </dl>
@@ -983,27 +996,27 @@ function saveIssue() {
                 <th
                   class="px-3 py-2 text-left text-[12px] font-semibold uppercase tracking-wide text-ink-500"
                 >
-                  Nomi
+                  {{ field('name', 'Nomi') }}
                 </th>
                 <th
                   class="px-3 py-2 text-left text-[12px] font-semibold uppercase tracking-wide text-ink-500"
                 >
-                  Kodi
+                  {{ field('code', 'Kod') }}
                 </th>
                 <th
                   class="px-3 py-2 text-right text-[12px] font-semibold uppercase tracking-wide text-ink-500"
                 >
-                  Miqdor
+                  {{ field('quantity', 'Miqdor') }}
                 </th>
                 <th
                   class="px-3 py-2 text-right text-[12px] font-semibold uppercase tracking-wide text-ink-500"
                 >
-                  Narxi
+                  {{ field('price', 'Narx') }}
                 </th>
                 <th
                   class="px-3 py-2 text-right text-[12px] font-semibold uppercase tracking-wide text-ink-500"
                 >
-                  Summa
+                  {{ field('amount', 'Summa') }}
                 </th>
               </tr>
             </thead>
@@ -1015,9 +1028,9 @@ function saveIssue() {
                 <td class="tabular px-3 py-2.5 text-right font-semibold text-ink-900">
                   {{ num(detail.qty) }} {{ detail.unit }}
                 </td>
-                <td class="tabular px-3 py-2.5 text-right text-ink-700">{{ sum(detail.price) }}</td>
+                <td class="tabular px-3 py-2.5 text-right text-ink-700">{{ money(detail.price) }}</td>
                 <td class="tabular px-3 py-2.5 text-right font-bold text-ink-900">
-                  {{ sum(detail.qty * detail.price) }}
+                  {{ money(detail.qty * detail.price) }}
                 </td>
               </tr>
             </tbody>
@@ -1027,21 +1040,21 @@ function saveIssue() {
         <div
           class="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-field bg-surface-sunken px-4 py-3"
         >
-          <span class="text-[13px] font-semibold text-ink-700">Jami qiymat</span>
+          <span class="text-[13px] font-semibold text-ink-700">{{ t('whs.totalValue') }}</span>
           <span class="tabular text-[16px] font-bold text-ink-900">
-            {{ sum(detail.qty * detail.price) }}
+            {{ money(detail.qty * detail.price) }}
           </span>
         </div>
 
         <div class="mt-6 grid gap-6 sm:grid-cols-2">
           <div>
-            <p class="text-[12px] text-ink-500">Topshirdi</p>
+            <p class="text-[12px] text-ink-500">{{ t('whs.handedOver') }}</p>
             <p class="mt-6 border-t border-ink-300 pt-1.5 text-[13px] text-ink-600">
               {{ detail.kind === 'IN' ? detail.party : detail.who }}
             </p>
           </div>
           <div>
-            <p class="text-[12px] text-ink-500">Qabul qildi</p>
+            <p class="text-[12px] text-ink-500">{{ t('whs.acceptedBy') }}</p>
             <p class="mt-6 border-t border-ink-300 pt-1.5 text-[13px] text-ink-600">
               {{ detail.kind === 'IN' ? detail.who : detail.party }}
             </p>
@@ -1054,23 +1067,23 @@ function saveIssue() {
         class="flex items-start gap-2 rounded-field bg-warn-50 px-3.5 py-3 text-[13px] text-warn-700"
       >
         <UiIcon name="warning" :size="16" class="mt-0.5 shrink-0" />
-        Nakladnoy ochiq: hujjat hali yopilmagan va ochiq hujjatlar hisobida turibdi.
+        {{ t('whs.waybillOpenNote') }}
       </p>
     </div>
 
     <template #footer>
-      <UiButton variant="ghost" @click="detailOpen = false">Yopish</UiButton>
+      <UiButton variant="ghost" @click="detailOpen = false">{{ t('tour.skip') }}</UiButton>
       <UiButton
         v-if="detail?.open && auth.can('warehouse.issue')"
         variant="success"
         @click="closeDoc"
       >
         <UiIcon name="check" :size="16" />
-        Nakladnoyni yopish
+        {{ t('whs.closeWaybill') }}
       </UiButton>
       <UiButton @click="sendToPrinter">
         <UiIcon name="print" :size="16" />
-        Chop etish
+        {{ t('common.print') }}
       </UiButton>
     </template>
   </UiModal>

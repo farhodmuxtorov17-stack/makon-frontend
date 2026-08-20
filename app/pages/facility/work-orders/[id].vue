@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { BUILDINGS } from '~/data/buildings'
-import { SERVICE_STATUS } from '~/constants/statuses'
 import {
   MATERIAL_REQUESTS,
   SERVICE_REQUESTS,
@@ -23,11 +22,26 @@ interface MaterialRequestEntry extends MaterialRequest {
 const route = useRoute()
 const auth = useAuthStore()
 
+const { t } = useI18n()
+const { money, field, priorityLabel, moduleTitle, statusLabel, tr } = useAppLabels()
+
+/** Kategoriya ma’lumotda o‘zbekcha saqlanadi, ko‘rinadigan nomi lug‘atdan olinadi */
+const CATEGORY_KEY: Record<string, string> = {
+  Santexnika: 'serviceCategory.plumbing',
+  Elektr: 'serviceCategory.electric',
+  Konditsioner: 'serviceCategory.hvac',
+  Qurilish: 'serviceCategory.construction',
+  Tozalash: 'serviceCategory.cleaning',
+  Boshqa: 'serviceCategory.other',
+}
+
 /** Ijro amallari faqat ijrochida: rahbar biriktiradi va kuzatadi */
 const canExecute = computed(() => auth.can('workorder.execute'))
 
 /** Ro‘yxat sahifasi nomi rolga bog‘langan, nav zanjiri ham shu atamani oladi */
-const listTitle = computed(() => (canExecute.value ? 'Mening ishlarim' : 'Ish topshiriqlari'))
+const listTitle = computed(() =>
+  canExecute.value ? moduleTitle('myWorkOrders') : moduleTitle('workOrders'),
+)
 
 const requests = useState<ServiceRequest[]>('service-requests', () =>
   SERVICE_REQUESTS.map((r) => ({ ...r })),
@@ -143,7 +157,10 @@ function saveUpload() {
   evidence.value[o.id] = (evidence.value[o.id] ?? 0) + uploadFiles.value.length
   const names = uploadFiles.value.map((x) => x.name).join(', ')
   notes.value[o.id] = [
-    `${uploadNote.value.trim() || 'Bajarilgan ish materiallari yuklandi'} Fayllar: ${names}.`,
+    t('wo.noteWithFiles', {
+      note: uploadNote.value.trim() || t('wo.uploadNoteDefault'),
+      files: names,
+    }),
     ...(notes.value[o.id] ?? []),
   ]
   o.progress = Math.max(o.progress, 90)
@@ -185,7 +202,9 @@ function saveEvidence() {
   if (!o || evidenceFiles.value.length === 0) return
   evidence.value[o.id] = (evidence.value[o.id] ?? 0) + evidenceFiles.value.length
   notes.value[o.id] = [
-    `Dalil suratlari biriktirildi: ${evidenceFiles.value.map((e) => e.file.name).join(', ')}.`,
+    t('wo.evidenceAttachedNote', {
+      files: evidenceFiles.value.map((e) => e.file.name).join(', '),
+    }),
     ...(notes.value[o.id] ?? []),
   ]
   clearEvidence()
@@ -201,7 +220,7 @@ function saveNote() {
   const o = order.value
   if (!o) return
   if (!noteText.value.trim()) {
-    noteError.value = 'Eslatma matni bo‘sh bo‘lmasin'
+    noteError.value = t('wo.noteRequired')
     return
   }
   notes.value[o.id] = [noteText.value.trim(), ...(notes.value[o.id] ?? [])]
@@ -220,26 +239,38 @@ function printAct() {
 function actLines(o: ServiceRequest): DocxLine[] {
   return [
     { text: 'Makon Property Group', style: 'subtitle' },
-    { text: 'Bajarilgan ish akti', style: 'title' },
+    { text: t('wo.actTitle'), style: 'title' },
     { text: `${o.code} · ${dateShort(actDate(o))}`, style: 'subtitle' },
-    { text: 'Topshiriq', style: 'heading' },
-    { text: `Sarlavha: ${o.title}` },
-    { text: `Obyekt: ${o.buildingName} · ${o.unitCode}` },
-    { text: `Murojaatchi: ${o.requester}` },
-    { text: `Ijrochi: ${o.assignee ?? 'Biriktirilmagan'}` },
-    { text: `Kategoriya: ${o.category} · ustuvorlik: ${o.priority}` },
-    { text: `Ish yakunlangan sana: ${dateShort(actDate(o))}` },
-    { text: 'Materiallar', style: 'heading' },
+    { text: t('wo.order'), style: 'heading' },
+    { text: t('wo.actLineTitle', { value: o.title }) },
+    { text: t('wo.actLineObject', { building: o.buildingName, unit: o.unitCode }) },
+    { text: t('wo.actLineRequester', { value: o.requester }) },
+    { text: t('wo.actLineExecutor', { value: o.assignee ?? t('wo.unassigned') }) },
+    {
+      text: t('wo.actLineCategory', {
+        category: tr(CATEGORY_KEY[o.category], o.category),
+        priority: priorityLabel(o.priority),
+      }),
+    },
+    { text: t('wo.actLineCompletedAt', { value: dateShort(actDate(o)) }) },
+    { text: t('navShort.materials'), style: 'heading' },
     ...materialsFor(o.code).map((m) => ({
-      text: `${m.name}: ${m.qty} ${m.unit} · ${sum(m.qty * m.price)}`,
+      text: t('wo.actLineMaterial', {
+        name: m.name,
+        qty: m.qty,
+        unit: m.unit,
+        total: sum(m.qty * m.price),
+      }),
     })),
     {
-      text: `Amaldagi xarajat: ${issuedRequest.value ? sum(actual.value) : 'ombordan berilmagan'}`,
+      text: t('wo.actLineActual', {
+        value: issuedRequest.value ? sum(actual.value) : t('wo.notIssuedInline'),
+      }),
     },
-    { text: `Taxminiy xarajat: ${sum(estimate.value)}`, style: 'small' },
-    { text: 'Imzolar', style: 'heading' },
-    { text: `Topshirdi: ${o.assignee ?? 'Biriktirilmagan'}`, style: 'small' },
-    { text: `Qabul qildi: ${o.requester}`, style: 'small' },
+    { text: t('wo.actLineEstimate', { value: sum(estimate.value) }), style: 'small' },
+    { text: t('wo.actSignatures'), style: 'heading' },
+    { text: t('wo.actLineHandedOver', { value: o.assignee ?? t('wo.unassigned') }), style: 'small' },
+    { text: t('wo.actLineAccepted', { value: o.requester }), style: 'small' },
   ]
 }
 
@@ -252,21 +283,21 @@ function downloadAct() {
 
 <template>
   <AppTopbar
-    :title="order?.title ?? 'Topshiriq topilmadi'"
-    :subtitle="order ? `${order.code} · ${order.buildingName}` : 'So‘ralgan yozuv mavjud emas'"
+    :title="order?.title ?? t('wo.notFound')"
+    :subtitle="order ? `${order.code} · ${order.buildingName}` : t('wo.notFoundSubtitle')"
     :breadcrumb="[
       { label: listTitle, to: '/facility/work-orders' },
-      { label: order?.code ?? 'Topshiriq' },
+      { label: order?.code ?? t('wo.order') },
     ]"
   >
     <template #actions>
       <UiButton variant="secondary" size="sm" to="/facility/work-orders">
         <UiIcon name="chevronLeft" :size="16" />
-        Ro‘yxatga qaytish
+        {{ t('common.backToList') }}
       </UiButton>
       <UiButton v-if="order" size="sm" :to="`/service-requests/${order.id}`">
         <UiIcon name="clipboard" :size="16" />
-        Ariza kartasi
+        {{ t('wo.requestCard') }}
       </UiButton>
     </template>
   </AppTopbar>
@@ -285,31 +316,31 @@ function downloadAct() {
 
           <dl class="mt-5 grid gap-x-5 gap-y-4 rounded-field bg-surface-sunken p-4 sm:grid-cols-3 lg:grid-cols-5">
             <div class="min-w-0">
-              <dt class="text-[12px] text-ink-500">Obyekt</dt>
+              <dt class="text-[12px] text-ink-500">{{ field('object') }}</dt>
               <dd class="mt-0.5 truncate text-[14px] font-semibold text-ink-900">
                 {{ order.buildingName }}
               </dd>
             </div>
             <div class="min-w-0">
-              <dt class="text-[12px] text-ink-500">Lokatsiya</dt>
+              <dt class="text-[12px] text-ink-500">{{ field('location') }}</dt>
               <dd class="mt-0.5 truncate text-[14px] font-semibold text-ink-900">
                 {{ order.unitCode }}
               </dd>
             </div>
             <div class="min-w-0">
-              <dt class="text-[12px] text-ink-500">Topshiriq berdi</dt>
+              <dt class="text-[12px] text-ink-500">{{ t('wo.orderedBy') }}</dt>
               <dd class="mt-0.5 truncate text-[14px] font-semibold text-ink-900">
                 {{ order.requester }}
               </dd>
             </div>
             <div class="min-w-0">
-              <dt class="text-[12px] text-ink-500">Muddati</dt>
+              <dt class="text-[12px] text-ink-500">{{ field('deadline') }}</dt>
               <dd class="tabular mt-0.5 text-[14px] font-semibold text-ink-900">
                 {{ dateShort(order.dueAt) }}
               </dd>
             </div>
             <div class="min-w-0">
-              <dt class="text-[12px] text-ink-500">Ustuvorlik</dt>
+              <dt class="text-[12px] text-ink-500">{{ field('priority') }}</dt>
               <dd
                 class="mt-0.5 inline-flex items-center gap-1.5 text-[14px] font-semibold"
                 :class="PRIORITY_STYLE[order.priority]?.text"
@@ -333,18 +364,18 @@ function downloadAct() {
                   />
                   <rect v-else x="1.8" y="4.6" width="8.4" height="2.8" rx="1.4" fill="currentColor" />
                 </svg>
-                {{ order.priority }}
+                {{ priorityLabel(order.priority) }}
               </dd>
             </div>
           </dl>
 
           <div class="mt-5">
-            <h3 class="text-[13px] font-semibold text-ink-700">Topshiriq tavsifi</h3>
+            <h3 class="text-[13px] font-semibold text-ink-700">{{ t('wo.description') }}</h3>
             <p class="mt-1.5 text-[14px] leading-relaxed text-ink-600">{{ order.description }}</p>
           </div>
 
           <div class="mt-5">
-            <h3 class="text-[13px] font-semibold text-ink-700">Oldin / Keyin</h3>
+            <h3 class="text-[13px] font-semibold text-ink-700">{{ t('wo.beforeAfter') }}</h3>
             <div class="mt-2.5 grid gap-4 sm:grid-cols-2">
               <div class="relative overflow-hidden rounded-field ring-1 ring-ink-200">
                 <svg viewBox="0 0 400 240" class="block h-44 w-full" aria-hidden="true">
@@ -361,7 +392,7 @@ function downloadAct() {
                 <span
                   class="absolute left-3 top-3 rounded-pill bg-ink-900/70 px-2.5 py-1 text-[12px] font-semibold text-white"
                 >
-                  Oldin
+                  {{ t('wo.before') }}
                 </span>
               </div>
 
@@ -382,44 +413,44 @@ function downloadAct() {
                 <span
                   class="absolute left-3 top-3 rounded-pill bg-ok-600/90 px-2.5 py-1 text-[12px] font-semibold text-white"
                 >
-                  Keyin
+                  {{ t('wo.after') }}
                 </span>
               </div>
             </div>
           </div>
 
           <div class="mt-5 border-t border-ink-100 pt-5">
-            <h3 class="text-[13px] font-semibold text-ink-700">Asosiy ma’lumotlar</h3>
+            <h3 class="text-[13px] font-semibold text-ink-700">{{ t('common.mainInfo') }}</h3>
             <dl class="mt-3 grid gap-x-5 gap-y-4 sm:grid-cols-2 lg:grid-cols-4">
               <div class="min-w-0">
-                <dt class="text-[12px] text-ink-500">Pudratchi / xodim</dt>
+                <dt class="text-[12px] text-ink-500">{{ t('wo.contractorOrStaff') }}</dt>
                 <dd class="mt-0.5 truncate text-[14px] font-semibold text-ink-900">
-                  {{ order.assignee ?? 'Biriktirilmagan' }}
+                  {{ order.assignee ?? t('wo.unassigned') }}
                 </dd>
               </div>
               <div class="min-w-0">
-                <dt class="text-[12px] text-ink-500">Boshlanish sanasi</dt>
+                <dt class="text-[12px] text-ink-500">{{ field('startDate') }}</dt>
                 <dd class="tabular mt-0.5 text-[14px] font-semibold text-ink-900">
                   {{ dateShort(order.createdAt.slice(0, 10)) }} {{ order.createdAt.slice(11) }}
                 </dd>
               </div>
               <div class="min-w-0">
-                <dt class="text-[12px] text-ink-500">Rejalashtirilgan tugash</dt>
+                <dt class="text-[12px] text-ink-500">{{ t('wo.plannedEnd') }}</dt>
                 <dd class="tabular mt-0.5 text-[14px] font-semibold text-ink-900">
                   {{ dateShort(order.dueAt) }}
                 </dd>
               </div>
               <div class="min-w-0">
-                <dt class="text-[12px] text-ink-500">Amaldagi holat</dt>
+                <dt class="text-[12px] text-ink-500">{{ t('wo.currentStatus') }}</dt>
                 <dd class="mt-0.5 truncate text-[14px] font-semibold text-ink-900">
-                  {{ SERVICE_STATUS[order.status]?.label }}
+                  {{ statusLabel('service', order.status) }}
                 </dd>
               </div>
             </dl>
 
             <div class="mt-4">
               <div class="flex items-baseline justify-between">
-                <span class="text-[12px] text-ink-500">Bajarilish</span>
+                <span class="text-[12px] text-ink-500">{{ t('wo.completion') }}</span>
                 <span class="tabular text-[13px] font-bold text-ink-900">{{ order.progress }}%</span>
               </div>
               <div class="mt-1.5 h-2 overflow-hidden rounded-pill bg-ink-100">
@@ -433,7 +464,7 @@ function downloadAct() {
           </div>
 
           <div v-if="orderNotes.length" class="mt-5 border-t border-ink-100 pt-5">
-            <h3 class="text-[13px] font-semibold text-ink-700">Eslatmalar</h3>
+            <h3 class="text-[13px] font-semibold text-ink-700">{{ t('common.notes') }}</h3>
             <ul class="mt-2.5 space-y-2">
               <li
                 v-for="(n, i) in orderNotes"
@@ -451,8 +482,7 @@ function downloadAct() {
           v-if="!canExecute"
           class="rounded-card bg-surface-sunken px-5 py-4 text-[13px] leading-relaxed text-ink-600 ring-1 ring-inset ring-ink-200"
         >
-          Bajarilgan ishni yuklash, dalil va eslatma qo‘shish ijrochi huquqiga tegishli. Sizning
-          rolingizda topshiriq faqat kuzatiladi.
+          {{ t('wo.watchOnlyNotice') }}
         </p>
 
         <div v-else class="grid gap-4 lg:grid-cols-2">
@@ -465,28 +495,30 @@ function downloadAct() {
               <UiIcon name="upload" :size="20" />
             </span>
             <span class="min-w-0">
-              <span class="block text-[14px] font-bold text-ink-900">Bajarilgan ishni yuklash</span>
-              <span class="block text-[13px] text-ink-500">Foto, video yoki hujjat yuklang</span>
+              <span class="block text-[14px] font-bold text-ink-900">{{ t('wo.uploadWork') }}</span>
+              <span class="block text-[13px] text-ink-500">{{ t('wo.uploadWorkHint') }}</span>
             </span>
           </button>
 
           <div class="flex flex-wrap items-center gap-3">
             <UiButton class="flex-1" @click="evidenceOpen = true">
               <UiIcon name="plus" :size="17" />
-              Dalil qo‘shish
+              {{ t('wo.addEvidence') }}
             </UiButton>
             <UiButton variant="secondary" class="flex-1" @click="noteOpen = true">
               <UiIcon name="doc" :size="17" />
-              Eslatma qo‘shish
+              {{ t('wo.addNote') }}
             </UiButton>
           </div>
         </div>
       </div>
 
       <div class="space-y-5">
-        <UiCard title="Bajarilgan ish dalillari">
+        <UiCard :title="t('wo.evidenceTitle')">
           <template #actions>
-            <span class="tabular text-[13px] font-bold text-ink-700">{{ evidenceCount }} ta dalil</span>
+            <span class="tabular text-[13px] font-bold text-ink-700">
+              {{ t('wo.evidenceCount', { n: evidenceCount }) }}
+            </span>
           </template>
 
           <div v-if="evidenceCount > 0" class="grid grid-cols-4 gap-2">
@@ -509,7 +541,7 @@ function downloadAct() {
               </span>
             </div>
           </div>
-          <p v-else class="text-[13px] text-ink-500">Hozircha dalil biriktirilmagan.</p>
+          <p v-else class="text-[13px] text-ink-500">{{ t('wo.evidenceEmpty') }}</p>
 
           <UiButton
             v-if="canExecute"
@@ -520,13 +552,15 @@ function downloadAct() {
             @click="evidenceOpen = true"
           >
             <UiIcon name="plus" :size="16" />
-            Dalil qo‘shish
+            {{ t('wo.addEvidence') }}
           </UiButton>
         </UiCard>
 
-        <UiCard title="Ishda ishlatilgan materiallar">
+        <UiCard :title="t('wo.materialsUsed')">
           <template #actions>
-            <span class="tabular text-[13px] font-bold text-ink-700">{{ materials.length }} ta</span>
+            <span class="tabular text-[13px] font-bold text-ink-700">
+              {{ t('common.countPcs', { n: materials.length }) }}
+            </span>
           </template>
 
           <ul v-if="materials.length" class="space-y-2.5">
@@ -544,16 +578,16 @@ function downloadAct() {
           </ul>
 
           <p v-else class="text-[13px] text-ink-500">
-            Bu topshiriq bo‘yicha material talab qilinmagan.
+            {{ t('wo.materialsEmpty') }}
           </p>
 
           <UiButton variant="ghost" size="sm" block class="mt-3" to="/facility/materials">
-            Material so‘rovlari
+            {{ t('nav.materials') }}
             <UiIcon name="chevronRight" :size="15" />
           </UiButton>
         </UiCard>
 
-        <UiCard title="Bajarish nazorati (chek-list)">
+        <UiCard :title="t('wo.checklistTitle')">
           <template #actions>
             <span class="tabular text-[13px] font-bold text-ink-700">
               {{ doneCount }} / {{ checklist.length }}
@@ -594,14 +628,14 @@ function downloadAct() {
                   class="shrink-0 text-[12px] font-semibold"
                   :class="orderChecks[i] ? 'text-ok-600' : 'text-ink-400'"
                 >
-                  {{ orderChecks[i] ? 'Bajarildi' : 'Kutilmoqda' }}
+                  {{ orderChecks[i] ? t('common.done') : t('common.pending') }}
                 </span>
               </button>
             </li>
           </ul>
         </UiCard>
 
-        <UiCard title="Xarajat va akt">
+        <UiCard :title="t('wo.costAndAct')">
           <template #actions>
             <span
               class="inline-flex items-center gap-1.5 rounded-pill px-2.5 py-1 text-[12px] font-semibold ring-1 ring-inset"
@@ -625,28 +659,28 @@ function downloadAct() {
                   <path d="M6 3.6V6l1.9 1.2" stroke-linecap="round" />
                 </g>
               </svg>
-              {{ actReady ? 'Akt tayyor' : 'Akt tayyorlanmoqda' }}
+              {{ actReady ? t('wo.actReady') : t('wo.actPending') }}
             </span>
           </template>
 
           <dl class="space-y-3">
             <div class="flex items-baseline justify-between gap-3">
-              <dt class="text-[13px] text-ink-500">Taxminiy xarajat</dt>
-              <dd class="tabular text-[14px] font-bold text-ink-900">{{ sum(estimate) }}</dd>
+              <dt class="text-[13px] text-ink-500">{{ t('wo.estimate') }}</dt>
+              <dd class="tabular text-[14px] font-bold text-ink-900">{{ money(estimate) }}</dd>
             </div>
             <div class="flex items-baseline justify-between gap-3">
-              <dt class="text-[13px] text-ink-500">Amaldagi xarajat</dt>
+              <dt class="text-[13px] text-ink-500">{{ t('wo.actualCost') }}</dt>
               <dd
                 v-if="issuedRequest"
                 class="tabular text-[14px] font-bold"
                 :class="actual > estimate ? 'text-danger-600' : 'text-ok-600'"
               >
-                {{ sum(actual) }}
+                {{ money(actual) }}
               </dd>
-              <dd v-else class="text-[13px] text-ink-500">Ombordan berilmagan</dd>
+              <dd v-else class="text-[13px] text-ink-500">{{ t('wo.notIssued') }}</dd>
             </div>
             <div class="flex items-baseline justify-between gap-3">
-              <dt class="text-[13px] text-ink-500">Ish yakunlangan sana</dt>
+              <dt class="text-[13px] text-ink-500">{{ t('wo.completedAt') }}</dt>
               <dd class="tabular text-[14px] font-bold text-ink-900">
                 {{ actReady ? dateShort(actDate(order)) : '-' }}
               </dd>
@@ -661,11 +695,11 @@ function downloadAct() {
             @click="actOpen = true"
           >
             <UiIcon name="doc" :size="17" />
-            Aktni ko‘rish
+            {{ t('wo.viewAct') }}
           </UiButton>
 
           <p v-if="!actReady" class="mt-2 text-[12px] text-ink-500">
-            Akt faqat ish «Bajarilgan» holatiga o‘tgandan keyin beriladi.
+            {{ t('wo.actHint') }}
           </p>
         </UiCard>
       </div>
@@ -673,13 +707,13 @@ function downloadAct() {
 
     <UiCard v-else>
       <div class="py-10 text-center">
-        <p class="text-[16px] font-semibold text-ink-900">Bunday topshiriq topilmadi</p>
+        <p class="text-[16px] font-semibold text-ink-900">{{ t('wo.notFoundTitle') }}</p>
         <p class="mt-1.5 text-[13px] text-ink-500">
-          Topshiriq boshqa ijrochiga o‘tkazilgan yoki manzil noto‘g‘ri kiritilgan bo‘lishi mumkin.
+          {{ t('wo.notFoundHint') }}
         </p>
         <UiButton class="mt-5" to="/facility/work-orders">
           <UiIcon name="chevronLeft" :size="17" />
-          Mening ishlarimga qaytish
+          {{ t('wo.backToMyWork') }}
         </UiButton>
       </div>
     </UiCard>
@@ -687,8 +721,8 @@ function downloadAct() {
 
   <UiModal
     v-model="uploadOpen"
-    title="Bajarilgan ishni yuklash"
-    subtitle="Foto, video yoki hujjat biriktiring va izoh qoldiring"
+    :title="t('wo.uploadWork')"
+    :subtitle="t('wo.uploadSubtitle')"
   >
     <div class="space-y-4">
       <input
@@ -697,7 +731,7 @@ function downloadAct() {
         accept="image/*,video/*,.pdf,.docx"
         multiple
         class="sr-only"
-        aria-label="Bajarilgan ish fayllari"
+        :aria-label="t('wo.uploadFilesAria')"
         @change="onUploadFiles"
       />
 
@@ -722,8 +756,8 @@ function downloadAct() {
             stroke-linejoin="round"
           />
         </svg>
-        <span class="text-[14px] font-semibold">Fayl biriktirish uchun bosing</span>
-        <span class="text-[12px]">Biriktirilgan: {{ uploadFiles.length }} ta</span>
+        <span class="text-[14px] font-semibold">{{ t('common.clickToAttach') }}</span>
+        <span class="text-[12px]">{{ t('common.attachedCount', { n: uploadFiles.length }) }}</span>
       </button>
 
       <ul v-if="uploadFiles.length" class="space-y-1.5">
@@ -740,7 +774,7 @@ function downloadAct() {
           <button
             type="button"
             class="grid size-11 shrink-0 place-items-center rounded-lg text-ink-400 transition-colors hover:bg-danger-50 hover:text-danger-600 md:size-9"
-            :aria-label="`${x.name}: faylni olib tashlash`"
+            :aria-label="t('common.removeFileAria', { name: x.name })"
             @click="removeUploadFile(i)"
           >
             <UiIcon name="x" :size="14" />
@@ -748,26 +782,31 @@ function downloadAct() {
         </li>
       </ul>
 
-      <UiField label="Izoh" hint="Bajarilgan ish bo‘yicha qisqacha xulosa">
+      <UiField :label="t('common.note')" :hint="t('wo.uploadNoteHint')">
         <textarea
           v-model="uploadNote"
           rows="3"
-          placeholder="Ish yakunlandi, ulanishlar tekshirildi"
+          :placeholder="t('wo.uploadNotePlaceholder')"
           class="scroll-slim w-full rounded-field bg-white px-3.5 py-2.5 text-sm text-ink-800 ring-1 ring-inset ring-ink-200 transition-colors placeholder:text-ink-400 hover:ring-ink-300 focus:ring-2 focus:ring-brand-500"
         />
       </UiField>
     </div>
 
     <template #footer>
-      <UiButton variant="ghost" @click="uploadOpen = false">Bekor qilish</UiButton>
+      <UiButton variant="ghost" @click="uploadOpen = false">{{ t('common.cancel') }}</UiButton>
       <UiButton variant="success" :disabled="uploadFiles.length === 0" @click="saveUpload">
         <UiIcon name="check" :size="16" />
-        Yuklash va saqlash
+        {{ t('wo.uploadAndSave') }}
       </UiButton>
     </template>
   </UiModal>
 
-  <UiModal v-model="evidenceOpen" title="Dalil qo‘shish" subtitle="Bajarilgan ish suratlarini biriktiring" size="sm">
+  <UiModal
+    v-model="evidenceOpen"
+    :title="t('wo.addEvidence')"
+    :subtitle="t('wo.evidenceSubtitle')"
+    size="sm"
+  >
     <div class="flex flex-wrap gap-3">
       <div
         v-for="(e, i) in evidenceFiles"
@@ -778,7 +817,7 @@ function downloadAct() {
         <button
           type="button"
           class="absolute right-1 top-1 grid size-8 place-items-center rounded-full bg-ink-900/60 text-white transition-colors hover:bg-danger-600 md:size-6"
-          :aria-label="`${e.file.name}: dalilni olib tashlash`"
+          :aria-label="t('wo.removeEvidenceAria', { name: e.file.name })"
           @click="removeEvidence(i)"
         >
           <UiIcon name="x" :size="13" />
@@ -791,14 +830,14 @@ function downloadAct() {
         accept="image/*"
         multiple
         class="sr-only"
-        aria-label="Dalil suratlari"
+        :aria-label="t('wo.evidencePhotos')"
         @change="onEvidenceFiles"
       />
 
       <button
         type="button"
         class="grid size-24 place-items-center rounded-field border-2 border-dashed border-ink-300 bg-ink-50 text-ink-500 transition-colors hover:border-brand-400 hover:bg-brand-50 hover:text-brand-600"
-        aria-label="Dalil surati qo‘shish"
+        :aria-label="t('wo.addEvidencePhoto')"
         @click="pickEvidence"
       >
         <UiIcon name="plus" :size="24" />
@@ -807,44 +846,49 @@ function downloadAct() {
 
     <template #footer>
       <UiButton variant="ghost" @click="((evidenceOpen = false), clearEvidence())">
-        Bekor qilish
+        {{ t('common.cancel') }}
       </UiButton>
       <UiButton :disabled="evidenceFiles.length === 0" @click="saveEvidence">
         <UiIcon name="check" :size="16" />
-        Biriktirish
+        {{ t('common.attach') }}
       </UiButton>
     </template>
   </UiModal>
 
-  <UiModal v-model="noteOpen" title="Eslatma qo‘shish" subtitle="Eslatma topshiriq kartasida ko‘rinadi" size="sm">
-    <UiField label="Eslatma matni" required :error="noteError">
+  <UiModal
+    v-model="noteOpen"
+    :title="t('wo.addNote')"
+    :subtitle="t('wo.noteSubtitle')"
+    size="sm"
+  >
+    <UiField :label="t('wo.noteText')" required :error="noteError">
       <textarea
         v-model="noteText"
         rows="4"
-        placeholder="Masalan: qo‘shimcha material talab qilinadi"
+        :placeholder="t('wo.notePlaceholder')"
         class="scroll-slim w-full rounded-field bg-white px-3.5 py-2.5 text-sm text-ink-800 ring-1 ring-inset ring-ink-200 transition-colors placeholder:text-ink-400 hover:ring-ink-300 focus:ring-2 focus:ring-brand-500"
       />
     </UiField>
 
     <template #footer>
-      <UiButton variant="ghost" @click="noteOpen = false">Bekor qilish</UiButton>
+      <UiButton variant="ghost" @click="noteOpen = false">{{ t('common.cancel') }}</UiButton>
       <UiButton @click="saveNote">
         <UiIcon name="check" :size="16" />
-        Saqlash
+        {{ t('common.save') }}
       </UiButton>
     </template>
   </UiModal>
 
   <UiModal
     v-model="actOpen"
-    :title="`Bajarilgan ish akti · ${order?.code ?? ''}`"
-    subtitle="Hujjatning chop etishdan oldingi ko‘rinishi"
+    :title="t('wo.actTitleWithCode', { code: order?.code ?? '' })"
+    :subtitle="t('wo.actPreview')"
     size="lg"
   >
     <div v-if="order && actReady" class="rounded-field bg-white p-6 ring-1 ring-ink-200">
       <div class="flex items-start justify-between gap-4 border-b border-ink-200 pb-4">
         <div>
-          <p class="text-[18px] font-bold text-ink-900">Bajarilgan ish akti</p>
+          <p class="text-[18px] font-bold text-ink-900">{{ t('wo.actTitle') }}</p>
           <p class="tabular mt-1 text-[13px] text-ink-500">
             {{ order.code }} · {{ dateShort(actDate(order)) }}
           </p>
@@ -854,21 +898,21 @@ function downloadAct() {
 
       <dl class="mt-4 grid gap-x-6 gap-y-3 sm:grid-cols-2">
         <div class="flex justify-between gap-3 border-b border-ink-100 pb-2">
-          <dt class="text-[13px] text-ink-500">Obyekt</dt>
+          <dt class="text-[13px] text-ink-500">{{ field('object') }}</dt>
           <dd class="text-[13px] font-semibold text-ink-900">{{ order.buildingName }}</dd>
         </div>
         <div class="flex justify-between gap-3 border-b border-ink-100 pb-2">
-          <dt class="text-[13px] text-ink-500">Lokatsiya</dt>
+          <dt class="text-[13px] text-ink-500">{{ field('location') }}</dt>
           <dd class="text-[13px] font-semibold text-ink-900">{{ order.unitCode }}</dd>
         </div>
         <div class="flex justify-between gap-3 border-b border-ink-100 pb-2">
-          <dt class="text-[13px] text-ink-500">Ijrochi</dt>
+          <dt class="text-[13px] text-ink-500">{{ field('executor') }}</dt>
           <dd class="text-[13px] font-semibold text-ink-900">
-            {{ order.assignee ?? 'Biriktirilmagan' }}
+            {{ order.assignee ?? t('wo.unassigned') }}
           </dd>
         </div>
         <div class="flex justify-between gap-3 border-b border-ink-100 pb-2">
-          <dt class="text-[13px] text-ink-500">Topshiriq berdi</dt>
+          <dt class="text-[13px] text-ink-500">{{ t('wo.orderedBy') }}</dt>
           <dd class="text-[13px] font-semibold text-ink-900">{{ order.requester }}</dd>
         </div>
       </dl>
@@ -877,13 +921,13 @@ function downloadAct() {
         <thead>
           <tr class="border-b border-ink-200 bg-surface-sunken">
             <th class="px-3 py-2 text-left text-[12px] font-semibold uppercase tracking-wide text-ink-500">
-              Nomi
+              {{ field('name') }}
             </th>
             <th class="px-3 py-2 text-right text-[12px] font-semibold uppercase tracking-wide text-ink-500">
-              Miqdor
+              {{ field('quantity') }}
             </th>
             <th class="px-3 py-2 text-right text-[12px] font-semibold uppercase tracking-wide text-ink-500">
-              Summa
+              {{ field('amount') }}
             </th>
           </tr>
         </thead>
@@ -892,19 +936,19 @@ function downloadAct() {
             <td class="px-3 py-2.5 text-ink-700">{{ m.name }}</td>
             <td class="tabular px-3 py-2.5 text-right text-ink-700">{{ m.qty }} {{ m.unit }}</td>
             <td class="tabular px-3 py-2.5 text-right font-semibold text-ink-900">
-              {{ sum(m.qty * m.price) }}
+              {{ money(m.qty * m.price) }}
             </td>
           </tr>
           <tr class="border-b border-ink-100">
-            <td class="px-3 py-2.5 text-ink-600" colspan="2">Taxminiy xarajat</td>
-            <td class="tabular px-3 py-2.5 text-right text-ink-700">{{ sum(estimate) }}</td>
+            <td class="px-3 py-2.5 text-ink-600" colspan="2">{{ t('wo.estimate') }}</td>
+            <td class="tabular px-3 py-2.5 text-right text-ink-700">{{ money(estimate) }}</td>
           </tr>
           <tr class="bg-surface-sunken">
             <td class="px-3 py-2.5 font-semibold text-ink-800" colspan="2">
-              Amaldagi xarajat (ombordan berilgan)
+              {{ t('wo.actualCostIssued') }}
             </td>
             <td class="tabular px-3 py-2.5 text-right font-bold text-ink-900">
-              {{ issuedRequest ? sum(actual) : 'berilmagan' }}
+              {{ issuedRequest ? money(actual) : t('wo.notIssuedShort') }}
             </td>
           </tr>
         </tbody>
@@ -912,13 +956,13 @@ function downloadAct() {
 
       <div class="mt-6 grid gap-6 sm:grid-cols-2">
         <div>
-          <p class="text-[12px] text-ink-500">Topshirdi</p>
+          <p class="text-[12px] text-ink-500">{{ t('wo.handedOver') }}</p>
           <p class="mt-6 border-t border-ink-300 pt-1.5 text-[13px] text-ink-600">
             {{ order.assignee ?? '-' }}
           </p>
         </div>
         <div>
-          <p class="text-[12px] text-ink-500">Qabul qildi</p>
+          <p class="text-[12px] text-ink-500">{{ t('wo.acceptedBy') }}</p>
           <p class="mt-6 border-t border-ink-300 pt-1.5 text-[13px] text-ink-600">
             {{ order.requester }}
           </p>
@@ -927,14 +971,14 @@ function downloadAct() {
     </div>
 
     <template #footer>
-      <UiButton variant="ghost" @click="actOpen = false">Yopish</UiButton>
+      <UiButton variant="ghost" @click="actOpen = false">{{ t('common.close') }}</UiButton>
       <UiButton variant="secondary" :disabled="!actReady" @click="downloadAct">
         <UiIcon name="download" :size="16" />
-        Yuklab olish
+        {{ t('common.download') }}
       </UiButton>
       <UiButton :disabled="!actReady" @click="printAct">
         <UiIcon name="print" :size="16" />
-        Chop etish
+        {{ t('common.print') }}
       </UiButton>
     </template>
   </UiModal>

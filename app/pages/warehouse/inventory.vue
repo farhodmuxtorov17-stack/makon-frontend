@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { STOCK_ITEMS, type StockItem } from '~/data/operations'
-import { dateShort, num, sum, sumShort } from '~/utils/format'
+import { dateShort, num } from '~/utils/format'
 
 interface ActLine {
   itemId: string
@@ -16,6 +16,8 @@ interface InventoryAct {
   id: string
   code: string
   name: string
+  /** Reyestrdagi yozuv nomi lug‘atdan olinadi, foydalanuvchi kiritgani `name` da qoladi */
+  nameKey?: string
   warehouse: string
   date: string
   owner: string
@@ -37,6 +39,8 @@ interface Session {
 
 const auth = useAuthStore()
 
+const { money, moneyShort, t, field, moduleTitle } = useAppLabels()
+
 const CURRENT_DAY = '2025-05-18'
 const canWrite = computed(() => auth.can('warehouse.issue'))
 
@@ -46,11 +50,11 @@ const stock = ref<StockItem[]>(
 )
 const warehouses = computed(() => [...new Set(stock.value.map((i) => i.warehouse))])
 
-const OWNERS = [
-  { value: 'Anvar Qodirov', label: 'Anvar Qodirov · ombor mudiri' },
-  { value: 'Jasur Toshmatov', label: 'Jasur Toshmatov · xo‘jalik bo‘limi' },
-  { value: 'Sardor Yo‘ldoshev', label: 'Sardor Yo‘ldoshev · obyekt rahbari' },
-]
+const OWNERS = computed(() => [
+  { value: 'Anvar Qodirov', label: `Anvar Qodirov · ${t('whs.ownerWarehouseHead')}` },
+  { value: 'Jasur Toshmatov', label: `Jasur Toshmatov · ${t('whs.ownerFacility')}` },
+  { value: 'Sardor Yo‘ldoshev', label: `Sardor Yo‘ldoshev · ${t('whs.ownerSiteHead')}` },
+])
 
 function lineOf(itemId: string, counted: number): ActLine {
   const item = STOCK_ITEMS.find((i) => i.id === itemId) ?? STOCK_ITEMS[0]!
@@ -88,12 +92,14 @@ function buildAct(
   date: string,
   owner: string,
   lines: ActLine[],
+  nameKey?: string,
 ): InventoryAct {
   const s = summarize(lines)
   return {
     id,
     code,
     name,
+    nameKey,
     warehouse,
     date,
     owner,
@@ -121,6 +127,7 @@ const acts = ref<InventoryAct[]>([
       lineOf('w-06', 14),
       lineOf('w-08', 18),
     ],
+    'whs.invSeedApril',
   ),
   buildAct(
     'inv-0030',
@@ -130,6 +137,7 @@ const acts = ref<InventoryAct[]>([
     '2025-04-12',
     'Jasur Toshmatov',
     [lineOf('w-04', 356), lineOf('w-05', 80)],
+    'whs.invSeedGreenBc',
   ),
   buildAct(
     'inv-0029',
@@ -139,6 +147,7 @@ const acts = ref<InventoryAct[]>([
     '2025-03-28',
     'Anvar Qodirov',
     [lineOf('w-07', 205)],
+    'whs.invSeedBuilding',
   ),
 ].filter((a) => auth.inWarehouseScope(a.warehouse)))
 
@@ -151,7 +160,7 @@ const startOpen = ref(false)
 const startName = ref('')
 const startWarehouse = ref(stock.value[0]?.warehouse ?? STOCK_ITEMS[0]!.warehouse)
 const startDate = ref(CURRENT_DAY)
-const startOwner = ref(OWNERS[0]!.value)
+const startOwner = ref(OWNERS.value[0]!.value)
 const startError = ref('')
 
 function nextCode() {
@@ -159,15 +168,20 @@ function nextCode() {
   return `INV-2025-${String(seq).padStart(4, '0')}`
 }
 
+/** Akt nomi: reyestr yozuvi lug‘atdan, foydalanuvchi kiritgani o‘z matnidan */
+function actName(a: { name: string; nameKey?: string }) {
+  return a.nameKey ? t(a.nameKey) : a.name
+}
+
 function openStart() {
-  startName.value = `${startWarehouse.value} joriy sanog‘i`
+  startName.value = t('whs.invDefaultName', { warehouse: startWarehouse.value })
   startError.value = ''
   startOpen.value = true
 }
 
 function beginSession() {
   if (!startName.value.trim()) {
-    startError.value = 'Inventarizatsiya nomini kiriting'
+    startError.value = t('whs.invNameRequired')
     return
   }
   counted.value = {}
@@ -218,7 +232,7 @@ function diffView(item: { id: string; qty: number }): DiffView {
   if (!isCounted(item.id))
     return {
       label: '-',
-      text: 'Sanalmagan',
+      text: t('whs.diffNotCounted'),
       badge: 'bg-ink-100 text-ink-600 ring-ink-200',
       mark: 'none',
     }
@@ -226,20 +240,20 @@ function diffView(item: { id: string; qty: number }): DiffView {
   if (d === 0)
     return {
       label: '0',
-      text: 'Mos keldi',
+      text: t('whs.diffMatch'),
       badge: 'bg-ok-50 text-ok-700 ring-ok-100',
       mark: 'equal',
     }
   if (d > 0)
     return {
       label: `+${num(d)}`,
-      text: 'Ortiqcha',
+      text: t('whs.diffSurplus'),
       badge: 'bg-info-50 text-info-700 ring-info-100',
       mark: 'up',
     }
   return {
     label: `−${num(-d)}`,
-    text: 'Kamomad',
+    text: t('whs.diffShortage'),
     badge: 'bg-danger-50 text-danger-700 ring-danger-100',
     mark: 'down',
   }
@@ -300,23 +314,23 @@ function cancelSession() {
 const cancelOpen = ref(false)
 const finishOpen = ref(false)
 
-const countColumns = [
-  { key: 'name', label: 'Pozitsiya' },
-  { key: 'qty', label: 'Hisobdagi miqdor', align: 'right' as const, numeric: true },
-  { key: 'fact', label: 'Sanaldi', align: 'right' as const, width: '150px' },
-  { key: 'diff', label: 'Farq', width: '190px' },
-  { key: 'note', label: 'Izoh', width: '230px' },
-]
+const countColumns = computed(() => [
+  { key: 'name', label: field('position', 'Pozitsiya') },
+  { key: 'qty', label: field('bookQty', 'Hisobdagi miqdor'), align: 'right' as const, numeric: true },
+  { key: 'fact', label: field('countedQty', 'Sanaldi'), align: 'right' as const, width: '150px' },
+  { key: 'diff', label: field('difference', 'Farq'), width: '190px' },
+  { key: 'note', label: t('common.note'), width: '230px' },
+])
 
-const historyColumns = [
-  { key: 'code', label: 'Akt raqami', width: '150px' },
-  { key: 'name', label: 'Nomi' },
-  { key: 'warehouse', label: 'Ombor' },
-  { key: 'date', label: 'Sana', width: '110px' },
-  { key: 'owner', label: 'Mas’ul' },
-  { key: 'positions', label: 'Pozitsiya', align: 'right' as const, numeric: true },
-  { key: 'valueDiff', label: 'Farq qiymati', align: 'right' as const, numeric: true },
-]
+const historyColumns = computed(() => [
+  { key: 'code', label: t('whs.invActNo'), width: '150px' },
+  { key: 'name', label: field('name', 'Nomi') },
+  { key: 'warehouse', label: field('warehouse', 'Ombor') },
+  { key: 'date', label: field('date', 'Sana'), width: '110px' },
+  { key: 'owner', label: field('responsible', 'Mas’ul') },
+  { key: 'positions', label: field('positions', 'Pozitsiya'), align: 'right' as const, numeric: true },
+  { key: 'valueDiff', label: field('differenceValue', 'Farq qiymati'), align: 'right' as const, numeric: true },
+])
 
 const historyRows = computed(() => acts.value.map((a) => ({ ...a })))
 
@@ -379,22 +393,25 @@ const actLineRows = computed(() =>
 
 <template>
   <AppTopbar
-    title="Inventarizatsiya"
-    subtitle="Ombor qoldiqlarini sanash, farqlarni qayd etish va akt rasmiylashtirish"
-    :breadcrumb="[{ label: 'Ombor', to: '/warehouse' }, { label: 'Inventarizatsiya' }]"
+    :title="moduleTitle('inventory', 'Inventarizatsiya')"
+    :subtitle="t('whs.invCaption')"
+    :breadcrumb="[
+      { label: field('warehouse', 'Ombor'), to: '/warehouse' },
+      { label: moduleTitle('inventory', 'Inventarizatsiya') },
+    ]"
   >
     <template #actions>
       <UiButton variant="secondary" size="sm" to="/warehouse/movements">
         <UiIcon name="layers" :size="16" />
-        Kirim va chiqim
+        {{ moduleTitle('movements', 'Kirim va chiqim') }}
       </UiButton>
       <UiButton v-if="canWrite && !session" size="sm" @click="openStart">
         <UiIcon name="plus" :size="16" />
-        Yangi inventarizatsiya
+        {{ t('whs.invNew') }}
       </UiButton>
       <UiButton v-else-if="canWrite" variant="ghost" size="sm" @click="cancelOpen = true">
         <UiIcon name="x" :size="16" />
-        Sanoqni bekor qilish
+        {{ t('whs.invCancelCount') }}
       </UiButton>
     </template>
   </AppTopbar>
@@ -411,12 +428,18 @@ const actLineRows = computed(() =>
     >
       <UiIcon :name="resultBanner.valueDiff === 0 ? 'check' : 'warning'" :size="17" class="shrink-0" />
       <span class="min-w-0 flex-1">
-        <b>{{ resultBanner.code }}</b> akti rasmiylashtirildi:
-        {{ resultBanner.positions }} ta pozitsiya sanaldi,
-        {{ resultBanner.positions - resultBanner.matched }} tasida farq aniqlandi. Umumiy farq
-        qiymati: {{ sum(resultBanner.valueDiff) }}.
+        <b>{{ resultBanner.code }}</b>
+        {{
+          t('whs.invResultBanner', {
+            n: resultBanner.positions,
+            d: resultBanner.positions - resultBanner.matched,
+            v: money(resultBanner.valueDiff),
+          })
+        }}
       </span>
-      <UiButton size="sm" variant="secondary" @click="act = resultBanner">Aktni ochish</UiButton>
+      <UiButton size="sm" variant="secondary" @click="act = resultBanner">
+        {{ t('whs.invOpenAct') }}
+      </UiButton>
     </div>
 
     <template v-if="session">
@@ -430,21 +453,21 @@ const actLineRows = computed(() =>
               class="inline-flex items-center gap-1.5 rounded-pill bg-brand-50 px-2.5 py-1 text-xs font-semibold text-brand-700 ring-1 ring-inset ring-brand-200"
             >
               <UiIcon name="clock" :size="13" />
-              Sanoq davom etmoqda
+              {{ t('whs.invInProgress') }}
             </span>
           </template>
 
           <dl class="grid gap-4 sm:grid-cols-3">
             <div class="rounded-field p-3.5 ring-1 ring-ink-200">
-              <dt class="text-[12px] text-ink-500">Mas’ul shaxs</dt>
+              <dt class="text-[12px] text-ink-500">{{ t('apply.personLabel') }}</dt>
               <dd class="mt-1 text-[14px] font-semibold text-ink-900">{{ session.owner }}</dd>
             </div>
             <div class="rounded-field p-3.5 ring-1 ring-ink-200">
-              <dt class="text-[12px] text-ink-500">Ombor</dt>
+              <dt class="text-[12px] text-ink-500">{{ field('warehouse', 'Ombor') }}</dt>
               <dd class="mt-1 text-[14px] font-semibold text-ink-900">{{ session.warehouse }}</dd>
             </div>
             <div class="rounded-field p-3.5 ring-1 ring-ink-200">
-              <dt class="text-[12px] text-ink-500">Sanoq sanasi</dt>
+              <dt class="text-[12px] text-ink-500">{{ t('whs.invCountDate') }}</dt>
               <dd class="tabular mt-1 text-[14px] font-semibold text-ink-900">
                 {{ dateShort(session.date) }}
               </dd>
@@ -453,9 +476,9 @@ const actLineRows = computed(() =>
 
           <div class="mt-4">
             <div class="flex items-center justify-between gap-3 text-[13px]">
-              <span class="text-ink-500">Sanoq bajarilishi</span>
+              <span class="text-ink-500">{{ t('whs.invProgress') }}</span>
               <span class="tabular font-semibold text-ink-900">
-                {{ countedCount }} / {{ sessionItems.length }} pozitsiya
+                {{ countedCount }} / {{ sessionItems.length }} {{ t('whs.positionWord') }}
               </span>
             </div>
             <div class="mt-2 h-2 overflow-hidden rounded-pill bg-ink-100">
@@ -467,10 +490,10 @@ const actLineRows = computed(() =>
           </div>
         </UiCard>
 
-        <UiCard title="Joriy natija" subtitle="Sanoq davomida jonli hisoblanadi">
+        <UiCard :title="t('whs.invCurrentResult')" :subtitle="t('whs.invCurrentResultCaption')">
           <dl class="space-y-3">
             <div class="flex items-baseline justify-between gap-3 border-b border-ink-100 pb-3">
-              <dt class="text-[13px] text-ink-500">Sanalgan pozitsiyalar</dt>
+              <dt class="text-[13px] text-ink-500">{{ t('whs.invCountedPositions') }}</dt>
               <dd class="tabular text-[14px] font-bold text-ink-900">
                 {{ countedCount }} / {{ sessionItems.length }}
               </dd>
@@ -478,36 +501,38 @@ const actLineRows = computed(() =>
             <div class="flex items-baseline justify-between gap-3 border-b border-ink-100 pb-3">
               <dt class="flex items-center gap-1.5 text-[13px] text-ink-500">
                 <UiIcon name="arrowUp" :size="13" class="text-info-600" />
-                Ortiqcha
+                {{ t('whs.diffSurplus') }}
               </dt>
               <dd class="tabular text-[14px] font-bold text-info-700">
-                {{ num(surplusQty) }} birlik
+                {{ num(surplusQty) }} {{ t('unitOf.piece') }}
               </dd>
             </div>
             <div class="flex items-baseline justify-between gap-3 border-b border-ink-100 pb-3">
               <dt class="flex items-center gap-1.5 text-[13px] text-ink-500">
                 <UiIcon name="arrowDown" :size="13" class="text-danger-600" />
-                Kamomad
+                {{ t('whs.diffShortage') }}
               </dt>
               <dd class="tabular text-[14px] font-bold text-danger-700">
-                {{ num(shortageQty) }} birlik
+                {{ num(shortageQty) }} {{ t('unitOf.piece') }}
               </dd>
             </div>
             <div class="flex items-baseline justify-between gap-3">
-              <dt class="text-[13px] text-ink-500">Umumiy farq qiymati</dt>
+              <dt class="text-[13px] text-ink-500">{{ t('whs.invTotalDiffValue') }}</dt>
               <dd
                 class="tabular text-[16px] font-bold"
                 :class="
                   valueDiff > 0 ? 'text-info-700' : valueDiff < 0 ? 'text-danger-700' : 'text-ink-900'
                 "
               >
-                {{ valueDiff > 0 ? '+' : '' }}{{ sum(valueDiff) }}
+                {{ valueDiff > 0 ? '+' : '' }}{{ money(valueDiff) }}
               </dd>
             </div>
           </dl>
 
           <p class="mt-3 rounded-field bg-surface-sunken px-3 py-2.5 text-[12px] text-ink-600">
-            Farqlar soni: <b class="text-ink-900">{{ discrepancies.length }}</b> ta pozitsiya
+            {{ t('whs.invDiffCountLabel') }}
+            <b class="text-ink-900">{{ discrepancies.length }}</b>
+            {{ t('whs.positionCountSuffix') }}
           </p>
 
           <div class="mt-4 grid gap-2.5">
@@ -518,30 +543,30 @@ const actLineRows = computed(() =>
               @click="finishOpen = true"
             >
               <UiIcon name="check" :size="16" />
-              Yakunlash
+              {{ t('common.finish') }}
             </UiButton>
             <UiButton variant="secondary" size="sm" block @click="fillFromStock">
               <UiIcon name="download" :size="15" />
-              Hisobdan to‘ldirish
+              {{ t('whs.invFillFromBooks') }}
             </UiButton>
             <UiButton variant="ghost" size="sm" block @click="clearCounts">
               <UiIcon name="refresh" :size="15" />
-              Tozalash
+              {{ t('common.reset') }}
             </UiButton>
           </div>
         </UiCard>
       </section>
 
       <UiCard
-        title="Sanoq varaqasi"
-        :subtitle="`${sessionItems.length} ta pozitsiya · ${session.warehouse}`"
+        :title="t('whs.invSheet')"
+        :subtitle="`${t('whs.positionCount', { n: sessionItems.length })} · ${session.warehouse}`"
         flush
         :padded="false"
       >
         <UiTable
           :columns="countColumns"
           :rows="countRows"
-          empty="Bu omborda sanaladigan pozitsiya yo‘q"
+          :empty="t('whs.invEmptySheet')"
         >
           <template #cell-name="{ row }">
             <span class="block font-semibold text-ink-900">{{ row.name }}</span>
@@ -561,7 +586,7 @@ const actLineRows = computed(() =>
               type="number"
               :readonly="!canWrite"
               :placeholder="String(row.qty)"
-              :aria-label="`${row.name} bo‘yicha sanalgan miqdor`"
+              :aria-label="t('whs.invCountedAria', { name: row.name })"
               class="w-32"
             />
           </template>
@@ -600,9 +625,9 @@ const actLineRows = computed(() =>
           <template #cell-note="{ row }">
             <UiInput
               v-model="notes[row.id]"
-              placeholder="Farq sababi"
+              :placeholder="t('whs.invDiffReason')"
               :readonly="!canWrite"
-              :aria-label="`${row.name} bo‘yicha izoh`"
+              :aria-label="t('whs.invNoteAria', { name: row.name })"
               class="w-full min-w-[180px]"
             />
           </template>
@@ -612,10 +637,10 @@ const actLineRows = computed(() =>
           class="flex flex-wrap items-center justify-between gap-2 border-t border-ink-200 bg-surface-sunken px-5 py-3.5"
         >
           <span class="text-[13px] text-ink-600">
-            Sanalgan miqdorni kiritganingizda farq avtomatik hisoblanadi
+            {{ t('whs.invAutoDiffNote') }}
           </span>
           <span class="tabular text-[14px] font-bold text-ink-900">
-            {{ discrepancies.length }} ta farq · {{ sumShort(valueDiff) }}
+            {{ t('whs.invDiffCount', { n: discrepancies.length }) }} · {{ moneyShort(valueDiff) }}
           </span>
         </div>
       </UiCard>
@@ -623,41 +648,39 @@ const actLineRows = computed(() =>
 
     <UiCard
       v-else
-      title="Faol inventarizatsiya yo‘q"
-      subtitle="Sanoqni boshlash uchun yangi inventarizatsiya seansini oching"
+      :title="t('whs.invNoActive')"
+      :subtitle="t('whs.invNoActiveCaption')"
     >
       <div class="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
         <span class="grid size-14 shrink-0 place-items-center rounded-panel bg-brand-50 text-brand-600">
           <UiIcon name="clipboard" :size="26" />
         </span>
         <p class="min-w-0 flex-1 text-[14px] leading-relaxed text-ink-600">
-          Seans ochilgach sahifa sanoq rejimiga o‘tadi: tanlangan ombordagi har bir pozitsiya
-          bo‘yicha hisobdagi miqdor va sanalgan miqdor solishtiriladi, farqlar jonli hisoblanadi va
-          yakunda akt rasmiylashtiriladi.
+          {{ t('whs.invIntro') }}
         </p>
         <UiButton v-if="canWrite" class="shrink-0" @click="openStart">
           <UiIcon name="plus" :size="16" />
-          Yangi inventarizatsiya
+          {{ t('whs.invNew') }}
         </UiButton>
         <span
           v-else
           class="shrink-0 rounded-pill bg-ink-100 px-3 py-1.5 text-[13px] font-semibold text-ink-600 ring-1 ring-inset ring-ink-200"
         >
-          Sanoqni faqat omborchi boshlaydi
+          {{ t('whs.invOnlyStorekeeper') }}
         </span>
       </div>
     </UiCard>
 
     <UiCard
-      title="Inventarizatsiya tarixi"
-      :subtitle="`${acts.length} ta yakunlangan sanoq`"
+      :title="t('whs.invHistory')"
+      :subtitle="t('whs.invFinishedCount', { n: acts.length })"
       flush
       :padded="false"
     >
       <UiTable
         :columns="historyColumns"
         :rows="historyRows"
-        empty="Yakunlangan inventarizatsiya yo‘q"
+        :empty="t('whs.invEmptyHistory')"
         @row-click="openAct"
       >
         <template #cell-code="{ row }">
@@ -665,14 +688,14 @@ const actLineRows = computed(() =>
         </template>
 
         <template #cell-name="{ row }">
-          <span class="font-semibold text-ink-900">{{ row.name }}</span>
+          <span class="font-semibold text-ink-900">{{ actName(row) }}</span>
         </template>
 
         <template #cell-date="{ row }">
           <span class="tabular">{{ dateShort(row.date) }}</span>
         </template>
 
-        <template #cell-positions="{ row }">{{ row.positions }} ta</template>
+        <template #cell-positions="{ row }">{{ row.positions }} {{ t('unitOf.pcs') }}</template>
 
         <template #cell-valueDiff="{ row }">
           <span
@@ -685,65 +708,69 @@ const actLineRows = computed(() =>
                   : 'text-ok-700'
             "
           >
-            {{ row.valueDiff > 0 ? '+' : '' }}{{ sum(row.valueDiff) }}
+            {{ row.valueDiff > 0 ? '+' : '' }}{{ money(row.valueDiff) }}
           </span>
         </template>
       </UiTable>
 
       <div class="border-t border-ink-200 bg-surface-sunken px-5 py-3.5 text-[13px] text-ink-600">
-        Qator ustiga bosilsa inventarizatsiya akti ochiladi
+        {{ t('whs.invRowHint') }}
       </div>
     </UiCard>
   </main>
 
   <UiModal
     v-model="startOpen"
-    title="Yangi inventarizatsiya"
-    subtitle="Seans ochilgach sahifa sanoq rejimiga o‘tadi"
+    :title="t('whs.invNew')"
+    :subtitle="t('whs.invSessionHint')"
   >
     <div class="space-y-4">
-      <UiField label="Inventarizatsiya nomi" required :error="startError">
-        <UiInput v-model="startName" placeholder="Masalan, may oyi oraliq sanog‘i" />
+      <UiField :label="t('whs.invName')" required :error="startError">
+        <UiInput v-model="startName" :placeholder="t('whs.invNamePlaceholder')" />
       </UiField>
 
       <div class="grid gap-4 sm:grid-cols-2">
-        <UiField label="Ombor" required>
+        <UiField :label="field('warehouse', 'Ombor')" required>
           <UiSelect
             v-model="startWarehouse"
             :options="warehouses.map((w) => ({ value: w, label: w }))"
           />
         </UiField>
-        <UiField label="Sanoq sanasi" required>
+        <UiField :label="t('whs.invCountDate')" required>
           <UiInput v-model="startDate" type="date" />
         </UiField>
       </div>
 
-      <UiField label="Mas’ul shaxs" required>
+      <UiField :label="t('apply.personLabel')" required>
         <UiSelect v-model="startOwner" :options="OWNERS" />
       </UiField>
 
       <p class="rounded-field bg-surface-sunken px-3.5 py-3 text-[13px] text-ink-600">
-        Tanlangan omborda
+        {{ t('whs.invWillCountPrefix') }}
         <b class="text-ink-900">
-          {{ stock.filter((i) => i.warehouse === startWarehouse).length }} ta
+          {{
+            t('whs.invWillCountBold', {
+              n: stock.filter((i) => i.warehouse === startWarehouse).length,
+            })
+          }}
         </b>
-        pozitsiya sanaladi.
+        {{ t('whs.invWillCountSuffix') }}
       </p>
     </div>
 
     <template #footer>
-      <UiButton variant="ghost" @click="startOpen = false">Bekor qilish</UiButton>
+      <UiButton variant="ghost" @click="startOpen = false">{{ t('common.cancel') }}</UiButton>
       <UiButton @click="beginSession">
         <UiIcon name="check" :size="16" />
-        Sanoqni boshlash
+        {{ t('whs.invStartCount') }}
       </UiButton>
     </template>
   </UiModal>
 
   <UiModal
     v-model="finishOpen"
-    title="Inventarizatsiyani yakunlash"
-    subtitle="Aniqlangan farqlar akt asosida hisobga olinadi"
+    :title="t('whs.invFinishTitle')"
+    :subtitle="t('whs.invFinishCaption')"
     size="lg"
   >
     <div class="space-y-4">
@@ -752,14 +779,13 @@ const actLineRows = computed(() =>
         class="flex items-start gap-2 rounded-field bg-warn-50 px-3.5 py-3 text-[13px] text-warn-700"
       >
         <UiIcon name="warning" :size="16" class="mt-0.5 shrink-0" />
-        {{ sessionItems.length - countedCount }} ta pozitsiya sanalmadi, ular hisobdagi miqdor
-        bilan aktga kiritiladi.
+        {{ t('whs.invNotCountedNote', { n: sessionItems.length - countedCount }) }}
       </p>
 
       <div v-if="discrepancies.length" class="overflow-hidden rounded-field ring-1 ring-ink-200">
         <div class="border-b border-ink-200 bg-surface-sunken px-4 py-3">
           <span class="text-[13px] font-semibold text-ink-700">
-            Aniqlangan farqlar: {{ discrepancies.length }} ta pozitsiya
+            {{ t('whs.invFoundDiffs', { n: discrepancies.length }) }}
           </span>
         </div>
         <ul class="scroll-slim max-h-64 divide-y divide-ink-100 overflow-y-auto">
@@ -767,8 +793,14 @@ const actLineRows = computed(() =>
             <span class="min-w-0 flex-1">
               <span class="block truncate text-[14px] font-semibold text-ink-900">{{ d.name }}</span>
               <span class="tabular block text-[12px] text-ink-500">
-                {{ d.code }} · hisobda {{ num(d.expected) }} {{ d.unit }} · sanaldi
-                {{ num(d.fact) }} {{ d.unit }}
+                {{ d.code }} ·
+                {{
+                  t('whs.invLineCompare', {
+                    book: num(d.expected),
+                    counted: num(d.fact),
+                    unit: d.unit,
+                  })
+                }}
               </span>
               <span v-if="d.note" class="block truncate text-[12px] text-ink-600">{{ d.note }}</span>
             </span>
@@ -780,10 +812,14 @@ const actLineRows = computed(() =>
                   : 'bg-danger-50 text-danger-700 ring-danger-100'
               "
             >
-              {{ d.diff > 0 ? `+${num(d.diff)} ortiqcha` : `−${num(-d.diff)} kamomad` }}
+              {{
+                d.diff > 0
+                  ? t('whs.invSurplusBadge', { n: num(d.diff) })
+                  : t('whs.invShortageBadge', { n: num(-d.diff) })
+              }}
             </span>
             <span class="tabular shrink-0 text-[13px] font-bold text-ink-900">
-              {{ sumShort(d.value) }}
+              {{ moneyShort(d.value) }}
             </span>
           </li>
         </ul>
@@ -794,53 +830,52 @@ const actLineRows = computed(() =>
         class="flex items-start gap-2 rounded-field bg-ok-50 px-3.5 py-3 text-[13px] text-ok-700"
       >
         <UiIcon name="check" :size="16" class="mt-0.5 shrink-0" />
-        Farq aniqlanmadi: sanalgan miqdorlar hisobdagi qoldiqqa to‘liq mos keldi.
+        {{ t('whs.invNoDiff') }}
       </p>
 
       <div class="flex flex-wrap items-center justify-between gap-2 rounded-field bg-surface-sunken px-4 py-3">
-        <span class="text-[13px] font-semibold text-ink-700">Umumiy farq qiymati</span>
+        <span class="text-[13px] font-semibold text-ink-700">{{ t('whs.invTotalDiffValue') }}</span>
         <span class="tabular text-[16px] font-bold text-ink-900">
-          {{ valueDiff > 0 ? '+' : '' }}{{ sum(valueDiff) }}
+          {{ valueDiff > 0 ? '+' : '' }}{{ money(valueDiff) }}
         </span>
       </div>
     </div>
 
     <template #footer>
-      <UiButton variant="ghost" @click="finishOpen = false">Bekor qilish</UiButton>
+      <UiButton variant="ghost" @click="finishOpen = false">{{ t('common.cancel') }}</UiButton>
       <UiButton variant="success" @click="finishSession">
         <UiIcon name="check" :size="16" />
-        Aktni rasmiylashtirish
+        {{ t('whs.invFormalizeAct') }}
       </UiButton>
     </template>
   </UiModal>
 
   <UiModal
     v-model="cancelOpen"
-    title="Sanoqni bekor qilish"
-    subtitle="Kiritilgan sanoq natijalari saqlanmaydi"
+    :title="t('whs.invCancelCount')"
+    :subtitle="t('whs.invCancelCaption')"
     size="sm"
   >
     <p class="text-[14px] leading-relaxed text-ink-700">
-      Joriy seans yopiladi va kiritilgan barcha miqdorlar o‘chiriladi. Ombor qoldig‘i
-      o‘zgarishsiz qoladi.
+      {{ t('whs.invCancelBody') }}
     </p>
     <template #footer>
-      <UiButton variant="ghost" @click="cancelOpen = false">Davom ettirish</UiButton>
-      <UiButton variant="danger" @click="cancelSession">Bekor qilish</UiButton>
+      <UiButton variant="ghost" @click="cancelOpen = false">{{ t('common.continue') }}</UiButton>
+      <UiButton variant="danger" @click="cancelSession">{{ t('common.cancel') }}</UiButton>
     </template>
   </UiModal>
 
   <UiModal
     v-model="actOpen"
-    :title="`Inventarizatsiya akti ${act?.code ?? ''}`"
-    :subtitle="act ? `${act.name} · ${act.warehouse}` : undefined"
+    :title="t('whs.invActWithCode', { code: act?.code ?? '' })"
+    :subtitle="act ? `${actName(act)} · ${act.warehouse}` : undefined"
     size="xl"
   >
     <div v-if="act" class="space-y-4">
       <div class="rounded-field bg-white p-5 ring-1 ring-ink-200 sm:p-6">
         <div class="flex flex-wrap items-start justify-between gap-4 border-b border-ink-200 pb-4">
           <div class="min-w-0">
-            <p class="text-[18px] font-bold text-ink-900">Inventarizatsiya akti</p>
+            <p class="text-[18px] font-bold text-ink-900">{{ t('whs.invAct') }}</p>
             <p class="tabular mt-1 text-[13px] text-ink-500">
               {{ act.code }} · {{ dateShort(act.date) }}
             </p>
@@ -850,23 +885,23 @@ const actLineRows = computed(() =>
 
         <dl class="mt-4 grid gap-x-6 gap-y-3 sm:grid-cols-2">
           <div class="flex justify-between gap-3 border-b border-ink-100 pb-2">
-            <dt class="text-[13px] text-ink-500">Ombor</dt>
+            <dt class="text-[13px] text-ink-500">{{ field('warehouse', 'Ombor') }}</dt>
             <dd class="text-right text-[13px] font-semibold text-ink-900">{{ act.warehouse }}</dd>
           </div>
           <div class="flex justify-between gap-3 border-b border-ink-100 pb-2">
-            <dt class="text-[13px] text-ink-500">Mas’ul shaxs</dt>
+            <dt class="text-[13px] text-ink-500">{{ t('apply.personLabel') }}</dt>
             <dd class="text-right text-[13px] font-semibold text-ink-900">{{ act.owner }}</dd>
           </div>
           <div class="flex justify-between gap-3 border-b border-ink-100 pb-2">
-            <dt class="text-[13px] text-ink-500">Sanalgan pozitsiyalar</dt>
+            <dt class="text-[13px] text-ink-500">{{ t('whs.invCountedPositions') }}</dt>
             <dd class="tabular text-right text-[13px] font-semibold text-ink-900">
-              {{ act.positions }} ta
+              {{ act.positions }} {{ t('unitOf.pcs') }}
             </dd>
           </div>
           <div class="flex justify-between gap-3 border-b border-ink-100 pb-2">
-            <dt class="text-[13px] text-ink-500">Farq aniqlangan pozitsiyalar</dt>
+            <dt class="text-[13px] text-ink-500">{{ t('whs.invDiffPositions') }}</dt>
             <dd class="tabular text-right text-[13px] font-semibold text-ink-900">
-              {{ act.positions - act.matched }} ta
+              {{ act.positions - act.matched }} {{ t('unitOf.pcs') }}
             </dd>
           </div>
         </dl>
@@ -879,19 +914,19 @@ const actLineRows = computed(() =>
                   №
                 </th>
                 <th class="px-3 py-2 text-left text-[12px] font-semibold uppercase tracking-wide text-ink-500">
-                  Nomi
+                  {{ field('name', 'Nomi') }}
                 </th>
                 <th class="px-3 py-2 text-right text-[12px] font-semibold uppercase tracking-wide text-ink-500">
-                  Hisobda
+                  {{ t('whs.invByBooks') }}
                 </th>
                 <th class="px-3 py-2 text-right text-[12px] font-semibold uppercase tracking-wide text-ink-500">
-                  Sanaldi
+                  {{ field('countedQty', 'Sanaldi') }}
                 </th>
                 <th class="px-3 py-2 text-right text-[12px] font-semibold uppercase tracking-wide text-ink-500">
-                  Farq
+                  {{ field('difference', 'Farq') }}
                 </th>
                 <th class="px-3 py-2 text-right text-[12px] font-semibold uppercase tracking-wide text-ink-500">
-                  Farq qiymati
+                  {{ field('differenceValue', 'Farq qiymati') }}
                 </th>
               </tr>
             </thead>
@@ -916,11 +951,17 @@ const actLineRows = computed(() =>
                 >
                   {{ l.diff > 0 ? '+' : '' }}{{ num(l.diff) }}
                   <span class="ml-1 text-[12px] font-medium">
-                    {{ l.diff > 0 ? 'ortiqcha' : l.diff < 0 ? 'kamomad' : 'mos' }}
+                    {{
+                      l.diff > 0
+                        ? t('whs.diffSurplusLower')
+                        : l.diff < 0
+                          ? t('whs.diffShortageLower')
+                          : t('whs.diffMatchLower')
+                    }}
                   </span>
                 </td>
                 <td class="tabular px-3 py-2.5 text-right font-bold text-ink-900">
-                  {{ sum(l.value) }}
+                  {{ money(l.value) }}
                 </td>
               </tr>
             </tbody>
@@ -929,36 +970,36 @@ const actLineRows = computed(() =>
 
         <div class="mt-4 grid gap-3 sm:grid-cols-3">
           <div class="rounded-field p-3.5 ring-1 ring-ink-200">
-            <p class="text-[12px] text-ink-500">Ortiqcha</p>
+            <p class="text-[12px] text-ink-500">{{ t('whs.diffSurplus') }}</p>
             <p class="tabular mt-1 text-[16px] font-bold text-info-700">
-              {{ num(act.surplusQty) }} birlik
+              {{ num(act.surplusQty) }} {{ t('unitOf.piece') }}
             </p>
           </div>
           <div class="rounded-field p-3.5 ring-1 ring-ink-200">
-            <p class="text-[12px] text-ink-500">Kamomad</p>
+            <p class="text-[12px] text-ink-500">{{ t('whs.diffShortage') }}</p>
             <p class="tabular mt-1 text-[16px] font-bold text-danger-700">
-              {{ num(act.shortageQty) }} birlik
+              {{ num(act.shortageQty) }} {{ t('unitOf.piece') }}
             </p>
           </div>
           <div class="rounded-field p-3.5 ring-1 ring-ink-200">
-            <p class="text-[12px] text-ink-500">Umumiy farq qiymati</p>
+            <p class="text-[12px] text-ink-500">{{ t('whs.invTotalDiffValue') }}</p>
             <p class="tabular mt-1 text-[16px] font-bold text-ink-900">
-              {{ act.valueDiff > 0 ? '+' : '' }}{{ sum(act.valueDiff) }}
+              {{ act.valueDiff > 0 ? '+' : '' }}{{ money(act.valueDiff) }}
             </p>
           </div>
         </div>
 
         <div class="mt-6 grid gap-6 sm:grid-cols-2">
           <div>
-            <p class="text-[12px] text-ink-500">Sanoqni o‘tkazdi</p>
+            <p class="text-[12px] text-ink-500">{{ t('whs.invCountedBy') }}</p>
             <p class="mt-6 border-t border-ink-300 pt-1.5 text-[13px] text-ink-600">
               {{ act.owner }}
             </p>
           </div>
           <div>
-            <p class="text-[12px] text-ink-500">Tasdiqladi</p>
+            <p class="text-[12px] text-ink-500">{{ t('whs.invApprovedBy') }}</p>
             <p class="mt-6 border-t border-ink-300 pt-1.5 text-[13px] text-ink-600">
-              {{ auth.user?.fullName ?? 'Ombor mas’uli' }}
+              {{ auth.user?.fullName ?? t('whs.warehouseManager') }}
             </p>
           </div>
         </div>
@@ -966,10 +1007,10 @@ const actLineRows = computed(() =>
     </div>
 
     <template #footer>
-      <UiButton variant="ghost" @click="act = null">Yopish</UiButton>
+      <UiButton variant="ghost" @click="act = null">{{ t('tour.skip') }}</UiButton>
       <UiButton variant="secondary" to="/warehouse">
         <UiIcon name="box" :size="16" />
-        Ombor qoldig‘i
+        {{ t('kpi.stockBalance') }}
       </UiButton>
     </template>
   </UiModal>

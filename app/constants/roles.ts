@@ -91,9 +91,9 @@ export const ROLE_META: Record<Role, RoleMeta> = {
  */
 export const ROLE_CAPABILITIES: Record<Role, Capability[]> = {
   SUPER_HEAD: ['application.decide', 'contract.manage', 'system.administer'],
-  BUILDING_MANAGER: ['application.decide', 'workorder.assign', 'unit.editTechnical'],
+  BUILDING_MANAGER: ['application.decide', 'workorder.assign', 'unit.editTechnical', 'meter.read'],
   ACCOUNTANT: ['payment.confirm', 'invoice.create'],
-  FACILITY: ['workorder.execute'],
+  FACILITY: ['workorder.execute', 'meter.read'],
   WAREHOUSE_OPERATOR: ['warehouse.issue'],
   CONTENT_OPERATOR: ['application.decide', 'contract.manage', 'unit.editContent'],
   TENANT_OWNER: [],

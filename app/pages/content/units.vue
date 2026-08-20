@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { BUILDINGS } from '~/data/buildings'
 import { UNITS, type Unit } from '~/data/units'
-import { UNIT_STATUS } from '~/constants/statuses'
 import { area, num, percent } from '~/utils/format'
 
 type UnitRow = {
@@ -21,29 +20,82 @@ type UnitRow = {
 
 const auth = useAuthStore()
 const route = useRoute()
+const { t } = useI18n()
+const {
+  columns: labelColumns,
+  field,
+  floorLabel,
+  statusLabel,
+  statusOptions,
+  unitUsageLabel,
+  unitUsageOptions,
+  tr,
+  unitOf,
+} = useAppLabels()
 
 const canEdit = computed(() => auth.can('unit.editContent'))
 const scoped = computed(() => BUILDINGS.filter((b) => auth.inScope(b.id)))
 
-const USAGE_OPTIONS = [
-  { value: 'Ofis', label: 'Ofis' },
-  { value: 'Savdo', label: 'Savdo' },
-  { value: 'Ombor', label: 'Ombor' },
-  { value: 'Turar joy', label: 'Turar joy' },
-  { value: 'Texnik zona', label: 'Texnik zona' },
-]
+/**
+ * Foydalanish turi, taklif turi va jihoz nomi ma’lumotda o‘zbekcha qiymat
+ * sifatida saqlanadi. Qiymatning o‘zi o‘zgarmaydi (filtr va solishtirish
+ * ishlashda qoladi), faqat ko‘rinadigan nom tarjima kalitiga bog‘lanadi.
+ */
+const OFFER_KEY: Record<string, string> = {
+  Ijara: 'unitOffer.rent',
+  Sotuv: 'unitOffer.sale',
+  Ikkalasi: 'unitOffer.both',
+}
 
-const OFFER_OPTIONS = [
-  { value: 'Ijara', label: 'Ijara' },
-  { value: 'Sotuv', label: 'Sotuv' },
-  { value: 'Ikkalasi', label: 'Ikkalasi' },
-]
+const EQUIPMENT_KEY: Record<string, string> = {
+  Konditsioner: 'equipment.airConditioner',
+  'Markaziy konditsioner': 'equipment.centralAc',
+  'Yong‘in datchigi': 'equipment.fireDetector',
+  'Yong‘in signalizatsiyasi': 'equipment.fireAlarm',
+  'Yong‘in gidranti': 'equipment.fireHydrant',
+  'Yong‘in o‘chirish tizimi': 'equipment.fireSuppression',
+  'Internet chiqishi': 'equipment.internetOutlet',
+  'Optik internet': 'equipment.fiberInternet',
+  Serverxona: 'equipment.serverRoom',
+  'Alohida serverxona': 'equipment.serverRoomSeparate',
+  'Alohida sanuzel': 'equipment.restroomSeparate',
+  'Ikkita sanuzel': 'equipment.restroomTwo',
+  Oshxona: 'equipment.kitchen',
+  'Yuk platformasi': 'equipment.loadingDock',
+  'Yuk lifti': 'equipment.freightElevator',
+  'Yuk eshigi': 'equipment.freightDoor',
+  Rampa: 'equipment.ramp',
+  Kran: 'equipment.crane',
+  'Kran yo‘nalishi': 'equipment.craneRunway',
+  Balkon: 'equipment.balcony',
+  'Elektr shchiti': 'equipment.electricalPanel',
+  'Issiqlik punkti': 'equipment.heatingPoint',
+  'Kirish domofoni': 'equipment.intercom',
+  'Konferens zal': 'equipment.conferenceHall',
+  'Ombor xonasi': 'equipment.storageRoom',
+  'Suv nasosi': 'equipment.waterPump',
+  Ventilyatsiya: 'equipment.ventilation',
+  Videokuzatuv: 'equipment.cctv',
+  Vitrina: 'equipment.showcase',
+  'Vitrina yoritgichi': 'equipment.showcaseLighting',
+}
+
+function offerLabel(value: string) {
+  return value ? tr(OFFER_KEY[value], value) : ''
+}
+
+function equipLabel(value: string) {
+  return tr(EQUIPMENT_KEY[value], value)
+}
+
+const USAGE_OPTIONS = computed(() => unitUsageOptions())
+
+const OFFER_OPTIONS = computed(() =>
+  Object.keys(OFFER_KEY).map((value) => ({ value, label: offerLabel(value) })),
+)
 
 const STATUS_KEYS = ['DRAFT', 'VACANT', 'RESERVED', 'RENTED', 'SOLD', 'MAINTENANCE', 'HIDDEN']
-const STATUS_OPTIONS = STATUS_KEYS.map((value) => ({
-  value,
-  label: UNIT_STATUS[value]?.label ?? value,
-}))
+const STATUS_OPTIONS = computed(() => statusOptions('unit', STATUS_KEYS))
 
 const EQUIPMENT_LIBRARY = [
   'Konditsioner',
@@ -55,15 +107,15 @@ const EQUIPMENT_LIBRARY = [
   'Yuk platformasi',
 ]
 
-const CHECKS: Array<{ key: string; label: string; ok: (u: Unit) => boolean }> = [
-  { key: 'code', label: 'Unit kodi', ok: (u) => Boolean(u.code.trim()) },
-  { key: 'rooms', label: 'Xonalar soni', ok: (u) => u.rooms > 0 },
-  { key: 'area', label: 'Maydoni', ok: (u) => u.area > 0 },
-  { key: 'usage', label: 'Foydalanish turi', ok: (u) => Boolean(u.usage) },
-  { key: 'offer', label: 'Taklif turi', ok: (u) => Boolean(u.offer) },
-  { key: 'status', label: 'Holat', ok: (u) => Boolean(u.status) && u.status !== 'DRAFT' },
-  { key: 'equipment', label: 'Jihozlar ro‘yxati', ok: (u) => u.equipment.length > 0 },
-  { key: 'polygon', label: '2D poligon', ok: (u) => u.polygon.length >= 3 },
+const CHECKS: Array<{ key: string; labelKey: string; ok: (u: Unit) => boolean }> = [
+  { key: 'code', labelKey: 'field.unitCode', ok: (u) => Boolean(u.code.trim()) },
+  { key: 'rooms', labelKey: 'field.rooms', ok: (u) => u.rooms > 0 },
+  { key: 'area', labelKey: 'field.area', ok: (u) => u.area > 0 },
+  { key: 'usage', labelKey: 'field.usage', ok: (u) => Boolean(u.usage) },
+  { key: 'offer', labelKey: 'field.offer', ok: (u) => Boolean(u.offer) },
+  { key: 'status', labelKey: 'field.status', ok: (u) => Boolean(u.status) && u.status !== 'DRAFT' },
+  { key: 'equipment', labelKey: 'field.equipmentList', ok: (u) => u.equipment.length > 0 },
+  { key: 'polygon', labelKey: 'field.polygon2d', ok: (u) => u.polygon.length >= 3 },
 ]
 
 /**
@@ -74,7 +126,7 @@ const CHECKS: Array<{ key: string; label: string; ok: (u: Unit) => boolean }> = 
 const units = computed(() => UNITS.filter((u) => auth.inScope(u.buildingId)))
 
 function floorName(value: number) {
-  return value === 0 ? 'Yer osti · texnik' : `${value}-qavat`
+  return value === 0 ? t('unitOf.basementTechnical') : floorLabel(value)
 }
 
 function passedChecks(u: Unit) {
@@ -111,7 +163,7 @@ const equipInput = ref('')
 
 const rows = computed<UnitRow[]>(() =>
   units.value.map((u) => {
-    const missing = CHECKS.filter((c) => !c.ok(u)).map((c) => c.label)
+    const missing = CHECKS.filter((c) => !c.ok(u)).map((c) => t(c.labelKey))
     return {
       id: u.id,
       code: u.code,
@@ -130,7 +182,7 @@ const rows = computed<UnitRow[]>(() =>
 )
 
 const buildingOptions = computed(() => [
-  { value: 'all', label: 'Barcha binolar' },
+  { value: 'all', label: t('filter.allBuildings') },
   ...scoped.value.map((b) => ({ value: b.id, label: b.name })),
 ])
 
@@ -140,7 +192,7 @@ const floorOptions = computed(() => {
   )
   const levels = Array.from(new Set(list.map((u) => u.floor))).sort((a, b) => b - a)
   return [
-    { value: 'all', label: 'Barcha qavatlar' },
+    { value: 'all', label: t('filter.allFloors') },
     ...levels.map((l) => ({ value: String(l), label: floorName(l) })),
   ]
 })
@@ -148,9 +200,15 @@ const floorOptions = computed(() => {
 const stateOptions = computed(() => {
   const done = rows.value.filter((r) => r.pct === 100).length
   return [
-    { value: 'all', label: `Barchasi (${rows.value.length})` },
-    { value: 'done', label: `To‘liq (${done})` },
-    { value: 'incomplete', label: `To‘liq emas (${rows.value.length - done})` },
+    { value: 'all', label: t('tab.withCount', { label: t('tab.all'), count: rows.value.length }) },
+    { value: 'done', label: t('tab.withCount', { label: t('tab.complete'), count: done }) },
+    {
+      value: 'incomplete',
+      label: t('tab.withCount', {
+        label: t('tab.incomplete'),
+        count: rows.value.length - done,
+      }),
+    },
   ]
 })
 
@@ -200,19 +258,27 @@ const allVisibleSelected = computed(
 )
 
 const columns = computed(() => {
-  const base = [
-    { key: 'code', label: 'Kodi', width: '110px' },
-    { key: 'buildingName', label: 'Bino', width: '210px' },
-    { key: 'floorName', label: 'Qavat', width: '140px' },
-    { key: 'area', label: 'Maydoni', align: 'right' as const, numeric: true, width: '130px' },
-    { key: 'usage', label: 'Foydalanish', width: '140px' },
-    { key: 'status', label: 'Holat', width: '150px' },
-    { key: 'hasPlan', label: 'Poligon', width: '120px' },
-    { key: 'pct', label: 'Atribut to‘liqligi', width: '200px' },
-  ]
-  return canEdit.value
-    ? [{ key: 'sel', label: 'Tanlov', align: 'center' as const, width: '72px' }, ...base]
-    : base
+  const base = labelColumns([
+    { key: 'code', field: 'code', label: 'Kodi', width: '110px' },
+    { key: 'buildingName', field: 'building', label: 'Bino', width: '210px' },
+    { key: 'floorName', field: 'floor', label: 'Qavat', width: '140px' },
+    {
+      key: 'area',
+      field: 'area',
+      label: 'Maydoni',
+      align: 'right',
+      numeric: true,
+      width: '130px',
+    },
+    { key: 'usage', field: 'usage', label: 'Foydalanish', width: '140px' },
+    { key: 'status', field: 'status', label: 'Holat', width: '150px' },
+    { key: 'hasPlan', field: 'polygon', label: 'Poligon', width: '120px' },
+    { key: 'pct', field: 'attributeCompleteness', label: 'Atribut to‘liqligi', width: '200px' },
+  ])
+  const select = labelColumns([
+    { key: 'sel', field: 'selection', label: 'Tanlov', align: 'center', width: '72px' },
+  ])
+  return canEdit.value ? [...select, ...base] : base
 })
 
 const panelUnit = computed(() => units.value.find((u) => u.id === panelId.value))
@@ -279,7 +345,7 @@ const panelShapes = computed(() => {
 const panelChecks = computed(() => {
   const u = panelUnit.value
   if (!u) return []
-  return CHECKS.map((c) => ({ key: c.key, label: c.label, done: c.ok(u) }))
+  return CHECKS.map((c) => ({ key: c.key, label: t(c.labelKey), done: c.ok(u) }))
 })
 
 function toggleSelect(id: string) {
@@ -322,11 +388,11 @@ function saveUnit() {
   const roomsValue = Number(form.rooms)
 
   if (!code) {
-    formError.value = 'Unit kodi kiritilishi shart'
+    formError.value = t('cnt.errCodeRequired')
     return
   }
   if (!Number.isFinite(areaValue) || areaValue <= 0) {
-    formError.value = 'Maydon musbat son bo‘lishi kerak'
+    formError.value = t('cnt.errAreaPositive')
     return
   }
 
@@ -340,17 +406,17 @@ function saveUnit() {
   u.equipment = [...equipment.value]
 
   formError.value = ''
-  notice.value = `«${u.code}» uniti yangilandi, atribut to‘liqligi ${percent(completeness(u))}.`
+  notice.value = t('cnt.noticeUnitUpdated', { code: u.code, pct: percent(completeness(u)) })
 }
 
 function applyBulk() {
   if (!canEdit.value) return
-  const label = UNIT_STATUS[bulkStatus.value]?.label ?? bulkStatus.value
+  const label = statusLabel('unit', bulkStatus.value)
   const count = selectedIds.value.length
   units.value.forEach((u) => {
     if (selectedIds.value.includes(u.id)) u.status = bulkStatus.value as Unit['status']
   })
-  notice.value = `${count} ta unit «${label}» holatiga o‘tkazildi.`
+  notice.value = t('cnt.noticeBulkApplied', { count, status: label })
   selectedIds.value = []
   bulkOpen.value = false
 }
@@ -371,14 +437,17 @@ function toneOf(pct: number) {
 
 <template>
   <AppTopbar
-    title="Unit atributlari"
-    subtitle="Unitlar bo‘yicha atribut va status ma’lumotlarini to‘ldirish"
-    :breadcrumb="[{ label: 'Kontent navbati', to: '/content' }, { label: 'Unit atributlari' }]"
+    :title="t('nav.unitAttributes')"
+    :subtitle="t('cnt.unitAttributesCaption')"
+    :breadcrumb="[
+      { label: t('nav.contentQueue'), to: '/content' },
+      { label: t('nav.unitAttributes') },
+    ]"
   >
     <template #actions>
       <UiButton variant="secondary" size="sm" to="/content/floors">
         <UiIcon name="layers" :size="16" />
-        Qavat rejalari
+        {{ t('nav.floors') }}
       </UiButton>
       <UiButton
         v-if="canEdit"
@@ -387,7 +456,7 @@ function toneOf(pct: number) {
         @click="bulkOpen = true"
       >
         <UiIcon name="check" :size="16" />
-        Tanlanganlarni belgilash
+        {{ t('cnt.markSelected') }}
         <span v-if="selectedIds.length" class="tabular">({{ selectedIds.length }})</span>
       </UiButton>
     </template>
@@ -403,7 +472,7 @@ function toneOf(pct: number) {
       <button
         type="button"
         class="shrink-0 rounded-[8px] p-1 text-ok-600 transition-colors hover:bg-ok-100"
-        aria-label="Xabarnomani yopish"
+        :aria-label="t('common.closeNotice')"
         @click="notice = ''"
       >
         <UiIcon name="x" :size="15" />
@@ -411,15 +480,38 @@ function toneOf(pct: number) {
     </div>
 
     <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-      <UiKpi label="Ko‘rish sohasidagi unitlar" :value="num(kpi.total)" unit="ta" icon="box" tone="brand" />
-      <UiKpi label="Poligonga bog‘langan" :value="num(kpi.withPlan)" unit="ta" icon="layers" tone="violet" />
-      <UiKpi label="Atributi to‘liq" :value="num(kpi.full)" unit="ta" icon="check" tone="ok" />
-      <UiKpi label="O‘rtacha to‘liqlik" :value="percent(kpi.avg)" icon="chart" tone="warn" />
+      <UiKpi
+        :label="t('kpi.unitsInScope')"
+        :value="num(kpi.total)"
+        :unit="unitOf('pcs', 'ta')"
+        icon="box"
+        tone="brand"
+      />
+      <UiKpi
+        :label="t('kpi.linkedToPolygon')"
+        :value="num(kpi.withPlan)"
+        :unit="unitOf('pcs', 'ta')"
+        icon="layers"
+        tone="violet"
+      />
+      <UiKpi
+        :label="t('kpi.attributesComplete')"
+        :value="num(kpi.full)"
+        :unit="unitOf('pcs', 'ta')"
+        icon="check"
+        tone="ok"
+      />
+      <UiKpi
+        :label="t('kpi.averageCompleteness')"
+        :value="percent(kpi.avg)"
+        icon="chart"
+        tone="warn"
+      />
     </section>
 
     <UiCard
-      title="Unitlar jadvali"
-      subtitle="Qatorni bosing: yon panelda atributlar tahrirlanadi"
+      :title="t('cnt.unitsTableTitle')"
+      :subtitle="t('cnt.unitsTableCaption')"
       flush
       :padded="false"
     >
@@ -430,7 +522,7 @@ function toneOf(pct: number) {
       </template>
 
       <div class="flex flex-wrap items-center gap-3 px-4 pb-4 lg:px-5">
-        <UiInput v-model="query" placeholder="Kod, bino yoki qavat bo‘yicha qidirish" class="min-w-[190px] flex-1">
+        <UiInput v-model="query" :placeholder="t('cnt.searchUnits')" class="min-w-[190px] flex-1">
           <template #prefix>
             <UiIcon name="search" :size="17" />
           </template>
@@ -442,7 +534,7 @@ function toneOf(pct: number) {
 
         <UiButton variant="ghost" :disabled="!dirty" @click="resetFilters">
           <UiIcon name="refresh" :size="15" />
-          Tozalash
+          {{ t('common.reset') }}
         </UiButton>
       </div>
 
@@ -452,10 +544,12 @@ function toneOf(pct: number) {
       >
         <UiButton variant="secondary" size="sm" :disabled="!filtered.length" @click="toggleAllVisible">
           <UiIcon :name="allVisibleSelected ? 'x' : 'check'" :size="15" />
-          {{ allVisibleSelected ? 'Tanlovni bekor qilish' : 'Ko‘rinayotganlarni tanlash' }}
+          {{ allVisibleSelected ? t('common.deselect') : t('common.selectVisible') }}
         </UiButton>
         <span class="text-[13px] text-ink-500">
-          Tanlangan: <b class="tabular text-ink-800">{{ selectedIds.length }}</b> ta unit
+          {{ t('cnt.selectedLabel') }}
+          <b class="tabular text-ink-800">{{ selectedIds.length }}</b>
+          {{ t('cnt.unitsSuffix') }}
         </span>
         <UiButton
           v-if="selectedIds.length"
@@ -464,14 +558,14 @@ function toneOf(pct: number) {
           @click="bulkOpen = true"
         >
           <UiIcon name="check" :size="15" />
-          Holatni belgilash
+          {{ t('cnt.markStatus') }}
         </UiButton>
       </div>
 
       <UiTable
         :columns="columns"
         :rows="filtered"
-        empty="Filtr shartlariga mos unit topilmadi"
+        :empty="t('empty.noMatchingUnits')"
         @row-click="openPanel"
       >
         <template #cell-sel="{ row }">
@@ -480,7 +574,7 @@ function toneOf(pct: number) {
               type="checkbox"
               class="size-4 cursor-pointer accent-brand-500"
               :checked="selectedIds.includes(row.id)"
-              :aria-label="`${row.code} unitini tanlash`"
+              :aria-label="t('cnt.selectUnitAria', { code: row.code })"
               @change="toggleSelect(row.id)"
             />
           </span>
@@ -502,13 +596,13 @@ function toneOf(pct: number) {
 
         <template #cell-area="{ row }">
           <span class="tabular" :class="row.area > 0 ? 'text-ink-900' : 'text-ink-400'">
-            {{ row.area > 0 ? area(row.area) : 'Kiritilmagan' }}
+            {{ row.area > 0 ? area(row.area) : t('common.notEntered') }}
           </span>
         </template>
 
         <template #cell-usage="{ row }">
-          <span v-if="row.usage" class="text-[13px] text-ink-700">{{ row.usage }}</span>
-          <span v-else class="text-[13px] text-ink-400">Kiritilmagan</span>
+          <span v-if="row.usage" class="text-[13px] text-ink-700">{{ unitUsageLabel(row.usage) }}</span>
+          <span v-else class="text-[13px] text-ink-400">{{ t('common.notEntered') }}</span>
         </template>
 
         <template #cell-status="{ row }">
@@ -525,7 +619,7 @@ function toneOf(pct: number) {
             "
           >
             <UiIcon :name="row.hasPlan ? 'check' : 'clock'" :size="13" />
-            {{ row.hasPlan ? 'Bor' : 'Yo‘q' }}
+            {{ row.hasPlan ? t('common.present') : t('common.no') }}
           </span>
         </template>
 
@@ -533,7 +627,9 @@ function toneOf(pct: number) {
           <span
             class="flex items-center gap-2.5"
             :title="
-              row.missing ? `To‘ldirilishi kerak: ${row.missing}` : 'Barcha atributlar kiritilgan'
+              row.missing
+                ? t('cnt.missingHint', { list: row.missing })
+                : t('cnt.allAttrsFilled')
             "
           >
             <span class="block h-1.5 w-24 shrink-0 overflow-hidden rounded-pill bg-ink-100">
@@ -552,28 +648,30 @@ function toneOf(pct: number) {
         class="flex flex-wrap items-center justify-between gap-3 border-t border-ink-100 px-4 py-4 lg:px-5"
       >
         <p class="text-[13px] text-ink-500">
-          Ko‘rsatilmoqda: <b class="text-ink-800">{{ filtered.length }}</b> ta unit ·
-          <span class="tabular text-ok-600">{{ kpi.full }}</span> to‘liq ·
-          <span class="tabular text-warn-600">{{ kpi.total - kpi.full }}</span> to‘ldirilishi kerak
+          {{ t('cnt.shownLabel') }} <b class="text-ink-800">{{ filtered.length }}</b>
+          {{ t('cnt.unitsSuffix') }} ·
+          <span class="tabular text-ok-600">{{ kpi.full }}</span> {{ t('cnt.completeSuffix') }} ·
+          <span class="tabular text-warn-600">{{ kpi.total - kpi.full }}</span>
+          {{ t('cnt.toFillSuffix') }}
         </p>
         <UiButton variant="secondary" size="sm" to="/content">
           <UiIcon name="clipboard" :size="15" />
-          Kontent navbati
+          {{ t('nav.contentQueue') }}
         </UiButton>
       </div>
     </UiCard>
 
     <UiModal
       v-model="bulkOpen"
-      title="Tanlangan unitlarni belgilash"
-      :subtitle="`${selectedIds.length} ta unit tanlandi`"
+      :title="t('cnt.bulkTitle')"
+      :subtitle="t('cnt.bulkSubtitle', { count: selectedIds.length })"
     >
-      <UiField label="Yangi holat" hint="Tanlangan barcha unitlarga bir xil holat beriladi">
+      <UiField :label="field('newStatus')" :hint="t('cnt.bulkHint')">
         <UiSelect v-model="bulkStatus" :options="STATUS_OPTIONS" />
       </UiField>
 
       <div class="mt-4">
-        <p class="mb-2 text-[13px] font-semibold text-ink-700">Tanlangan unitlar</p>
+        <p class="mb-2 text-[13px] font-semibold text-ink-700">{{ t('cnt.selectedUnits') }}</p>
         <div class="flex flex-wrap gap-1.5">
           <span
             v-for="id in selectedIds"
@@ -586,10 +684,10 @@ function toneOf(pct: number) {
       </div>
 
       <template #footer>
-        <UiButton variant="ghost" @click="bulkOpen = false">Bekor qilish</UiButton>
+        <UiButton variant="ghost" @click="bulkOpen = false">{{ t('common.cancel') }}</UiButton>
         <UiButton :disabled="!selectedIds.length" @click="applyBulk">
           <UiIcon name="check" :size="16" />
-          Belgilash
+          {{ t('common.mark') }}
         </UiButton>
       </template>
     </UiModal>
@@ -615,12 +713,12 @@ function toneOf(pct: number) {
               class="absolute inset-y-0 right-0 flex w-full max-w-[440px] flex-col bg-surface shadow-pop"
               role="dialog"
               aria-modal="true"
-              :aria-label="`Unit ${panelUnit.code} atributlari`"
+              :aria-label="t('cnt.panelAria', { code: panelUnit.code })"
             >
               <header class="flex items-start justify-between gap-4 border-b border-ink-200 px-5 py-4">
                 <div class="min-w-0">
                   <h2 class="truncate text-[18px] font-bold text-ink-900">
-                    Unit {{ panelUnit.code }}
+                    {{ t('cnt.unitTitle', { code: panelUnit.code }) }}
                   </h2>
                   <p class="truncate text-[13px] text-ink-500">
                     {{ buildingName(panelUnit.buildingId) }} · {{ floorName(panelUnit.floor) }}
@@ -629,7 +727,7 @@ function toneOf(pct: number) {
                 <button
                   type="button"
                   class="-mr-1 rounded-lg p-2 text-ink-400 transition-colors hover:bg-ink-100 hover:text-ink-700"
-                  aria-label="Yon panelni yopish"
+                  :aria-label="t('cnt.closePanel')"
                   @click="closePanel"
                 >
                   <UiIcon name="x" :size="18" />
@@ -638,7 +736,12 @@ function toneOf(pct: number) {
 
               <div class="scroll-slim flex-1 space-y-5 overflow-y-auto px-5 py-5">
                 <div class="rounded-field bg-surface-sunken p-3 ring-1 ring-inset ring-ink-100">
-                  <svg viewBox="0 0 100 100" class="h-[150px] w-full" role="img" aria-label="Qavatdagi joylashuv">
+                  <svg
+                    viewBox="0 0 100 100"
+                    class="h-[150px] w-full"
+                    role="img"
+                    :aria-label="t('cnt.floorLocation')"
+                  >
                     <rect
                       x="1.5"
                       y="3"
@@ -664,12 +767,14 @@ function toneOf(pct: number) {
                     </polygon>
                   </svg>
                   <p class="mt-2 text-center text-[12px] text-ink-500">
-                    Rejadagi boshqa shaklni bosib, tez o‘tishingiz mumkin
+                    {{ t('cnt.planHint') }}
                   </p>
                 </div>
 
                 <div>
-                  <p class="mb-2 text-[13px] font-semibold text-ink-700">Atribut to‘liqligi</p>
+                  <p class="mb-2 text-[13px] font-semibold text-ink-700">
+                    {{ field('attributeCompleteness') }}
+                  </p>
                   <ul class="grid gap-1.5 sm:grid-cols-2">
                     <li
                       v-for="c in panelChecks"
@@ -689,57 +794,65 @@ function toneOf(pct: number) {
 
                 <template v-if="canEdit">
                   <div class="grid gap-3.5 sm:grid-cols-2">
-                    <UiField label="Unit kodi" required>
-                      <UiInput v-model="form.code" placeholder="Masalan 704" />
+                    <UiField :label="field('unitCode')" required>
+                      <UiInput v-model="form.code" :placeholder="t('cnt.unitCodeExample')" />
                     </UiField>
-                    <UiField label="Xonalar soni">
+                    <UiField :label="field('rooms')">
                       <UiInput v-model="form.rooms" type="number" min="0" placeholder="0" />
                     </UiField>
-                    <UiField label="Maydoni, m²" required>
+                    <UiField :label="`${field('area')}, ${unitOf('sqm', 'm²')}`" required>
                       <UiInput v-model="form.area" type="number" min="0" step="0.1" placeholder="0.00" />
                     </UiField>
-                    <UiField label="Holati">
+                    <UiField :label="field('status')">
                       <UiSelect v-model="form.status" :options="STATUS_OPTIONS" />
                     </UiField>
-                    <UiField label="Foydalanish turi">
-                      <UiSelect v-model="form.usage" :options="USAGE_OPTIONS" placeholder="Tanlanmagan" />
+                    <UiField :label="field('usage')">
+                      <UiSelect
+                        v-model="form.usage"
+                        :options="USAGE_OPTIONS"
+                        :placeholder="t('common.notSelected')"
+                      />
                     </UiField>
-                    <UiField label="Taklif turi">
-                      <UiSelect v-model="form.offer" :options="OFFER_OPTIONS" placeholder="Tanlanmagan" />
+                    <UiField :label="field('offer')">
+                      <UiSelect
+                        v-model="form.offer"
+                        :options="OFFER_OPTIONS"
+                        :placeholder="t('common.notSelected')"
+                      />
                     </UiField>
                   </div>
 
                   <div>
-                    <p class="mb-2 text-[13px] font-semibold text-ink-700">Jihozlar</p>
+                    <p class="mb-2 text-[13px] font-semibold text-ink-700">{{ field('equipment') }}</p>
                     <div v-if="equipment.length" class="flex flex-wrap gap-1.5">
                       <span
                         v-for="e in equipment"
                         :key="e"
                         class="inline-flex items-center gap-1 rounded-pill bg-ink-100 py-1 pl-2.5 pr-1 text-[12px] font-medium text-ink-700"
                       >
-                        {{ e }}
+                        {{ equipLabel(e) }}
                         <button
                           type="button"
                           class="relative grid size-5 place-items-center rounded-full text-ink-500 transition-colors after:absolute after:-inset-3 after:content-[''] hover:bg-ink-300 hover:text-ink-900 md:after:hidden"
-                          :aria-label="`${e} jihozini olib tashlash`"
+                          :aria-label="t('cnt.removeEquipmentAria', { name: equipLabel(e) })"
                           @click="removeEquipment(e)"
                         >
                           <UiIcon name="x" :size="12" />
                         </button>
                       </span>
                     </div>
-                    <p v-else class="text-[13px] text-ink-400">Jihozlar kiritilmagan</p>
+                    <p v-else class="text-[13px] text-ink-400">{{ t('empty.noEquipment') }}</p>
 
                     <div class="mt-2.5 flex gap-2">
                       <UiInput
                         v-model="equipInput"
-                        placeholder="Jihoz nomi"
+                        :placeholder="t('cnt.equipmentPlaceholder')"
                         class="min-w-0 flex-1"
                         @keydown.enter.prevent="addEquipment()"
                       />
                       <UiButton variant="secondary" @click="addEquipment()">
                         <UiIcon name="plus" :size="15" />
-                        Qo‘shish
+                        {{ t('common.add') }}
                       </UiButton>
                     </div>
 
@@ -751,7 +864,7 @@ function toneOf(pct: number) {
                         class="rounded-pill px-2.5 py-1 text-[12px] font-medium text-ink-600 ring-1 ring-inset ring-ink-200 transition-colors hover:bg-brand-50 hover:text-brand-600"
                         @click="addEquipment(e)"
                       >
-                        + {{ e }}
+                        + {{ equipLabel(e) }}
                       </button>
                     </div>
                   </div>
@@ -763,7 +876,7 @@ function toneOf(pct: number) {
 
                 <div v-else class="flex items-start gap-2.5 rounded-field bg-ink-50 px-3.5 py-3 text-[13px] text-ink-600 ring-1 ring-inset ring-ink-200">
                   <UiIcon name="lock" :size="16" class="mt-0.5 shrink-0 text-ink-400" />
-                  <span>Atributlarni tahrirlash huquqi berilmagan, ma’lumot faqat ko‘rish uchun.</span>
+                  <span>{{ t('cnt.noEditRightAttrs') }}</span>
                 </div>
 
                 <NuxtLink
@@ -771,7 +884,7 @@ function toneOf(pct: number) {
                   class="flex items-center gap-2 rounded-field px-3.5 py-3 text-[13px] font-semibold text-brand-600 ring-1 ring-inset ring-brand-200 transition-colors hover:bg-brand-50"
                 >
                   <UiIcon name="layers" :size="16" />
-                  Qavat rejasida ochish
+                  {{ t('cnt.openInFloorPlan') }}
                   <UiIcon name="chevronRight" :size="15" class="ml-auto" />
                 </NuxtLink>
               </div>
@@ -782,11 +895,11 @@ function toneOf(pct: number) {
               >
                 <UiButton variant="ghost" @click="fillForm">
                   <UiIcon name="refresh" :size="15" />
-                  Tiklash
+                  {{ t('common.restore') }}
                 </UiButton>
                 <UiButton @click="saveUnit">
                   <UiIcon name="check" :size="16" />
-                  Saqlash
+                  {{ t('common.save') }}
                 </UiButton>
               </footer>
             </aside>

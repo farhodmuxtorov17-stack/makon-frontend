@@ -2,12 +2,14 @@
 import { buildingById } from '~/data/buildings'
 import { UNITS, unitById } from '~/data/units'
 import { formatStir, organizationByStir, stirDigits } from '~/data/organizations'
-import { area, num, sum } from '~/utils/format'
+import { area, num } from '~/utils/format'
 
 definePageMeta({ layout: 'public', public: true })
 
 const route = useRoute()
 const lease = useLeaseStore()
+const { t } = useI18n()
+const { unitUsageLabel, money, field, priceUnitLabel } = useAppLabels()
 
 lease.seed()
 
@@ -24,21 +26,38 @@ function newCode() {
 /** Uch bosqich: forma, telefon tasdig‘i, natija */
 const step = ref('form')
 
-const vacantUnits = computed(() => UNITS.filter((u) => u.status === 'VACANT'))
+/*
+ * Ariza faqat ijara bo'yicha yuboriladi.
+ *
+ * Sotuvdagi maydon bo'yicha oldi-sotdi shartnomasi tizim ichida tuzilmaydi:
+ * ariza kartochkasida tasdiqlash tugmasi chiqmaydi va yozuv «Yangi ariza»
+ * bosqichida abadiy qotib qolardi. Shuning uchun bunday unit mijozga
+ * ko'rsatiladigan ro'yxatga umuman tushmaydi, u Operator bilan telefon
+ * orqali rasmiylashtiriladi.
+ */
+const vacantUnits = computed(() =>
+  UNITS.filter((u) => u.status === 'VACANT' && u.offer !== 'Sotuv'),
+)
 
 const unitOptions = computed(() =>
   vacantUnits.value.map((u) => ({
     value: u.id,
-    label: `${buildingById(u.buildingId)?.name ?? ''} · Unit ${u.code} · ${area(u.area)}`,
+    label: t('apply.unitOption', {
+      building: buildingById(u.buildingId)?.name ?? '',
+      code: u.code,
+      area: area(u.area),
+    }),
   })),
 )
 
-const TERM_OPTIONS = [
-  { value: '12', label: '12 oy' },
-  { value: '24', label: '24 oy' },
-  { value: '36', label: '36 oy' },
-  { value: '60', label: '60 oy' },
-]
+const TERM_MONTHS = [12, 24, 36, 60]
+
+const termOptions = computed(() =>
+  TERM_MONTHS.map((count) => ({
+    value: String(count),
+    label: t('apply.termMonths', { count }),
+  })),
+)
 
 const form = reactive({
   unitId: '',
@@ -136,19 +155,19 @@ watch(foundOrg, (org) => {
 
 const errors = computed(() => {
   const e: Record<string, string> = {}
-  if (!form.unitId) e.unitId = 'Bo‘sh unitni tanlang'
-  if (form.fullName.trim().length < 3) e.fullName = 'Ism va familiyani to‘liq kiriting'
-  if (!phoneValid.value) e.phone = 'Telefon raqami to‘liq emas'
-  if (!/^[^\s@]+@[^\s@]+\.[A-Za-z]{2,}$/.test(form.email.trim())) e.email = 'E-pochta manzili xato'
-  if (form.orgName.trim().length < 3) e.orgName = 'Tashkilot nomini kiriting'
-  if (form.stir.length !== 9) e.stir = 'STIR to‘qqiz xonali bo‘lishi kerak'
-  if (!(Number(form.price) > 0)) e.price = 'Taklif narxini kiriting'
-  if (!form.startDate) e.startDate = 'Boshlanish sanasini tanlang'
+  if (!form.unitId) e.unitId = t('apply.unitError')
+  if (form.fullName.trim().length < 3) e.fullName = t('apply.nameError')
+  if (!phoneValid.value) e.phone = t('apply.phoneError')
+  if (!/^[^\s@]+@[^\s@]+\.[A-Za-z]{2,}$/.test(form.email.trim())) e.email = t('apply.emailError')
+  if (form.orgName.trim().length < 3) e.orgName = t('apply.orgError')
+  if (form.stir.length !== 9) e.stir = t('apply.stirError')
+  if (!(Number(form.price) > 0)) e.price = t('apply.priceError')
+  if (!form.startDate) e.startDate = t('apply.startDateError')
   return e
 })
 
-function errorOf(field: string) {
-  return submitted.value ? (errors.value[field] ?? '') : ''
+function errorOf(name: string) {
+  return submitted.value ? (errors.value[name] ?? '') : ''
 }
 
 const price = computed(() => Number(form.price) || 0)
@@ -394,12 +413,17 @@ const lastFour = computed(() => form.phone.slice(-4))
 
 <template>
   <div class="mx-auto w-full max-w-[1100px] px-4 py-8 lg:px-8 lg:py-12">
-    <nav class="flex flex-wrap items-center gap-1.5 text-[13px] text-ink-500" aria-label="Yo‘l">
-      <NuxtLink to="/" class="rounded-[6px] hover:text-brand-600">Bosh sahifa</NuxtLink>
+    <nav
+      class="flex flex-wrap items-center gap-1.5 text-[13px] text-ink-500"
+      :aria-label="t('common.breadcrumb')"
+    >
+      <NuxtLink to="/" class="rounded-[6px] hover:text-brand-600">{{ t('nav.cabinet') }}</NuxtLink>
       <span aria-hidden="true">/</span>
-      <NuxtLink to="/catalog" class="rounded-[6px] hover:text-brand-600">Katalog</NuxtLink>
+      <NuxtLink to="/catalog" class="rounded-[6px] hover:text-brand-600">
+        {{ t('public.navCatalog') }}
+      </NuxtLink>
       <span aria-hidden="true">/</span>
-      <span class="font-semibold text-ink-700">Ariza</span>
+      <span class="font-semibold text-ink-700">{{ t('field.application') }}</span>
     </nav>
 
     <!-- Yakuniy holat -->
@@ -414,18 +438,17 @@ const lastFour = computed(() => form.phone.slice(-4))
           </span>
 
           <h1 class="mt-5 font-display text-[22px] font-extrabold leading-tight text-ink-900">
-            Arizangiz qabul qilindi
+            {{ t('apply.doneHeading') }}
           </h1>
           <p class="mt-2 text-[14px] leading-relaxed text-ink-600">
-            Telefon raqamingiz tasdiqlandi. Ariza bino rahbariga tushdi, operator siz bilan
-            bog‘lanadi.
+            {{ t('apply.doneVerifiedLead') }}
           </p>
 
           <div
             class="mt-5 rounded-card bg-brand-50 p-4 text-center ring-1 ring-inset ring-brand-100"
           >
             <p class="text-[12px] font-semibold uppercase tracking-wide text-brand-700">
-              Ariza raqami
+              {{ t('apply.doneNumber') }}
             </p>
             <p class="tabular mt-1 text-[22px] font-extrabold tracking-wide text-brand-700">
               {{ createdCode }}
@@ -433,17 +456,16 @@ const lastFour = computed(() => form.phone.slice(-4))
           </div>
 
           <p class="mt-4 text-[13px] leading-relaxed text-ink-600">
-            Ariza holatini kuzatish uchun ariza raqami va telefon raqamingizning oxirgi to‘rt
-            raqami kerak bo‘ladi.
+            {{ t('apply.doneTrackHint') }}
           </p>
 
           <div class="mt-5 flex flex-wrap gap-2.5">
             <UiButton :to="trackPath" size="lg">
               <UiIcon name="search" :size="17" />
-              Arizani kuzatish
+              {{ t('apply.trackCta') }}
             </UiButton>
             <UiButton to="/catalog" variant="secondary" size="lg">
-              Katalogga qaytish
+              {{ t('apply.backToCatalog') }}
             </UiButton>
           </div>
 
@@ -453,12 +475,11 @@ const lastFour = computed(() => form.phone.slice(-4))
             <UiIcon name="info" :size="17" class="mt-px shrink-0 text-ink-400" />
             <span class="min-w-0">
               <span class="block text-[13px] leading-relaxed text-ink-600">
-                Havolani saqlab qo‘ying:
+                {{ t('apply.saveLink') }}
                 <span class="font-semibold text-ink-900">{{ trackPath }}</span>
               </span>
               <span class="mt-1.5 block text-[13px] leading-relaxed text-ink-600">
-                Operator bog‘langanda sizga kabinet ochish taklif qilinadi, shundan so‘ng barcha
-                hujjatlar shaxsiy kabinetingizda bo‘ladi.
+                {{ t('apply.doneCabinetNote') }}
               </span>
             </span>
           </div>
@@ -471,36 +492,42 @@ const lastFour = computed(() => form.phone.slice(-4))
       <div class="mx-auto mt-8 max-w-[520px]">
         <div class="rounded-card bg-surface p-6 shadow-card ring-1 ring-ink-200/60 sm:p-8">
           <p class="text-[11px] font-semibold uppercase tracking-wide text-brand-600">
-            2-qadam / 2: Telefon tasdig‘i
+            {{ t('apply.step2Eyebrow') }}
           </p>
           <h1 class="mt-2 font-display text-[22px] font-extrabold leading-tight text-ink-900">
-            Raqamingizni tasdiqlang
+            {{ t('apply.verifyTitle') }}
           </h1>
-          <p class="mt-2 text-[14px] leading-relaxed text-ink-600">
-            Olti xonali kod
-            <span class="tabular font-semibold text-ink-900">{{ phoneFormatted }}</span>
-            raqamiga SMS orqali yuborildi. Ariza faqat shu qadamdan keyin ro‘yxatga olinadi.
-          </p>
+          <i18n-t
+            keypath="apply.verifySms"
+            tag="p"
+            scope="global"
+            class="mt-2 text-[14px] leading-relaxed text-ink-600"
+          >
+            <template #phone>
+              <span class="tabular font-semibold text-ink-900">{{ phoneFormatted }}</span>
+            </template>
+          </i18n-t>
 
           <div
             class="mt-3 flex items-start gap-2.5 rounded-field bg-surface-sunken p-3.5 ring-1 ring-inset ring-ink-200"
           >
             <UiIcon name="info" :size="16" class="mt-px shrink-0 text-ink-400" />
             <p class="min-w-0 text-[13px] leading-relaxed text-ink-600">
-              Yuborilgan kod:
+              {{ t('apply.sentCodeLabel') }}
               <span class="tabular text-[14px] font-bold tracking-wide text-ink-900">
                 {{ sentCode }}
               </span>
               <span class="mt-1 block">
-                Tashqi SMS xizmati bu qurilmaga ulanmagan, shuning uchun raqamga yuborilgan kod
-                shu yerda ko‘rsatilmoqda.
+                {{ t('apply.sentCodeNote') }}
               </span>
             </p>
           </div>
 
           <form class="mt-6" novalidate @submit.prevent="confirmCode">
             <fieldset>
-              <legend class="mb-2 text-[13px] font-semibold text-ink-700">Tasdiqlash kodi</legend>
+              <legend class="mb-2 text-[13px] font-semibold text-ink-700">
+                {{ t('apply.codeLegend') }}
+              </legend>
               <div ref="boxes" class="grid grid-cols-6 gap-1.5 sm:gap-2">
                 <input
                   v-for="(cell, i) in cells"
@@ -511,7 +538,7 @@ const lastFour = computed(() => form.phone.slice(-4))
                   inputmode="numeric"
                   maxlength="1"
                   :autocomplete="i === 0 ? 'one-time-code' : 'off'"
-                  :aria-label="`Kodning ${i + 1}-belgisi`"
+                  :aria-label="t('apply.codeCellAria', { n: i + 1 })"
                   :aria-invalid="wrong || undefined"
                   class="tabular h-14 w-full rounded-field bg-white text-center text-xl font-bold text-ink-900 ring-1 ring-inset transition-colors focus:ring-2 focus:ring-brand-500"
                   :class="
@@ -531,7 +558,7 @@ const lastFour = computed(() => form.phone.slice(-4))
               class="mt-3 flex items-center gap-2 text-[13px] font-medium text-danger-600"
             >
               <UiIcon name="warning" :size="16" class="shrink-0" />
-              Kod noto‘g‘ri yoki to‘liq emas. Qaytadan kiriting.
+              {{ t('apply.codeWrong') }}
             </p>
             <p
               v-else-if="resent"
@@ -539,11 +566,11 @@ const lastFour = computed(() => form.phone.slice(-4))
               class="mt-3 flex items-center gap-2 text-[13px] font-medium text-ok-600"
             >
               <UiIcon name="check" :size="16" class="shrink-0" />
-              Yangi kod yuborildi.
+              {{ t('apply.codeResent') }}
             </p>
 
             <UiButton type="submit" size="lg" block class="mt-5" :disabled="pending">
-              {{ pending ? 'Tekshirilmoqda…' : 'Tasdiqlash va yuborish' }}
+              {{ pending ? t('common.checking') : t('apply.confirmSubmit') }}
             </UiButton>
           </form>
 
@@ -551,16 +578,16 @@ const lastFour = computed(() => form.phone.slice(-4))
             class="mt-5 flex flex-wrap items-center justify-between gap-3 rounded-field bg-surface-sunken p-3.5 ring-1 ring-inset ring-ink-200"
           >
             <p class="text-[13px] text-ink-600">
-              <template v-if="secondsLeft > 0">
-                Yangi kodni
-                <span class="tabular font-semibold text-ink-900">{{ countdownLabel }}</span>
-                dan so‘ng so‘rash mumkin
-              </template>
-              <template v-else>Kod kelmadimi?</template>
+              <i18n-t v-if="secondsLeft > 0" keypath="apply.resendIn" tag="span" scope="global">
+                <template #timer>
+                  <span class="tabular font-semibold text-ink-900">{{ countdownLabel }}</span>
+                </template>
+              </i18n-t>
+              <template v-else>{{ t('apply.codeNotArrived') }}</template>
             </p>
             <UiButton variant="secondary" size="sm" :disabled="secondsLeft > 0" @click="resend">
               <UiIcon name="refresh" :size="16" />
-              Qayta yuborish
+              {{ t('apply.resend') }}
             </UiButton>
           </div>
 
@@ -570,7 +597,7 @@ const lastFour = computed(() => form.phone.slice(-4))
             @click="step = 'form'"
           >
             <UiIcon name="chevronLeft" :size="16" />
-            Ariza ma’lumotlariga qaytish
+            {{ t('apply.backToForm') }}
           </button>
         </div>
       </div>
@@ -580,40 +607,38 @@ const lastFour = computed(() => form.phone.slice(-4))
     <template v-else>
       <header class="mt-5">
         <p class="text-[11px] font-semibold uppercase tracking-wide text-brand-600">
-          1-qadam / 2: Ariza ma’lumotlari
+          {{ t('apply.step1Eyebrow') }}
         </p>
         <h1 class="mt-2 font-display text-[28px] font-extrabold leading-tight text-ink-900 sm:text-[28px]">
-          Ariza yuborish
+          {{ t('apply.cta') }}
         </h1>
         <p class="mt-2 max-w-[70ch] text-[14px] leading-relaxed text-ink-600">
-          Ro‘yxatdan o‘tish shart emas. Ma’lumotlarni to‘ldiring, telefon raqamingizni tasdiqlang
-          va ariza operatorga tushadi.
+          {{ t('apply.formLead') }}
         </p>
       </header>
 
       <div class="mt-6 grid gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
         <div class="min-w-0 space-y-5">
-          <UiCard title="Aloqa ma’lumotlari" subtitle="Operator shu ma’lumotlar orqali bog‘lanadi" icon="user">
+          <UiCard :title="t('apply.contactSection')" :subtitle="t('apply.contactSectionHint')" icon="user">
             <form class="space-y-4" novalidate @submit.prevent="requestCode">
               <p class="flex items-start gap-2 rounded-field bg-brand-50 px-3.5 py-2.5 text-[13px] leading-relaxed text-brand-700 ring-1 ring-inset ring-brand-200">
                 <UiIcon name="info" :size="15" class="mt-px shrink-0" />
-                Ijara shartnomasi faqat yuridik shaxs bilan tuziladi, shuning uchun tashkilot
-                rekvizitlarini to‘ldiring.
+                {{ t('apply.legalPersonNote') }}
               </p>
 
-              <UiField label="Ism va familiya" required for="ariza-name" :error="errorOf('fullName')">
+              <UiField :label="t('apply.nameLabel')" required for="ariza-name" :error="errorOf('fullName')">
                 <UiInput
                   id="ariza-name"
                   v-model="form.fullName"
                   name="name"
                   autocomplete="name"
-                  placeholder="Ism va familiyangiz"
+                  :placeholder="t('apply.namePlaceholder')"
                   :invalid="Boolean(errorOf('fullName'))"
                 />
               </UiField>
 
               <div class="grid gap-4 sm:grid-cols-2">
-                <UiField label="Telefon raqami" required for="ariza-phone" :error="errorOf('phone')">
+                <UiField :label="t('apply.phoneLabel')" required for="ariza-phone" :error="errorOf('phone')">
                   <div class="relative">
                     <input
                       id="ariza-phone"
@@ -649,14 +674,14 @@ const lastFour = computed(() => form.phone.slice(-4))
                   </div>
                 </UiField>
 
-                <UiField label="E-pochta" required for="ariza-email" :error="errorOf('email')">
+                <UiField :label="t('common.email')" required for="ariza-email" :error="errorOf('email')">
                   <UiInput
                     id="ariza-email"
                     v-model="form.email"
                     type="email"
                     name="email"
                     autocomplete="email"
-                    placeholder="ism@kompaniya.uz"
+                    :placeholder="t('apply.emailPlaceholder')"
                     :invalid="Boolean(errorOf('email'))"
                   />
                 </UiField>
@@ -668,7 +693,7 @@ const lastFour = computed(() => form.phone.slice(-4))
                 required
                 for="ariza-stir"
                 :error="errorOf('stir')"
-                hint="To‘qqiz xonali raqam: reyestrda topilsa, rekvizitlar o‘zi to‘ldiriladi"
+                :hint="t('apply.stirHint')"
               >
                 <div class="relative">
                   <input
@@ -694,21 +719,21 @@ const lastFour = computed(() => form.phone.slice(-4))
               >
                 <p class="flex items-center gap-2 text-[13px] font-semibold text-ok-700">
                   <UiIcon name="check" :size="15" class="shrink-0" />
-                  Tashkilot reyestrda topildi
+                  {{ t('apply.orgFound') }}
                 </p>
                 <dl class="mt-2.5 grid gap-2 sm:grid-cols-2">
                   <div>
-                    <dt class="text-[12px] text-ink-500">Nomi</dt>
+                    <dt class="text-[12px] text-ink-500">{{ field('name') }}</dt>
                     <dd class="text-[13px] font-semibold text-ink-900">{{ foundOrg.name }}</dd>
                   </div>
                   <div>
-                    <dt class="text-[12px] text-ink-500">Rahbar</dt>
+                    <dt class="text-[12px] text-ink-500">{{ field('director') }}</dt>
                     <dd class="text-[13px] font-semibold text-ink-900">
                       {{ foundOrg.director }}
                     </dd>
                   </div>
                   <div class="sm:col-span-2">
-                    <dt class="text-[12px] text-ink-500">Yuridik manzil</dt>
+                    <dt class="text-[12px] text-ink-500">{{ field('legalAddress') }}</dt>
                     <dd class="text-[13px] font-semibold text-ink-900">
                       {{ foundOrg.address }}
                     </dd>
@@ -721,12 +746,11 @@ const lastFour = computed(() => form.phone.slice(-4))
                 class="flex items-start gap-2 rounded-field bg-warn-50 p-3.5 text-[13px] leading-relaxed text-ink-700 ring-1 ring-inset ring-warn-100"
               >
                 <UiIcon name="info" :size="15" class="mt-px shrink-0 text-warn-600" />
-                Bu STIR reyestrda topilmadi. Tashkilot nomini qo‘lda kiriting, qolgan
-                rekvizitlarni operator bog‘langanda aniqlaydi.
+                {{ t('apply.orgNotFound') }}
               </p>
 
               <UiField
-                label="Tashkilot nomi"
+                :label="t('apply.orgLabel')"
                 required
                 for="ariza-org"
                 :error="errorOf('orgName')"
@@ -736,32 +760,32 @@ const lastFour = computed(() => form.phone.slice(-4))
                   v-model="form.orgName"
                   name="organization"
                   autocomplete="organization"
-                  placeholder="Tashkilot nomi"
+                  :placeholder="t('apply.orgLabel')"
                   :invalid="Boolean(errorOf('orgName'))"
                 />
               </UiField>
             </form>
           </UiCard>
 
-          <UiCard title="So‘rov shartlari" subtitle="Yakuniy shartlar ko‘rikdan keyin kelishiladi" icon="clipboard">
+          <UiCard :title="t('apply.termsSection')" :subtitle="t('apply.termsSectionHint')" icon="clipboard">
             <form class="space-y-4" novalidate @submit.prevent="requestCode">
-              <UiField label="Bo‘sh unit" required for="ariza-unit" :error="errorOf('unitId')">
+              <UiField :label="field('vacantUnit')" required for="ariza-unit" :error="errorOf('unitId')">
                 <UiSelect
                   id="ariza-unit"
                   v-model="form.unitId"
                   :options="unitOptions"
-                  placeholder="Maydonni tanlang"
+                  :placeholder="t('apply.unitPlaceholder')"
                   :invalid="Boolean(errorOf('unitId'))"
                 />
               </UiField>
 
               <div class="grid gap-4 sm:grid-cols-2">
                 <UiField
-                  label="Taklif narxi"
+                  :label="field('offerPrice')"
                   required
                   for="ariza-price"
                   :error="errorOf('price')"
-                  hint="Oylik summa, so‘m"
+                  :hint="t('apply.priceHint')"
                 >
                   <UiInput
                     id="ariza-price"
@@ -771,15 +795,15 @@ const lastFour = computed(() => form.phone.slice(-4))
                     placeholder="0"
                     :invalid="Boolean(errorOf('price'))"
                   >
-                    <template #suffix><span class="text-[12px]">so‘m</span></template>
+                    <template #suffix><span class="text-[12px]">{{ t('unitOf.currency') }}</span></template>
                   </UiInput>
                 </UiField>
-                <UiField label="Muddat" required>
-                  <UiSelect v-model="form.term" :options="TERM_OPTIONS" />
+                <UiField :label="field('deadline')" required>
+                  <UiSelect v-model="form.term" :options="termOptions" />
                 </UiField>
               </div>
 
-              <UiField label="Boshlanish sanasi" required for="ariza-start" :error="errorOf('startDate')">
+              <UiField :label="field('startDate')" required for="ariza-start" :error="errorOf('startDate')">
                 <UiInput
                   id="ariza-start"
                   v-model="form.startDate"
@@ -788,12 +812,12 @@ const lastFour = computed(() => form.phone.slice(-4))
                 />
               </UiField>
 
-              <UiField label="Izoh" hint="Talab, shart yoki savollaringizni yozing">
+              <UiField :label="t('common.note')" :hint="t('apply.noteHint')">
                 <textarea
                   v-model="form.note"
                   rows="4"
                   class="w-full rounded-field bg-white px-3.5 py-2.5 text-sm text-ink-800 ring-1 ring-inset ring-ink-200 transition-colors placeholder:text-ink-400 hover:ring-ink-300 focus:ring-2 focus:ring-brand-500"
-                  placeholder="Masalan: maydonni bosqichma-bosqich egallash rejalashtirilgan"
+                  :placeholder="t('apply.notePlaceholder')"
                 />
               </UiField>
 
@@ -802,8 +826,7 @@ const lastFour = computed(() => form.phone.slice(-4))
               >
                 <UiIcon name="shield" :size="18" class="mt-px shrink-0 text-brand-600" />
                 <p class="text-[13px] leading-relaxed text-ink-700">
-                  Keyingi qadamda telefon raqamingizga bir martalik kod yuboriladi. Bu yagona
-                  majburiy tasdiq: aloqa raqami haqiqiy bo‘lishi kerak.
+                  {{ t('apply.otpNote') }}
                 </p>
               </div>
 
@@ -814,15 +837,15 @@ const lastFour = computed(() => form.phone.slice(-4))
               >
                 <UiIcon name="warning" :size="16" class="mt-px shrink-0" />
                 <span class="min-w-0">
-                  Forma to‘liq emas: {{ firstErrorLabel }}. Maydon avtomatik ochib beriladi.
+                  {{ t('apply.formIncomplete', { error: firstErrorLabel }) }}
                 </span>
               </p>
 
               <div class="flex flex-wrap items-center justify-end gap-3 border-t border-ink-100 pt-4">
-                <UiButton variant="ghost" to="/catalog">Bekor qilish</UiButton>
+                <UiButton variant="ghost" to="/catalog">{{ t('common.cancel') }}</UiButton>
                 <UiButton type="submit" size="lg" :disabled="pending">
                   <UiIcon name="send" :size="16" />
-                  {{ pending ? 'Kod yuborilmoqda…' : 'Davom etish' }}
+                  {{ pending ? t('apply.sendingCode') : t('common.continue') }}
                 </UiButton>
               </div>
             </form>
@@ -833,7 +856,7 @@ const lastFour = computed(() => form.phone.slice(-4))
         <div class="min-w-0 space-y-5">
           <UiCard
             v-if="unit && building"
-            title="Tanlangan maydon"
+            :title="t('apply.selectedUnit')"
             icon="building"
             tone="teal"
             flush
@@ -841,7 +864,7 @@ const lastFour = computed(() => form.phone.slice(-4))
           >
             <UiPhoto
               :name="building.photo"
-              :alt="`${building.name} binosi`"
+              :alt="t('apply.buildingAlt', { name: building.name })"
               ratio="aspect-[16/10]"
               rounded="rounded-none"
               sizes="(max-width: 1279px) 100vw, 340px"
@@ -856,29 +879,29 @@ const lastFour = computed(() => form.phone.slice(-4))
 
               <dl class="mt-4 grid grid-cols-2 gap-3">
                 <div class="rounded-field bg-surface-sunken px-3 py-2.5 ring-1 ring-inset ring-ink-200">
-                  <dt class="text-[11px] text-ink-500">Unit</dt>
+                  <dt class="text-[11px] text-ink-500">{{ field('unit') }}</dt>
                   <dd class="tabular text-[13px] font-bold text-ink-900">{{ unit.code }}</dd>
                 </div>
                 <div class="rounded-field bg-surface-sunken px-3 py-2.5 ring-1 ring-inset ring-ink-200">
-                  <dt class="text-[11px] text-ink-500">Qavat</dt>
+                  <dt class="text-[11px] text-ink-500">{{ field('floor') }}</dt>
                   <dd class="tabular text-[13px] font-bold text-ink-900">{{ unit.floor }}</dd>
                 </div>
                 <div class="rounded-field bg-surface-sunken px-3 py-2.5 ring-1 ring-inset ring-ink-200">
-                  <dt class="text-[11px] text-ink-500">Maydon</dt>
+                  <dt class="text-[11px] text-ink-500">{{ field('area') }}</dt>
                   <dd class="tabular text-[13px] font-bold text-ink-900">{{ area(unit.area) }}</dd>
                 </div>
                 <div class="rounded-field bg-surface-sunken px-3 py-2.5 ring-1 ring-inset ring-ink-200">
-                  <dt class="text-[11px] text-ink-500">Foydalanish</dt>
-                  <dd class="text-[13px] font-bold text-ink-900">{{ unit.usage }}</dd>
+                  <dt class="text-[11px] text-ink-500">{{ field('usageShort') }}</dt>
+                  <dd class="text-[13px] font-bold text-ink-900">{{ unitUsageLabel(unit.usage) }}</dd>
                 </div>
               </dl>
 
               <div
                 class="mt-3 flex items-baseline justify-between gap-3 rounded-field bg-brand-50 px-3.5 py-3 ring-1 ring-inset ring-brand-100"
               >
-                <span class="text-[13px] text-ink-600">E’lon narxi</span>
+                <span class="text-[13px] text-ink-600">{{ t('apply.listedPrice') }}</span>
                 <span class="tabular text-[14px] font-extrabold text-brand-700">
-                  {{ num(unit.price) }} {{ unit.priceUnit }}
+                  {{ num(unit.price) }} {{ priceUnitLabel(unit.priceUnit) }}
                 </span>
               </div>
 
@@ -890,35 +913,36 @@ const lastFour = computed(() => form.phone.slice(-4))
                 class="mt-3"
               >
                 <UiIcon name="eye" :size="15" />
-                Obyekt sahifasi
+                {{ t('apply.objectPage') }}
               </UiButton>
             </div>
           </UiCard>
 
-          <UiCard v-if="price > 0" title="Dastlabki hisob" subtitle="Yakuniy shartlar ko‘rikdan keyin" icon="chart" tone="brand">
+          <UiCard v-if="price > 0" :title="t('apply.estimateTitle')" :subtitle="t('apply.estimateHint')" icon="chart" tone="brand">
             <dl class="space-y-3">
               <div class="flex items-baseline justify-between gap-3">
-                <dt class="text-[13px] text-ink-500">Taklif narxi (oylik)</dt>
-                <dd class="tabular text-[14px] font-bold text-ink-900">{{ sum(price) }}</dd>
+                <dt class="text-[13px] text-ink-500">{{ t('apply.offerPriceMonthly') }}</dt>
+                <dd class="tabular text-[14px] font-bold text-ink-900">{{ money(price) }}</dd>
               </div>
               <div class="flex items-baseline justify-between gap-3">
-                <dt class="text-[13px] text-ink-500">Muddat</dt>
-                <dd class="tabular text-[14px] font-bold text-ink-900">{{ term }} oy</dd>
+                <dt class="text-[13px] text-ink-500">{{ field('deadline') }}</dt>
+                <dd class="tabular text-[14px] font-bold text-ink-900">
+                  {{ t('apply.termMonths', { count: term }) }}
+                </dd>
               </div>
               <div class="flex items-baseline justify-between gap-3 border-t border-ink-100 pt-3">
-                <dt class="text-[13px] text-ink-500">Muddat bo‘yicha jami</dt>
-                <dd class="tabular text-[16px] font-extrabold text-brand-700">{{ sum(estimate) }}</dd>
+                <dt class="text-[13px] text-ink-500">{{ t('apply.totalForTerm') }}</dt>
+                <dd class="tabular text-[16px] font-extrabold text-brand-700">{{ money(estimate) }}</dd>
               </div>
             </dl>
           </UiCard>
 
-          <UiCard title="Arizani kuzatish" icon="search" tone="neutral">
+          <UiCard :title="t('apply.trackCta')" icon="search" tone="neutral">
             <p class="text-[13px] leading-relaxed text-ink-600">
-              Ariza yuborilgach sizga raqam beriladi. Holatni kuzatish uchun shu raqam va telefon
-              raqamingizning oxirgi to‘rt raqami kifoya.
+              {{ t('apply.trackLead') }}
             </p>
             <p v-if="lastFour.length === 4" class="mt-2 text-[13px] text-ink-600">
-              Hozirgi raqamingiz bo‘yicha oxirgi to‘rt raqam:
+              {{ t('apply.lastFourLabel') }}
               <span class="tabular font-bold text-ink-900">{{ lastFour }}</span>
             </p>
           </UiCard>

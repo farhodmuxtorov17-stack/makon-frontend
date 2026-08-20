@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import { buildingById, type Building } from '~/data/buildings'
+import { STRUCTURE_KIND, siteSummary, structuresOf } from '~/data/structures'
 import { unitsOfBuilding, unitsOfFloor } from '~/data/units'
-import { area, num, percent, sum, sumShort, todayIso } from '~/utils/format'
+import { area, num, percent, sum, todayIso } from '~/utils/format'
 import { docxBlob, fileSlug, saveBlob, type DocxLine } from '~/utils/docx'
 
 const route = useRoute()
 const auth = useAuthStore()
+const { t } = useI18n()
+const { buildingTypeLabel, unitUsageLabel, money, moneyShort, field, columns: labelColumns, moduleTitle, tr } = useAppLabels()
 
 const id = computed(() => String(route.params.id))
 const nested = computed(() => route.path.replace(/\/+$/, '') !== `/objects/${id.value}`)
@@ -31,10 +34,14 @@ const canEdit = computed(() => auth.can('unit.editTechnical') || auth.can('syste
 
 const units = computed(() => (building.value ? unitsOfBuilding(building.value.id) : []))
 
+/** Uchastka tarkibi: qurilmalar soni, ijara maydoni va avtoturargoh joylari */
+const site = computed(() => (building.value ? siteSummary(building.value.id) : null))
+const siteStructures = computed(() => (building.value ? structuresOf(building.value.id) : []))
+
 const editOpen = ref(false)
 const pdfOpen = ref(false)
 const notice = ref('')
-const pdfSections = ref<string[]>(['pasport', 'qavatlar', 'unitlar'])
+const pdfSections = ref<string[]>(['pasport', 'tarkib', 'qavatlar', 'unitlar'])
 
 const editForm = reactive({
   name: '',
@@ -68,27 +75,51 @@ const spec = computed<SpecRow[]>(() => {
   const b = building.value
   if (!b) return []
   return [
-    { label: 'ID', value: b.code, mono: true },
-    { label: 'Nomi', value: b.name },
-    { label: 'Manzil', value: `${b.city} shahri, ${b.district}, ${b.street}` },
-    { label: 'Turi', value: b.type },
-    { label: 'Bino klassi', value: b.buildingClass },
-    { label: 'Qurilgan yil', value: `${b.buildYear}-yil` },
-    { label: 'Umumiy maydon', value: area(b.gla) },
+    { label: field('id'), value: b.code, mono: true },
+    { label: field('name'), value: b.name },
     {
-      label: 'Qavatlar soni',
+      label: field('address'),
+      value: t('obj.cityAddress', { city: b.city, district: b.district, street: b.street }),
+    },
+    { label: field('type'), value: buildingTypeLabel(b.type) },
+    { label: field('buildingClass'), value: b.buildingClass },
+    { label: field('buildYear'), value: t('unitOf.yearNo', { year: b.buildYear }) },
+    { label: field('totalArea'), value: area(b.gla) },
+    {
+      label: field('floorCount'),
       value: b.undergroundFloors
-        ? `${b.floors} (+${b.undergroundFloors} yer osti)`
+        ? t('obj.floorsWithUnderground', {
+            floors: b.floors,
+            underground: b.undergroundFloors,
+          })
         : String(b.floors),
     },
-    { label: 'Unitlar soni', value: num(b.units) },
-    { label: 'Band unitlar', value: `${num(b.occupiedUnits)} (${percent(b.occupancy)})`, tone: 'ok' },
     {
-      label: 'Bo‘sh unitlar',
+      label: t('obj.siteStructures'),
+      value: site.value
+        ? t('obj.structuresValue', {
+            total: num(site.value.structures),
+            lease: num(site.value.leasable),
+            service: num(site.value.service),
+          })
+        : '-',
+    },
+    {
+      label: t('obj.parkingSpaces'),
+      value: site.value ? `${num(site.value.parkingSpaces)} ${t('unitOf.pcs')}` : '-',
+    },
+    { label: t('kpi.unitCount'), value: num(b.units) },
+    {
+      label: field('occupiedUnits'),
+      value: `${num(b.occupiedUnits)} (${percent(b.occupancy)})`,
+      tone: 'ok',
+    },
+    {
+      label: field('vacantUnits'),
       value: `${num(b.vacantUnits)} (${percent(100 - b.occupancy)})`,
       tone: 'warn',
     },
-    { label: 'Jihozlar', value: b.equipment.join(', ') },
+    { label: field('equipment'), value: b.equipment.join(', ') },
   ]
 })
 
@@ -101,7 +132,10 @@ const floors = computed(() => {
     const floorUnits = unitsOfFloor(b.id, floor)
     return {
       floor,
-      label: floor < 0 ? `${-floor}-yer osti qavati` : `${floor}-qavat`,
+      label:
+        floor < 0
+          ? t('obj.undergroundFloorNo', { floor: -floor })
+          : t('unitOf.floorNo', { floor }),
       total: floorUnits.length,
       vacant: floorUnits.filter((u) => u.status === 'VACANT').length,
       area: floorUnits.reduce((s, u) => s + u.area, 0),
@@ -130,9 +164,9 @@ const locationMarkers = computed(() =>
           lat: building.value.lat,
           lon: building.value.lon,
           label: building.value.name,
-          caption: `${building.value.district} · ${building.value.type}`,
+          caption: `${building.value.district} · ${buildingTypeLabel(building.value.type)}`,
           value: building.value.occupancy,
-          valueLabel: '% bandlik',
+          valueLabel: t('landing.occupancyValueLabel'),
           tone: 'brand' as const,
         },
       ]
@@ -140,20 +174,22 @@ const locationMarkers = computed(() =>
 )
 
 /** Ijarachi va narx ustunlari moliya huquqi bo‘lmaganda umuman chizilmaydi */
-const unitColumns = computed(() => [
-  { key: 'code', label: 'Unit', width: '110px' },
-  { key: 'floor', label: 'Qavat', align: 'right' as const, numeric: true },
-  { key: 'areaLabel', label: 'Maydoni', align: 'right' as const, numeric: true },
-  { key: 'usage', label: 'Turi' },
-  { key: 'offer', label: 'Taklif' },
-  ...(showFinance.value
-    ? [
-        { key: 'tenant', label: 'Ijarachi / Xaridor' },
-        { key: 'priceLabel', label: 'Narxi', align: 'right' as const, numeric: true },
-      ]
-    : []),
-  { key: 'status', label: 'Holat', align: 'center' as const, width: '140px' },
-])
+const unitColumns = computed(() =>
+  labelColumns([
+    { key: 'code', field: 'unit', width: '110px' },
+    { key: 'floor', field: 'floor', align: 'right', numeric: true },
+    { key: 'areaLabel', field: 'area', align: 'right', numeric: true },
+    { key: 'usage', field: 'type' },
+    { key: 'offer', field: 'offerShort' },
+    ...(showFinance.value
+      ? [
+          { key: 'tenant', field: 'tenantBuyer' },
+          { key: 'priceLabel', field: 'price', align: 'right' as const, numeric: true },
+        ]
+      : []),
+    { key: 'status', field: 'status', align: 'center', width: '140px' },
+  ]),
+)
 
 const unitRows = computed(() =>
   units.value.map((u) => ({
@@ -161,7 +197,7 @@ const unitRows = computed(() =>
     code: u.code,
     floor: u.floor,
     areaLabel: area(u.area),
-    usage: u.usage,
+    usage: unitUsageLabel(u.usage),
     offer: u.offer,
     tenant: showFinance.value ? (u.tenant ?? '-') : '',
     priceLabel: showFinance.value ? `${num(u.price)} ${u.priceUnit}` : '',
@@ -199,7 +235,7 @@ function submitEdit() {
     managerPhone: editForm.managerPhone.trim(),
   })
 
-  notice.value = `«${name}» obyekti ma’lumotlari yangilandi.`
+  notice.value = t('obj.updatedNotice', { name })
   editOpen.value = false
 }
 
@@ -212,27 +248,66 @@ function submitPdf() {
   if (!b) return
   const picked = pdfSections.value
   const lines: DocxLine[] = [
-    { text: `${b.name} · bino pasporti`, style: 'title' },
-    { text: `${b.code} · ${b.city} shahri, ${b.district}, ${b.street}`, style: 'subtitle' },
+    { text: t('obj.passportDocTitle', { name: b.name }), style: 'title' },
+    {
+      text: `${b.code} · ${t('obj.cityAddress', { city: b.city, district: b.district, street: b.street })}`,
+      style: 'subtitle',
+    },
   ]
 
   if (picked.includes('pasport')) {
-    lines.push({ text: 'Asosiy ma’lumotlar', style: 'heading' })
+    lines.push({ text: t('obj.sectionMain'), style: 'heading' })
     lines.push(...spec.value.map((r) => ({ text: `${r.label}: ${r.value}`, style: 'body' as const })))
   }
 
+  if (picked.includes('tarkib') && site.value) {
+    const s = site.value
+    lines.push({ text: t('obj.siteComposition'), style: 'heading' })
+    lines.push({
+      text: t('obj.plotSummary', {
+        width: num(s.plot.width, 0),
+        depth: num(s.plot.depth, 0),
+        total: num(s.structures),
+        lease: num(s.leasable),
+        service: num(s.service),
+        parking: num(s.parkingSpaces),
+      }),
+      style: 'body',
+    })
+    lines.push(
+      ...siteStructures.value.map((st) => ({
+        text: [
+          st.name,
+          tr(`obj.structureKind.${st.kind}`, STRUCTURE_KIND[st.kind].label),
+          `${num(st.width, 1)} × ${num(st.depth, 1)} ${t('unitOf.metre')}`,
+          st.gla ? t('obj.leaseAreaOf', { area: area(st.gla) }) : t('obj.serviceStructure'),
+          st.parkingSpaces ? t('obj.parkingOf', { n: num(st.parkingSpaces) }) : '',
+          st.note,
+        ]
+          .filter(Boolean)
+          .join(' · '),
+        style: 'body' as const,
+      })),
+    )
+  }
+
   if (picked.includes('qavatlar')) {
-    lines.push({ text: 'Qavatlar ro‘yxati', style: 'heading' })
+    lines.push({ text: t('obj.floorList'), style: 'heading' })
     lines.push(
       ...floors.value.map((f) => ({
-        text: `${f.label}: jami ${num(f.total)} ta unit, bo‘sh ${num(f.vacant)} ta, maydon ${area(f.area)}`,
+        text: t('obj.floorLine', {
+          floor: f.label,
+          total: num(f.total),
+          vacant: num(f.vacant),
+          area: area(f.area),
+        }),
         style: 'body' as const,
       })),
     )
   }
 
   if (picked.includes('unitlar')) {
-    lines.push({ text: 'Unitlar jadvali', style: 'heading' })
+    lines.push({ text: t('obj.unitTable'), style: 'heading' })
     lines.push(
       ...unitRows.value.map((u) => ({
         text: showFinance.value
@@ -244,18 +319,21 @@ function submitPdf() {
   }
 
   if (picked.includes('moliya') && showFinance.value) {
-    lines.push({ text: 'Moliyaviy ko‘rsatkichlar', style: 'heading' })
+    lines.push({ text: t('obj.financeSection'), style: 'heading' })
     lines.push(
-      { text: `Oylik tushum: ${sum(b.monthlyRevenue)}`, style: 'body' },
-      { text: `Qarzdorlik: ${sum(b.debt)}`, style: 'body' },
-      { text: `Bandlik: ${percent(b.occupancy)}`, style: 'body' },
-      { text: `Ijaraga beriladigan maydon: ${area(b.gla)}, bo‘sh: ${area(b.vacantArea)}`, style: 'body' },
+      { text: t('obj.monthlyRevenueLine', { value: sum(b.monthlyRevenue) }), style: 'body' },
+      { text: t('obj.debtLine', { value: sum(b.debt) }), style: 'body' },
+      { text: t('obj.occupancyLine', { value: percent(b.occupancy) }), style: 'body' },
+      {
+        text: t('obj.glaLine', { gla: area(b.gla), vacant: area(b.vacantArea) }),
+        style: 'body',
+      },
     )
   }
 
   const name = `${fileSlug(b.name)}-pasport-${todayIso()}.docx`
   saveBlob(docxBlob(lines), name)
-  notice.value = `${name} yuklab olindi, ${picked.length} ta bo‘lim.`
+  notice.value = t('obj.pdfDone', { file: name, n: picked.length })
   pdfOpen.value = false
 }
 </script>
@@ -265,8 +343,11 @@ function submitPdf() {
 
   <template v-else-if="!building">
     <AppTopbar
-      title="Obyekt topilmadi"
-      :breadcrumb="[{ label: 'Obyektlar', to: '/objects' }, { label: 'Topilmadi' }]"
+      :title="t('empty.noObjects')"
+      :breadcrumb="[
+        { label: moduleTitle('objects'), to: '/objects' },
+        { label: t('obj.notFoundCrumb') },
+      ]"
     />
     <main class="scroll-slim flex-1 overflow-y-auto p-4 sm:p-6">
       <UiCard>
@@ -275,15 +356,14 @@ function submitPdf() {
             <UiIcon name="warning" :size="26" />
           </span>
           <div>
-            <p class="text-[16px] font-bold text-ink-900">Bunday obyekt reyestrda yo‘q</p>
+            <p class="text-[16px] font-bold text-ink-900">{{ t('obj.missingTitle') }}</p>
             <p class="mt-1 text-[13px] text-ink-500">
-              Havola eskirgan yoki obyekt sizga biriktirilmagan bo‘lishi mumkin. Reyestrga
-              qaytib, kerakli obyektni tanlang.
+              {{ t('obj.missingText') }}
             </p>
           </div>
           <UiButton to="/objects">
             <UiIcon name="chevronLeft" :size="16" />
-            Obyektlar reyestri
+            {{ t('obj.title') }}
           </UiButton>
         </div>
       </UiCard>
@@ -293,28 +373,31 @@ function submitPdf() {
   <template v-else>
     <AppTopbar
       :title="building.name"
-      :subtitle="`${building.type} · ${building.city}, ${building.district}`"
-      :breadcrumb="[{ label: 'Obyektlar', to: '/objects' }, { label: building.name }]"
+      :subtitle="`${buildingTypeLabel(building.type)} · ${building.city}, ${building.district}`"
+      :breadcrumb="[
+        { label: moduleTitle('objects'), to: '/objects' },
+        { label: building.name },
+      ]"
     >
       <template #actions>
         <UiButton v-if="canEdit" variant="secondary" size="sm" @click="editOpen = true">
           <UiIcon name="edit" :size="16" />
-          Tahrirlash
+          {{ t('common.edit') }}
         </UiButton>
         <span
           v-else
           class="inline-flex items-center gap-2 rounded-pill bg-ink-100 px-3 py-1.5 text-[12px] font-semibold text-ink-600"
         >
           <UiIcon name="eye" :size="15" />
-          Faqat ko‘rish huquqi
+          {{ t('common.readOnly') }}
         </span>
         <UiButton variant="secondary" size="sm" @click="pdfOpen = true">
           <UiIcon name="doc" :size="16" />
-          Bino pasporti
+          {{ t('obj.passport') }}
         </UiButton>
         <UiButton size="sm" :to="`/objects/${building.id}/3d`">
           <UiIcon name="cube" :size="16" />
-          3D ko‘rinish
+          {{ t('obj.view3d') }}
         </UiButton>
       </template>
     </AppTopbar>
@@ -329,7 +412,7 @@ function submitPdf() {
         <button
           type="button"
           class="shrink-0 rounded-[8px] p-1 text-ok-600 transition-colors hover:bg-ok-100"
-          aria-label="Xabarnomani yopish"
+          :aria-label="t('common.dismissNotice')"
           @click="notice = ''"
         >
           <UiIcon name="x" :size="15" />
@@ -341,37 +424,40 @@ function submitPdf() {
         :class="showFinance ? 'xl:grid-cols-4' : 'xl:grid-cols-2'"
       >
         <UiKpi
-          label="Bandlik darajasi"
+          :label="t('kpi.occupancyRate')"
           :value="percent(building.occupancy)"
           icon="building"
           tone="brand"
           :spark="[building.occupancy - 6, building.occupancy - 4, building.occupancy - 2, building.occupancy - 1, building.occupancy]"
         />
         <UiKpi
-          label="Bo‘sh maydon"
+          :label="t('kpi.vacantArea')"
           :value="num(building.vacantArea)"
-          unit="m²"
+          :unit="t('unitOf.sqm')"
           icon="layers"
           tone="ok"
         />
         <UiKpi
           v-if="showFinance"
-          label="Oylik ijara tushumi"
-          :value="sumShort(building.monthlyRevenue)"
+          :label="t('kpi.monthlyRent')"
+          :value="moneyShort(building.monthlyRevenue)"
           icon="wallet"
           tone="violet"
         />
         <UiKpi
           v-if="showFinance"
-          label="Qarzdorlik"
-          :value="sumShort(building.debt)"
+          :label="t('kpi.debt')"
+          :value="moneyShort(building.debt)"
           icon="warning"
           tone="danger"
         />
       </section>
 
+      <!-- Obyekt bitta binodan iborat emas: butun uchastka tarkibi shu yerda -->
+      <SiteComposition :building-id="building.id" />
+
       <section class="grid gap-5 xl:grid-cols-3">
-        <UiCard title="Bino pasporti" subtitle="Obyekt bo‘yicha to‘liq ma’lumotlar kartasi">
+        <UiCard :title="t('obj.passport')" :subtitle="t('obj.passportCaption')">
           <template #actions>
             <UiStatus
               :kind="building.status === 'ACTIVE' ? 'contract' : 'unit'"
@@ -410,7 +496,12 @@ function submitPdf() {
                 type="button"
                 class="overflow-hidden rounded-[9px] ring-2 transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500"
                 :class="g === activePhoto ? 'ring-brand-500' : 'ring-transparent hover:ring-ink-300'"
-                :aria-label="`${building.name}, rakurs ${building.gallery.indexOf(g) + 1}`"
+                :aria-label="
+                  t('obj.photoAngle', {
+                    name: building.name,
+                    n: building.gallery.indexOf(g) + 1,
+                  })
+                "
                 :aria-pressed="g === activePhoto"
                 @click="activePhoto = g"
               >
@@ -438,7 +529,7 @@ function submitPdf() {
             </div>
 
             <div class="flex items-center gap-4 py-3">
-              <dt class="w-[124px] shrink-0 text-[13px] text-ink-500">Mas’ul rahbar</dt>
+              <dt class="w-[124px] shrink-0 text-[13px] text-ink-500">{{ field('manager') }}</dt>
               <dd class="flex min-w-0 flex-1 items-center gap-2.5">
                 <span
                   class="grid size-9 shrink-0 place-items-center rounded-full bg-brand-50 text-brand-600"
@@ -459,7 +550,7 @@ function submitPdf() {
         </UiCard>
 
         <div class="min-w-0 space-y-5 xl:col-span-2">
-          <UiCard title="Qulayliklar" subtitle="Obyektda mavjud infratuzilma">
+          <UiCard :title="t('obj.amenities')" :subtitle="t('obj.amenitiesCaption')">
             <div class="flex flex-wrap gap-2">
               <span
                 v-for="a in building.amenities"
@@ -483,10 +574,15 @@ function submitPdf() {
             </div>
           </UiCard>
 
-          <UiCard title="Qavatlar" subtitle="Qavat rejasiga o‘tish uchun tanlang" flush :padded="false">
+          <UiCard
+            :title="field('floors')"
+            :subtitle="t('obj.floorsCaption')"
+            flush
+            :padded="false"
+          >
             <template #actions>
               <UiButton variant="ghost" size="sm" :to="`/objects/${building.id}/3d`">
-                3D navigator
+                {{ t('obj.navigator3d') }}
                 <UiIcon name="chevronRight" :size="15" />
               </UiButton>
             </template>
@@ -516,7 +612,11 @@ function submitPdf() {
                       {{ f.label }}
                     </span>
                     <span class="block truncate text-[12px] text-ink-500">
-                      {{ f.total ? `${f.total} unit · ${f.vacant} bo‘sh` : 'Reja kiritilmagan' }}
+                      {{
+                        f.total
+                          ? t('obj.floorUnitsMeta', { total: f.total, vacant: f.vacant })
+                          : t('obj.noPlan')
+                      }}
                     </span>
                   </span>
                   <UiIcon name="chevronRight" :size="15" class="shrink-0 text-ink-400" />
@@ -526,8 +626,14 @@ function submitPdf() {
           </UiCard>
 
           <UiCard
-            title="Obyekt unitlari"
-            :subtitle="`${unitSummary.total} ta yozuv · ${unitSummary.vacant} bo‘sh · ${area(unitSummary.area)}`"
+            :title="t('obj.objectUnits')"
+            :subtitle="
+              t('obj.unitsSummary', {
+                total: unitSummary.total,
+                vacant: unitSummary.vacant,
+                area: area(unitSummary.area),
+              })
+            "
             flush
             :padded="false"
           >
@@ -535,13 +641,13 @@ function submitPdf() {
               :columns="unitColumns"
               :rows="unitRows"
               :to="unitPath"
-              empty="Ushbu obyekt bo‘yicha unit yozuvlari hali kiritilmagan"
+              :empty="t('obj.emptyUnits')"
             >
               <template #cell-code="{ row }">
                 <span class="tabular text-[13px] font-bold text-ink-900">{{ row.code }}</span>
               </template>
               <template #cell-floor="{ row }">
-                <span class="tabular">{{ row.floor }}-qavat</span>
+                <span class="tabular">{{ t('unitOf.floorNo', { floor: row.floor }) }}</span>
               </template>
               <template #cell-status="{ row }">
                 <UiStatus kind="unit" :value="String(row.status)" size="sm" />
@@ -554,61 +660,66 @@ function submitPdf() {
       <UiModal
         v-if="canEdit"
         v-model="editOpen"
-        title="Obyekt ma’lumotlarini tahrirlash"
+        :title="t('obj.editTitle')"
         :subtitle="building.code"
         size="lg"
       >
         <div class="grid gap-4 sm:grid-cols-2">
-          <UiField label="Bino nomi" class="sm:col-span-2">
+          <UiField :label="field('buildingName')" class="sm:col-span-2">
             <UiInput v-model="editForm.name" />
           </UiField>
-          <UiField label="Tuman">
+          <UiField :label="field('district')">
             <UiInput v-model="editForm.district" />
           </UiField>
-          <UiField label="Ko‘cha va uy raqami">
+          <UiField :label="field('street')">
             <UiInput v-model="editForm.street" />
           </UiField>
-          <UiField label="Bino klassi">
+          <UiField :label="field('buildingClass')">
             <UiInput v-model="editForm.buildingClass" />
           </UiField>
-          <UiField label="Mas’ul rahbar">
+          <UiField :label="field('manager')">
             <UiInput v-model="editForm.manager" />
           </UiField>
-          <UiField label="Telefon" class="sm:col-span-2">
+          <UiField :label="t('common.phone')" class="sm:col-span-2">
             <UiInput v-model="editForm.managerPhone" />
           </UiField>
         </div>
 
         <template #footer>
-          <UiButton variant="ghost" @click="editOpen = false">Bekor qilish</UiButton>
+          <UiButton variant="ghost" @click="editOpen = false">{{ t('common.cancel') }}</UiButton>
           <UiButton @click="submitEdit">
             <UiIcon name="check" :size="16" />
-            Saqlash
+            {{ t('common.save') }}
           </UiButton>
         </template>
       </UiModal>
 
       <UiModal
         v-model="pdfOpen"
-        title="Bino pasporti"
-        subtitle="Word hujjatiga kiritiladigan bo‘limlarni belgilang"
+        :title="t('obj.passport')"
+        :subtitle="t('obj.pdfCaption')"
       >
         <div class="space-y-2.5">
           <button
             v-for="s in [
-              { key: 'pasport', label: 'Bino pasporti', hint: 'Asosiy ma’lumotlar va jihozlar' },
-              { key: 'qavatlar', label: 'Qavatlar ro‘yxati', hint: 'Har bir qavat bo‘yicha yig‘ma' },
+              { key: 'pasport', label: t('obj.passport'), hint: t('obj.pdfMainHint') },
+              {
+                key: 'tarkib',
+                label: t('obj.siteComposition'),
+                hint: t('obj.pdfSiteHint'),
+              },
+              { key: 'qavatlar', label: t('obj.floorList'), hint: t('obj.pdfFloorsHint') },
               {
                 key: 'unitlar',
-                label: 'Unitlar jadvali',
-                hint: showFinance ? 'Holat, ijarachi va narx' : 'Holat va texnik ma’lumotlar',
+                label: t('obj.unitTable'),
+                hint: showFinance ? t('obj.pdfUnitsHintFinance') : t('obj.pdfUnitsHint'),
               },
               ...(showFinance
                 ? [
                     {
                       key: 'moliya',
-                      label: 'Moliyaviy ko‘rsatkichlar',
-                      hint: 'Tushum va qarzdorlik',
+                      label: t('obj.financeSection'),
+                      hint: t('obj.pdfFinanceHint'),
                     },
                   ]
                 : []),
@@ -639,16 +750,22 @@ function submitPdf() {
         </div>
 
         <p class="mt-4 text-[13px] text-ink-500">
-          Hujjat {{ building.name }} obyekti bo‘yicha {{ pdfSections.length }} ta bo‘limdan
-          shakllantiriladi. Umumiy maydon: {{ area(building.gla) }}<template v-if="showFinance">,
-          oylik tushum: {{ sum(building.monthlyRevenue) }}</template>.
+          {{
+            t('obj.pdfSummary', {
+              name: building.name,
+              n: pdfSections.length,
+              area: area(building.gla),
+            })
+          }}<template v-if="showFinance">{{
+            t('obj.pdfSummaryRevenue', { value: money(building.monthlyRevenue) })
+          }}</template>.
         </p>
 
         <template #footer>
-          <UiButton variant="ghost" @click="pdfOpen = false">Bekor qilish</UiButton>
+          <UiButton variant="ghost" @click="pdfOpen = false">{{ t('common.cancel') }}</UiButton>
           <UiButton :disabled="!pdfSections.length" @click="submitPdf">
             <UiIcon name="download" :size="16" />
-            Yuklab olish
+            {{ t('common.download') }}
           </UiButton>
         </template>
       </UiModal>

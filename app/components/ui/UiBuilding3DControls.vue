@@ -42,22 +42,24 @@ const emit = defineEmits<{
   (e: 'reset'): void
 }>()
 
+const { t } = useI18n()
+
 const expanded = ref(false)
 
-const LAYERS: Array<{ key: keyof Layers; label: string; hint: string }> = [
-  { key: 'walls', label: 'Devorlar', hint: 'Tashqi devor va ichki to‘siqlar' },
-  { key: 'openings', label: 'Eshiklar va derazalar', hint: 'Eshik qanoti va deraza o‘rinlari' },
-  { key: 'core', label: 'Koridor va yadro', hint: 'Yo‘lak, lift shaxtasi va zinapoya' },
-  { key: 'furniture', label: 'Mebel', hint: 'Stol, kreslo, stellaj va boshqa jihoz' },
-  { key: 'people', label: 'Odamlar', hint: 'Masshtab uchun xodim figuralari' },
-  { key: 'tech', label: 'Texnika', hint: 'Texnik xona, tom uskunasi, sanuzel' },
-]
+const LAYERS = computed<Array<{ key: keyof Layers; label: string; hint: string }>>(() => [
+  { key: 'walls', label: t('ui.layerWalls'), hint: t('ui.layerWallsHint') },
+  { key: 'openings', label: t('ui.layerOpenings'), hint: t('ui.layerOpeningsHint') },
+  { key: 'core', label: t('ui.layerCore'), hint: t('ui.layerCoreHint') },
+  { key: 'furniture', label: t('ui.layerFurniture'), hint: t('ui.layerFurnitureHint') },
+  { key: 'people', label: t('ui.layerPeople'), hint: t('ui.layerPeopleHint') },
+  { key: 'tech', label: t('ui.layerTech'), hint: t('ui.layerTechHint') },
+])
 
-const AXES: Array<{ key: 'off' | 'x' | 'y'; label: string; aria: string }> = [
-  { key: 'off', label: 'Yo‘q', aria: 'Kesim tekisligi o‘chirilgan' },
-  { key: 'x', label: 'X o‘qi', aria: 'Kesim X o‘qi bo‘ylab' },
-  { key: 'y', label: 'Y o‘qi', aria: 'Kesim Y o‘qi bo‘ylab' },
-]
+const AXES = computed<Array<{ key: 'off' | 'x' | 'y'; label: string; aria: string }>>(() => [
+  { key: 'off', label: t('common.no'), aria: t('ui.sectionOffAria') },
+  { key: 'x', label: t('ui.axisX'), aria: t('ui.axisXAria') },
+  { key: 'y', label: t('ui.axisY'), aria: t('ui.axisYAria') },
+])
 
 function num(event: Event) {
   return Number((event.target as HTMLInputElement).value)
@@ -67,7 +69,9 @@ function toggleLayer(key: keyof Layers) {
   emit('patch', { layers: { ...props.state.layers, [key]: !props.state.layers[key] } })
 }
 
-const activeLayers = computed(() => LAYERS.filter((l) => props.state.layers[l.key]).length)
+const activeLayers = computed(
+  () => LAYERS.value.filter((l) => props.state.layers[l.key]).length,
+)
 
 const sunLabel = computed(() => {
   const h = Math.floor(props.state.sunHour)
@@ -77,18 +81,20 @@ const sunLabel = computed(() => {
 
 const sunPhase = computed(() => {
   const h = props.state.sunHour
-  if (props.state.night) return 'Tun rejimi, derazalar ichkaridan yoritilgan'
-  if (h < 9) return 'Ertalabki past quyosh, uzun soya'
-  if (h < 12) return 'Tushdan oldingi yorug‘lik'
-  if (h < 15) return 'Tush payti, soya qisqa'
-  if (h < 18) return 'Kechki yorug‘lik'
-  return 'Quyosh botishi, soya uzayadi'
+  if (props.state.night) return t('ui.sunPhaseNight')
+  if (h < 9) return t('ui.sunPhaseMorning')
+  if (h < 12) return t('ui.sunPhaseForenoon')
+  if (h < 15) return t('ui.sunPhaseNoon')
+  if (h < 18) return t('ui.sunPhaseEvening')
+  return t('ui.sunPhaseSunset')
 })
 
 const sectionNote = computed(() => {
-  if (props.state.sectionAxis === 'off') return 'Kesim o‘chirilgan, bino yaxlit ko‘rinadi'
-  const percent = Math.round(props.state.sectionCut * 100)
-  return `Kesim ${props.state.sectionAxis === 'x' ? 'X' : 'Y'} o‘qida, ${percent}% joyda. Old qism olib tashlanadi.`
+  if (props.state.sectionAxis === 'off') return t('ui.sectionNoteOff')
+  return t('ui.sectionNoteOn', {
+    axis: props.state.sectionAxis === 'x' ? 'X' : 'Y',
+    percent: Math.round(props.state.sectionCut * 100),
+  })
 })
 </script>
 
@@ -103,11 +109,13 @@ const sectionNote = computed(() => {
     >
       <span class="flex min-w-0 items-center gap-2">
         <UiIcon name="tools" :size="17" class="shrink-0 text-brand-600" />
-        <span class="min-w-0 truncate text-[13px] font-bold text-ink-900">Boshqaruv paneli</span>
+        <span class="min-w-0 truncate text-[13px] font-bold text-ink-900">
+          {{ t('nav.dashboardBuilding') }}
+        </span>
         <span
           class="tabular shrink-0 rounded-pill bg-ink-100 px-2 py-0.5 text-[11px] font-semibold text-ink-600"
         >
-          {{ activeLayers }} / {{ LAYERS.length }} qatlam
+          {{ t('ui.layerCount', { active: activeLayers, total: LAYERS.length }) }}
         </span>
       </span>
       <UiIcon
@@ -131,7 +139,7 @@ const sectionNote = computed(() => {
             class="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-ink-500"
           >
             <UiIcon name="cube" :size="14" class="shrink-0 text-brand-500" />
-            Ko‘rinish
+            {{ t('ui.groupView') }}
           </h4>
 
           <div class="mt-2.5 space-y-2.5">
@@ -139,7 +147,7 @@ const sectionNote = computed(() => {
               <span
                 class="flex items-baseline justify-between gap-2 text-[12px] font-semibold text-ink-600"
               >
-                Burilish
+                {{ t('ui.rotation') }}
                 <span class="tabular text-[12px] font-bold text-ink-900">
                   {{ Math.round(state.rotation) }}°
                 </span>
@@ -151,7 +159,7 @@ const sectionNote = computed(() => {
                 max="360"
                 step="1"
                 class="mt-1 h-1.5 w-full accent-brand-500"
-                aria-label="Gorizontal burilish burchagi"
+                :aria-label="t('ui.rotationAria')"
                 @input="emit('patch', { rotation: num($event) })"
               />
             </label>
@@ -160,7 +168,7 @@ const sectionNote = computed(() => {
               <span
                 class="flex items-baseline justify-between gap-2 text-[12px] font-semibold text-ink-600"
               >
-                Nishab
+                {{ t('ui.tilt') }}
                 <span class="tabular text-[12px] font-bold text-ink-900">
                   {{ Math.round(state.tilt) }}°
                 </span>
@@ -172,7 +180,7 @@ const sectionNote = computed(() => {
                 max="82"
                 step="1"
                 class="mt-1 h-1.5 w-full accent-brand-500"
-                aria-label="Kamera balandlik burchagi"
+                :aria-label="t('ui.tiltAria')"
                 @input="emit('patch', { tilt: num($event) })"
               />
             </label>
@@ -181,7 +189,7 @@ const sectionNote = computed(() => {
               <span
                 class="flex items-baseline justify-between gap-2 text-[12px] font-semibold text-ink-600"
               >
-                Masshtab
+                {{ t('ui.scale') }}
                 <span class="tabular text-[12px] font-bold text-ink-900">
                   {{ Math.round(state.zoom * 100) }}%
                 </span>
@@ -193,7 +201,7 @@ const sectionNote = computed(() => {
                 max="2.2"
                 step="0.05"
                 class="mt-1 h-1.5 w-full accent-brand-500"
-                aria-label="Masshtab darajasi"
+                :aria-label="t('ui.scaleAria')"
                 @input="emit('patch', { zoom: num($event) })"
               />
             </label>
@@ -202,7 +210,7 @@ const sectionNote = computed(() => {
               <span
                 class="flex items-baseline justify-between gap-2 text-[12px] font-semibold text-ink-600"
               >
-                Ajratish
+                {{ t('ui.explode') }}
                 <span class="tabular text-[12px] font-bold text-ink-900">
                   {{ Math.round(state.explode * 100) }}%
                 </span>
@@ -214,7 +222,7 @@ const sectionNote = computed(() => {
                 max="1"
                 step="0.02"
                 class="mt-1 h-1.5 w-full accent-brand-500"
-                aria-label="Qavatlarni ajratish darajasi"
+                :aria-label="t('ui.explodeAria')"
                 @input="emit('patch', { explode: num($event) })"
               />
             </label>
@@ -223,7 +231,7 @@ const sectionNote = computed(() => {
               <span
                 class="flex items-baseline justify-between gap-2 text-[12px] font-semibold text-ink-600"
               >
-                Quyosh vaqti
+                {{ t('ui.sunTime') }}
                 <span class="tabular text-[12px] font-bold text-ink-900">{{ sunLabel }}</span>
               </span>
               <input
@@ -233,7 +241,7 @@ const sectionNote = computed(() => {
                 max="20"
                 step="0.5"
                 class="mt-1 h-1.5 w-full accent-warn-500"
-                aria-label="Kun davomidagi quyosh burchagi"
+                :aria-label="t('ui.sunAria')"
                 @input="emit('patch', { sunHour: num($event) })"
               />
             </label>
@@ -251,7 +259,7 @@ const sectionNote = computed(() => {
                 @click="emit('patch', { night: !state.night })"
               >
                 <UiIcon :name="state.night ? 'cloud' : 'sun'" :size="15" />
-                {{ state.night ? 'Tun' : 'Kunduz' }}
+                {{ state.night ? t('ui.night') : t('ui.day') }}
               </button>
 
               <button
@@ -260,7 +268,7 @@ const sectionNote = computed(() => {
                 @click="emit('reset')"
               >
                 <UiIcon name="target" :size="15" />
-                Tiklash
+                {{ t('ui.restoreView') }}
               </button>
             </div>
 
@@ -275,10 +283,14 @@ const sectionNote = computed(() => {
             class="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-ink-500"
           >
             <UiIcon name="layers" :size="14" class="shrink-0 text-brand-500" />
-            Qatlamlar
+            {{ t('ui.groupLayers') }}
           </h4>
 
-          <div class="mt-2.5 flex flex-wrap gap-1.5" role="group" aria-label="Qatlamlarni yoqish va o‘chirish">
+          <div
+            class="mt-2.5 flex flex-wrap gap-1.5"
+            role="group"
+            :aria-label="t('ui.layersToggleAria')"
+          >
             <button
               v-for="l in LAYERS"
               :key="l.key"
@@ -299,8 +311,7 @@ const sectionNote = computed(() => {
           </div>
 
           <p class="mt-2 text-[12px] leading-snug text-ink-500">
-            Qatlamlar faqat tanlangan qavat interyerida ishlaydi. Belgisi bor tugma yoqilgan,
-            krestli tugma o‘chirilgan.
+            {{ t('ui.layersNote') }}
           </p>
         </section>
 
@@ -311,13 +322,19 @@ const sectionNote = computed(() => {
             class="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-ink-500"
           >
             <UiIcon name="tools" :size="14" class="shrink-0 text-brand-500" />
-            Asboblar
+            {{ t('ui.groupTools') }}
           </h4>
 
           <div class="mt-2.5 space-y-2.5">
             <div>
-              <span class="text-[12px] font-semibold text-ink-600">Kesim tekisligi</span>
-              <div class="mt-1 flex flex-wrap gap-1.5" role="group" aria-label="Kesim o‘qi">
+              <span class="text-[12px] font-semibold text-ink-600">
+                {{ t('ui.sectionPlane') }}
+              </span>
+              <div
+                class="mt-1 flex flex-wrap gap-1.5"
+                role="group"
+                :aria-label="t('ui.sectionAxisAria')"
+              >
                 <button
                   v-for="a in AXES"
                   :key="a.key"
@@ -341,7 +358,7 @@ const sectionNote = computed(() => {
                   class="flex items-baseline justify-between gap-2 text-[12px] font-semibold"
                   :class="state.sectionAxis === 'off' ? 'text-ink-400' : 'text-ink-600'"
                 >
-                  Kesim o‘rni
+                  {{ t('ui.sectionPos') }}
                   <span class="tabular text-[12px] font-bold">
                     {{ Math.round(state.sectionCut * 100) }}%
                   </span>
@@ -354,7 +371,7 @@ const sectionNote = computed(() => {
                   step="0.01"
                   class="mt-1 h-1.5 w-full accent-brand-500 disabled:opacity-40"
                   :disabled="state.sectionAxis === 'off'"
-                  aria-label="Kesim tekisligining o‘rni"
+                  :aria-label="t('ui.sectionPosAria')"
                   @input="emit('patch', { sectionCut: num($event) })"
                 />
               </label>
@@ -362,7 +379,7 @@ const sectionNote = computed(() => {
             </div>
 
             <div class="border-t border-ink-100 pt-2.5">
-              <span class="text-[12px] font-semibold text-ink-600">O‘lchash</span>
+              <span class="text-[12px] font-semibold text-ink-600">{{ t('ui.measure') }}</span>
               <div class="mt-1 flex flex-wrap gap-1.5">
                 <button
                   type="button"
@@ -376,7 +393,7 @@ const sectionNote = computed(() => {
                   @click="emit('patch', { tool: measureActive ? 'none' : 'measure' })"
                 >
                   <UiIcon name="size" :size="15" />
-                  {{ measureActive ? 'O‘lchash yoqilgan' : 'O‘lchash asbobi' }}
+                  {{ measureActive ? t('ui.measureOn') : t('ui.measureTool') }}
                 </button>
                 <button
                   type="button"
@@ -384,7 +401,7 @@ const sectionNote = computed(() => {
                   @click="emit('clear-measure')"
                 >
                   <UiIcon name="trash" :size="15" />
-                  Tozalash
+                  {{ t('common.reset') }}
                 </button>
               </div>
               <p class="mt-1 text-[12px] leading-snug text-ink-500">{{ measureNote }}</p>

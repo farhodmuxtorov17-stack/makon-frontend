@@ -20,6 +20,8 @@ interface QueueRow {
 }
 
 const auth = useAuthStore()
+const { t } = useI18n()
+const { buildingTypeLabel, columns: labelColumns, floorLabel } = useAppLabels()
 
 const query = ref('')
 const fBuilding = ref('all')
@@ -36,7 +38,7 @@ function attrsReady(u: Unit) {
 }
 
 function floorName(floor: number) {
-  return floor < 0 ? `${-floor}-yer osti qavati` : `${floor}-qavat`
+  return floor < 0 ? t('unitOf.basementNo', { floor: -floor }) : floorLabel(floor)
 }
 
 // Kiritilgan qavatlar oxirgi tahrir sanasi bo‘yicha tartiblanadi
@@ -94,14 +96,20 @@ const kpi = computed(() => {
 })
 
 const buildingOptions = computed(() => [
-  { value: 'all', label: 'Barcha binolar' },
+  { value: 'all', label: t('filter.allBuildings') },
   ...scoped.value.map((b) => ({ value: b.id, label: b.name })),
 ])
 
 const stateOptions = computed(() => [
-  { value: 'all', label: `Barchasi (${kpi.value.total})` },
-  { value: 'plan', label: `Reja kutilmoqda (${kpi.value.pending})` },
-  { value: 'attrs', label: `Atributi to‘liq emas (${kpi.value.attrs})` },
+  { value: 'all', label: t('tab.withCount', { label: t('tab.all'), count: kpi.value.total }) },
+  {
+    value: 'plan',
+    label: t('tab.withCount', { label: t('kpi.planPending'), count: kpi.value.pending }),
+  },
+  {
+    value: 'attrs',
+    label: t('tab.withCount', { label: t('kpi.attributesPending'), count: kpi.value.attrs }),
+  },
 ])
 
 const filtered = computed(() => {
@@ -127,7 +135,7 @@ const perBuilding = computed(() =>
     return {
       id: b.id,
       name: b.name,
-      type: b.type,
+      type: buildingTypeLabel(b.type),
       floors: rows.length,
       drawn,
       units: rows.reduce((s, r) => s + r.units, 0),
@@ -140,14 +148,29 @@ const dirty = computed(
   () => Boolean(query.value.trim()) || fBuilding.value !== 'all' || fState.value !== 'all',
 )
 
-const columns = [
-  { key: 'buildingName', label: 'Bino', width: '240px' },
-  { key: 'floorName', label: 'Qavat', width: '160px' },
-  { key: 'units', label: 'Unitlar', align: 'right' as const, numeric: true, width: '110px' },
-  { key: 'plan', label: 'Reja holati', width: '190px' },
-  { key: 'attrs', label: 'Atribut holati', width: '210px' },
-  { key: 'updated', label: 'Oxirgi yangilanish', align: 'right' as const, width: '160px' },
-]
+const columns = computed(() =>
+  labelColumns([
+    { key: 'buildingName', field: 'building', label: 'Bino', width: '240px' },
+    { key: 'floorName', field: 'floor', label: 'Qavat', width: '160px' },
+    {
+      key: 'units',
+      field: 'units',
+      label: 'Unitlar',
+      align: 'right',
+      numeric: true,
+      width: '110px',
+    },
+    { key: 'plan', field: 'planStatus', label: 'Reja holati', width: '190px' },
+    { key: 'attrs', field: 'attributeStatus', label: 'Atribut holati', width: '210px' },
+    {
+      key: 'updated',
+      field: 'lastUpdate',
+      label: 'Oxirgi yangilanish',
+      align: 'right',
+      width: '160px',
+    },
+  ]),
+)
 
 function floorLink(row: QueueRow) {
   return `/content/floors?building=${row.buildingId}&floor=${row.floor}`
@@ -169,18 +192,15 @@ function resetFilters() {
 </script>
 
 <template>
-  <AppTopbar
-    title="Kontent navbati"
-    subtitle="2D rejalar va unit atributlari to‘liqligi bo‘yicha ish navbati"
-  >
+  <AppTopbar :title="t('nav.contentQueue')" :subtitle="t('cnt.queueCaption')">
     <template #actions>
       <UiButton variant="secondary" size="sm" to="/content/units">
         <UiIcon name="clipboard" :size="16" />
-        Unit atributlari
+        {{ t('nav.unitAttributes') }}
       </UiButton>
       <UiButton size="sm" to="/content/floors">
         <UiIcon name="layers" :size="16" />
-        Qavat rejalari
+        {{ t('nav.floors') }}
       </UiButton>
     </template>
   </AppTopbar>
@@ -189,9 +209,9 @@ function resetFilters() {
     <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <button type="button" class="block w-full text-left" :aria-pressed="!dirty" @click="resetFilters">
         <UiKpi
-          label="Jami qavatlar"
+          :label="t('kpi.totalFloors')"
           :value="num(kpi.total)"
-          unit="qavat"
+          :unit="t('unitOf.floor')"
           icon="layers"
           tone="brand"
         />
@@ -202,7 +222,13 @@ function resetFilters() {
         :aria-pressed="fState === 'all'"
         @click="fState = 'all'"
       >
-        <UiKpi label="Reja chizilgan" :value="num(kpi.drawn)" unit="qavat" icon="check" tone="ok" />
+        <UiKpi
+          :label="t('kpi.planDrawn')"
+          :value="num(kpi.drawn)"
+          :unit="t('unitOf.floor')"
+          icon="check"
+          tone="ok"
+        />
       </button>
       <button
         type="button"
@@ -211,9 +237,9 @@ function resetFilters() {
         @click="setState('plan')"
       >
         <UiKpi
-          label="Reja kutilmoqda"
+          :label="t('kpi.planPending')"
           :value="num(kpi.pending)"
-          unit="qavat"
+          :unit="t('unitOf.floor')"
           icon="clock"
           tone="warn"
         />
@@ -225,19 +251,16 @@ function resetFilters() {
         @click="setState('attrs')"
       >
         <UiKpi
-          label="Atributi to‘liq emas"
+          :label="t('kpi.attributesPending')"
           :value="num(kpi.attrs)"
-          unit="qavat"
+          :unit="t('unitOf.floor')"
           icon="warning"
           tone="danger"
         />
       </button>
     </section>
 
-    <UiCard
-      title="Binolar bo‘yicha tayyorlik"
-      subtitle="Kartani bosing: navbat shu bino bo‘yicha filtrlanadi"
-    >
+    <UiCard :title="t('cnt.readinessTitle')" :subtitle="t('cnt.readinessCaption')">
       <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         <button
           v-for="b in perBuilding"
@@ -268,16 +291,18 @@ function resetFilters() {
           </span>
 
           <span class="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-ink-500">
-            <span class="tabular">{{ b.drawn }} / {{ b.floors }} qavat rejasi</span>
-            <span class="tabular">{{ num(b.units) }} unit kiritilgan</span>
+            <span class="tabular">
+              {{ t('cnt.floorPlansOf', { drawn: b.drawn, total: b.floors }) }}
+            </span>
+            <span class="tabular">{{ t('cnt.unitsEntered', { count: num(b.units) }) }}</span>
           </span>
         </button>
       </div>
     </UiCard>
 
     <UiCard
-      title="Ish navbati"
-      subtitle="Qatorni bosing: qavat rejasi muharririda ochiladi"
+      :title="t('cnt.queueTitle')"
+      :subtitle="t('cnt.queueRowHint')"
       flush
       :padded="false"
     >
@@ -288,7 +313,7 @@ function resetFilters() {
       </template>
 
       <div class="flex flex-wrap items-center gap-3 px-4 pb-4 lg:px-5">
-        <UiInput v-model="query" placeholder="Bino, qavat yoki unit kodi bo‘yicha qidirish" class="min-w-[200px] flex-1">
+        <UiInput v-model="query" :placeholder="t('cnt.searchQueue')" class="min-w-[200px] flex-1">
           <template #prefix>
             <UiIcon name="search" :size="17" />
           </template>
@@ -299,7 +324,7 @@ function resetFilters() {
 
         <UiButton variant="ghost" :disabled="!dirty" @click="resetFilters">
           <UiIcon name="refresh" :size="15" />
-          Tozalash
+          {{ t('common.reset') }}
         </UiButton>
       </div>
 
@@ -307,7 +332,7 @@ function resetFilters() {
         :columns="columns"
         :rows="filtered"
         :to="floorLink"
-        empty="Filtr shartlariga mos qavat topilmadi"
+        :empty="t('empty.noMatchingFloors')"
       >
         <template #cell-buildingName="{ row }">
           <span class="min-w-0">
@@ -341,7 +366,7 @@ function resetFilters() {
             "
           >
             <UiIcon :name="row.planDone ? 'check' : 'clock'" :size="13" />
-            {{ row.planDone ? 'Reja chizilgan' : 'Reja kutilmoqda' }}
+            {{ row.planDone ? t('kpi.planDrawn') : t('kpi.planPending') }}
           </span>
         </template>
 
@@ -356,7 +381,7 @@ function resetFilters() {
               "
             >
               <UiIcon :name="row.attrsDone ? 'check' : 'warning'" :size="13" />
-              {{ row.attrsDone ? 'To‘liq' : 'To‘liq emas' }}
+              {{ row.attrsDone ? t('tab.complete') : t('tab.incomplete') }}
             </span>
             <span v-if="row.units" class="tabular text-[12px] text-ink-500">
               {{ row.withAttrs }} / {{ row.units }}
@@ -368,7 +393,7 @@ function resetFilters() {
           <span v-if="row.updated" class="tabular text-[13px] text-ink-600">
             {{ dateShort(row.updated) }}
           </span>
-          <span v-else class="text-[13px] text-ink-400">Kiritilmagan</span>
+          <span v-else class="text-[13px] text-ink-400">{{ t('common.notEntered') }}</span>
         </template>
       </UiTable>
 
@@ -376,13 +401,15 @@ function resetFilters() {
         class="flex flex-wrap items-center justify-between gap-3 border-t border-ink-100 px-4 py-4 lg:px-5"
       >
         <p class="text-[13px] text-ink-500">
-          Navbatda: <b class="text-ink-800">{{ filtered.length }}</b> ta qavat ·
-          <span class="tabular text-ok-600">{{ kpi.drawn }}</span> reja tayyor ·
-          <span class="tabular text-warn-600">{{ kpi.pending }}</span> reja kutilmoqda
+          {{ t('cnt.queueSummary') }} <b class="text-ink-800">{{ filtered.length }}</b>
+          {{ t('cnt.floorsSuffix') }} ·
+          <span class="tabular text-ok-600">{{ kpi.drawn }}</span> {{ t('cnt.planReadySuffix') }} ·
+          <span class="tabular text-warn-600">{{ kpi.pending }}</span>
+          {{ t('cnt.planPendingSuffix') }}
         </p>
         <UiButton variant="secondary" size="sm" to="/content/floors">
           <UiIcon name="edit" :size="15" />
-          Muharrirni ochish
+          {{ t('cnt.openEditor') }}
         </UiButton>
       </div>
     </UiCard>

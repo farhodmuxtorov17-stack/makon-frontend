@@ -14,12 +14,21 @@ import { CONTRACTS, INVOICES } from '~/data/business'
 import { SERVICE_REQUESTS, type ServiceRequest } from '~/data/operations'
 import { scheduleTotals, type LeaseStatus } from '~/stores/lease'
 import { ROLE_META } from '~/constants/roles'
-import { num, percent, sum, sumShort, dateShort, timeOf, todayIso } from '~/utils/format'
+import { num, percent, dateShort, timeOf, todayIso } from '~/utils/format'
 
 const auth = useAuthStore()
 const lease = useLeaseStore()
 
 lease.seed()
+
+const { t } = useI18n()
+const { money, moneyShort, field, moduleTitle, floorLabel } = useAppLabels()
+
+/** Pul o‘lchovi grafik yorlig‘ida ham tanlangan tilda yoziladi */
+function moneyUnit(unit: string) {
+  const scale = unit.startsWith('mlrd') ? t('unitOf.billion') : t('unitOf.million')
+  return `${scale} ${t('unitOf.currency')}`
+}
 
 /**
  * Rolga ochiq bo‘lgan birinchi manzil. Bino rahbari billing modulini
@@ -47,6 +56,11 @@ const buildingOptions = computed(() =>
 
 const span = ref('6')
 const spanLength = computed(() => Number(span.value))
+
+/** Davr oynasi ro‘yxati reyestrdagi qiymatlarni saqlaydi, nomi lug‘atdan */
+const spanOptions = computed(() =>
+  TREND_SPANS.map((s) => ({ value: s.value, label: t('svc.lastMonths', { n: s.value }) })),
+)
 
 /** Qavatlar kesimidagi bandlik, unit ma’lumotlaridan hisoblanadi */
 const floorOccupancy = computed(() => {
@@ -146,28 +160,28 @@ const debtAlerts = computed(() =>
 
 const problems = computed(() => [
   {
-    label: 'Kechikkan to‘lovlar',
+    label: t('kpi.overdue'),
     count: overdueInvoices.value,
     tone: 'danger' as const,
     icon: 'warning',
     to: debtsTarget.value,
   },
   {
-    label: 'Ochiq servis arizalari',
+    label: t('kpi.openServiceRequests'),
     count: openServices.value,
     tone: 'warn' as const,
     icon: 'wrench',
     to: '/service-requests',
   },
   {
-    label: 'Tasdiqlash kutilmoqda',
+    label: t('tour.building.queueWatch.title'),
     count: pendingApprovals.value,
     tone: 'brand' as const,
     icon: 'clock',
     to: '/applications',
   },
   {
-    label: 'Shartnoma yakuni yaqin',
+    label: t('svc.contractsEndingSoon'),
     count: endingSoon.value,
     tone: 'violet' as const,
     icon: 'contract',
@@ -190,7 +204,7 @@ const revenueSeries = computed(() => {
   const s = moneyScale(building.value.monthlyRevenue)
   return [
     {
-      label: `Ijara tushumi, ${s.unit}`,
+      label: t('svc.seriesRevenue', { unit: moneyUnit(s.unit) }),
       tone: 'brand' as const,
       fill: true,
       values: trendWindow('revenue', spanLength.value).map(
@@ -199,24 +213,70 @@ const revenueSeries = computed(() => {
     },
   ]
 })
+
+/* --- Jonli izoh ---
+ * Bino rahbari kunni shu paneldan boshlaydi, shuning uchun izoh bloklarni
+ * ish tartibida ko‘rsatadi: qaysi binoni tanlash, qaysi ro‘yxatdan bugungi
+ * vazifani olish va har bir amaldan keyin nima o‘zgarishi.
+ * Qaror huquqi bo‘lmagan rol oxirgi qadamda kuzatuv izohini oladi.
+ */
+const canDecide = computed(() => auth.can('application.decide'))
+
+const TOUR_KEYS = ['select', 'kpi', 'problems', 'floors', 'service'] as const
+
+const tourSteps = computed(() => {
+  const steps = TOUR_KEYS.map((key) => ({
+    target: `[data-tour="bld-${key}"]`,
+    title: t(`tour.building.${key}.title`),
+    body: t(`tour.building.${key}.body`),
+    after: t(`tour.building.${key}.after`),
+    next: t(`tour.building.${key}.next`),
+  }))
+  const queue = canDecide.value ? 'queueDecide' : 'queueWatch'
+  steps.push({
+    target: '[data-tour="bld-queue"]',
+    title: t(`tour.building.${queue}.title`),
+    body: t(`tour.building.${queue}.body`),
+    after: t(`tour.building.${queue}.after`),
+    next: t(`tour.building.${queue}.next`),
+  })
+  return steps
+})
+
+/** Xotira kaliti rol bilan birga: har bir rol o‘z izohini bir marta ko‘radi */
+const tourId = computed(() => `building:${auth.role ?? 'guest'}`)
 </script>
 
 <template>
-  <AppTopbar title="Boshqaruv paneli" :subtitle="building.name">
+  <AppTopbar :title="moduleTitle('dashboardBuilding')" :subtitle="building.name">
     <template #actions>
-      <UiSelect v-model="selected" :options="buildingOptions" size="sm" class="w-56" />
-      <UiSelect v-model="span" :options="TREND_SPANS" size="sm" class="w-40" />
+      <UiSelect
+        v-model="selected"
+        :options="buildingOptions"
+        size="sm"
+        class="w-56"
+        data-tour="bld-select"
+        :aria-label="t('svc.selectObjectAria')"
+      />
+      <UiSelect
+        v-model="span"
+        :options="spanOptions"
+        size="sm"
+        class="w-40"
+        :aria-label="t('svc.periodAria')"
+      />
       <UiButton variant="secondary" size="sm" :to="`/objects/${building.id}/3d`">
         <UiIcon name="cube" :size="16" />
-        3D ko‘rinish
+        {{ t('svc.view3dButton') }}
       </UiButton>
+      <UiTour :id="tourId" :steps="tourSteps" />
     </template>
   </AppTopbar>
 
   <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-4 sm:p-6">
-    <section class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+    <section data-tour="bld-kpi" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
       <UiKpi
-        label="Bandlik"
+        :label="t('kpi.occupancy')"
         :value="percent(building.occupancy)"
         :delta="trendDelta('occupancy')"
         icon="building"
@@ -225,7 +285,7 @@ const revenueSeries = computed(() => {
         :to="`/objects/${building.id}`"
       />
       <UiKpi
-        label="Bo‘sh maydon"
+        :label="t('kpi.vacantArea')"
         :value="num(building.vacantArea)"
         unit="m²"
         :delta="trendDelta('vacantArea')"
@@ -236,8 +296,8 @@ const revenueSeries = computed(() => {
         :to="`/objects/${building.id}`"
       />
       <UiKpi
-        label="Oylik tushum"
-        :value="sumShort(building.monthlyRevenue)"
+        :label="t('svc.monthlyIncome')"
+        :value="moneyShort(building.monthlyRevenue)"
         :delta="trendDelta('revenue')"
         icon="wallet"
         tone="violet"
@@ -245,8 +305,8 @@ const revenueSeries = computed(() => {
         :to="invoicesTarget"
       />
       <UiKpi
-        label="Qarzdorlik"
-        :value="sumShort(building.debt)"
+        :label="t('kpi.debt')"
+        :value="moneyShort(building.debt)"
         :delta="trendDelta('debt')"
         invert
         icon="warning"
@@ -255,7 +315,7 @@ const revenueSeries = computed(() => {
         :to="debtsTarget"
       />
       <UiKpi
-        label="Ochiq servis arizalari"
+        :label="t('kpi.openServiceRequests')"
         :value="String(openServices)"
         :delta="trendDelta('service')"
         invert
@@ -268,7 +328,12 @@ const revenueSeries = computed(() => {
 
     <section class="grid gap-5 lg:grid-cols-2 xl:grid-cols-3">
       <!-- Bugungi muammolar -->
-      <UiCard title="Diqqat talab qiladi" subtitle="Bugungi holat" flush>
+      <UiCard
+        data-tour="bld-problems"
+        :title="t('svc.attentionToday')"
+        :subtitle="t('svc.todayStatus')"
+        flush
+      >
         <ul class="divide-y divide-ink-100">
           <li v-for="p in problems" :key="p.label">
             <NuxtLink
@@ -292,9 +357,13 @@ const revenueSeries = computed(() => {
       </UiCard>
 
       <!-- Qavatlar bo‘yicha bandlik -->
-      <UiCard title="Qavatlar bo‘yicha bandlik" subtitle="Band unitlar ulushi">
+      <UiCard
+        data-tour="bld-floors"
+        :title="t('tour.building.floors.title')"
+        :subtitle="t('svc.occupiedUnitsShare')"
+      >
         <p v-if="!floorOccupancy.length" class="py-8 text-center text-[13px] text-ink-500">
-          Bu obyekt bo‘yicha unit ma’lumoti hali kiritilmagan
+          {{ t('svc.noUnitData') }}
         </p>
 
         <ul v-else class="space-y-3">
@@ -305,10 +374,10 @@ const revenueSeries = computed(() => {
             >
               <div class="flex items-baseline justify-between gap-3">
                 <span class="text-[13px] font-semibold text-ink-700 group-hover:text-brand-700">
-                  {{ f.floor }}-qavat
+                  {{ floorLabel(f.floor) }}
                 </span>
                 <span class="tabular text-[13px] text-ink-500">
-                  {{ f.taken }} / {{ f.total }} unit
+                  {{ t('svc.unitRatio', { taken: f.taken, total: f.total }) }}
                 </span>
                 <span class="tabular text-[13px] font-bold text-ink-900">
                   {{ percent(f.share) }}
@@ -327,11 +396,11 @@ const revenueSeries = computed(() => {
       </UiCard>
 
       <!-- Tushum dinamikasi -->
-      <UiCard title="Tushum dinamikasi" subtitle="Oxirgi nuqta: KPI kartadagi joriy qiymat">
+      <UiCard :title="t('svc.incomeDynamics')" :subtitle="t('svc.lastPointHint')">
         <div class="flex items-baseline justify-between gap-3">
-          <p class="text-[13px] font-semibold text-ink-700">Oylik tushum</p>
+          <p class="text-[13px] font-semibold text-ink-700">{{ t('svc.monthlyIncome') }}</p>
           <p class="tabular text-[14px] font-bold text-brand-600">
-            {{ sumShort(building.monthlyRevenue) }}
+            {{ moneyShort(building.monthlyRevenue) }}
           </p>
         </div>
         <UiLine :labels="revenueLabels" :series="revenueSeries" :height="188" />
@@ -339,13 +408,18 @@ const revenueSeries = computed(() => {
     </section>
 
     <!-- So‘nggi servis arizalari -->
-    <UiCard title="So‘nggi arizalar" subtitle="Servis arizalari" flush>
+    <UiCard
+      data-tour="bld-service"
+      :title="t('svc.recentRequests')"
+      :subtitle="moduleTitle('serviceRequests')"
+      flush
+    >
       <template #actions>
-        <UiButton variant="ghost" size="sm" to="/service-requests">Barchasi</UiButton>
+        <UiButton variant="ghost" size="sm" to="/service-requests">{{ t('common.all') }}</UiButton>
       </template>
 
       <p v-if="!buildingServices.length" class="px-5 py-10 text-center text-[13px] text-ink-500">
-        Ushbu obyekt bo‘yicha servis arizasi yo‘q
+        {{ t('svc.noServiceForObject') }}
       </p>
 
       <ul v-else class="divide-y divide-ink-100">
@@ -376,24 +450,24 @@ const revenueSeries = computed(() => {
     </UiCard>
 
     <!-- So‘nggi ijara arizalari -->
-    <UiCard title="So‘nggi ijara arizalari" subtitle="Ushbu obyekt bo‘yicha" flush>
+    <UiCard :title="t('svc.recentLeaseRequests')" :subtitle="t('svc.forThisObject')" flush>
       <template #actions>
-        <UiButton variant="ghost" size="sm" to="/applications">Barchasi</UiButton>
+        <UiButton variant="ghost" size="sm" to="/applications">{{ t('common.all') }}</UiButton>
       </template>
 
       <UiTable
         :columns="[
-          { key: 'code', label: 'Ariza raqami' },
-          { key: 'tenant', label: 'Tashkilot' },
-          { key: 'unitCode', label: 'Unit' },
-          { key: 'area', label: 'Maydon', align: 'right', numeric: true },
-          { key: 'type', label: 'Turi' },
-          { key: 'status', label: 'Status' },
-          { key: 'submittedAt', label: 'Yuborilgan' },
+          { key: 'code', label: field('applicationNo') },
+          { key: 'tenant', label: field('organization') },
+          { key: 'unitCode', label: field('unit') },
+          { key: 'area', label: field('area'), align: 'right', numeric: true },
+          { key: 'type', label: field('type') },
+          { key: 'status', label: field('status') },
+          { key: 'submittedAt', label: field('submittedAt') },
         ]"
         :rows="applicationRows"
         :to="(row) => `/applications/${row.id}`"
-        empty="Ushbu obyekt bo‘yicha ariza yo‘q"
+        :empty="t('svc.noRequestForObject')"
       >
         <template #cell-code="{ row }">
           <span class="font-semibold text-ink-900">{{ row.code }}</span>
@@ -410,13 +484,13 @@ const revenueSeries = computed(() => {
 
     <!-- Diqqat talab qiladigan holatlar -->
     <section class="grid gap-5 lg:grid-cols-2">
-      <UiCard title="Qarzdorlik ogohlantirishlari" subtitle="Muddati o‘tgan to‘lovlar" flush>
+      <UiCard :title="t('svc.debtAlerts')" :subtitle="t('svc.overduePayments')" flush>
         <template #actions>
-          <UiButton variant="ghost" size="sm" :to="debtsTarget">Barchasi</UiButton>
+          <UiButton variant="ghost" size="sm" :to="debtsTarget">{{ t('common.all') }}</UiButton>
         </template>
 
         <p v-if="!debtAlerts.length" class="px-5 py-10 text-center text-[13px] text-ink-500">
-          Ushbu obyekt bo‘yicha qarzdorlik yo‘q
+          {{ t('svc.noDebtForObject') }}
         </p>
 
         <ul v-else class="divide-y divide-ink-100">
@@ -439,10 +513,10 @@ const revenueSeries = computed(() => {
               </span>
               <span class="shrink-0 text-right">
                 <span class="tabular block text-[14px] font-bold text-danger-600">
-                  {{ sumShort(i.total - i.paid) }}
+                  {{ moneyShort(i.total - i.paid) }}
                 </span>
                 <span class="block text-[12px] text-ink-500">
-                  {{ i.agingBucket ? `${i.agingBucket} kun` : 'muddatida' }}
+                  {{ i.agingBucket ? t('svc.daysCount', { n: i.agingBucket }) : t('svc.onTime') }}
                 </span>
               </span>
               <UiIcon name="chevronRight" :size="16" class="shrink-0 text-ink-400" />
@@ -451,16 +525,21 @@ const revenueSeries = computed(() => {
         </ul>
       </UiCard>
 
-      <UiCard title="Tasdiqlash kutilmoqda" subtitle="Qaror talab qiladigan arizalar" flush>
+      <UiCard
+        data-tour="bld-queue"
+        :title="t('tour.building.queueWatch.title')"
+        :subtitle="t('svc.decisionNeeded')"
+        flush
+      >
         <template #actions>
-          <UiButton variant="ghost" size="sm" to="/applications">Barchasi</UiButton>
+          <UiButton variant="ghost" size="sm" to="/applications">{{ t('common.all') }}</UiButton>
         </template>
 
         <p
           v-if="!pendingApprovalRows.length"
           class="px-5 py-10 text-center text-[13px] text-ink-500"
         >
-          Tasdiqlash kutayotgan ariza yo‘q
+          {{ t('svc.noPendingApplications') }}
         </p>
 
         <ul v-else class="divide-y divide-ink-100">
@@ -485,8 +564,8 @@ const revenueSeries = computed(() => {
                 <span class="tabular block text-[13px] font-semibold text-ink-900">
                   {{
                     c.schedule.length
-                      ? sum(scheduleTotals(c.schedule).total)
-                      : `${sum(c.request.offerPrice)} / oy`
+                      ? money(scheduleTotals(c.schedule).total)
+                      : t('svc.perMonth', { value: money(c.request.offerPrice) })
                   }}
                 </span>
                 <span class="block text-[12px] text-ink-500">

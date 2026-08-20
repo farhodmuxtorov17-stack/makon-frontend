@@ -8,7 +8,7 @@ import {
   type ServiceRequest,
   type WorkMaterialLine,
 } from '~/data/operations'
-import { dateShort, num, sum, todayIso } from '~/utils/format'
+import { dateShort, num, todayIso } from '~/utils/format'
 
 /** Material so‘rovi reyestrdagi yozuvga asos va haqiqiy pozitsiyalarni qo‘shadi */
 interface MaterialRequestEntry extends MaterialRequest {
@@ -17,6 +17,9 @@ interface MaterialRequestEntry extends MaterialRequest {
 }
 
 const auth = useAuthStore()
+
+const { t } = useI18n()
+const { money, columns: labelColumns, field, moduleTitle, statusLabel } = useAppLabels()
 
 /** Havola faqat ochiladigan bo‘lsa ko‘rsatiladi. Super rahbar hamma joyga kiradi. */
 function canOpen(path: string) {
@@ -46,11 +49,11 @@ const query = ref('')
 const tabs = computed(() => {
   const count = (status: string) => list.value.filter((r) => r.status === status).length
   return [
-    { value: 'all', label: 'Barchasi', count: list.value.length },
-    { value: 'SUBMITTED', label: 'Yuborilgan', count: count('SUBMITTED') },
-    { value: 'APPROVED', label: 'Tasdiqlangan', count: count('APPROVED') },
-    { value: 'ISSUED', label: 'Berilgan', count: count('ISSUED') },
-    { value: 'REJECTED', label: 'Rad etilgan', count: count('REJECTED') },
+    { value: 'all', label: t('tab.all'), count: list.value.length },
+    { value: 'SUBMITTED', label: statusLabel('material', 'SUBMITTED'), count: count('SUBMITTED') },
+    { value: 'APPROVED', label: statusLabel('material', 'APPROVED'), count: count('APPROVED') },
+    { value: 'ISSUED', label: statusLabel('material', 'ISSUED'), count: count('ISSUED') },
+    { value: 'REJECTED', label: statusLabel('material', 'REJECTED'), count: count('REJECTED') },
   ]
 })
 
@@ -68,15 +71,28 @@ const rows = computed(() => filtered.value.map((r) => ({ ...r })))
 
 const totalAmount = computed(() => filtered.value.reduce((s, r) => s + r.amount, 0))
 
-const columns = [
-  { key: 'code', label: 'Raqam', width: '160px' },
-  { key: 'workOrder', label: 'Ish topshirig‘i' },
-  { key: 'buildingName', label: 'Obyekt' },
-  { key: 'items', label: 'Pozitsiyalar', align: 'right' as const, numeric: true },
-  { key: 'amount', label: 'Summa', align: 'right' as const, numeric: true },
-  { key: 'status', label: 'Status' },
-  { key: 'createdAt', label: 'Sana' },
-]
+const columns = computed(() =>
+  labelColumns([
+    { key: 'code', field: 'number', width: '160px' },
+    { key: 'workOrder', field: 'workOrder' },
+    { key: 'buildingName', field: 'object' },
+    { key: 'items', field: 'positions', align: 'right', numeric: true },
+    { key: 'amount', field: 'amount', align: 'right', numeric: true },
+    { key: 'status', field: 'status' },
+    { key: 'createdAt', field: 'date' },
+  ]),
+)
+
+/** So‘rov pozitsiyalari oynasidagi ustunlar ham bitta lug‘atdan o‘qiladi */
+const detailColumns = computed(() =>
+  labelColumns([
+    { key: 'name', field: 'name' },
+    { key: 'unit', field: 'unitOfMeasure' },
+    { key: 'qty', field: 'quantity', align: 'right', numeric: true },
+    { key: 'price', field: 'price', align: 'right', numeric: true },
+    { key: 'total', field: 'amount', align: 'right', numeric: true },
+  ]),
+)
 
 /**
  * So‘rov pozitsiyalari haqiqiy: yangi so‘rovda foydalanuvchi qo‘shgan
@@ -139,7 +155,7 @@ function addLine() {
   const item = STOCK_ITEMS.find((i) => i.id === pickItem.value)
   const qty = Number(pickQty.value)
   if (!item || !qty || qty < 1) {
-    createError.value = 'Pozitsiya tanlang va miqdorni 1 dan kam bo‘lmagan qilib kiriting'
+    createError.value = t('wo.errPickItem')
     return
   }
   const exists = draftLines.value.find((l) => l.code === item.code)
@@ -170,11 +186,11 @@ function resetDraft() {
 
 function submitRequest() {
   if (!draftLines.value.length) {
-    createError.value = 'Kamida bitta pozitsiya qo‘shing'
+    createError.value = t('wo.errNoLines')
     return
   }
   if (!reason.value.trim()) {
-    createError.value = 'So‘rov asosini yozing'
+    createError.value = t('wo.errNoReason')
     return
   }
   const order = requests.value.find((r) => r.code === pickOrder.value)
@@ -185,7 +201,7 @@ function submitRequest() {
     // Hujjat raqamining yili joriy sanadan olinadi
     code: `MT-${new Date().getFullYear()}-${numbered}`,
     workOrder: pickOrder.value,
-    requester: auth.user?.fullName ?? 'Ijrochi',
+    requester: auth.user?.fullName ?? field('executor'),
     items: draftLines.value.length,
     amount: draftTotal.value,
     status: 'SUBMITTED',
@@ -203,8 +219,8 @@ function submitRequest() {
 
 <template>
   <AppTopbar
-    title="Material so‘rovlari"
-    subtitle="Ish topshiriqlari bo‘yicha ombordan material so‘rash va nazorat"
+    :title="moduleTitle('materials')"
+    :subtitle="t('wo.materialsCaption')"
   >
     <template #actions>
       <UiButton
@@ -214,11 +230,11 @@ function submitRequest() {
         to="/warehouse"
       >
         <UiIcon name="box" :size="16" />
-        Ombor qoldiqlari
+        {{ t('wo.stockBalances') }}
       </UiButton>
       <UiButton size="sm" @click="createOpen = true">
         <UiIcon name="plus" :size="16" />
-        Yangi material so‘rovi
+        {{ t('wo.newMaterialRequest') }}
       </UiButton>
     </template>
   </AppTopbar>
@@ -226,19 +242,19 @@ function submitRequest() {
   <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-4 sm:p-6">
     <section class="grid gap-4 sm:grid-cols-3">
       <UiKpi
-        label="Ko‘rsatilgan so‘rovlar"
+        :label="t('kpi.shownRequests')"
         :value="num(filtered.length)"
         icon="clipboard"
         tone="brand"
       />
       <UiKpi
-        label="Tanlangan summasi"
-        :value="sum(totalAmount)"
+        :label="t('kpi.selectedAmount')"
+        :value="money(totalAmount)"
         icon="wallet"
         tone="violet"
       />
       <UiKpi
-        label="Tasdiq kutayotgan"
+        :label="t('kpi.awaitingApproval')"
         :value="num(list.filter((r) => r.status === 'SUBMITTED').length)"
         icon="clock"
         tone="warn"
@@ -248,15 +264,15 @@ function submitRequest() {
     </section>
 
     <UiCard
-      title="So‘rovlar reyestri"
-      :subtitle="`${rows.length} ta yozuv`"
+      :title="t('wo.requestsRegistry')"
+      :subtitle="t('common.recordCount', { n: rows.length })"
       flush
       :padded="false"
     >
       <template #actions>
         <UiInput
           v-model="query"
-          placeholder="Raqam yoki ish topshirig‘i bo‘yicha qidirish"
+          :placeholder="t('wo.materialsSearchPlaceholder')"
           class="w-64"
         >
           <template #prefix>
@@ -272,7 +288,7 @@ function submitRequest() {
       <UiTable
         :columns="columns"
         :rows="rows"
-        empty="Tanlangan holatga mos so‘rov topilmadi"
+        :empty="t('empty.noMatchingRequests')"
         @row-click="openDetail"
       >
         <template #cell-code="{ row }">
@@ -283,10 +299,10 @@ function submitRequest() {
           <span class="tabular text-[13px] font-semibold text-brand-600">{{ row.workOrder }}</span>
         </template>
 
-        <template #cell-items="{ row }">{{ row.items }} ta</template>
+        <template #cell-items="{ row }">{{ t('common.countPcs', { n: row.items }) }}</template>
 
         <template #cell-amount="{ row }">
-          <span class="font-bold text-ink-900">{{ sum(row.amount) }}</span>
+          <span class="font-bold text-ink-900">{{ money(row.amount) }}</span>
         </template>
 
         <template #cell-status="{ row }">
@@ -300,16 +316,16 @@ function submitRequest() {
 
       <div class="flex items-center justify-between border-t border-ink-200 bg-surface-sunken px-5 py-3.5">
         <span class="text-[13px] text-ink-600">
-          Qator ustiga bosilsa so‘rov pozitsiyalari ochiladi
+          {{ t('wo.rowClickHint') }}
         </span>
-        <span class="tabular text-[14px] font-bold text-ink-900">{{ sum(totalAmount) }}</span>
+        <span class="tabular text-[14px] font-bold text-ink-900">{{ money(totalAmount) }}</span>
       </div>
     </UiCard>
   </main>
 
   <UiModal
     v-model="detailOpen"
-    :title="detail ? `${detail.code} · pozitsiyalar` : 'So‘rov'"
+    :title="detail ? t('wo.detailTitle', { code: detail.code }) : t('wo.request')"
     :subtitle="detail ? `${detail.workOrder} · ${detail.buildingName}` : undefined"
     size="lg"
   >
@@ -317,87 +333,81 @@ function submitRequest() {
       <div class="flex flex-wrap items-center gap-3">
         <UiStatus kind="material" :value="detail.status" />
         <span class="text-[13px] text-ink-500">
-          So‘rov beruvchi: <b class="text-ink-800">{{ detail.requester }}</b>
+          {{ t('wo.requestedBy') }} <b class="text-ink-800">{{ detail.requester }}</b>
         </span>
         <span class="tabular text-[13px] text-ink-500">{{ dateShort(detail.createdAt) }}</span>
       </div>
 
       <div v-if="detail.reason" class="rounded-field bg-surface-sunken px-4 py-3">
-        <p class="text-[12px] text-ink-500">Asos</p>
+        <p class="text-[12px] text-ink-500">{{ field('basis') }}</p>
         <p class="mt-1 text-[14px] leading-relaxed text-ink-800">{{ detail.reason }}</p>
       </div>
 
       <UiTable
-        :columns="[
-          { key: 'name', label: 'Nomi' },
-          { key: 'unit', label: 'O‘lchov birligi' },
-          { key: 'qty', label: 'Miqdor', align: 'right', numeric: true },
-          { key: 'price', label: 'Narxi', align: 'right', numeric: true },
-          { key: 'total', label: 'Summa', align: 'right', numeric: true },
-        ]"
+        :columns="detailColumns"
         :rows="detailLines"
       >
-        <template #cell-price="{ row }">{{ sum(row.price) }}</template>
+        <template #cell-price="{ row }">{{ money(row.price) }}</template>
         <template #cell-total="{ row }">
-          <span class="font-bold text-ink-900">{{ sum(row.total) }}</span>
+          <span class="font-bold text-ink-900">{{ money(row.total) }}</span>
         </template>
       </UiTable>
 
       <div class="flex items-center justify-between rounded-field bg-surface-sunken px-4 py-3">
-        <span class="text-[13px] font-semibold text-ink-700">Jami</span>
-        <span class="tabular text-[16px] font-bold text-ink-900">{{ sum(detailTotal) }}</span>
+        <span class="text-[13px] font-semibold text-ink-700">{{ t('common.total') }}</span>
+        <span class="tabular text-[16px] font-bold text-ink-900">{{ money(detailTotal) }}</span>
       </div>
     </div>
 
     <template #footer>
-      <UiButton variant="ghost" @click="detail = null">Yopish</UiButton>
+      <UiButton variant="ghost" @click="detail = null">{{ t('common.close') }}</UiButton>
       <UiButton
         v-if="detailOrder && canOpen('/service-requests')"
         variant="secondary"
         :to="`/service-requests/${detailOrder.id}`"
       >
-        Ish topshirig‘i kartasi
+        {{ t('wo.orderCard') }}
         <UiIcon name="chevronRight" :size="15" />
       </UiButton>
       <template v-if="canDecide && detail?.status === 'SUBMITTED'">
         <UiButton variant="secondary" @click="decide('REJECTED')">
           <UiIcon name="x" :size="16" />
-          Rad etish
+          {{ t('common.reject') }}
         </UiButton>
         <UiButton variant="success" @click="decide('APPROVED')">
           <UiIcon name="check" :size="16" />
-          Tasdiqlash
+          {{ t('common.confirm') }}
         </UiButton>
       </template>
       <UiButton v-else-if="canOpen('/warehouse')" to="/warehouse">
         <UiIcon name="box" :size="16" />
-        Omborda ko‘rish
+        {{ t('wo.viewInWarehouse') }}
       </UiButton>
     </template>
   </UiModal>
 
   <UiModal
     v-model="createOpen"
-    title="Yangi material so‘rovi"
-    subtitle="Ish topshirig‘ini tanlang va kerakli pozitsiyalarni qo‘shing"
+    :title="t('wo.newMaterialRequest')"
+    :subtitle="t('wo.newRequestSubtitle')"
     size="lg"
   >
     <div class="space-y-4">
-      <UiField label="Ish topshirig‘i" required>
+      <UiField :label="field('workOrder')" required>
         <UiSelect v-model="pickOrder" :options="workOrderOptions" />
       </UiField>
 
       <div class="grid gap-3 rounded-field bg-surface-sunken p-4 sm:grid-cols-[1fr_120px_auto]">
-        <UiField label="Pozitsiya">
+        <UiField :label="field('positions')">
           <UiSelect v-model="pickItem" :options="itemOptions" />
         </UiField>
-        <UiField label="Miqdor">
+        <UiField :label="field('quantity')">
           <UiInput v-model="pickQty" type="number" />
         </UiField>
         <div class="flex items-end">
           <UiButton variant="secondary" block @click="addLine">
             <UiIcon name="plus" :size="16" />
-            Qo‘shish
+            {{ t('common.add') }}
           </UiButton>
         </div>
       </div>
@@ -408,16 +418,16 @@ function submitRequest() {
             <span class="min-w-0 flex-1">
               <span class="block truncate text-[14px] font-semibold text-ink-900">{{ l.name }}</span>
               <span class="tabular block text-[12px] text-ink-500">
-                {{ l.qty }} {{ l.unit }} × {{ sum(l.price) }}
+                {{ l.qty }} {{ l.unit }} × {{ money(l.price) }}
               </span>
             </span>
             <span class="tabular shrink-0 text-[14px] font-bold text-ink-900">
-              {{ sum(l.qty * l.price) }}
+              {{ money(l.qty * l.price) }}
             </span>
             <button
               type="button"
               class="shrink-0 rounded-lg p-2 text-ink-400 transition-colors hover:bg-danger-50 hover:text-danger-600"
-              aria-label="Pozitsiyani olib tashlash"
+              :aria-label="t('wo.removeLineAria')"
               @click="removeLine(l.code)"
             >
               <UiIcon name="trash" :size="16" />
@@ -426,31 +436,33 @@ function submitRequest() {
         </ul>
         <div class="flex items-center justify-between bg-surface-sunken px-4 py-3">
           <span class="text-[13px] font-semibold text-ink-700">
-            Jami {{ draftLines.length }} ta pozitsiya
+            {{ t('wo.totalPositions', { n: draftLines.length }) }}
           </span>
-          <span class="tabular text-[16px] font-bold text-ink-900">{{ sum(draftTotal) }}</span>
+          <span class="tabular text-[16px] font-bold text-ink-900">{{ money(draftTotal) }}</span>
         </div>
       </div>
 
       <p v-else class="rounded-field border border-dashed border-ink-300 px-4 py-6 text-center text-[13px] text-ink-500">
-        Pozitsiya qo‘shilmagan
+        {{ t('empty.noPositions') }}
       </p>
 
-      <UiField label="Asos" required :error="createError">
+      <UiField :label="field('basis')" required :error="createError">
         <textarea
           v-model="reason"
           rows="3"
-          placeholder="Material qaysi ish uchun talab qilinayotganini yozing"
+          :placeholder="t('wo.reasonPlaceholder')"
           class="scroll-slim w-full rounded-field bg-white px-3.5 py-2.5 text-sm text-ink-800 ring-1 ring-inset ring-ink-200 transition-colors placeholder:text-ink-400 hover:ring-ink-300 focus:ring-2 focus:ring-brand-500"
         />
       </UiField>
     </div>
 
     <template #footer>
-      <UiButton variant="ghost" @click="((createOpen = false), resetDraft())">Bekor qilish</UiButton>
+      <UiButton variant="ghost" @click="((createOpen = false), resetDraft())">
+        {{ t('common.cancel') }}
+      </UiButton>
       <UiButton @click="submitRequest">
         <UiIcon name="send" :size="16" />
-        So‘rovni yuborish
+        {{ t('wo.submitRequest') }}
       </UiButton>
     </template>
   </UiModal>

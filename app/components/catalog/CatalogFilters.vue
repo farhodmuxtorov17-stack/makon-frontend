@@ -31,6 +31,8 @@ defineProps<{
 
 const emit = defineEmits<{ reset: []; clearChip: [key: string] }>()
 
+const { t } = useI18n()
+
 const q = defineModel<string>('q', { required: true })
 const sort = defineModel<string>('sort', { required: true })
 // Narx va maydon maydonlari raqamli, shuning uchun bo‘sh bo‘lmaganda son keladi.
@@ -70,7 +72,7 @@ function toggleType(value: string) {
           <button
             type="button"
             class="relative grid size-5 shrink-0 place-items-center rounded-full text-brand-600 transition-colors duration-150 after:absolute after:-inset-3 after:content-[''] hover:bg-brand-100 hover:text-brand-800 md:after:hidden"
-            :aria-label="`${c.label} shartini olib tashlash`"
+            :aria-label="t('cat.removeChip', { label: c.label })"
             @click="emit('clearChip', c.key)"
           >
             <UiIcon name="x" :size="11" />
@@ -79,30 +81,34 @@ function toggleType(value: string) {
       </div>
     </div>
 
-    <UiInput v-model="q" placeholder="Nom bo‘yicha…" aria-label="Nom bo‘yicha qidirish">
+    <UiInput
+      v-model="q"
+      :placeholder="t('cat.namePlaceholder')"
+      :aria-label="t('cat.nameSearchAria')"
+    >
       <template #prefix>
         <UiIcon name="search" :size="17" />
       </template>
     </UiInput>
 
     <section>
-      <p class="text-[11px] font-bold uppercase tracking-wide text-ink-500">Saralash</p>
+      <p class="text-[11px] font-bold uppercase tracking-wide text-ink-500">{{ t('sort.title') }}</p>
       <UiSelect
         v-model="sort"
         :options="sortOptions"
         size="sm"
         class="mt-2"
-        aria-label="Natijalarni saralash"
+        :aria-label="t('cat.sortAria')"
       />
     </section>
 
     <section v-if="showRentPrice">
       <p class="text-[11px] font-bold uppercase tracking-wide text-ink-500">
-        Ijara narxi (so‘m / oy)
+        {{ t('cat.rentPriceTitle') }}
       </p>
       <div class="mt-2 grid grid-cols-2 gap-2">
         <label class="block min-w-0">
-          <span class="mb-1 block text-[11px] font-medium text-ink-500">Min</span>
+          <span class="mb-1 block text-[11px] font-medium text-ink-500">{{ t('common.min') }}</span>
           <UiInput
             v-model="rentMin"
             type="number"
@@ -110,19 +116,19 @@ function toggleType(value: string) {
             min="0"
             step="500000"
             placeholder="0"
-            aria-label="Ijara narxi, eng kam qiymat, so‘m / oy"
+            :aria-label="t('cat.rentMinAria')"
           />
         </label>
         <label class="block min-w-0">
-          <span class="mb-1 block text-[11px] font-medium text-ink-500">Maks</span>
+          <span class="mb-1 block text-[11px] font-medium text-ink-500">{{ t('common.max') }}</span>
           <UiInput
             v-model="rentMax"
             type="number"
             inputmode="numeric"
             min="0"
             step="500000"
-            placeholder="Cheksiz"
-            aria-label="Ijara narxi, eng katta qiymat, so‘m / oy"
+            :placeholder="t('common.unlimited')"
+            :aria-label="t('cat.rentMaxAria')"
           />
         </label>
       </div>
@@ -130,11 +136,11 @@ function toggleType(value: string) {
 
     <section v-if="showSalePrice">
       <p class="text-[11px] font-bold uppercase tracking-wide text-ink-500">
-        Sotuv narxi (so‘m / m²)
+        {{ t('cat.salePriceTitle') }}
       </p>
       <div class="mt-2 grid grid-cols-2 gap-2">
         <label class="block min-w-0">
-          <span class="mb-1 block text-[11px] font-medium text-ink-500">Min</span>
+          <span class="mb-1 block text-[11px] font-medium text-ink-500">{{ t('common.min') }}</span>
           <UiInput
             v-model="saleMin"
             type="number"
@@ -142,43 +148,45 @@ function toggleType(value: string) {
             min="0"
             step="100000"
             placeholder="0"
-            aria-label="Sotuv narxi, eng kam qiymat, so‘m / m²"
+            :aria-label="t('cat.saleMinAria')"
           />
         </label>
         <label class="block min-w-0">
-          <span class="mb-1 block text-[11px] font-medium text-ink-500">Maks</span>
+          <span class="mb-1 block text-[11px] font-medium text-ink-500">{{ t('common.max') }}</span>
           <UiInput
             v-model="saleMax"
             type="number"
             inputmode="numeric"
             min="0"
             step="100000"
-            placeholder="Cheksiz"
-            aria-label="Sotuv narxi, eng katta qiymat, so‘m / m²"
+            :placeholder="t('common.unlimited')"
+            :aria-label="t('cat.saleMaxAria')"
           />
         </label>
       </div>
     </section>
 
     <section>
-      <p class="text-[11px] font-bold uppercase tracking-wide text-ink-500">Bino turi</p>
+      <p class="text-[11px] font-bold uppercase tracking-wide text-ink-500">
+        {{ t('field.buildingType') }}
+      </p>
       <ul class="mt-1.5 -mx-2">
-        <li v-for="t in types" :key="t.value">
+        <li v-for="opt in types" :key="opt.value">
           <label
             class="flex min-h-11 cursor-pointer items-center gap-2.5 rounded-field px-2 transition-colors duration-150 hover:bg-ink-100"
           >
             <input
               type="checkbox"
               class="size-4 shrink-0 cursor-pointer accent-brand-500"
-              :checked="selected.includes(t.value)"
-              :aria-label="`${t.label}, ${t.count} ta variant`"
-              @change="toggleType(t.value)"
+              :checked="selected.includes(opt.value)"
+              :aria-label="t('cat.typeOptionAria', { label: opt.label, count: opt.count })"
+              @change="toggleType(opt.value)"
             />
             <span class="min-w-0 flex-1 truncate text-[13px] font-medium text-ink-700">
-              {{ t.label }}
+              {{ opt.label }}
             </span>
             <span class="tabular shrink-0 text-[12px] font-semibold text-ink-500">
-              {{ t.count }}
+              {{ opt.count }}
             </span>
           </label>
         </li>
@@ -186,10 +194,12 @@ function toggleType(value: string) {
     </section>
 
     <section>
-      <p class="text-[11px] font-bold uppercase tracking-wide text-ink-500">Maydon (m²)</p>
+      <p class="text-[11px] font-bold uppercase tracking-wide text-ink-500">
+        {{ t('cat.areaTitle') }}
+      </p>
       <div class="mt-2 grid grid-cols-2 gap-2">
         <label class="block min-w-0">
-          <span class="mb-1 block text-[11px] font-medium text-ink-500">Min</span>
+          <span class="mb-1 block text-[11px] font-medium text-ink-500">{{ t('common.min') }}</span>
           <UiInput
             v-model="areaMin"
             type="number"
@@ -200,44 +210,48 @@ function toggleType(value: string) {
           />
         </label>
         <label class="block min-w-0">
-          <span class="mb-1 block text-[11px] font-medium text-ink-500">Maks</span>
+          <span class="mb-1 block text-[11px] font-medium text-ink-500">{{ t('common.max') }}</span>
           <UiInput
             v-model="areaMax"
             type="number"
             inputmode="numeric"
             min="0"
             step="10"
-            placeholder="Cheksiz"
+            :placeholder="t('common.unlimited')"
           />
         </label>
       </div>
     </section>
 
     <section>
-      <p class="text-[11px] font-bold uppercase tracking-wide text-ink-500">Maydon maqsadi</p>
+      <p class="text-[11px] font-bold uppercase tracking-wide text-ink-500">
+        {{ t('cat.usageTitle') }}
+      </p>
       <UiSelect
         v-model="usage"
         :options="usageOptions"
         size="sm"
         class="mt-2"
-        aria-label="Maydon qanday maqsadda ishlatiladi"
+        :aria-label="t('cat.usageAria')"
       />
     </section>
 
     <section>
-      <p class="text-[11px] font-bold uppercase tracking-wide text-ink-500">Markazdan masofa</p>
+      <p class="text-[11px] font-bold uppercase tracking-wide text-ink-500">
+        {{ t('cat.distanceTitle') }}
+      </p>
       <UiSelect
         v-model="distance"
         :options="distanceOptions"
         size="sm"
         class="mt-2"
-        aria-label="Shahar markazidan masofa"
+        :aria-label="t('cat.distanceAria')"
       />
     </section>
 
     <UiButton v-if="activeCount > 0" variant="subtle" size="sm" block @click="emit('reset')">
       <UiIcon name="refresh" :size="16" />
-      Filtrlarni tozalash
+      {{ t('filter.reset') }}
     </UiButton>
   </div>
 </template>

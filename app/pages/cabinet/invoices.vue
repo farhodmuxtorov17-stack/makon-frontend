@@ -13,8 +13,46 @@ import { dateShort, monthTitle, num, sum, todayIso } from '~/utils/format'
 
 const auth = useAuthStore()
 const lease = useLeaseStore()
+const { t } = useI18n()
+const { money, field, statusLabel, monthName } = useAppLabels()
 
 lease.seed()
+
+/** Hisob davri ma’lumotda «Avgust 2026» ko‘rinishida saqlanadi */
+const UZ_MONTHS = [
+  'Yanvar',
+  'Fevral',
+  'Mart',
+  'Aprel',
+  'May',
+  'Iyun',
+  'Iyul',
+  'Avgust',
+  'Sentabr',
+  'Oktabr',
+  'Noyabr',
+  'Dekabr',
+]
+
+/** «Avgust 2026» → tanlangan tildagi davr nomi */
+function periodLabel(label: string) {
+  const [month, year] = String(label ?? '').split(' ')
+  const index = UZ_MONTHS.indexOf(month ?? '')
+  if (index < 0 || !year) return label
+  return t('dateFormat.monthTitle', { month: monthName(index + 1), year })
+}
+
+/** To‘lov shakli ma’lumotda o‘zbekcha qiymat sifatida saqlanadi */
+const PAYMENT_TERM_KEY: Record<string, string> = {
+  'Bir martalik to‘lov': 'paymentTerm.oneTime',
+  'Choraklik to‘lov': 'paymentTerm.quarterly',
+  'Oylik oldindan to‘lov': 'paymentTerm.monthlyAdvance',
+}
+
+function paymentTermLabel(value: string) {
+  const key = PAYMENT_TERM_KEY[value]
+  return key ? t(key) : value
+}
 
 /** Kabinet faqat kirgan foydalanuvchining tashkiloti bilan ishlaydi */
 const organization = computed(() => auth.user?.organization ?? '')
@@ -107,25 +145,25 @@ const status = ref('all')
 const query = ref('')
 
 const statusTabs = computed(() => [
-  { value: 'all', label: 'Barchasi', count: MY_INVOICES.value.length },
+  { value: 'all', label: t('tab.all'), count: MY_INVOICES.value.length },
   {
     value: 'PAID',
-    label: 'To‘langan',
+    label: statusLabel('invoice', 'PAID'),
     count: MY_INVOICES.value.filter((i) => i.status === 'PAID').length,
   },
   {
     value: 'PARTIALLY_PAID',
-    label: 'Qisman to‘langan',
+    label: statusLabel('invoice', 'PARTIALLY_PAID'),
     count: MY_INVOICES.value.filter((i) => i.status === 'PARTIALLY_PAID').length,
   },
   {
     value: 'ISSUED',
-    label: 'Tasdiqlangan',
+    label: statusLabel('invoice', 'ISSUED'),
     count: MY_INVOICES.value.filter((i) => i.status === 'ISSUED').length,
   },
   {
     value: 'OVERDUE',
-    label: 'Kechikkan',
+    label: statusLabel('invoice', 'OVERDUE'),
     count: overdueCount.value,
   },
 ])
@@ -145,16 +183,16 @@ const filtered = computed(() =>
   }),
 )
 
-const columns = [
-  { key: 'code', label: 'Hisob-faktura raqami' },
-  { key: 'period', label: 'Davr' },
-  { key: 'unitCode', label: 'Unit' },
-  { key: 'issuedAt', label: 'Berilgan sana' },
-  { key: 'dueAt', label: 'To‘lov muddati' },
-  { key: 'total', label: 'Summa', align: 'right' as const, numeric: true },
-  { key: 'paid', label: 'To‘langan', align: 'right' as const, numeric: true },
-  { key: 'status', label: 'Holat', align: 'right' as const },
-]
+const columns = computed(() => [
+  { key: 'code', label: field('invoiceNo') },
+  { key: 'period', label: field('period') },
+  { key: 'unitCode', label: field('unit') },
+  { key: 'issuedAt', label: field('issuedAt') },
+  { key: 'dueAt', label: field('dueDate') },
+  { key: 'total', label: field('amount'), align: 'right' as const, numeric: true },
+  { key: 'paid', label: field('paid'), align: 'right' as const, numeric: true },
+  { key: 'status', label: field('status'), align: 'right' as const },
+])
 
 // ---------------------------------------------------------------------------
 // Tomonlar rekvizitlari: rasmiy hujjatning majburiy qismi
@@ -198,12 +236,12 @@ const buyer = computed<PartyRequisites>(() => {
 
 function partyRows(p: PartyRequisites) {
   return [
-    { label: 'Nomi', value: p.name },
+    { label: field('name'), value: p.name },
     { label: 'STIR', value: p.stir },
-    { label: 'Yuridik manzil', value: p.address },
-    { label: 'Bank', value: p.bank },
-    { label: 'Hisob raqami', value: p.account },
-    { label: 'Rahbar', value: p.director },
+    { label: field('legalAddress'), value: p.address },
+    { label: field('bank'), value: p.bank },
+    { label: field('account'), value: p.account },
+    { label: field('director'), value: p.director },
   ].filter((r) => r.value)
 }
 
@@ -261,8 +299,8 @@ function linesOf(inv: Invoice): InvoiceLine[] {
     const months = Math.max(1, row.months)
     const out: InvoiceLine[] = [
       {
-        service: 'Ijara to‘lovi',
-        unit: 'oy',
+        service: t('cab.rentPayment'),
+        unit: t('unitOf.month'),
         qty: months,
         tariff: Math.round(row.rent / months),
         total: row.rent,
@@ -270,8 +308,8 @@ function linesOf(inv: Invoice): InvoiceLine[] {
     ]
     if (row.service > 0) {
       out.push({
-        service: 'Servis to‘lovi',
-        unit: 'oy',
+        service: t('cab.servicePayment'),
+        unit: t('unitOf.month'),
         qty: months,
         tariff: Math.round(row.service / months),
         total: row.service,
@@ -284,13 +322,13 @@ function linesOf(inv: Invoice): InvoiceLine[] {
   const monthlyRent = u && u.priceUnit === 'so‘m / oy' ? u.price : 0
   const rent = Math.min(monthlyRent || inv.total, inv.total)
   const out: InvoiceLine[] = [
-    { service: 'Ijara to‘lovi', unit: 'oy', qty: 1, tariff: rent, total: rent },
+    { service: t('cab.rentPayment'), unit: t('unitOf.month'), qty: 1, tariff: rent, total: rent },
   ]
   const rest = inv.total - rent
   if (rest > 0) {
     out.push({
-      service: 'Servis va boshqaruv xizmati',
-      unit: 'oy',
+      service: t('cab.serviceAndManagement'),
+      unit: t('unitOf.month'),
       qty: 1,
       tariff: rest,
       total: rest,
@@ -329,42 +367,57 @@ function invoiceLines(inv: Invoice): DocxLine[] {
 
   const out: DocxLine[] = [
     { text: landlord.value.name, style: 'subtitle' },
-    { text: 'Hisob-faktura', style: 'title' },
+    { text: t('field.invoice'), style: 'title' },
     { text: `${inv.code} · ${dateShort(inv.issuedAt)}`, style: 'subtitle' },
-    ...partyLines('Yetkazib beruvchi (ijaraga beruvchi)', landlord.value),
-    ...partyLines('Xaridor (ijarachi)', buyer.value),
-    { text: 'Hisob ma’lumotlari', style: 'heading' },
-    { text: `Obyekt: ${buildingNameOf(inv)} · Unit ${unitCodeOf(inv.unitCode)}` },
-    { text: `Hisob davri: ${inv.period}` },
-    { text: `Berilgan sana: ${dateShort(inv.issuedAt)}` },
-    { text: `To‘lov muddati: ${dateShort(inv.dueAt)}` },
+    ...partyLines(t('cab.supplierLandlord'), landlord.value),
+    ...partyLines(t('cab.buyerTenant'), buyer.value),
+    { text: t('cab.invoiceInfo'), style: 'heading' },
+    {
+      text: t('cab.docObject', {
+        value: `${buildingNameOf(inv)} · Unit ${unitCodeOf(inv.unitCode)}`,
+      }),
+    },
+    { text: t('cab.docBillingPeriod', { value: periodLabel(inv.period) }) },
+    { text: t('cab.docIssuedAt', { value: dateShort(inv.issuedAt) }) },
+    { text: t('cab.docDueAt', { value: dateShort(inv.dueAt) }) },
   ]
 
   if (contract) {
     out.push(
-      { text: `Shartnoma: ${contract.code} · ${dateShort(contract.startsAt)}` },
-      { text: `To‘lov shakli: ${contract.paymentTerm}` },
+      {
+        text: t('cab.docContract', {
+          value: `${contract.code} · ${dateShort(contract.startsAt)}`,
+        }),
+      },
+      { text: t('cab.docPaymentForm', { value: paymentTermLabel(contract.paymentTerm) }) },
     )
   }
 
-  out.push({ text: 'Xizmatlar', style: 'heading' })
+  out.push({ text: t('cab.services'), style: 'heading' })
   rows.forEach((l, index) => {
     out.push({
-      text:
-        `${index + 1}. ${l.service} · ${qty(l.qty)} ${l.unit} × ${sum(l.tariff)} · ` +
-        `QQS ${VAT_RATE}%: ${sum(vatOf(l.total))} · jami ${sum(l.total)}`,
+      text: t('cab.docServiceLine', {
+        no: index + 1,
+        service: l.service,
+        qty: qty(l.qty),
+        unit: l.unit,
+        tariff: sum(l.tariff),
+        rate: VAT_RATE,
+        vat: sum(vatOf(l.total)),
+        total: sum(l.total),
+      }),
     })
   })
 
   out.push(
-    { text: 'Yakun', style: 'heading' },
-    { text: `QQS siz jami: ${sum(total - vat)}` },
-    { text: `QQS (${VAT_RATE}%): ${sum(vat)}` },
-    { text: `Jami to‘lov: ${sum(total)}` },
-    { text: `To‘langan: ${sum(inv.paid)}` },
-    { text: `Qoldiq: ${sum(Math.max(inv.total - inv.paid, 0))}` },
-    { text: `Ijaraga beruvchi: ${landlord.value.director} _______________ M.O‘.`, style: 'small' },
-    { text: `Ijarachi: ${buyer.value.director} _______________ M.O‘.`, style: 'small' },
+    { text: t('cab.summary'), style: 'heading' },
+    { text: t('cab.docNetTotal', { value: sum(total - vat) }) },
+    { text: t('cab.docVat', { rate: VAT_RATE, value: sum(vat) }) },
+    { text: t('cab.docTotalPayment', { value: sum(total) }) },
+    { text: t('cab.docPaid', { value: sum(inv.paid) }) },
+    { text: t('cab.docBalance', { value: sum(Math.max(inv.total - inv.paid, 0)) }) },
+    { text: t('cab.docSignLandlord', { name: landlord.value.director }), style: 'small' },
+    { text: t('cab.docSignTenant', { name: buyer.value.director }), style: 'small' },
   )
 
   return out
@@ -386,18 +439,18 @@ function downloadInvoice() {
 
 <template>
   <AppTopbar
-    title="To‘lovlarim"
-    subtitle="Hisob-fakturalar, to‘lov holati va to‘lovlar tarixi"
-    :breadcrumb="[{ label: 'Kabinet', to: '/cabinet' }, { label: 'To‘lovlarim' }]"
+    :title="t('nav.myInvoices')"
+    :subtitle="t('cab.invoicesCaption')"
+    :breadcrumb="[{ label: t('cab.title'), to: '/cabinet' }, { label: t('nav.myInvoices') }]"
   >
     <template #actions>
       <UiButton variant="secondary" size="sm" to="/cabinet/documents">
         <UiIcon name="doc" :size="16" />
-        Hujjatlar
+        {{ t('common.documents') }}
       </UiButton>
       <UiButton size="sm" to="/cabinet/meters">
         <UiIcon name="meter" :size="16" />
-        Hisoblagichlar
+        {{ t('nav.meters') }}
       </UiButton>
     </template>
   </AppTopbar>
@@ -405,54 +458,58 @@ function downloadInvoice() {
   <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-4 sm:p-6">
     <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <UiKpi
-        :label="`${currentPeriod} davri hisobi`"
+        :label="t('cab.periodBill', { period: periodLabel(currentPeriod) })"
         :value="num(periodSummary.charged)"
-        unit="so‘m"
+        :unit="t('unitOf.currency')"
         icon="wallet"
         tone="brand"
       />
       <UiKpi
-        :label="`To‘langan (${currentPeriod})`"
+        :label="t('cab.paidInPeriod', { period: periodLabel(currentPeriod) })"
         :value="num(periodSummary.paidTotal)"
-        unit="so‘m"
+        :unit="t('unitOf.currency')"
         icon="check"
         tone="ok"
       />
       <UiKpi
-        label="Qarzdorlik"
+        :label="t('kpi.debt')"
         :value="num(summary.debtTotal)"
-        unit="so‘m"
+        :unit="t('unitOf.currency')"
         icon="warning"
         :tone="summary.debtTotal > 0 ? 'danger' : 'ok'"
       />
       <UiKpi
-        label="Keyingi to‘lov sanasi"
+        :label="t('kpi.nextPaymentDate')"
         :value="nextDue === '-' ? '-' : dateShort(nextDue)"
         icon="calendar"
         tone="violet"
       />
     </section>
 
-    <UiCard title="Hisob-fakturalar" subtitle="Qatorni bosing, tarkibi va chop etish shakli ochiladi" flush>
+    <UiCard :title="t('nav.invoices')" :subtitle="t('cab.invoicesTableCaption')" flush>
       <template #actions>
         <span class="rounded-pill bg-brand-50 px-2.5 py-1 text-[12px] font-bold text-brand-700">
-          {{ filtered.length }} ta yozuv
+          {{ t('cab.recordCount', { n: filtered.length }) }}
         </span>
       </template>
 
       <UiEmpty
         v-if="!MY_INVOICES.length"
         icon="wallet"
-        title="Hisob-faktura shakllantirilmagan"
-        :description="`${organization || 'Tashkilotingiz'} nomiga hali birorta hisob-faktura berilmagan. Hujjat shakllantirilgach, u shu ro‘yxatda paydo bo‘ladi.`"
-        action-label="Hujjatlarim"
+        :title="t('empty.noInvoicesIssued')"
+        :description="t('cab.noInvoicesDesc', { org: organization || t('cab.yourOrganization') })"
+        :action-label="t('nav.myDocuments')"
         action-to="/cabinet/documents"
       />
 
       <template v-else>
         <div class="flex flex-wrap items-center gap-3 px-5 pb-4">
           <UiTabs v-model="status" :tabs="statusTabs" />
-          <UiInput v-model="query" placeholder="Hisob-faktura yoki davr bo‘yicha qidirish" class="w-full sm:w-72">
+          <UiInput
+            v-model="query"
+            :placeholder="t('cab.invoiceSearchPlaceholder')"
+            class="w-full sm:w-72"
+          >
             <template #prefix><UiIcon name="search" :size="16" /></template>
           </UiInput>
         </div>
@@ -460,12 +517,13 @@ function downloadInvoice() {
         <UiTable
           :columns="columns"
           :rows="filtered"
-          empty="Tanlangan filtr bo‘yicha hisob-faktura topilmadi"
+          :empty="t('empty.noInvoicesForFilter')"
           @row-click="openInvoice"
         >
           <template #cell-code="{ row }">
             <span class="text-[14px] font-semibold text-ink-900">{{ row.code }}</span>
           </template>
+          <template #cell-period="{ value }">{{ periodLabel(String(value)) }}</template>
           <template #cell-unitCode="{ value }">{{ value }}</template>
           <template #cell-issuedAt="{ value }">
             <span class="tabular">{{ dateShort(String(value)) }}</span>
@@ -473,8 +531,8 @@ function downloadInvoice() {
           <template #cell-dueAt="{ value }">
             <span class="tabular">{{ dateShort(String(value)) }}</span>
           </template>
-          <template #cell-total="{ value }">{{ sum(Number(value)) }}</template>
-          <template #cell-paid="{ value }">{{ sum(Number(value)) }}</template>
+          <template #cell-total="{ value }">{{ money(Number(value)) }}</template>
+          <template #cell-paid="{ value }">{{ money(Number(value)) }}</template>
           <template #cell-status="{ row }">
             <UiStatus kind="invoice" :value="isOverdue(row) ? 'OVERDUE' : String(row.status)" size="sm" />
           </template>
@@ -485,24 +543,28 @@ function downloadInvoice() {
 
   <UiModal
     v-model="detailOpen"
-    :title="selected?.code ?? 'Hisob-faktura'"
-    :subtitle="selected ? `${selected.period} · ${selected.unitCode}` : ''"
+    :title="selected?.code ?? t('field.invoice')"
+    :subtitle="selected ? `${periodLabel(selected.period)} · ${selected.unitCode}` : ''"
     size="lg"
   >
     <div v-if="selected" class="space-y-4">
       <div class="grid gap-3 sm:grid-cols-3">
         <div class="rounded-field p-3.5 ring-1 ring-ink-200">
-          <p class="text-[12px] text-ink-500">Umumiy summa</p>
-          <p class="tabular mt-1 text-[18px] font-bold text-ink-900">{{ num(selected.total) }} so‘m</p>
-        </div>
-        <div class="rounded-field p-3.5 ring-1 ring-ink-200">
-          <p class="text-[12px] text-ink-500">To‘langan</p>
-          <p class="tabular mt-1 text-[18px] font-bold text-ok-700">{{ num(selected.paid) }} so‘m</p>
-        </div>
-        <div class="rounded-field p-3.5 ring-1 ring-ink-200">
-          <p class="text-[12px] text-ink-500">Qoldiq</p>
+          <p class="text-[12px] text-ink-500">{{ field('totalSum') }}</p>
           <p class="tabular mt-1 text-[18px] font-bold text-ink-900">
-            {{ num(selected.total - selected.paid) }} so‘m
+            {{ num(selected.total) }} {{ t('unitOf.currency') }}
+          </p>
+        </div>
+        <div class="rounded-field p-3.5 ring-1 ring-ink-200">
+          <p class="text-[12px] text-ink-500">{{ field('paid') }}</p>
+          <p class="tabular mt-1 text-[18px] font-bold text-ok-700">
+            {{ num(selected.paid) }} {{ t('unitOf.currency') }}
+          </p>
+        </div>
+        <div class="rounded-field p-3.5 ring-1 ring-ink-200">
+          <p class="text-[12px] text-ink-500">{{ field('balance') }}</p>
+          <p class="tabular mt-1 text-[18px] font-bold text-ink-900">
+            {{ num(selected.total - selected.paid) }} {{ t('unitOf.currency') }}
           </p>
         </div>
       </div>
@@ -510,14 +572,19 @@ function downloadInvoice() {
       <div class="flex flex-wrap items-center gap-3">
         <UiStatus kind="invoice" :value="isOverdue(selected) ? 'OVERDUE' : selected.status" />
         <span class="text-[13px] text-ink-500">
-          Berilgan: {{ dateShort(selected.issuedAt) }} · Muddati: {{ dateShort(selected.dueAt) }}
+          {{
+            t('cab.issuedAndDue', {
+              issued: dateShort(selected.issuedAt),
+              due: dateShort(selected.dueAt),
+            })
+          }}
         </span>
       </div>
 
       <div class="grid gap-3 sm:grid-cols-2">
         <div class="rounded-field bg-surface-sunken p-4 ring-1 ring-ink-200">
           <p class="text-[12px] font-semibold uppercase tracking-wide text-ink-500">
-            Yetkazib beruvchi
+            {{ field('supplier') }}
           </p>
           <dl class="mt-2 space-y-1">
             <div v-for="r in partyRows(landlord)" :key="`l-${r.label}`" class="flex gap-2">
@@ -527,7 +594,9 @@ function downloadInvoice() {
           </dl>
         </div>
         <div class="rounded-field bg-surface-sunken p-4 ring-1 ring-ink-200">
-          <p class="text-[12px] font-semibold uppercase tracking-wide text-ink-500">Xaridor</p>
+          <p class="text-[12px] font-semibold uppercase tracking-wide text-ink-500">
+            {{ field('buyer') }}
+          </p>
           <dl class="mt-2 space-y-1">
             <div v-for="r in partyRows(buyer)" :key="`b-${r.label}`" class="flex gap-2">
               <dt class="w-28 shrink-0 text-[12px] text-ink-500">{{ r.label }}</dt>
@@ -539,19 +608,21 @@ function downloadInvoice() {
 
       <dl class="grid gap-3 rounded-field p-4 ring-1 ring-ink-200 sm:grid-cols-3">
         <div>
-          <dt class="text-[12px] uppercase tracking-wide text-ink-500">Obyekt</dt>
+          <dt class="text-[12px] uppercase tracking-wide text-ink-500">{{ field('object') }}</dt>
           <dd class="text-[13px] font-semibold text-ink-900">
             {{ selectedBuilding }} · {{ selected.unitCode }}
           </dd>
         </div>
         <div>
-          <dt class="text-[12px] uppercase tracking-wide text-ink-500">Hisob davri</dt>
-          <dd class="text-[13px] font-semibold text-ink-900">{{ selected.period }}</dd>
+          <dt class="text-[12px] uppercase tracking-wide text-ink-500">
+            {{ field('billingPeriod') }}
+          </dt>
+          <dd class="text-[13px] font-semibold text-ink-900">{{ periodLabel(selected.period) }}</dd>
         </div>
         <div>
-          <dt class="text-[12px] uppercase tracking-wide text-ink-500">Shartnoma</dt>
+          <dt class="text-[12px] uppercase tracking-wide text-ink-500">{{ field('contract') }}</dt>
           <dd class="text-[13px] font-semibold text-ink-900">
-            {{ selectedContract?.code ?? 'Biriktirilmagan' }}
+            {{ selectedContract?.code ?? t('common.notAssigned') }}
           </dd>
         </div>
       </dl>
@@ -561,22 +632,22 @@ function downloadInvoice() {
           <thead>
             <tr class="border-b border-ink-200 bg-surface-sunken">
               <th class="px-4 py-2.5 text-left text-[12px] font-semibold uppercase tracking-wide text-ink-500">
-                Xizmat
+                {{ field('service') }}
               </th>
               <th class="px-4 py-2.5 text-left text-[12px] font-semibold uppercase tracking-wide text-ink-500">
-                O‘lchov
+                {{ field('measure') }}
               </th>
               <th class="px-4 py-2.5 text-right text-[12px] font-semibold uppercase tracking-wide text-ink-500">
-                Tarif
+                {{ field('tariff') }}
               </th>
               <th class="px-4 py-2.5 text-right text-[12px] font-semibold uppercase tracking-wide text-ink-500">
-                Miqdor
+                {{ field('quantity') }}
               </th>
               <th class="px-4 py-2.5 text-right text-[12px] font-semibold uppercase tracking-wide text-ink-500">
-                QQS ({{ VAT_RATE }}%)
+                {{ t('cab.vatPercent', { rate: VAT_RATE }) }}
               </th>
               <th class="px-4 py-2.5 text-right text-[12px] font-semibold uppercase tracking-wide text-ink-500">
-                Summa
+                {{ field('amount') }}
               </th>
             </tr>
           </thead>
@@ -591,7 +662,7 @@ function downloadInvoice() {
             </tr>
             <tr class="border-b border-ink-100">
               <td colspan="5" class="px-4 py-2 text-right text-[13px] text-ink-600">
-                QQS siz jami
+                {{ t('cab.netTotal') }}
               </td>
               <td class="tabular px-4 py-2 text-right text-[13px] font-semibold text-ink-800">
                 {{ num(linesNet) }}
@@ -599,7 +670,7 @@ function downloadInvoice() {
             </tr>
             <tr class="border-b border-ink-100">
               <td colspan="5" class="px-4 py-2 text-right text-[13px] text-ink-600">
-                QQS ({{ VAT_RATE }}%)
+                {{ t('cab.vatPercent', { rate: VAT_RATE }) }}
               </td>
               <td class="tabular px-4 py-2 text-right text-[13px] font-semibold text-ink-800">
                 {{ num(linesVat) }}
@@ -607,7 +678,7 @@ function downloadInvoice() {
             </tr>
             <tr class="bg-surface-sunken">
               <td colspan="5" class="px-4 py-3 text-right text-[13px] font-semibold text-ink-700">
-                Jami to‘lov
+                {{ t('cab.totalPayment') }}
               </td>
               <td class="tabular px-4 py-3 text-right text-[16px] font-bold text-ink-900">
                 {{ num(linesTotal) }}
@@ -620,26 +691,26 @@ function downloadInvoice() {
 
     <p v-if="savedFile" class="mt-4 flex items-start gap-2 text-[13px] font-semibold text-ok-700">
       <UiIcon name="check" :size="16" class="mt-px shrink-0" />
-      <span class="min-w-0">{{ savedFile }} fayli saqlandi.</span>
+      <span class="min-w-0">{{ t('cab.fileSaved', { name: savedFile }) }}</span>
     </p>
 
     <template #footer>
-      <UiButton variant="ghost" @click="detailOpen = false">Yopish</UiButton>
+      <UiButton variant="ghost" @click="detailOpen = false">{{ t('common.close') }}</UiButton>
       <UiButton variant="secondary" @click="downloadInvoice">
         <UiIcon name="download" :size="16" />
-        Yuklab olish
+        {{ t('common.download') }}
       </UiButton>
       <UiButton variant="secondary" @click="openPrint">
         <UiIcon name="print" :size="16" />
-        Chop etish ko‘rinishi
+        {{ t('cab.printPreview') }}
       </UiButton>
     </template>
   </UiModal>
 
   <UiModal
     v-model="printOpen"
-    title="Chop etish ko‘rinishi"
-    :subtitle="selected ? `${selected.code} · ${selected.period}` : ''"
+    :title="t('cab.printPreview')"
+    :subtitle="selected ? `${selected.code} · ${periodLabel(selected.period)}` : ''"
     size="lg"
   >
     <div v-if="selected" class="rounded-field bg-white p-6 ring-1 ring-ink-200">
@@ -650,15 +721,17 @@ function downloadInvoice() {
           <p class="text-[12px] text-ink-500">{{ landlord.address }}</p>
         </div>
         <div class="text-right">
-          <p class="text-[16px] font-bold text-ink-900">Hisob-faktura</p>
+          <p class="text-[16px] font-bold text-ink-900">{{ t('field.invoice') }}</p>
           <p class="tabular text-[13px] font-semibold text-ink-700">{{ selected.code }}</p>
-          <p class="tabular text-[12px] text-ink-500">Sana: {{ dateShort(selected.issuedAt) }}</p>
+          <p class="tabular text-[12px] text-ink-500">
+            {{ t('cab.dateIs', { date: dateShort(selected.issuedAt) }) }}
+          </p>
         </div>
       </div>
 
       <div class="grid gap-4 border-b border-ink-200 py-4 sm:grid-cols-2">
         <div>
-          <p class="text-[12px] uppercase tracking-wide text-ink-500">Yetkazib beruvchi</p>
+          <p class="text-[12px] uppercase tracking-wide text-ink-500">{{ field('supplier') }}</p>
           <dl class="mt-1.5 space-y-0.5">
             <div v-for="r in partyRows(landlord)" :key="`pl-${r.label}`" class="flex gap-2">
               <dt class="w-28 shrink-0 text-[12px] text-ink-500">{{ r.label }}</dt>
@@ -667,7 +740,7 @@ function downloadInvoice() {
           </dl>
         </div>
         <div>
-          <p class="text-[12px] uppercase tracking-wide text-ink-500">Xaridor</p>
+          <p class="text-[12px] uppercase tracking-wide text-ink-500">{{ field('buyer') }}</p>
           <dl class="mt-1.5 space-y-0.5">
             <div v-for="r in partyRows(buyer)" :key="`pb-${r.label}`" class="flex gap-2">
               <dt class="w-28 shrink-0 text-[12px] text-ink-500">{{ r.label }}</dt>
@@ -679,17 +752,19 @@ function downloadInvoice() {
 
       <dl class="grid gap-3 border-b border-ink-200 py-4 sm:grid-cols-3">
         <div>
-          <dt class="text-[12px] uppercase tracking-wide text-ink-500">Obyekt</dt>
+          <dt class="text-[12px] uppercase tracking-wide text-ink-500">{{ field('object') }}</dt>
           <dd class="text-[13px] font-semibold text-ink-900">
             {{ selectedBuilding }} · {{ selected.unitCode }}
           </dd>
         </div>
         <div>
-          <dt class="text-[12px] uppercase tracking-wide text-ink-500">Hisob davri</dt>
-          <dd class="text-[13px] font-semibold text-ink-900">{{ selected.period }}</dd>
+          <dt class="text-[12px] uppercase tracking-wide text-ink-500">
+            {{ field('billingPeriod') }}
+          </dt>
+          <dd class="text-[13px] font-semibold text-ink-900">{{ periodLabel(selected.period) }}</dd>
         </div>
         <div>
-          <dt class="text-[12px] uppercase tracking-wide text-ink-500">To‘lov muddati</dt>
+          <dt class="text-[12px] uppercase tracking-wide text-ink-500">{{ field('dueDate') }}</dt>
           <dd class="tabular text-[13px] font-semibold text-ink-900">{{ dateShort(selected.dueAt) }}</dd>
         </div>
       </dl>
@@ -697,10 +772,12 @@ function downloadInvoice() {
       <table class="mt-4 w-full border-collapse text-[13px]">
         <thead>
           <tr class="border-b border-ink-200">
-            <th class="py-2 text-left font-semibold text-ink-600">Xizmat nomi</th>
-            <th class="py-2 text-right font-semibold text-ink-600">Miqdor</th>
-            <th class="py-2 text-right font-semibold text-ink-600">QQS ({{ VAT_RATE }}%)</th>
-            <th class="py-2 text-right font-semibold text-ink-600">Summa</th>
+            <th class="py-2 text-left font-semibold text-ink-600">{{ field('serviceName') }}</th>
+            <th class="py-2 text-right font-semibold text-ink-600">{{ field('quantity') }}</th>
+            <th class="py-2 text-right font-semibold text-ink-600">
+              {{ t('cab.vatPercent', { rate: VAT_RATE }) }}
+            </th>
+            <th class="py-2 text-right font-semibold text-ink-600">{{ field('amount') }}</th>
           </tr>
         </thead>
         <tbody>
@@ -715,46 +792,46 @@ function downloadInvoice() {
 
       <dl class="mt-4 space-y-1.5 border-t border-ink-200 pt-4">
         <div class="flex items-center justify-end gap-6">
-          <dt class="text-[13px] text-ink-600">QQS siz jami</dt>
+          <dt class="text-[13px] text-ink-600">{{ t('cab.netTotal') }}</dt>
           <dd class="tabular w-40 text-right text-[13px] font-semibold text-ink-800">
-            {{ sum(linesNet) }}
+            {{ money(linesNet) }}
           </dd>
         </div>
         <div class="flex items-center justify-end gap-6">
-          <dt class="text-[13px] text-ink-600">QQS ({{ VAT_RATE }}%)</dt>
+          <dt class="text-[13px] text-ink-600">{{ t('cab.vatPercent', { rate: VAT_RATE }) }}</dt>
           <dd class="tabular w-40 text-right text-[13px] font-semibold text-ink-800">
-            {{ sum(linesVat) }}
+            {{ money(linesVat) }}
           </dd>
         </div>
         <div class="flex items-center justify-end gap-6">
-          <dt class="text-[13px] font-semibold text-ink-700">To‘lov uchun jami</dt>
+          <dt class="text-[13px] font-semibold text-ink-700">{{ t('cab.grandTotalDue') }}</dt>
           <dd class="tabular w-40 text-right text-[18px] font-bold text-ink-900">
-            {{ sum(linesTotal) }}
+            {{ money(linesTotal) }}
           </dd>
         </div>
       </dl>
 
       <div class="mt-8 grid grid-cols-2 gap-6 text-[12px] text-ink-500">
         <div>
-          <p class="border-b border-ink-300 pb-6">Ijaraga beruvchi</p>
-          <p class="mt-1">{{ landlord.director }} · imzo va muhr</p>
+          <p class="border-b border-ink-300 pb-6">{{ field('landlord') }}</p>
+          <p class="mt-1">{{ landlord.director }} · {{ t('cab.signAndSeal') }}</p>
         </div>
         <div>
-          <p class="border-b border-ink-300 pb-6">Ijarachi</p>
-          <p class="mt-1">{{ buyer.director }} · imzo va muhr</p>
+          <p class="border-b border-ink-300 pb-6">{{ field('tenant') }}</p>
+          <p class="mt-1">{{ buyer.director }} · {{ t('cab.signAndSeal') }}</p>
         </div>
       </div>
     </div>
 
     <template #footer>
-      <UiButton variant="ghost" @click="printOpen = false">Yopish</UiButton>
+      <UiButton variant="ghost" @click="printOpen = false">{{ t('common.close') }}</UiButton>
       <UiButton variant="secondary" @click="downloadInvoice">
         <UiIcon name="download" :size="16" />
-        Yuklab olish
+        {{ t('common.download') }}
       </UiButton>
       <UiButton @click="printInvoice">
         <UiIcon name="print" :size="16" />
-        Chop etish
+        {{ t('common.print') }}
       </UiButton>
     </template>
   </UiModal>

@@ -12,17 +12,32 @@ import {
 } from '~/data/buildings'
 import { INVOICES } from '~/data/business'
 import type { LeaseStatus } from '~/stores/lease'
-import { num, percent, sumShort } from '~/utils/format'
+import { num, percent } from '~/utils/format'
 
+const auth = useAuthStore()
 const lease = useLeaseStore()
 lease.seed()
 
+const { t } = useI18n()
+const { buildingTypeLabel, moneyShort, moduleTitle } = useAppLabels()
+
+/** Pul o‘lchovi grafik yorlig‘ida ham tanlangan tilda yoziladi */
+function moneyUnit(unit: string) {
+  const scale = unit.startsWith('mlrd') ? t('unitOf.billion') : t('unitOf.million')
+  return `${scale} ${t('unitOf.currency')}`
+}
+
 const scope = ref('all')
 
-const scopes = [
-  { value: 'all', label: 'Barcha obyektlar' },
+const scopes = computed(() => [
+  { value: 'all', label: t('filter.allBuildings') },
   ...BUILDINGS.map((b) => ({ value: b.id, label: b.name })),
-]
+])
+
+/** Davr oynasi ro‘yxati reyestrdagi qiymatlarni saqlaydi, nomi lug‘atdan */
+const spanOptions = computed(() =>
+  TREND_SPANS.map((s) => ({ value: s.value, label: t('svc.lastMonths', { n: s.value }) })),
+)
 
 const visible = computed(() =>
   scope.value === 'all' ? BUILDINGS : BUILDINGS.filter((b) => b.id === scope.value),
@@ -92,8 +107,8 @@ const totals = computed(() => {
 const occupiedArea = computed(() => totals.value.gla - totals.value.vacantArea)
 
 const portfolioSlices = computed(() => [
-  { label: 'Band maydon', value: occupiedArea.value, tone: 'brand' as const },
-  { label: 'Bo‘sh maydon', value: totals.value.vacantArea, tone: 'ok' as const },
+  { label: t('kpi.occupiedArea'), value: occupiedArea.value, tone: 'brand' as const },
+  { label: t('kpi.vacantArea'), value: totals.value.vacantArea, tone: 'ok' as const },
 ])
 
 const serviceCount = computed(() => visible.value.reduce((s, b) => s + b.serviceRequests, 0))
@@ -109,7 +124,7 @@ const revenueSeries = computed(() => {
   const s = moneyScale(totals.value.revenue)
   return [
     {
-      label: `Ijara tushumi, ${s.unit}`,
+      label: t('svc.seriesRevenue', { unit: moneyUnit(s.unit) }),
       tone: 'brand' as const,
       fill: true,
       values: trendWindow('revenue', spanLength.value).map(
@@ -123,7 +138,7 @@ const debtSeries = computed(() => {
   const s = moneyScale(totals.value.debt)
   return [
     {
-      label: `Qarzdorlik, ${s.unit}`,
+      label: t('svc.seriesDebt', { unit: moneyUnit(s.unit) }),
       tone: 'danger' as const,
       values: trendWindow('debt', spanLength.value).map(
         (f) => +((totals.value.debt / s.div) * f).toFixed(s.digits),
@@ -169,42 +184,84 @@ const mapMarkers = computed(() =>
     lat: b.lat,
     lon: b.lon,
     label: b.name,
-    caption: `${b.district} · ${b.type}`,
+    caption: `${b.district} · ${buildingTypeLabel(b.type)}`,
     value: b.occupancy,
-    valueLabel: '% bandlik',
+    valueLabel: t('landing.occupancyValueLabel'),
     to: `/objects/${b.id}`,
     tone: b.occupancy >= 90 ? ('ok' as const) : b.occupancy >= 84 ? ('brand' as const) : ('warn' as const),
   })),
 )
 
 const mapStats = computed(() => [
-  { label: 'Obyektlar', value: String(visible.value.length) },
-  { label: 'Bandlik', value: percent(totals.value.occupancy) },
-  { label: 'Umumiy maydon', value: `${num(Math.round(totals.value.gla / 1000))} ming m²` },
-  { label: 'Bo‘sh maydon', value: `${num(Math.round(totals.value.vacantArea / 1000))} ming m²` },
+  { label: t('nav.objects'), value: String(visible.value.length) },
+  { label: t('kpi.occupancy'), value: percent(totals.value.occupancy) },
+  {
+    label: t('kpi.totalArea'),
+    value: t('svc.thousandSqm', { value: num(Math.round(totals.value.gla / 1000)) }),
+  },
+  {
+    label: t('kpi.vacantArea'),
+    value: t('svc.thousandSqm', { value: num(Math.round(totals.value.vacantArea / 1000)) }),
+  },
 ])
 
 // Shkala bitta manbadan: reyestr, xarita va landing bir xil chegara ko‘rsatadi
-const mapLegend = OCCUPANCY_BANDS.map((b) => ({ label: b.label, class: b.class }))
+const mapLegend = computed(() =>
+  OCCUPANCY_BANDS.map((b) => ({ label: t(b.labelKey), class: b.class })),
+)
+
+/* --- Jonli izoh ---
+ * Rahbar birinchi kirganda panel o‘zini tanishtiradi: qaysi blok nima uchun
+ * kerakligini, bosgandan keyin nima ochilishini va keyingi qadamni aytadi.
+ * Bosqichlar ekrandagi haqiqiy bloklarga `data-tour` orqali bog‘langan.
+ */
+const TOUR_KEYS = ['scope', 'kpi', 'map', 'view3d', 'attention', 'queue'] as const
+
+const tourSteps = computed(() =>
+  TOUR_KEYS.map((key) => ({
+    target: `[data-tour="exec-${key}"]`,
+    title: t(`tour.executive.${key}.title`),
+    body: t(`tour.executive.${key}.body`),
+    after: t(`tour.executive.${key}.after`),
+    next: t(`tour.executive.${key}.next`),
+  })),
+)
+
+/** Xotira kaliti rol bilan birga: har bir rol o‘z izohini bir marta ko‘radi */
+const tourId = computed(() => `executive:${auth.role ?? 'guest'}`)
 </script>
 
 <template>
-  <AppTopbar title="Boshqaruv paneli" subtitle="Portfel bo‘yicha strategik ko‘rinish">
+  <AppTopbar :title="moduleTitle('dashboardExecutive')" :subtitle="t('svc.execCaption')">
     <template #actions>
-      <UiSelect v-model="scope" :options="scopes" size="sm" class="w-52" />
-      <UiSelect v-model="span" :options="TREND_SPANS" size="sm" class="w-40" />
+      <UiSelect
+        v-model="scope"
+        :options="scopes"
+        size="sm"
+        class="w-52"
+        data-tour="exec-scope"
+        :aria-label="t('svc.scopeAria')"
+      />
+      <UiSelect
+        v-model="span"
+        :options="spanOptions"
+        size="sm"
+        class="w-40"
+        :aria-label="t('svc.periodAria')"
+      />
       <UiButton variant="secondary" size="sm" to="/reports">
         <UiIcon name="download" :size="16" />
-        Eksport
+        {{ t('common.export') }}
       </UiButton>
+      <UiTour :id="tourId" :steps="tourSteps" />
     </template>
   </AppTopbar>
 
   <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-4 sm:p-6">
     <!-- KPI qatori -->
-    <section class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+    <section data-tour="exec-kpi" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
       <UiKpi
-        label="Bandlik (o‘rtacha)"
+        :label="t('kpi.averageOccupancy')"
         :value="percent(totals.occupancy)"
         :delta="trendDelta('occupancy')"
         icon="building"
@@ -213,7 +270,7 @@ const mapLegend = OCCUPANCY_BANDS.map((b) => ({ label: b.label, class: b.class }
         to="/objects"
       />
       <UiKpi
-        label="Bo‘sh maydon (vacancy)"
+        :label="t('kpi.vacantArea')"
         :value="num(totals.vacantArea)"
         unit="m²"
         :delta="trendDelta('vacantArea')"
@@ -224,8 +281,8 @@ const mapLegend = OCCUPANCY_BANDS.map((b) => ({ label: b.label, class: b.class }
         to="/objects"
       />
       <UiKpi
-        label="Qarzdorlik"
-        :value="sumShort(totals.debt)"
+        :label="t('kpi.debt')"
+        :value="moneyShort(totals.debt)"
         :delta="trendDelta('debt')"
         invert
         icon="warning"
@@ -234,7 +291,7 @@ const mapLegend = OCCUPANCY_BANDS.map((b) => ({ label: b.label, class: b.class }
         to="/billing/debts"
       />
       <UiKpi
-        label="Servis arizalari"
+        :label="moduleTitle('serviceRequests')"
         :value="String(serviceCount)"
         :delta="trendDelta('service')"
         invert
@@ -244,8 +301,8 @@ const mapLegend = OCCUPANCY_BANDS.map((b) => ({ label: b.label, class: b.class }
         to="/service-requests"
       />
       <UiKpi
-        label="Ijara tushumi (oylik)"
-        :value="sumShort(totals.revenue)"
+        :label="t('kpi.monthlyRentIncome')"
+        :value="moneyShort(totals.revenue)"
         :delta="trendDelta('revenue')"
         icon="wallet"
         tone="violet"
@@ -258,11 +315,12 @@ const mapLegend = OCCUPANCY_BANDS.map((b) => ({ label: b.label, class: b.class }
     <section class="grid gap-5 lg:grid-cols-2 xl:grid-cols-4">
       <UiCard
         class="lg:col-span-2"
-        title="Bandlik xaritasi"
-        subtitle="Obyektlarning haqiqiy joylashuvi"
+        data-tour="exec-map"
+        :title="t('tour.executive.map.title')"
+        :subtitle="t('svc.mapCaption')"
       >
         <template #actions>
-          <UiButton variant="ghost" size="sm" to="/objects">Reyestr</UiButton>
+          <UiButton variant="ghost" size="sm" to="/objects">{{ t('common.registry') }}</UiButton>
         </template>
 
         <UiMap
@@ -276,8 +334,9 @@ const mapLegend = OCCUPANCY_BANDS.map((b) => ({ label: b.label, class: b.class }
 
       <UiCard
         class="xl:col-span-2"
-        title="Obyektning uch o‘lchamli ko‘rinishi"
-        :subtitle="`${view3dBuilding.name} · qavatni tanlab bo‘sh maydonlarni ko‘ring`"
+        data-tour="exec-view3d"
+        :title="t('svc.view3dTitle')"
+        :subtitle="t('svc.view3dCaption', { name: view3dBuilding.name })"
         flush
       >
         <template #actions>
@@ -285,11 +344,11 @@ const mapLegend = OCCUPANCY_BANDS.map((b) => ({ label: b.label, class: b.class }
             v-model="view3dId"
             :options="view3dOptions"
             size="sm"
-            aria-label="3D uchun obyektni tanlash"
+            :aria-label="t('svc.view3dAria')"
             class="min-w-[190px]"
           />
           <UiButton variant="ghost" size="sm" :to="`/objects/${view3dBuilding.id}/3d`">
-            To‘liq ekran
+            {{ t('svc.fullScreen') }}
             <UiIcon name="chevronRight" :size="15" />
           </UiButton>
         </template>
@@ -305,27 +364,27 @@ const mapLegend = OCCUPANCY_BANDS.map((b) => ({ label: b.label, class: b.class }
         </div>
       </UiCard>
 
-      <UiCard title="Portfel ko‘rinishi" subtitle="Maydon taqsimoti">
+      <UiCard :title="t('svc.portfolioView')" :subtitle="t('svc.areaSplit')">
         <UiDonut
           :slices="portfolioSlices"
           :center-value="percent(totals.occupancy)"
-          center-label="bandlik darajasi"
+          :center-label="t('svc.occupancyLevel')"
         />
         <dl class="mt-5 grid grid-cols-2 gap-3 border-t border-ink-100 pt-4 sm:grid-cols-3">
           <div>
-            <dt class="text-[12px] text-ink-500">Jami maydon</dt>
+            <dt class="text-[12px] text-ink-500">{{ t('svc.totalArea') }}</dt>
             <dd class="tabular mt-0.5 text-sm font-bold text-ink-900">
               {{ num(totals.gla) }} m²
             </dd>
           </div>
           <div>
-            <dt class="text-[12px] text-ink-500">Band</dt>
+            <dt class="text-[12px] text-ink-500">{{ t('svc.occupied') }}</dt>
             <dd class="tabular mt-0.5 text-sm font-bold text-brand-600">
               {{ num(occupiedArea) }} m²
             </dd>
           </div>
           <div>
-            <dt class="text-[12px] text-ink-500">Bo‘sh</dt>
+            <dt class="text-[12px] text-ink-500">{{ t('status.unit.VACANT') }}</dt>
             <dd class="tabular mt-0.5 text-sm font-bold text-ok-600">
               {{ num(totals.vacantArea) }} m²
             </dd>
@@ -334,14 +393,14 @@ const mapLegend = OCCUPANCY_BANDS.map((b) => ({ label: b.label, class: b.class }
       </UiCard>
 
       <UiCard
-        :title="scope === 'all' ? 'Portfel dinamikasi' : 'Obyekt dinamikasi'"
-        subtitle="Oxirgi nuqta: KPI kartadagi joriy qiymat"
+        :title="scope === 'all' ? t('svc.portfolioDynamics') : t('svc.objectDynamics')"
+        :subtitle="t('svc.lastPointHint')"
       >
         <div>
           <div class="flex items-baseline justify-between gap-3">
-            <p class="text-[13px] font-semibold text-ink-700">Ijara tushumi</p>
+            <p class="text-[13px] font-semibold text-ink-700">{{ t('svc.rentIncome') }}</p>
             <p class="tabular text-[14px] font-bold text-brand-600">
-              {{ sumShort(totals.revenue) }}
+              {{ moneyShort(totals.revenue) }}
             </p>
           </div>
           <UiLine :labels="dynamicsLabels" :series="revenueSeries" :height="132" />
@@ -349,9 +408,9 @@ const mapLegend = OCCUPANCY_BANDS.map((b) => ({ label: b.label, class: b.class }
 
         <div class="mt-5 border-t border-ink-100 pt-4">
           <div class="flex items-baseline justify-between gap-3">
-            <p class="text-[13px] font-semibold text-ink-700">Qarzdorlik</p>
+            <p class="text-[13px] font-semibold text-ink-700">{{ t('kpi.debt') }}</p>
             <p class="tabular text-[14px] font-bold text-danger-600">
-              {{ sumShort(totals.debt) }}
+              {{ moneyShort(totals.debt) }}
             </p>
           </div>
           <UiLine :labels="dynamicsLabels" :series="debtSeries" :height="132" />
@@ -361,13 +420,14 @@ const mapLegend = OCCUPANCY_BANDS.map((b) => ({ label: b.label, class: b.class }
 
     <!-- Obyektlar taqqoslanishi -->
     <UiCard
-      title="Diqqat talab qiladigan obyektlar"
-      :subtitle="`Bandlik bo‘yicha eng past ${highlighted.length} ta, jami ${visible.length} ta obyekt`"
+      data-tour="exec-attention"
+      :title="t('tour.executive.attention.title')"
+      :subtitle="t('svc.attentionSubtitle', { shown: highlighted.length, total: visible.length })"
       flush
     >
       <template #actions>
         <UiButton variant="ghost" size="sm" to="/objects">
-          Barchasi
+          {{ t('common.all') }}
           <UiIcon name="chevronRight" :size="15" />
         </UiButton>
       </template>
@@ -387,7 +447,7 @@ const mapLegend = OCCUPANCY_BANDS.map((b) => ({ label: b.label, class: b.class }
           <div class="mt-3.5 space-y-2.5">
             <div>
               <div class="flex items-baseline justify-between">
-                <span class="text-[12px] text-ink-500">Bandlik</span>
+                <span class="text-[12px] text-ink-500">{{ t('kpi.occupancy') }}</span>
                 <span class="tabular text-[13px] font-bold text-ink-900">
                   {{ percent(b.occupancy) }}
                 </span>
@@ -404,16 +464,16 @@ const mapLegend = OCCUPANCY_BANDS.map((b) => ({ label: b.label, class: b.class }
             </div>
 
             <div class="flex items-baseline justify-between">
-              <span class="text-[12px] text-ink-500">Bo‘sh</span>
+              <span class="text-[12px] text-ink-500">{{ t('status.unit.VACANT') }}</span>
               <span class="tabular text-[13px] font-semibold text-ink-700">
                 {{ percent(100 - b.occupancy) }}
               </span>
             </div>
 
             <div class="flex items-baseline justify-between">
-              <span class="text-[12px] text-ink-500">Qarzdorlik</span>
+              <span class="text-[12px] text-ink-500">{{ t('kpi.debt') }}</span>
               <span class="tabular text-[13px] font-semibold text-danger-600">
-                {{ sumShort(b.debt) }}
+                {{ moneyShort(b.debt) }}
               </span>
             </div>
           </div>
@@ -422,14 +482,14 @@ const mapLegend = OCCUPANCY_BANDS.map((b) => ({ label: b.label, class: b.class }
     </UiCard>
 
     <!-- Diqqat talab qiladigan holatlar -->
-    <section class="grid gap-5 lg:grid-cols-2">
-      <UiCard title="Qarzdorlik ogohlantirishlari" subtitle="Muddati o‘tgan to‘lovlar" flush>
+    <section data-tour="exec-queue" class="grid gap-5 lg:grid-cols-2">
+      <UiCard :title="t('svc.debtAlerts')" :subtitle="t('svc.overduePayments')" flush>
         <template #actions>
-          <UiButton variant="ghost" size="sm" to="/billing/debts">Barchasi</UiButton>
+          <UiButton variant="ghost" size="sm" to="/billing/debts">{{ t('common.all') }}</UiButton>
         </template>
 
         <p v-if="!debtAlerts.length" class="px-5 py-10 text-center text-[13px] text-ink-500">
-          Tanlangan qamrov bo‘yicha muddati o‘tgan to‘lov yo‘q
+          {{ t('svc.noOverdueInScope') }}
         </p>
 
         <ul v-else class="divide-y divide-ink-100">
@@ -452,10 +512,10 @@ const mapLegend = OCCUPANCY_BANDS.map((b) => ({ label: b.label, class: b.class }
               </span>
               <span class="shrink-0 text-right">
                 <span class="tabular block text-[14px] font-bold text-danger-600">
-                  {{ sumShort(d.outstanding) }}
+                  {{ moneyShort(d.outstanding) }}
                 </span>
                 <span class="block text-[12px] text-ink-500">
-                  {{ d.agingBucket ? `${d.agingBucket} kun` : 'muddatida' }}
+                  {{ d.agingBucket ? t('svc.daysCount', { n: d.agingBucket }) : t('svc.onTime') }}
                 </span>
               </span>
               <UiIcon name="chevronRight" :size="16" class="shrink-0 text-ink-400" />
@@ -464,13 +524,17 @@ const mapLegend = OCCUPANCY_BANDS.map((b) => ({ label: b.label, class: b.class }
         </ul>
       </UiCard>
 
-      <UiCard title="Tasdiqlash kutilmoqda" subtitle="Qaror talab qiladigan arizalar" flush>
+      <UiCard
+        :title="t('tour.building.queueWatch.title')"
+        :subtitle="t('svc.decisionNeeded')"
+        flush
+      >
         <template #actions>
-          <UiButton variant="ghost" size="sm" to="/applications">Barchasi</UiButton>
+          <UiButton variant="ghost" size="sm" to="/applications">{{ t('common.all') }}</UiButton>
         </template>
 
         <p v-if="!pendingCases.length" class="px-5 py-10 text-center text-[13px] text-ink-500">
-          Tanlangan qamrov bo‘yicha tasdiqlash kutayotgan ariza yo‘q
+          {{ t('svc.noPendingInScope') }}
         </p>
 
         <ul v-else class="divide-y divide-ink-100">

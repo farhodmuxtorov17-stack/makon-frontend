@@ -3,12 +3,50 @@ import { buildingById } from '~/data/buildings'
 import { UNITS, unitsOfFloor, type Unit } from '~/data/units'
 import { CONTRACTS, INVOICES } from '~/data/business'
 import { SERVICE_REQUESTS } from '~/data/operations'
-import { area, dateShort, monthTitle, num, sum, todayIso } from '~/utils/format'
+import { area, dateShort, monthTitle, num, todayIso } from '~/utils/format'
 
 const auth = useAuthStore()
 const lease = useLeaseStore()
+const { t } = useI18n()
+const { unitUsageLabel, money, field, floorLabel, monthName } = useAppLabels()
 
 lease.seed()
+
+/** Hisob davri ma’lumotda «Avgust 2026» ko‘rinishida saqlanadi */
+const UZ_MONTHS = [
+  'Yanvar',
+  'Fevral',
+  'Mart',
+  'Aprel',
+  'May',
+  'Iyun',
+  'Iyul',
+  'Avgust',
+  'Sentabr',
+  'Oktabr',
+  'Noyabr',
+  'Dekabr',
+]
+
+/** «Avgust 2026» → tanlangan tildagi davr nomi */
+function periodLabel(label: string) {
+  const [month, year] = String(label ?? '').split(' ')
+  const index = UZ_MONTHS.indexOf(month ?? '')
+  if (index < 0 || !year) return label
+  return t('dateFormat.monthTitle', { month: monthName(index + 1), year })
+}
+
+/** To‘lov shakli ma’lumotda o‘zbekcha qiymat sifatida saqlanadi */
+const PAYMENT_TERM_KEY: Record<string, string> = {
+  'Bir martalik to‘lov': 'paymentTerm.oneTime',
+  'Choraklik to‘lov': 'paymentTerm.quarterly',
+  'Oylik oldindan to‘lov': 'paymentTerm.monthlyAdvance',
+}
+
+function paymentTermLabel(value: string) {
+  const key = PAYMENT_TERM_KEY[value]
+  return key ? t(key) : value
+}
 
 /** Kabinet faqat kirgan foydalanuvchining tashkiloti bilan ishlaydi */
 const organization = computed(() => auth.user?.organization ?? '')
@@ -33,10 +71,10 @@ function unitCodeOf(value: string) {
 }
 
 const view = ref('cards')
-const viewTabs = [
-  { value: 'cards', label: 'Kartalar' },
-  { value: 'table', label: 'Jadval' },
-]
+const viewTabs = computed(() => [
+  { value: 'cards', label: t('view.cards') },
+  { value: 'table', label: t('view.table') },
+])
 
 const selectedId = ref('')
 const selected = computed<Unit | null>(
@@ -97,16 +135,16 @@ function select(id: string) {
   selectedId.value = id
 }
 
-const columns = [
-  { key: 'code', label: 'Unit' },
-  { key: 'building', label: 'Obyekt' },
-  { key: 'floor', label: 'Qavat', align: 'right' as const, numeric: true },
-  { key: 'rooms', label: 'Xonalar', align: 'right' as const, numeric: true },
-  { key: 'area', label: 'Maydon', align: 'right' as const, numeric: true },
-  { key: 'usage', label: 'Tayinlanishi' },
-  { key: 'contractCode', label: 'Shartnoma' },
-  { key: 'status', label: 'Holat', align: 'right' as const },
-]
+const columns = computed(() => [
+  { key: 'code', label: field('unit') },
+  { key: 'building', label: field('object') },
+  { key: 'floor', label: field('floor'), align: 'right' as const, numeric: true },
+  { key: 'rooms', label: field('roomsShort'), align: 'right' as const, numeric: true },
+  { key: 'area', label: field('area'), align: 'right' as const, numeric: true },
+  { key: 'usage', label: field('purpose') },
+  { key: 'contractCode', label: field('contract') },
+  { key: 'status', label: field('status'), align: 'right' as const },
+])
 
 const rows = computed(() =>
   myUnits.value.map((u) => ({
@@ -116,7 +154,7 @@ const rows = computed(() =>
     floor: u.floor,
     rooms: u.rooms,
     area: u.area,
-    usage: u.usage,
+    usage: unitUsageLabel(u.usage),
     contractCode: u.contractCode ?? '-',
     status: u.status,
   })),
@@ -140,18 +178,18 @@ const planOpen = ref(false)
 
 <template>
   <AppTopbar
-    title="Mening unitlarim"
-    subtitle="Tashkilotingiz nomiga rasmiylashtirilgan maydonlar"
-    :breadcrumb="[{ label: 'Kabinet', to: '/cabinet' }, { label: 'Mening unitlarim' }]"
+    :title="t('nav.myUnits')"
+    :subtitle="t('cab.myUnitsCaption')"
+    :breadcrumb="[{ label: t('cab.title'), to: '/cabinet' }, { label: t('nav.myUnits') }]"
   >
     <template #actions>
       <UiButton variant="secondary" size="sm" to="/cabinet/documents">
         <UiIcon name="doc" :size="16" />
-        Hujjatlar
+        {{ t('common.documents') }}
       </UiButton>
       <UiButton size="sm" to="/cabinet/apply">
         <UiIcon name="plus" :size="16" />
-        Yangi maydon so‘rash
+        {{ t('cab.requestNewUnit') }}
       </UiButton>
     </template>
   </AppTopbar>
@@ -160,31 +198,43 @@ const planOpen = ref(false)
     <UiCard v-if="!myUnits.length" flush>
       <UiEmpty
         icon="building"
-        title="Biriktirilgan maydon yo‘q"
-        :description="`${organization || 'Tashkilotingiz'} nomiga rasmiylashtirilgan unit topilmadi. Bo‘sh maydonlar katalogidan tanlab, ijaraga olish arizasini yuboring.`"
-        action-label="Ijaraga olish arizasi"
+        :title="t('empty.noAssignedUnits')"
+        :description="t('cab.noUnitsDesc', { org: organization || t('cab.yourOrganization') })"
+        :action-label="t('cab.applyForRent')"
         action-to="/cabinet/apply"
       />
     </UiCard>
 
     <template v-else-if="selected && selectedBuilding">
     <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-      <UiKpi label="Unitlar soni" :value="String(myUnits.length)" unit="ta" icon="building" tone="brand" />
-      <UiKpi label="Umumiy maydon" :value="num(totalArea, 2)" unit="m²" icon="layers" tone="ok" />
       <UiKpi
-        :label="`Hisoblangan to‘lov (${currentPeriod})`"
+        :label="t('kpi.unitCount')"
+        :value="String(myUnits.length)"
+        :unit="t('unitOf.pcs')"
+        icon="building"
+        tone="brand"
+      />
+      <UiKpi
+        :label="t('kpi.totalArea')"
+        :value="num(totalArea, 2)"
+        :unit="t('unitOf.sqm')"
+        icon="layers"
+        tone="ok"
+      />
+      <UiKpi
+        :label="t('cab.accruedPayment', { period: periodLabel(currentPeriod) })"
         :value="num(monthlyTotal)"
-        unit="so‘m"
+        :unit="t('unitOf.currency')"
         icon="wallet"
         tone="violet"
       />
-      <UiKpi label="Tashkilot" :value="organization" icon="user" tone="warn" />
+      <UiKpi :label="field('organization')" :value="organization" icon="user" tone="warn" />
     </section>
 
     <section class="flex flex-wrap items-center justify-between gap-3">
       <UiTabs v-model="view" :tabs="viewTabs" />
       <p class="text-[13px] text-ink-500">
-        Unitni tanlang: pastda to‘liq tafsilotlar ochiladi.
+        {{ t('cab.selectUnitHint') }}
       </p>
     </section>
 
@@ -216,7 +266,7 @@ const planOpen = ref(false)
         </p>
 
         <div class="mt-3 overflow-hidden rounded-field bg-surface-sunken p-2.5 ring-1 ring-ink-200">
-          <svg viewBox="0 0 100 100" class="block h-24 w-full" role="img" aria-label="Qavat rejasi">
+          <svg viewBox="0 0 100 100" class="block h-24 w-full" role="img" :aria-label="t('cab.floorPlan')">
             <rect x="2" y="2" width="96" height="96" rx="4" fill="#ffffff" stroke="#cbd4e3" stroke-width="1.4" />
             <rect x="2" y="46" width="96" height="10" fill="#f1f5fb" />
             <polygon
@@ -249,7 +299,7 @@ const planOpen = ref(false)
             {{ area(u.area) }}
           </span>
           <span class="tabular text-[13px] text-ink-500">
-            {{ u.floor }}-qavat · {{ u.rooms }} xona
+            {{ floorLabel(u.floor) }} · {{ t('cab.roomsCount', { n: u.rooms }) }}
           </span>
         </div>
       </button>
@@ -261,7 +311,7 @@ const planOpen = ref(false)
           <span class="text-[14px] font-semibold text-ink-900">Unit {{ row.code }}</span>
         </template>
         <template #cell-area="{ value }">{{ area(Number(value)) }}</template>
-        <template #cell-floor="{ value }">{{ value }}-qavat</template>
+        <template #cell-floor="{ value }">{{ floorLabel(Number(value)) }}</template>
         <template #cell-status="{ row }">
           <UiStatus kind="unit" :value="String(row.status)" size="sm" />
         </template>
@@ -269,18 +319,18 @@ const planOpen = ref(false)
     </UiCard>
 
     <UiCard
-      :title="`Unit ${selected.code}, tafsilotlar`"
+      :title="t('cab.unitDetailsTitle', { code: selected.code })"
       :subtitle="`${selectedBuilding.name} · ${selectedBuilding.district}`"
     >
       <template #actions>
         <div class="flex items-center gap-2">
           <UiButton variant="ghost" size="sm" @click="planOpen = true">
             <UiIcon name="eye" :size="15" />
-            Rejani kattalashtirish
+            {{ t('cab.enlargePlan') }}
           </UiButton>
           <UiButton variant="secondary" size="sm" to="/cabinet/meters">
             <UiIcon name="meter" :size="15" />
-            Hisoblagichlar
+            {{ t('nav.meters') }}
           </UiButton>
         </div>
       </template>
@@ -288,7 +338,7 @@ const planOpen = ref(false)
       <div class="grid gap-5 xl:grid-cols-3">
         <div>
           <div class="rounded-field bg-surface-sunken p-4 ring-1 ring-ink-200">
-            <svg viewBox="0 0 100 100" class="block h-52 w-full" role="img" aria-label="Tanlangan unit rejasi">
+            <svg viewBox="0 0 100 100" class="block h-52 w-full" role="img" :aria-label="t('cab.selectedUnitPlan')">
               <rect x="2" y="2" width="96" height="96" rx="4" fill="#ffffff" stroke="#cbd4e3" stroke-width="1.4" />
               <rect x="2" y="46" width="96" height="10" fill="#f1f5fb" />
               <polygon
@@ -311,12 +361,12 @@ const planOpen = ref(false)
               </text>
             </svg>
             <p class="mt-2 text-center text-[12px] text-ink-500">
-              {{ selectedBuilding.name }} · {{ selected.floor }}-qavat
+              {{ selectedBuilding.name }} · {{ floorLabel(selected.floor) }}
             </p>
           </div>
 
           <div class="mt-4">
-            <p class="mb-2 text-[13px] font-semibold text-ink-700">Jihozlanishi</p>
+            <p class="mb-2 text-[13px] font-semibold text-ink-700">{{ t('cab.equipment') }}</p>
             <ul class="flex flex-wrap gap-2">
               <li
                 v-for="e in selected.equipment"
@@ -331,37 +381,41 @@ const planOpen = ref(false)
 
         <div class="space-y-4">
           <div>
-            <p class="mb-2 text-[13px] font-semibold text-ink-700">Texnik ko‘rsatkichlar</p>
+            <p class="mb-2 text-[13px] font-semibold text-ink-700">{{ t('cab.technicalSpecs') }}</p>
             <dl class="divide-y divide-ink-100 rounded-field ring-1 ring-ink-200">
               <div class="flex items-center justify-between px-4 py-2.5">
-                <dt class="text-[13px] text-ink-500">Umumiy maydon</dt>
+                <dt class="text-[13px] text-ink-500">{{ field('totalArea') }}</dt>
                 <dd class="tabular text-[13px] font-bold text-ink-900">{{ area(selected.area) }}</dd>
               </div>
               <div class="flex items-center justify-between px-4 py-2.5">
-                <dt class="text-[13px] text-ink-500">Qavat</dt>
-                <dd class="tabular text-[13px] font-bold text-ink-900">{{ selected.floor }}-qavat</dd>
+                <dt class="text-[13px] text-ink-500">{{ field('floor') }}</dt>
+                <dd class="tabular text-[13px] font-bold text-ink-900">
+                  {{ floorLabel(selected.floor) }}
+                </dd>
               </div>
               <div class="flex items-center justify-between px-4 py-2.5">
-                <dt class="text-[13px] text-ink-500">Xonalar soni</dt>
-                <dd class="tabular text-[13px] font-bold text-ink-900">{{ selected.rooms }} ta</dd>
+                <dt class="text-[13px] text-ink-500">{{ field('rooms') }}</dt>
+                <dd class="tabular text-[13px] font-bold text-ink-900">
+                  {{ selected.rooms }} {{ t('unitOf.pcs') }}
+                </dd>
               </div>
               <div class="flex items-center justify-between px-4 py-2.5">
-                <dt class="text-[13px] text-ink-500">Tayinlanishi</dt>
-                <dd class="text-[13px] font-bold text-ink-900">{{ selected.usage }}</dd>
+                <dt class="text-[13px] text-ink-500">{{ field('purpose') }}</dt>
+                <dd class="text-[13px] font-bold text-ink-900">{{ unitUsageLabel(selected.usage) }}</dd>
               </div>
               <div class="flex items-center justify-between px-4 py-2.5">
-                <dt class="text-[13px] text-ink-500">Holat</dt>
+                <dt class="text-[13px] text-ink-500">{{ field('status') }}</dt>
                 <dd><UiStatus kind="unit" :value="selected.status" size="sm" /></dd>
               </div>
             </dl>
           </div>
 
           <div>
-            <p class="mb-2 text-[13px] font-semibold text-ink-700">Shartnoma</p>
+            <p class="mb-2 text-[13px] font-semibold text-ink-700">{{ field('contract') }}</p>
             <div class="rounded-field p-4 ring-1 ring-ink-200">
               <div class="flex items-center justify-between gap-3">
                 <span class="text-[14px] font-bold text-ink-900">
-                  {{ selected.contractCode ?? 'Shartnoma biriktirilmagan' }}
+                  {{ selected.contractCode ?? t('cab.noContractAttached') }}
                 </span>
                 <UiStatus
                   v-if="selectedContract"
@@ -372,36 +426,36 @@ const planOpen = ref(false)
               </div>
               <dl v-if="selectedContract" class="mt-3 space-y-1.5">
                 <div class="flex items-center justify-between">
-                  <dt class="text-[13px] text-ink-500">Muddat</dt>
+                  <dt class="text-[13px] text-ink-500">{{ field('deadline') }}</dt>
                   <dd class="tabular text-[13px] font-semibold text-ink-800">
                     {{ dateShort(selectedContract.startsAt) }} · {{ dateShort(selectedContract.endsAt) }}
                   </dd>
                 </div>
                 <div class="flex items-center justify-between">
-                  <dt class="text-[13px] text-ink-500">To‘lov shartlari</dt>
+                  <dt class="text-[13px] text-ink-500">{{ field('paymentTerms') }}</dt>
                   <dd class="text-[13px] font-semibold text-ink-800">
-                    {{ selectedContract.paymentTerm }}
+                    {{ paymentTermLabel(selectedContract.paymentTerm) }}
                   </dd>
                 </div>
                 <div class="flex items-center justify-between">
-                  <dt class="text-[13px] text-ink-500">Oylik ijara to‘lovi</dt>
+                  <dt class="text-[13px] text-ink-500">{{ field('monthlyRentPayment') }}</dt>
                   <dd class="tabular text-[13px] font-semibold text-ink-800">
-                    {{ selected.priceUnit === 'so‘m / oy' ? sum(selected.price) : '-' }}
+                    {{ selected.priceUnit === 'so‘m / oy' ? money(selected.price) : '-' }}
                   </dd>
                 </div>
                 <div class="flex items-center justify-between">
-                  <dt class="text-[13px] text-ink-500">Shartnoma summasi</dt>
+                  <dt class="text-[13px] text-ink-500">{{ field('contractAmount') }}</dt>
                   <dd class="tabular text-[13px] font-semibold text-ink-800">
-                    {{ sum(selectedContract.amount) }}
+                    {{ money(selectedContract.amount) }}
                   </dd>
                 </div>
               </dl>
               <p v-else class="mt-2 text-[13px] text-ink-500">
-                Shartnoma nusxasi hujjatlar bo‘limida saqlanadi.
+                {{ t('cab.contractCopyHint') }}
               </p>
               <UiButton variant="secondary" size="sm" class="mt-3" block to="/cabinet/documents">
                 <UiIcon name="doc" :size="15" />
-                Shartnoma nusxasini ochish
+                {{ t('cab.openContractCopy') }}
               </UiButton>
             </div>
           </div>
@@ -409,7 +463,9 @@ const planOpen = ref(false)
 
         <div class="space-y-4">
           <div>
-            <p class="mb-2 text-[13px] font-semibold text-ink-700">To‘lov holati</p>
+            <p class="mb-2 text-[13px] font-semibold text-ink-700">
+              {{ t('tour.cabinet.invoice.title') }}
+            </p>
             <div v-if="selectedInvoice" class="rounded-field p-4 ring-1 ring-ink-200">
               <div class="flex items-center justify-between gap-3">
                 <span class="text-[14px] font-bold text-ink-900">{{ selectedInvoice.code }}</span>
@@ -417,23 +473,23 @@ const planOpen = ref(false)
               </div>
               <p class="tabular mt-2 text-[22px] font-bold leading-none text-ink-900">
                 {{ num(selectedInvoice.total) }}
-                <span class="text-[13px] font-medium text-ink-500">so‘m</span>
+                <span class="text-[13px] font-medium text-ink-500">{{ t('unitOf.currency') }}</span>
               </p>
               <div class="mt-3 space-y-1.5">
                 <div class="flex items-center justify-between">
-                  <span class="text-[13px] text-ink-500">To‘langan</span>
+                  <span class="text-[13px] text-ink-500">{{ field('paid') }}</span>
                   <span class="tabular text-[13px] font-semibold text-ok-700">
-                    {{ sum(selectedInvoice.paid) }}
+                    {{ money(selectedInvoice.paid) }}
                   </span>
                 </div>
                 <div class="flex items-center justify-between">
-                  <span class="text-[13px] text-ink-500">Qoldiq</span>
+                  <span class="text-[13px] text-ink-500">{{ field('balance') }}</span>
                   <span class="tabular text-[13px] font-semibold text-ink-900">
-                    {{ sum(selectedInvoice.total - selectedInvoice.paid) }}
+                    {{ money(selectedInvoice.total - selectedInvoice.paid) }}
                   </span>
                 </div>
                 <div class="flex items-center justify-between">
-                  <span class="text-[13px] text-ink-500">To‘lov muddati</span>
+                  <span class="text-[13px] text-ink-500">{{ field('dueDate') }}</span>
                   <span class="tabular text-[13px] font-semibold text-ink-900">
                     {{ dateShort(selectedInvoice.dueAt) }}
                   </span>
@@ -441,16 +497,16 @@ const planOpen = ref(false)
               </div>
               <UiButton variant="secondary" size="sm" class="mt-3" block to="/cabinet/invoices">
                 <UiIcon name="wallet" :size="15" />
-                To‘lovlar tarixi
+                {{ t('cab.paymentHistory') }}
               </UiButton>
             </div>
             <p v-else class="rounded-field px-4 py-6 text-center text-[13px] text-ink-500 ring-1 ring-ink-200">
-              Joriy davr uchun hisob-faktura shakllantirilmagan
+              {{ t('cab.noInvoiceForPeriod') }}
             </p>
           </div>
 
           <div>
-            <p class="mb-2 text-[13px] font-semibold text-ink-700">Servis tarixi</p>
+            <p class="mb-2 text-[13px] font-semibold text-ink-700">{{ t('cab.serviceHistory') }}</p>
             <ul v-if="selectedRequests.length" class="divide-y divide-ink-100 rounded-field ring-1 ring-ink-200">
               <li v-for="r in selectedRequests" :key="r.id" class="px-4 py-2.5">
                 <div class="flex items-center justify-between gap-3">
@@ -463,7 +519,7 @@ const planOpen = ref(false)
               </li>
             </ul>
             <p v-else class="rounded-field px-4 py-6 text-center text-[13px] text-ink-500 ring-1 ring-ink-200">
-              Bu unit bo‘yicha servis arizalari yo‘q
+              {{ t('empty.noRequestsForUnit') }}
             </p>
           </div>
         </div>
@@ -475,11 +531,16 @@ const planOpen = ref(false)
   <UiModal
     v-if="selected && selectedBuilding"
     v-model="planOpen"
-    :title="`${selected.floor}-qavat rejasi`"
-    :subtitle="`${selectedBuilding.name} · Unit ${selected.code} ajratib ko‘rsatilgan`"
+    :title="t('cab.floorPlanTitle', { floor: selected.floor })"
+    :subtitle="t('cab.planHighlight', { building: selectedBuilding.name, code: selected.code })"
     size="lg"
   >
-    <svg viewBox="0 0 100 100" class="block h-[420px] w-full" role="img" aria-label="Kattalashtirilgan qavat rejasi">
+    <svg
+      viewBox="0 0 100 100"
+      class="block h-[420px] w-full"
+      role="img"
+      :aria-label="t('cab.enlargedFloorPlan')"
+    >
       <rect x="2" y="2" width="96" height="96" rx="3" fill="#ffffff" stroke="#cbd4e3" stroke-width="0.8" />
       <rect x="2" y="46" width="96" height="10" fill="#f8fafd" />
       <polygon
@@ -505,7 +566,7 @@ const planOpen = ref(false)
     </svg>
 
     <template #footer>
-      <UiButton variant="ghost" @click="planOpen = false">Yopish</UiButton>
+      <UiButton variant="ghost" @click="planOpen = false">{{ t('common.close') }}</UiButton>
     </template>
   </UiModal>
 </template>

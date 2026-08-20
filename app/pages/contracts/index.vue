@@ -2,11 +2,17 @@
 import AppTopbar from '~/components/layout/AppTopbar.vue'
 import { BUILDINGS } from '~/data/buildings'
 import { CONTRACTS, type Contract } from '~/data/business'
-import { CONTRACT_STATUS } from '~/constants/statuses'
-import { nextContractCode } from '~/stores/lease'
-import { dateShort, monthShift, num, sum, sumShort, todayIso } from '~/utils/format'
+
+import { dateShort, monthShift, num, todayIso } from '~/utils/format'
 
 const auth = useAuthStore()
+const { money, moneyShort,
+  t,
+  columns: labelColumns,
+  sectionLabel,
+  statusOptions: statusChoices,
+  unitOf,
+} = useAppLabels()
 
 /** Reyestr faqat foydalanuvchi biriktirilgan obyektlar bilan cheklanadi */
 const scopedBuildings = computed(() => BUILDINGS.filter((b) => auth.inScope(b.id)))
@@ -23,7 +29,7 @@ const stage = ref('all')
 const banner = ref('')
 
 function isApproved(c: Contract) {
-  return c.timeline.some((t) => t.label === 'Imzolandi' && t.done)
+  return c.timeline.some((s) => s.label === 'Imzolandi' && s.done)
 }
 
 const STAGE_MATCH: Record<string, (c: Contract) => boolean> = {
@@ -33,22 +39,34 @@ const STAGE_MATCH: Record<string, (c: Contract) => boolean> = {
   active: (c) => c.status === 'ACTIVE',
 }
 
-const typeOptions = [
-  { value: 'all', label: 'Shartnoma turi' },
-  { value: 'Ijara', label: 'Ijara' },
-  { value: 'Sotuv', label: 'Sotuv' },
-]
+/**
+ * Shartnoma turi ma’lumotda o‘zbekcha qiymat sifatida saqlanadi. Qiymat
+ * o‘zgarmaydi (filtr va solishtirish ishlashda qoladi), faqat ko‘rinadigan
+ * nom tanlangan tilga bog‘lanadi.
+ */
+const TYPE_KEY: Record<string, string> = {
+  Ijara: 'ctr.typeRent',
+  Sotuv: 'ctr.typeSale',
+}
+
+function typeLabel(value: string) {
+  const key = TYPE_KEY[value]
+  return key ? t(key) : value
+}
+
+const typeOptions = computed(() => [
+  { value: 'all', label: t('ctr.typeFilter') },
+  { value: 'Ijara', label: t('ctr.typeRent') },
+  { value: 'Sotuv', label: t('ctr.typeSale') },
+])
 
 const statusOptions = computed(() => [
-  { value: 'all', label: 'Barcha statuslar' },
-  ...Array.from(new Set(contracts.value.map((c) => c.status))).map((s) => ({
-    value: s,
-    label: CONTRACT_STATUS[s]?.label ?? s,
-  })),
+  { value: 'all', label: t('filter.allStatuses') },
+  ...statusChoices('contract', Array.from(new Set(contracts.value.map((c) => c.status)))),
 ])
 
 const buildingOptions = computed(() => [
-  { value: 'all', label: 'Barcha obyektlar' },
+  { value: 'all', label: t('filter.allBuildings') },
   ...scopedBuildings.value.map((b) => ({ value: b.name, label: b.name })),
 ])
 
@@ -65,25 +83,27 @@ const filtered = computed(() =>
   }),
 )
 
-const columns = [
-  { key: 'code', label: 'Shartnoma №' },
-  { key: 'type', label: 'Turi' },
-  { key: 'tenant', label: 'Yuridik shaxs / Ijarachi' },
-  { key: 'place', label: 'Obyekt + Unit' },
-  { key: 'startsAt', label: 'Boshlanish' },
-  { key: 'endsAt', label: 'Tugash' },
-  { key: 'amount', label: 'Miqdor', align: 'right' as const, numeric: true },
-  { key: 'status', label: 'Status' },
-  { key: 'approval', label: 'Tasdiqlash' },
-]
+const columns = computed(() =>
+  labelColumns([
+    { key: 'code', labelKey: 'ctr.contractNo', label: 'Shartnoma №' },
+    { key: 'type', field: 'type', label: 'Turi' },
+    { key: 'tenant', field: 'legalTenant', label: 'Yuridik shaxs / Ijarachi' },
+    { key: 'place', labelKey: 'ctr.objectUnit', label: 'Obyekt + Unit' },
+    { key: 'startsAt', field: 'start', label: 'Boshlanish' },
+    { key: 'endsAt', field: 'end', label: 'Tugash' },
+    { key: 'amount', labelKey: 'ctr.amount', label: 'Miqdor', align: 'right', numeric: true },
+    { key: 'status', field: 'status', label: 'Status' },
+    { key: 'approval', field: 'approval', label: 'Tasdiqlash' },
+  ]),
+)
 
 const rows = computed(() =>
   filtered.value.map((c) => {
-    const approval = c.timeline.find((t) => t.label === 'Imzolandi')
+    const approval = c.timeline.find((s) => s.label === 'Imzolandi')
     return {
       id: c.id,
       code: c.code,
-      type: c.type,
+      type: typeLabel(c.type),
       tenant: c.tenant,
       place: `${c.buildingName} · ${c.unitCode}`,
       startsAt: c.startsAt,
@@ -119,26 +139,26 @@ const steps = computed(() =>
   [
     {
       key: 'created',
-      label: 'Yaratildi',
-      caption: 'Loyiha shakllantirildi',
+      label: t('ctr.step.created'),
+      caption: t('ctr.stepCaption.created'),
       icon: 'clipboard',
     },
     {
       key: 'agreed',
-      label: 'Kelishildi',
-      caption: 'Tomonlar kelishuvi',
+      label: t('ctr.step.agreed'),
+      caption: t('ctr.stepCaption.agreed'),
       icon: 'users',
     },
     {
       key: 'signed',
-      label: 'Imzolandi',
-      caption: 'Ichki tasdiqlash bajarildi',
+      label: t('ctr.step.signed'),
+      caption: t('ctr.stepCaption.signed'),
       icon: 'edit',
     },
     {
       key: 'active',
-      label: 'Faollashdi',
-      caption: 'Tizimda faol',
+      label: t('ctr.step.active'),
+      caption: t('ctr.stepCaption.active'),
       icon: 'check',
     },
   ].map((s) => ({
@@ -152,104 +172,31 @@ function applyStep(key: string) {
   status.value = 'all'
 }
 
-const createOpen = ref(false)
-
 /*
- * Boshlanish sanasi keyingi oyning birinchi kunidan, tugash sanasi undan
- * yigirma to‘rt oy keyin. Ilgari bu yerda qotib qolgan 2025 yil turar edi va
- * yangi shartnoma tizim kunidan orqada tug‘ilar edi.
+ * Shartnoma qo'lda yaratilmaydi.
+ *
+ * Jarayon bitta: ijarachi ariza yuboradi, Operator bog'lanib shartlarni
+ * kelishadi va tasdiqlaydi, shundan keyin tizim shartnomani o'zi tayyorlaydi
+ * va Didox orqali imzoga yuboradi. Reyestrda qo'lda shartnoma ochish shu
+ * zanjirni chetlab o'tar, natijada arizasiz, imzosiz va kabinetsiz shartnoma
+ * paydo bo'lardi. Shuning uchun bu yerda yaratish emas, arizaga o'tish bor.
  */
-const defaultStart = monthShift(1)
-const defaultEnd = (() => {
-  const d = new Date(monthShift(25))
-  d.setDate(d.getDate() - 1)
-  const m = String(d.getMonth() + 1).padStart(2, '0')
-  return `${d.getFullYear()}-${m}-${String(d.getDate()).padStart(2, '0')}`
-})()
-
-const form = reactive({
-  type: 'Ijara',
-  tenant: '',
-  building: scopedBuildings.value[0]?.name ?? BUILDINGS[0]!.name,
-  unitCode: '',
-  startsAt: defaultStart,
-  endsAt: defaultEnd,
-  amount: '',
-  paymentTerm: 'Oylik oldindan to‘lov',
-})
-
-const paymentTermOptions = [
-  { value: 'Oylik oldindan to‘lov', label: 'Oylik oldindan to‘lov' },
-  { value: 'Choraklik to‘lov', label: 'Choraklik to‘lov' },
-  { value: 'Bir martalik to‘lov', label: 'Bir martalik to‘lov' },
-]
-
-const createValid = computed(() => form.tenant.trim().length > 2 && Number(form.amount) > 0)
-
-function openCreate() {
-  form.type = 'Ijara'
-  form.tenant = ''
-  form.building = scopedBuildings.value[0]?.name ?? BUILDINGS[0]!.name
-  form.unitCode = ''
-  form.startsAt = defaultStart
-  form.endsAt = defaultEnd
-  form.amount = ''
-  form.paymentTerm = 'Oylik oldindan to‘lov'
-  createOpen.value = true
-}
-
-function createContract() {
-  if (!createValid.value) return
-  /* Raqam reyestrdagi eng katta qiymatdan, yil esa tizim kunidan olinadi */
-  const code = nextContractCode()
-  const created: Contract = {
-    id: `c-${code.slice(-4)}`,
-    code,
-    type: form.type === 'Sotuv' ? 'Sotuv' : 'Ijara',
-    tenant: form.tenant.trim(),
-    buildingId: BUILDINGS.find((b) => b.name === form.building)?.id ?? scopedBuildings.value[0]?.id ?? BUILDINGS[0]!.id,
-    buildingName: form.building,
-    unitCode: form.unitCode.trim() || 'Unit -',
-    startsAt: form.startsAt,
-    endsAt: form.type === 'Sotuv' ? '-' : form.endsAt,
-    status: 'DRAFT',
-    amount: Number(form.amount),
-    paymentTerm: form.paymentTerm,
-    documents: [{ name: 'Shartnoma loyihasi.pdf', size: '1.4 MB', type: 'pdf' }],
-    timeline: [
-      {
-        label: 'Yaratildi',
-        date: todayIso(),
-        actor: auth.user?.fullName ?? 'Xodim',
-        done: true,
-      },
-      { label: 'Kelishildi', date: '-', actor: '-', done: false },
-      { label: 'Imzolandi', date: '-', actor: '-', done: false },
-      { label: 'Faollashdi', date: '-', actor: '-', done: false },
-    ],
-  }
-  CONTRACTS.unshift(created)
-  contracts.value = [...CONTRACTS]
-  banner.value = `${code} shartnomasi loyiha holatida yaratildi.`
-  createOpen.value = false
-  resetFilters()
-}
 </script>
 
 <template>
   <AppTopbar
-    title="Shartnomalar reyestri"
-    subtitle="Ijara va sotuv shartnomalari, ilovalar va tasdiqlash holati"
-    :breadcrumb="[{ label: 'Shartnomalar' }]"
+    :title="t('ctr.registryTitle')"
+    :subtitle="t('ctr.registryCaption')"
+    :breadcrumb="[{ label: sectionLabel('contracts') }]"
   >
     <template #actions>
       <UiButton variant="secondary" size="sm" to="/billing/invoices">
         <UiIcon name="wallet" :size="16" />
-        Billing
+        {{ sectionLabel('billing') }}
       </UiButton>
-      <UiButton size="sm" @click="openCreate">
-        <UiIcon name="plus" :size="16" />
-        Yangi shartnoma
+      <UiButton size="sm" to="/applications">
+        <UiIcon name="clipboard" :size="16" />
+        {{ t('ctr.viaApplications') }}
       </UiButton>
     </template>
   </AppTopbar>
@@ -264,7 +211,7 @@ function createContract() {
       <button
         type="button"
         class="rounded-lg p-1 text-ok-700 transition-colors hover:bg-ok-100"
-        aria-label="Xabarni yopish"
+        :aria-label="t('common.closeMessage')"
         @click="banner = ''"
       >
         <UiIcon name="x" :size="16" />
@@ -273,39 +220,45 @@ function createContract() {
 
     <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <UiKpi
-        label="Jami shartnomalar"
+        :label="t('kpi.totalContracts')"
         :value="num(contracts.length)"
-        unit="ta"
+        :unit="unitOf('pcs')"
         icon="contract"
         tone="brand"
       />
-      <UiKpi label="Faol shartnomalar" :value="num(activeCount)" unit="ta" icon="check" tone="ok" />
       <UiKpi
-        label="Kelishuv bosqichida"
+        :label="t('kpi.activeContracts')"
+        :value="num(activeCount)"
+        :unit="unitOf('pcs')"
+        icon="check"
+        tone="ok"
+      />
+      <UiKpi
+        :label="t('kpi.inAgreement')"
         :value="num(reviewCount)"
-        unit="ta"
+        :unit="unitOf('pcs')"
         icon="clock"
         tone="warn"
       />
       <UiKpi
-        label="Tasdiqlangan shartnomalar"
+        :label="t('kpi.approvedContracts')"
         :value="num(signedCount)"
-        unit="ta"
+        :unit="unitOf('pcs')"
         icon="shield"
         tone="violet"
       />
     </section>
 
     <UiCard
-      title="Shartnomalar reyestri"
-      :subtitle="`Reyestrdagi umumiy qiymat: ${sumShort(totalValue)}`"
+      :title="t('ctr.registryTitle')"
+      :subtitle="t('ctr.registryTotal', { value: moneyShort(totalValue) })"
       flush
       :padded="false"
     >
       <div class="flex flex-wrap items-center gap-3 px-5 pb-4">
         <UiInput
           v-model="search"
-          placeholder="Shartnoma raqami yoki ijarachi bo‘yicha qidirish"
+          :placeholder="t('ctr.searchPlaceholder')"
           class="min-w-[240px] flex-1"
         >
           <template #prefix>
@@ -317,7 +270,7 @@ function createContract() {
         <UiSelect v-model="building" :options="buildingOptions" class="w-full sm:w-56" />
         <UiButton variant="ghost" @click="resetFilters">
           <UiIcon name="refresh" :size="16" />
-          Tozalash
+          {{ t('common.reset') }}
         </UiButton>
       </div>
 
@@ -326,7 +279,7 @@ function createContract() {
         :columns="columns"
         :rows="rows"
         :to="contractLink"
-        empty="Tanlangan shartlarga mos shartnoma topilmadi"
+        :empty="t('empty.noMatchingContracts')"
       >
         <template #cell-code="{ row }">
           <span class="font-semibold text-brand-600">{{ row.code }}</span>
@@ -339,7 +292,7 @@ function createContract() {
         </template>
         <template #cell-startsAt="{ row }">{{ dateShort(String(row.startsAt)) }}</template>
         <template #cell-endsAt="{ row }">{{ dateShort(String(row.endsAt)) }}</template>
-        <template #cell-amount="{ row }">{{ sum(Number(row.amount)) }}</template>
+        <template #cell-amount="{ row }">{{ money(Number(row.amount)) }}</template>
         <template #cell-status="{ row }">
           <UiStatus kind="contract" :value="String(row.status)" size="sm" />
         </template>
@@ -350,7 +303,7 @@ function createContract() {
               {{ dateShort(String(row.approvalDate)) }}
             </span>
           </template>
-          <span v-else class="text-[13px] text-ink-500">Tasdiqlash kutilmoqda</span>
+          <span v-else class="text-[13px] text-ink-500">{{ t('ctr.approvalPending') }}</span>
         </template>
       </UiTable>
 
@@ -358,18 +311,17 @@ function createContract() {
         class="flex flex-wrap items-center justify-between gap-3 border-t border-ink-100 px-5 py-3.5"
       >
         <p class="text-[13px] text-ink-500">
-          Jami: <b class="text-ink-800">{{ rows.length }} ta</b> shartnoma
+          {{ t('common.total') }}:
+          <b class="text-ink-800">{{ t('ctr.contractsCount', { n: rows.length }) }}</b>
+          {{ t('ctr.contractsWord') }}
         </p>
         <p class="text-[13px] text-ink-500">
-          Qiymati: <b class="tabular text-ink-800">{{ sum(totalValue) }}</b>
+          {{ t('ctr.value') }}: <b class="tabular text-ink-800">{{ money(totalValue) }}</b>
         </p>
       </div>
     </UiCard>
 
-    <UiCard
-      title="Shartnoma holati bosqichlari"
-      subtitle="Bosqichni bosing, reyestr shu bosqich bo‘yicha filtrlanadi"
-    >
+    <UiCard :title="t('ctr.stagesTitle')" :subtitle="t('ctr.stagesCaption')">
       <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <div v-for="(s, i) in steps" :key="s.key" class="flex items-center gap-3">
           <button
@@ -402,54 +354,5 @@ function createContract() {
       </div>
     </UiCard>
 
-    <UiModal
-      v-model="createOpen"
-      title="Yangi shartnoma"
-      subtitle="Shartnoma loyiha holatida yaratiladi va kelishuvga yuboriladi"
-    >
-      <div class="grid gap-4 sm:grid-cols-2">
-        <UiField label="Shartnoma turi" required>
-          <UiSelect
-            v-model="form.type"
-            :options="[
-              { value: 'Ijara', label: 'Ijara' },
-              { value: 'Sotuv', label: 'Sotuv' },
-            ]"
-          />
-        </UiField>
-        <UiField label="To‘lov shakli" required>
-          <UiSelect v-model="form.paymentTerm" :options="paymentTermOptions" />
-        </UiField>
-        <UiField label="Yuridik shaxs / Ijarachi" required class="sm:col-span-2">
-          <UiInput v-model="form.tenant" placeholder="Tashkilot nomi" />
-        </UiField>
-        <UiField label="Obyekt" required>
-          <UiSelect
-            v-model="form.building"
-            :options="scopedBuildings.map((b) => ({ value: b.name, label: b.name }))"
-          />
-        </UiField>
-        <UiField label="Unit">
-          <UiInput v-model="form.unitCode" placeholder="Unit 708" />
-        </UiField>
-        <UiField label="Boshlanish sanasi" required>
-          <UiInput v-model="form.startsAt" type="date" />
-        </UiField>
-        <UiField label="Tugash sanasi" :hint="form.type === 'Sotuv' ? 'Sotuvda talab etilmaydi' : undefined">
-          <UiInput v-model="form.endsAt" type="date" :disabled="form.type === 'Sotuv'" />
-        </UiField>
-        <UiField label="Shartnoma miqdori" required hint="So‘mda" class="sm:col-span-2">
-          <UiInput v-model="form.amount" type="number" placeholder="0" />
-        </UiField>
-      </div>
-
-      <template #footer>
-        <UiButton variant="ghost" @click="createOpen = false">Bekor qilish</UiButton>
-        <UiButton :disabled="!createValid" @click="createContract">
-          <UiIcon name="check" :size="16" />
-          Yaratish
-        </UiButton>
-      </template>
-    </UiModal>
   </main>
 </template>

@@ -83,7 +83,7 @@ export const ACCESS_AREAS: AreaDef[] = [
     key: 'meters',
     label: 'Hisoblagichlar',
     prefixes: ['/meters'],
-    writes: ['unit.editTechnical'],
+    writes: ['meter.read'],
   },
   {
     key: 'reports',

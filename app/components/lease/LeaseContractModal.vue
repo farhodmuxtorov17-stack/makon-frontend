@@ -1,10 +1,14 @@
 <script setup lang="ts">
 import { contractDocx, type LeaseCase } from '~/stores/lease'
 import { saveBlob } from '~/utils/docx'
-import { dateShort, sum } from '~/utils/format'
+import { dateShort } from '~/utils/format'
+
+const { money } = useAppLabels()
 
 const props = defineProps<{ item: LeaseCase }>()
 const open = defineModel<boolean>({ required: true })
+
+const { t } = useI18n()
 
 const downloaded = ref('')
 
@@ -22,22 +26,28 @@ function download() {
 <template>
   <UiModal
     v-model="open"
-    :title="doc ? `Ijara shartnomasi № ${doc.code}` : 'Shartnoma qoralamasi'"
-    :subtitle="`${item.buildingName} · Unit ${item.unitCode} · ${item.org.name}`"
+    :title="doc ? t('ui.leaseContractNo', { code: doc.code }) : t('ui.contractDraft')"
+    :subtitle="`${item.buildingName} · ${t('ui.unitCode', { code: item.unitCode })} · ${item.org.name}`"
     size="lg"
   >
     <div v-if="doc" class="space-y-5">
       <div class="rounded-field bg-surface-sunken px-4 py-3.5 ring-1 ring-inset ring-ink-200">
-        <p class="text-[12px] font-semibold uppercase tracking-wide text-ink-500">Hujjat</p>
-        <p class="mt-1 text-[16px] font-bold text-ink-900">Ijara shartnomasi № {{ doc.code }}</p>
+        <p class="text-[12px] font-semibold uppercase tracking-wide text-ink-500">
+          {{ t('field.document') }}
+        </p>
+        <p class="mt-1 text-[16px] font-bold text-ink-900">
+          {{ t('ui.leaseContractNo', { code: doc.code }) }}
+        </p>
         <p class="tabular mt-0.5 text-[13px] text-ink-600">
-          Tuzilgan sana {{ dateShort(doc.composedAt) }} · amal qilish muddati
+          {{ t('ui.composedOn') }} {{ dateShort(doc.composedAt) }} · {{ t('ui.validityPeriod') }}
           {{ dateShort(doc.startsAt) }} · {{ dateShort(doc.endsAt) }}
         </p>
       </div>
 
       <section>
-        <h3 class="text-[12px] font-semibold uppercase tracking-wide text-ink-500">Tomonlar</h3>
+        <h3 class="text-[12px] font-semibold uppercase tracking-wide text-ink-500">
+          {{ t('ui.parties') }}
+        </h3>
         <div class="mt-2.5 grid gap-3 sm:grid-cols-2">
           <div
             v-for="p in [doc.landlord, doc.tenant]"
@@ -50,10 +60,10 @@ function download() {
               <div
                 v-for="r in [
                   { l: 'STIR', v: p.tin },
-                  { l: 'Vakil', v: p.director },
-                  { l: 'Telefon', v: p.phone },
-                  { l: 'E-pochta', v: p.email },
-                  { l: 'Manzil', v: p.address },
+                  { l: t('ui.representative'), v: p.director },
+                  { l: t('common.phone'), v: p.phone },
+                  { l: t('common.email'), v: p.email },
+                  { l: t('field.address'), v: p.address },
                 ]"
                 :key="r.l"
                 class="flex items-start justify-between gap-3"
@@ -70,7 +80,7 @@ function download() {
 
       <section>
         <h3 class="text-[12px] font-semibold uppercase tracking-wide text-ink-500">
-          Ijara obyekti
+          {{ t('ui.leaseObject') }}
         </h3>
         <dl class="mt-2.5 grid gap-x-6 sm:grid-cols-2">
           <div
@@ -86,7 +96,7 @@ function download() {
 
       <section>
         <h3 class="text-[12px] font-semibold uppercase tracking-wide text-ink-500">
-          Moliyaviy shartlar
+          {{ t('ui.financialTerms') }}
         </h3>
         <dl class="mt-2.5 grid gap-x-6 sm:grid-cols-2">
           <div
@@ -102,7 +112,7 @@ function download() {
 
       <section>
         <h3 class="text-[12px] font-semibold uppercase tracking-wide text-ink-500">
-          To‘lov grafigi
+          {{ t('ui.paymentSchedule') }}
         </h3>
         <ul class="mt-2.5 divide-y divide-ink-100 rounded-field ring-1 ring-ink-200">
           <li
@@ -114,14 +124,14 @@ function download() {
               <span class="tabular block text-[12px] text-ink-500">{{ dateShort(r.dueAt) }}</span>
               <span class="block truncate text-[13px] font-semibold text-ink-800">{{ r.label }}</span>
             </span>
-            <span class="tabular shrink-0 text-[13px] font-bold text-ink-900">{{ sum(r.total) }}</span>
+            <span class="tabular shrink-0 text-[13px] font-bold text-ink-900">{{ money(r.total) }}</span>
           </li>
         </ul>
       </section>
 
       <section>
         <h3 class="text-[12px] font-semibold uppercase tracking-wide text-ink-500">
-          Shartnoma bandlari
+          {{ t('ui.contractClauses') }}
         </h3>
         <ol class="mt-2.5 space-y-3">
           <li v-for="(c, i) in doc.clauses" :key="c.title" class="flex gap-3">
@@ -143,15 +153,15 @@ function download() {
         class="flex items-center gap-2 rounded-field bg-ok-50 px-3.5 py-2.5 text-[13px] font-semibold text-ok-700 ring-1 ring-inset ring-ok-100"
       >
         <UiIcon name="check" :size="15" />
-        {{ downloaded }} fayli yuklab olindi
+        {{ t('ui.fileDownloaded', { file: downloaded }) }}
       </p>
     </div>
 
     <template #footer>
-      <UiButton variant="ghost" @click="open = false">Yopish</UiButton>
+      <UiButton variant="ghost" @click="open = false">{{ t('common.close') }}</UiButton>
       <UiButton :disabled="!doc" @click="download">
         <UiIcon name="download" :size="16" />
-        DOCX yuklab olish
+        {{ t('ui.downloadDocx') }}
       </UiButton>
     </template>
   </UiModal>

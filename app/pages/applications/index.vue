@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { APPLICATION_QUEUE } from '~/constants/navigation'
-import { LEASE_STATUS } from '~/constants/statuses'
 import { scheduleTotals, type LeaseCase, type LeaseStatus } from '~/stores/lease'
-import { area, dateShort, sum, timeOf } from '~/utils/format'
+import { area, dateShort, timeOf } from '~/utils/format'
 
 const auth = useAuthStore()
 const lease = useLeaseStore()
+
+const { t } = useI18n()
+const { money, field, moduleTitle, statusLabel } = useAppLabels()
 
 lease.seed()
 
@@ -36,9 +38,9 @@ const search = ref('')
 
 const scopeTabs = computed(() => [
   ...(canDecide.value
-    ? [{ value: 'mine', label: 'Mening vazifalarim', count: mineRows.value.length }]
+    ? [{ value: 'mine', label: t('tab.mine'), count: mineRows.value.length }]
     : []),
-  { value: 'all', label: 'Barcha arizalar', count: rows.value.length },
+  { value: 'all', label: t('app2.allApplications'), count: rows.value.length },
 ])
 
 const scoped = computed(() => (scopeTab.value === 'mine' ? mineRows.value : rows.value))
@@ -51,26 +53,26 @@ const PENDING: LeaseStatus[] = [
 ]
 
 const statusChips = computed(() => [
-  { value: 'all', label: 'Barchasi', count: scoped.value.length },
+  { value: 'all', label: t('tab.all'), count: scoped.value.length },
   {
     value: 'pending',
-    label: 'Jarayonda',
+    label: t('tab.inProgress'),
     count: scoped.value.filter((c) => PENDING.includes(c.status)).length,
   },
   {
     value: 'closed',
-    label: 'Yopilgan',
+    label: t('tab.closed'),
     count: scoped.value.filter((c) => c.status === 'FAOL').length,
   },
   {
     value: 'rejected',
-    label: 'Rad etilgan',
+    label: t('tab.rejected'),
     count: scoped.value.filter((c) => c.status === 'RAD_ETILDI').length,
   },
 ])
 
 const buildingOptions = computed(() => [
-  { value: '', label: 'Barcha obyektlar' },
+  { value: '', label: t('landing.allObjects') },
   ...[...new Set(rows.value.map((c) => c.buildingName).filter(Boolean))].map((n) => ({
     value: n,
     label: n,
@@ -103,31 +105,67 @@ function needsUnit(c: LeaseCase) {
 }
 
 function amount(c: LeaseCase) {
-  if (c.schedule.length) return sum(scheduleTotals(c.schedule).total)
-  return `${sum(c.request.offerPrice)} / oy`
+  if (c.schedule.length) return money(scheduleTotals(c.schedule).total)
+  return t('unitOf.perMonth', { value: money(c.request.offerPrice) })
 }
 
+/** Har bir bosqich uchun keyingi qadam izohi lug‘atdan olinadi */
 const NEXT_STEP: Record<string, string> = {
-  YANGI: 'Operator bog‘lanadi, shartlarni kelishadi va arizani tasdiqlaydi',
-  MAYDON: 'Operator qo‘ng‘iroq qilib maydonni kelishadi va belgilaydi',
-  SHARTNOMA_TAYYOR: 'Operator shartnomani tahrirlaydi va Didox orqali yuboradi',
-  DIDOX_YUBORILDI: 'Operator Didoxdagi holatni tekshiradi',
-  DIDOX_IMZOLANDI: 'Imzolangan nusxa yuklanadi va ariza yopiladi',
-  FAOL: 'Ariza yopilgan, shartnoma amalda',
-  RAD_ETILDI: 'Sikl to‘xtatilgan',
+  YANGI: 'app2.stepNew',
+  MAYDON: 'app2.stepUnit',
+  SHARTNOMA_TAYYOR: 'app2.stepContract',
+  DIDOX_YUBORILDI: 'app2.stepDidoxSent',
+  DIDOX_IMZOLANDI: 'app2.stepDidoxSigned',
+  FAOL: 'app2.stepActive',
+  RAD_ETILDI: 'app2.stepRejected',
 }
+
+function nextStep(c: LeaseCase) {
+  const key = needsUnit(c) ? NEXT_STEP.MAYDON : NEXT_STEP[c.status]
+  return key ? t(key) : statusLabel('lease', c.status)
+}
+
+/* --- Jonli izoh ---
+ * Navbat ikki xil o‘qiladi: qaror qabul qiladigan rol uchun bu ish ro‘yxati,
+ * qolganlar uchun kuzatuv oynasi. Shuning uchun birinchi va oxirgi qadam
+ * huquqqa qarab almashadi, oradagilar hammaga bir xil.
+ */
+const tourSteps = computed(() => {
+  const plan: Array<[string, string]> = [
+    [canDecide.value ? 'tabsMine' : 'tabsWatch', 'app-tabs'],
+    ['filters', 'app-filters'],
+    ['chips', 'app-chips'],
+  ]
+  // Kartochka qadamlari ro‘yxat bo‘sh bo‘lmagandagina qo‘shiladi: aks holda
+  // izoh ekranda yo‘q blokni tushuntirgan bo‘lardi
+  if (filtered.value.length) {
+    plan.push(['flow', 'app-flow'])
+    plan.push([canDecide.value ? 'openDecide' : 'openWatch', 'app-open'])
+  }
+  return plan.map(([key, target]) => ({
+    target: `[data-tour="${target}"]`,
+    title: t(`tour.applications.${key}.title`),
+    body: t(`tour.applications.${key}.body`),
+    after: t(`tour.applications.${key}.after`),
+    next: t(`tour.applications.${key}.next`),
+  }))
+})
+
+/** Xotira kaliti rol bilan birga: har bir rol o‘z izohini bir marta ko‘radi */
+const tourId = computed(() => `applications:${auth.role ?? 'guest'}`)
 </script>
 
 <template>
   <AppTopbar
-    title="Arizalar navbati"
-    subtitle="Ijara sikli: arizadan yopilgan arizagacha"
+    :title="t('app2.queueTitle')"
+    :subtitle="t('app2.queueSubtitle')"
   >
     <template #actions>
       <UiButton variant="secondary" size="sm" to="/contracts">
         <UiIcon name="contract" :size="16" />
-        Shartnomalar
+        {{ moduleTitle('contracts', 'Shartnomalar') }}
       </UiButton>
+      <UiTour :id="tourId" :steps="tourSteps" />
     </template>
   </AppTopbar>
 
@@ -137,24 +175,31 @@ const NEXT_STEP: Record<string, string> = {
       class="flex items-start gap-3 rounded-card bg-ink-50 px-4 py-3 text-[13px] leading-relaxed text-ink-600 ring-1 ring-inset ring-ink-200"
     >
       <UiIcon name="eye" :size="17" class="mt-0.5 shrink-0 text-ink-500" />
-      <span>
-        Kuzatuv rejimi: ariza bo‘yicha qaror operatorda, bu sahifada yozuvlar faqat
-        kuzatiladi.
-      </span>
+      <span>{{ t('app2.watchNotice') }}</span>
     </p>
 
     <div class="flex flex-wrap items-center justify-between gap-3">
-      <UiTabs v-model="scopeTab" :tabs="scopeTabs" />
+      <UiTabs v-model="scopeTab" :tabs="scopeTabs" data-tour="app-tabs" />
 
-      <div class="flex flex-wrap items-center gap-2.5">
-        <UiInput v-model="search" placeholder="Ariza, tashkilot yoki unit" class="w-full sm:w-64">
+      <div data-tour="app-filters" class="flex flex-wrap items-center gap-2.5">
+        <UiInput
+          v-model="search"
+          :placeholder="t('app2.searchPlaceholder')"
+          class="w-full sm:w-64"
+        >
           <template #prefix><UiIcon name="search" :size="17" /></template>
         </UiInput>
-        <UiSelect v-model="buildingFilter" :options="buildingOptions" size="sm" class="w-full sm:w-48" />
+        <UiSelect
+          v-model="buildingFilter"
+          :options="buildingOptions"
+          size="sm"
+          class="w-full sm:w-48"
+          :aria-label="t('filter.byBuildingAria')"
+        />
       </div>
     </div>
 
-    <div class="flex flex-wrap gap-2">
+    <div data-tour="app-chips" class="flex flex-wrap gap-2">
       <button
         v-for="c in statusChips"
         :key="c.value"
@@ -179,7 +224,7 @@ const NEXT_STEP: Record<string, string> = {
     </div>
 
     <div v-if="filtered.length" class="grid gap-4 2xl:grid-cols-2">
-      <UiCard v-for="c in filtered" :key="c.id">
+      <UiCard v-for="(c, i) in filtered" :key="c.id">
         <div class="flex flex-wrap items-start justify-between gap-3">
           <div class="min-w-0">
             <div class="flex flex-wrap items-center gap-2">
@@ -194,14 +239,14 @@ const NEXT_STEP: Record<string, string> = {
                 class="inline-flex items-center gap-1 rounded-pill bg-warn-50 px-2 py-0.5 text-[11px] font-bold text-warn-700 ring-1 ring-inset ring-warn-100"
               >
                 <UiIcon name="info" :size="12" />
-                Maydon Operator bilan kelishiladi
+                {{ t('app2.unitPending') }}
               </span>
               <span
                 v-if="isMine(c) && c.status !== 'FAOL' && c.status !== 'RAD_ETILDI'"
                 class="inline-flex items-center gap-1 rounded-pill bg-danger-50 px-2 py-0.5 text-[11px] font-bold text-danger-600 ring-1 ring-inset ring-danger-100"
               >
                 <span class="size-1.5 rounded-full bg-danger-500" aria-hidden="true" />
-                Sizning qaroringiz
+                {{ t('app2.yourDecision') }}
               </span>
             </div>
             <p class="mt-0.5 truncate text-[13px] text-ink-600">{{ c.org.name }}</p>
@@ -211,41 +256,45 @@ const NEXT_STEP: Record<string, string> = {
 
         <dl class="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-4">
           <div class="min-w-0">
-            <dt class="text-[12px] text-ink-500">Obyekt</dt>
+            <dt class="text-[12px] text-ink-500">{{ field('object', 'Obyekt') }}</dt>
             <dd class="mt-0.5 truncate text-[13px] font-semibold text-ink-800">
-              {{ needsUnit(c) ? 'Kelishilmagan' : c.buildingName }}
+              {{ needsUnit(c) ? t('app2.notAgreed') : c.buildingName }}
             </dd>
           </div>
           <div class="min-w-0">
-            <dt class="text-[12px] text-ink-500">Unit</dt>
+            <dt class="text-[12px] text-ink-500">{{ field('unit', 'Unit') }}</dt>
             <dd class="tabular mt-0.5 truncate text-[13px] font-semibold text-ink-800">
-              {{ needsUnit(c) ? 'Belgilanmagan' : `${c.unitCode} · ${area(c.area)}` }}
+              {{ needsUnit(c) ? t('app2.notAssigned') : `${c.unitCode} · ${area(c.area)}` }}
             </dd>
           </div>
           <div class="min-w-0">
-            <dt class="text-[12px] text-ink-500">Muddat</dt>
+            <dt class="text-[12px] text-ink-500">{{ field('deadline', 'Muddat') }}</dt>
             <dd class="tabular mt-0.5 text-[13px] font-semibold text-ink-800">
-              {{ c.request.term }} oy
+              {{ t('apply.termMonths', { count: c.request.term }) }}
             </dd>
           </div>
           <div class="min-w-0">
-            <dt class="text-[12px] text-ink-500">Summa</dt>
+            <dt class="text-[12px] text-ink-500">{{ field('amount', 'Summa') }}</dt>
             <dd class="tabular mt-0.5 truncate text-[13px] font-semibold text-ink-900">
               {{ amount(c) }}
             </dd>
           </div>
         </dl>
 
-        <div class="mt-4">
+        <!-- Izoh birinchi kartochkani yoritadi, qolganlari bir xil tuzilishda -->
+        <div class="mt-4" :data-tour="i === 0 ? 'app-flow' : undefined">
           <LeaseFlow :status="c.status" />
         </div>
 
-        <div class="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-ink-100 pt-4">
+        <div
+          :data-tour="i === 0 ? 'app-open' : undefined"
+          class="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-ink-100 pt-4"
+        >
           <span class="min-w-0 text-[12px] text-ink-500">
             <span class="tabular">
               {{ dateShort(c.request.submittedAt) }} {{ timeOf(c.request.submittedAt) }}
             </span>
-            · {{ (needsUnit(c) ? NEXT_STEP.MAYDON : NEXT_STEP[c.status]) ?? LEASE_STATUS[c.status]?.label }}
+            · {{ nextStep(c) }}
           </span>
 
           <UiButton
@@ -254,7 +303,7 @@ const NEXT_STEP: Record<string, string> = {
             :to="`/applications/${c.id}`"
           >
             <UiIcon :name="isMine(c) ? 'arrowRight' : 'eye'" :size="15" />
-            {{ isMine(c) ? 'Ko‘rib chiqish' : 'Ko‘rish' }}
+            {{ isMine(c) ? t('app2.review') : t('common.view') }}
           </UiButton>
         </div>
       </UiCard>
@@ -263,13 +312,9 @@ const NEXT_STEP: Record<string, string> = {
     <UiCard v-else>
       <UiEmpty
         icon="clipboard"
-        title="Ariza topilmadi"
-        :description="
-          rows.length
-            ? 'Tanlangan filtrlar bo‘yicha yozuv yo‘q. Shartlarni kengaytiring yoki barcha arizalarni oching.'
-            : 'Sizga biriktirilgan obyektlar bo‘yicha ariza yozuvi yo‘q.'
-        "
-        :action-label="rows.length ? 'Barcha arizalar' : ''"
+        :title="t('empty.noApplicationsFound')"
+        :description="rows.length ? t('app2.emptyFiltered') : t('app2.emptyScope')"
+        :action-label="rows.length ? t('app2.allApplications') : ''"
         @action="
           () => {
             scopeTab = 'all'

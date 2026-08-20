@@ -5,17 +5,23 @@ import { ROLE_META, ROLE_TONE_CLASSES } from '~/constants/roles'
 import { ROLES, type Role } from '~/types/rbac'
 import { ROUTE_ACCESS } from '~/constants/navigation'
 
-const SETTINGS_TABS = [
-  { label: 'Foydalanuvchilar', to: '/settings/users', icon: 'users' },
-  { label: 'Rollar va huquqlar', to: '/settings/roles', icon: 'shield' },
-  { label: 'Integratsiyalar', to: '/settings/integrations', icon: 'globe' },
-  { label: 'Ma’lumotnomalar', to: '/settings/reference-data', icon: 'layers' },
-  { label: 'Tizim sozlamalari', to: '/settings/system', icon: 'gear' },
-  { label: 'Audit jurnali', to: '/settings/audit', icon: 'clipboard' },
-]
+const { t } = useI18n()
+const { tr, field, columns: labelColumns, roleLabel, roleCaption } = useAppLabels()
+
+/** Rol kartochkasidagi daraja, ko‘rish sohasi va cheklov matni */
+const roleLevel = (r: Role) => tr(`role.${r}.level`, ROLE_META[r].level)
+const roleScope = (r: Role) => tr(`role.${r}.scope`, ROLE_META[r].scope)
+const roleLimitation = (r: Role) => tr(`role.${r}.limitation`, ROLE_META[r].limitation)
+
+const SETTINGS_TABS = computed(() => [
+  { label: t('nav.settingsUsers'), to: '/settings/users', icon: 'users' },
+  { label: t('nav.settingsRoles'), to: '/settings/roles', icon: 'shield' },
+  { label: t('nav.settingsIntegrations'), to: '/settings/integrations', icon: 'globe' },
+  { label: t('nav.settingsReference'), to: '/settings/reference-data', icon: 'layers' },
+  { label: t('nav.settingsSystem'), to: '/settings/system', icon: 'gear' },
+  { label: t('nav.settingsAudit'), to: '/settings/audit', icon: 'clipboard' },
+])
 const CURRENT_TAB = '/settings/users'
-
-
 
 const users = ref<UserRow[]>(USERS.map((u) => ({ ...u })))
 
@@ -23,16 +29,16 @@ const search = ref('')
 const roleFilter = ref('all')
 const statusFilter = ref('all')
 
-const roleOptions = [
-  { value: 'all', label: 'Barcha rollar' },
-  ...ROLES.map((r) => ({ value: r, label: ROLE_META[r].label })),
-]
+const roleOptions = computed(() => [
+  { value: 'all', label: t('filter.allRoles') },
+  ...ROLES.map((r) => ({ value: r, label: roleLabel(r) })),
+])
 
-const statusOptions = [
-  { value: 'all', label: 'Barcha statuslar' },
-  { value: 'ACTIVE', label: 'Faol' },
-  { value: 'INACTIVE', label: 'Nofaol' },
-]
+const statusOptions = computed(() => [
+  { value: 'all', label: t('filter.allStatuses') },
+  { value: 'ACTIVE', label: t('common.active') },
+  { value: 'INACTIVE', label: t('common.inactive') },
+])
 
 const buildingOptions = BUILDINGS.map((b) => ({ value: b.id, label: b.name }))
 
@@ -46,11 +52,11 @@ function initials(name: string) {
 }
 
 function scopeLabel(u: UserRow) {
-  if (u.scopeAll) return `Barchasi (${BUILDINGS.length}/${BUILDINGS.length})`
-  if (!u.buildings.length) return 'Biriktirilmagan'
+  if (u.scopeAll) return t('cfg.scopeAll', { a: BUILDINGS.length, b: BUILDINGS.length })
+  if (!u.buildings.length) return t('cfg.scopeNone')
   if (u.buildings.length === 1)
-    return BUILDINGS.find((b) => b.id === u.buildings[0])?.name ?? 'Obyekt'
-  return `${u.buildings.length} ta obyekt`
+    return BUILDINGS.find((b) => b.id === u.buildings[0])?.name ?? field('object')
+  return t('cfg.scopeCount', { n: u.buildings.length })
 }
 
 const filtered = computed(() => {
@@ -67,14 +73,16 @@ const filtered = computed(() => {
   })
 })
 
-const columns = [
-  { key: 'fullName', label: 'F.I.Sh.' },
-  { key: 'email', label: 'Email / Telefon' },
-  { key: 'role', label: 'Rol' },
-  { key: 'scope', label: 'Obyekt biriktirish' },
-  { key: 'status', label: 'Status' },
-  { key: 'lastLogin', label: 'Oxirgi kirish', align: 'right' as const },
-]
+const columns = computed(() =>
+  labelColumns([
+    { key: 'fullName', field: 'fullName' },
+    { key: 'email', field: 'emailPhone' },
+    { key: 'role', field: 'role' },
+    { key: 'scope', field: 'buildingScope' },
+    { key: 'status', field: 'status' },
+    { key: 'lastLogin', field: 'lastLogin', align: 'right' },
+  ]),
+)
 
 const rows = computed(() =>
   filtered.value.map((u) => ({ ...u, scope: scopeLabel(u), meta: ROLE_META[u.role] })),
@@ -84,11 +92,11 @@ const flash = ref('')
 
 const editOpen = ref(false)
 const editTab = ref('main')
-const editTabs = [
-  { value: 'main', label: 'Asosiy ma’lumotlar' },
-  { value: 'access', label: 'Rol va huquqlar' },
-  { value: 'prefs', label: 'Sozlamalar' },
-]
+const editTabs = computed(() => [
+  { value: 'main', label: t('cfg.tabMain') },
+  { value: 'access', label: t('cfg.tabAccess') },
+  { value: 'prefs', label: t('nav.settings') },
+])
 
 const draft = reactive({
   id: '',
@@ -164,33 +172,33 @@ function saveEdit() {
     notifyDigest: draft.notifyDigest,
     language: draft.language,
   }
-  flash.value = `«${users.value[i]!.fullName}» ma’lumotlari yangilandi.`
+  flash.value = t('cfg.userUpdated', { name: users.value[i]!.fullName })
   editOpen.value = false
 }
 
-const AREA_LABELS: Record<string, string> = {
-  '/dashboard/executive': 'Boshqaruv paneli',
-  '/dashboard/building': 'Obyekt paneli',
-  '/objects': 'Obyektlar',
-  '/content': 'Operator ishi',
-  '/applications': 'Arizalar',
-  '/contracts': 'Shartnomalar',
-  '/billing': 'Billing va nazorat',
-  '/service-requests': 'Servis va monitoring',
-  '/facility/materials': 'Material so‘rovlari',
-  '/facility': 'Xo‘jalik bo‘limi',
-  '/warehouse': 'Ombor va jihozlar',
-  '/settings/audit': 'Audit jurnali',
-  '/meters': 'Hisoblagichlar',
-  '/reports': 'Hisobotlar',
-  '/settings': 'Sozlamalar',
-  '/cabinet': 'Ijarachi kabineti',
+const AREA_LABEL_KEY: Record<string, string> = {
+  '/dashboard/executive': 'nav.dashboardExecutive',
+  '/dashboard/building': 'cfg.areaBuildingPanel',
+  '/objects': 'nav.objects',
+  '/content': 'cfg.areaContent',
+  '/applications': 'nav.applications',
+  '/contracts': 'nav.contracts',
+  '/billing': 'nav.billing',
+  '/service-requests': 'nav.serviceMonitoring',
+  '/facility/materials': 'nav.materials',
+  '/facility': 'section.facility',
+  '/warehouse': 'nav.warehouse',
+  '/settings/audit': 'nav.settingsAudit',
+  '/meters': 'nav.meters',
+  '/reports': 'nav.reports',
+  '/settings': 'nav.settings',
+  '/cabinet': 'cfg.areaTenantCabinet',
 }
 
 const roleAreas = computed(() =>
   ROUTE_ACCESS.map((r) => ({
     prefix: r.prefix,
-    label: AREA_LABELS[r.prefix] ?? r.prefix,
+    label: tr(AREA_LABEL_KEY[r.prefix], r.prefix),
     allowed: r.roles.includes(draft.role),
   })),
 )
@@ -244,17 +252,17 @@ function submitAdd() {
     fullName: addForm.fullName.trim(),
     email: addForm.email.trim(),
     phone: addForm.phone.trim(),
-    position: addForm.position.trim() || ROLE_META[addForm.role].label,
+    position: addForm.position.trim() || roleLabel(addForm.role),
     role: addForm.role,
     scopeAll: addForm.scopeAll,
     buildings: addForm.scopeAll ? [] : [...addForm.buildings],
     status: 'ACTIVE',
-    lastLogin: 'Hali kirmagan',
+    lastLogin: t('cfg.neverLoggedIn'),
     notifyInApp: true,
     notifyDigest: addForm.role === 'SUPER_HEAD' || addForm.role === 'ACCOUNTANT',
     language: 'uz',
   })
-  flash.value = `«${addForm.fullName.trim()}» foydalanuvchilar ro‘yxatiga qo‘shildi.`
+  flash.value = t('cfg.userAdded', { name: addForm.fullName.trim() })
   addOpen.value = false
 }
 
@@ -262,20 +270,26 @@ function toggleStatus(id: string) {
   const u = users.value.find((x) => x.id === id)
   if (!u) return
   u.status = u.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE'
-  flash.value = `«${u.fullName}» statusi «${u.status === 'ACTIVE' ? 'Faol' : 'Nofaol'}» ga o‘zgartirildi.`
+  flash.value = t('cfg.userStatusChanged', {
+    name: u.fullName,
+    status: u.status === 'ACTIVE' ? t('common.active') : t('common.inactive'),
+  })
 }
 </script>
 
 <template>
   <AppTopbar
-    title="Foydalanuvchilar"
-    subtitle="Tizim foydalanuvchilari, rollari va obyektga biriktirilishi"
-    :breadcrumb="[{ label: 'Sozlamalar', to: '/settings/users' }, { label: 'Foydalanuvchilar' }]"
+    :title="t('nav.settingsUsers')"
+    :subtitle="t('cfg.usersCaption')"
+    :breadcrumb="[
+      { label: t('nav.settings'), to: '/settings/users' },
+      { label: t('nav.settingsUsers') },
+    ]"
   >
     <template #actions>
       <UiButton size="sm" @click="openAdd">
         <UiIcon name="plus" :size="16" />
-        Foydalanuvchi qo‘shish
+        {{ t('cfg.addUser') }}
       </UiButton>
     </template>
   </AppTopbar>
@@ -308,7 +322,7 @@ function toggleStatus(id: string) {
       <button
         type="button"
         class="shrink-0 rounded-[6px] p-1 text-ok-700 transition-colors hover:bg-ok-100"
-        aria-label="Xabarni yopish"
+        :aria-label="t('common.dismiss')"
         @click="flash = ''"
       >
         <UiIcon name="x" :size="15" />
@@ -316,12 +330,12 @@ function toggleStatus(id: string) {
     </div>
 
     <UiCard
-      title="Foydalanuvchilar ro‘yxati"
-      :subtitle="`Jami: ${users.length} ta • ko‘rsatilmoqda: ${filtered.length} ta`"
+      :title="t('cfg.usersList')"
+      :subtitle="t('cfg.totalShown', { total: users.length, shown: filtered.length })"
       flush
     >
       <div class="grid gap-3 px-5 pb-4 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_220px_200px]">
-        <UiInput v-model="search" placeholder="F.I.Sh., email yoki telefon bo‘yicha qidirish">
+        <UiInput v-model="search" :placeholder="t('cfg.userSearchPlaceholder')">
           <template #prefix><UiIcon name="search" :size="17" /></template>
         </UiInput>
         <UiSelect v-model="roleFilter" :options="roleOptions" />
@@ -331,7 +345,7 @@ function toggleStatus(id: string) {
       <UiTable
         :columns="columns"
         :rows="rows"
-        empty="Filtrga mos foydalanuvchi topilmadi"
+        :empty="t('empty.noUsers')"
         @row-click="openEdit"
       >
         <template #cell-fullName="{ row }">
@@ -356,7 +370,7 @@ function toggleStatus(id: string) {
             class="inline-flex items-center rounded-pill px-2.5 py-1 text-xs font-semibold ring-1 ring-inset"
             :class="ROLE_TONE_CLASSES[row.meta.tone]"
           >
-            {{ row.meta.label }}
+            {{ roleLabel(row.role) }}
           </span>
         </template>
 
@@ -373,14 +387,14 @@ function toggleStatus(id: string) {
                 ? 'bg-ok-50 text-ok-700 ring-ok-100 hover:bg-ok-100'
                 : 'bg-ink-100 text-ink-700 ring-ink-200 hover:bg-ink-200'
             "
-            :title="row.status === 'ACTIVE' ? 'Nofaol qilish' : 'Faollashtirish'"
+            :title="row.status === 'ACTIVE' ? t('cfg.deactivate') : t('cfg.activate')"
             @click.stop="toggleStatus(row.id)"
           >
             <svg class="size-3 shrink-0" viewBox="0 0 12 12" aria-hidden="true">
               <circle v-if="row.status === 'ACTIVE'" cx="6" cy="6" r="4" fill="currentColor" />
               <circle v-else cx="6" cy="6" r="3.6" fill="none" stroke="currentColor" stroke-width="2" />
             </svg>
-            {{ row.status === 'ACTIVE' ? 'Faol' : 'Nofaol' }}
+            {{ row.status === 'ACTIVE' ? t('common.active') : t('common.inactive') }}
           </button>
         </template>
 
@@ -390,7 +404,7 @@ function toggleStatus(id: string) {
       </UiTable>
     </UiCard>
 
-    <UiCard title="Ruxsatlar ierarxiyasi" subtitle="Rol qaysi obyektlarni ko‘rishini belgilaydi">
+    <UiCard :title="t('cfg.permissionHierarchy')" :subtitle="t('cfg.permissionHierarchyCaption')">
       <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <div
           v-for="r in ROLES"
@@ -402,19 +416,19 @@ function toggleStatus(id: string) {
               class="inline-flex items-center rounded-pill px-2.5 py-1 text-xs font-semibold ring-1 ring-inset"
               :class="ROLE_TONE_CLASSES[ROLE_META[r].tone]"
             >
-              {{ ROLE_META[r].label }}
+              {{ roleLabel(r) }}
             </span>
             <span class="tabular text-[12px] font-semibold text-ink-500">
-              {{ users.filter((u) => u.role === r).length }} ta
+              {{ users.filter((u) => u.role === r).length }} {{ t('unitOf.pcs') }}
             </span>
           </div>
-          <p class="mt-2 text-[13px] leading-relaxed text-ink-600">{{ ROLE_META[r].caption }}</p>
+          <p class="mt-2 text-[13px] leading-relaxed text-ink-600">{{ roleCaption(r) }}</p>
           <button
             type="button"
             class="mt-3 inline-flex items-center gap-1.5 text-[13px] font-semibold text-brand-600 transition-colors hover:text-brand-700"
             @click="roleFilter = r"
           >
-            Shu roldagilarni ko‘rsatish
+            {{ t('cfg.showRoleUsers') }}
             <UiIcon name="arrowRight" :size="14" />
           </button>
         </div>
@@ -437,17 +451,17 @@ function toggleStatus(id: string) {
             class="flex h-full w-full max-w-lg flex-col bg-surface shadow-pop"
             role="dialog"
             aria-modal="true"
-            aria-label="Foydalanuvchi tahrirlash"
+            :aria-label="t('cfg.editUser')"
           >
             <header class="flex items-start justify-between gap-4 border-b border-ink-200 px-6 py-5">
               <div class="min-w-0">
-                <h2 class="text-lg font-bold text-ink-900">Foydalanuvchi tahrirlash</h2>
+                <h2 class="text-lg font-bold text-ink-900">{{ t('cfg.editUser') }}</h2>
                 <p class="mt-0.5 truncate text-[13px] text-ink-500">{{ draft.email }}</p>
               </div>
               <button
                 type="button"
                 class="-mr-1 -mt-1 rounded-lg p-2 text-ink-400 transition-colors hover:bg-ink-100 hover:text-ink-700"
-                aria-label="Yopish"
+                :aria-label="t('common.close')"
                 @click="editOpen = false"
               >
                 <UiIcon name="x" :size="18" />
@@ -463,7 +477,7 @@ function toggleStatus(id: string) {
                     class="inline-flex items-center rounded-pill px-2.5 py-1 text-xs font-semibold ring-1 ring-inset"
                     :class="ROLE_TONE_CLASSES[ROLE_META[draft.role].tone]"
                   >
-                    {{ ROLE_META[draft.role].label }}
+                    {{ roleLabel(draft.role) }}
                   </span>
                   <span
                     class="inline-flex items-center gap-1.5 rounded-pill px-2.5 py-1 text-xs font-semibold ring-1 ring-inset"
@@ -477,7 +491,7 @@ function toggleStatus(id: string) {
                       <circle v-if="draft.status === 'ACTIVE'" cx="6" cy="6" r="4" fill="currentColor" />
                       <circle v-else cx="6" cy="6" r="3.6" fill="none" stroke="currentColor" stroke-width="2" />
                     </svg>
-                    {{ draft.status === 'ACTIVE' ? 'Faol' : 'Nofaol' }}
+                    {{ draft.status === 'ACTIVE' ? t('common.active') : t('common.inactive') }}
                   </span>
                 </div>
               </div>
@@ -489,23 +503,33 @@ function toggleStatus(id: string) {
 
             <div class="scroll-slim flex-1 space-y-5 overflow-y-auto px-6 py-5">
               <template v-if="editTab === 'main'">
-                <UiField label="F.I.Sh." required :error="draft.fullName.trim().length > 2 ? '' : 'Kamida 3 ta belgi kiriting'">
+                <UiField
+                  :label="field('fullName')"
+                  required
+                  :error="
+                    draft.fullName.trim().length > 2 ? '' : t('common.minChars', { n: 3 })
+                  "
+                >
                   <UiInput v-model="draft.fullName" />
                 </UiField>
-                <UiField label="Email" required :error="/.+@.+\..+/.test(draft.email) ? '' : 'To‘g‘ri email kiriting'">
+                <UiField
+                  :label="t('common.email')"
+                  required
+                  :error="/.+@.+\..+/.test(draft.email) ? '' : t('cfg.invalidEmail')"
+                >
                   <UiInput v-model="draft.email" type="email" />
                 </UiField>
-                <UiField label="Telefon">
+                <UiField :label="t('common.phone')">
                   <UiInput v-model="draft.phone" />
                 </UiField>
-                <UiField label="Lavozim">
+                <UiField :label="field('position')">
                   <UiInput v-model="draft.position" />
                 </UiField>
                 <div>
-                  <UiField label="Rol">
+                  <UiField :label="field('role')">
                     <UiSelect
                       v-model="draft.role"
-                      :options="ROLES.map((r) => ({ value: r, label: ROLE_META[r].label }))"
+                      :options="ROLES.map((r) => ({ value: r, label: roleLabel(r) }))"
                     />
                   </UiField>
                   <p
@@ -513,19 +537,20 @@ function toggleStatus(id: string) {
                   >
                     <UiIcon name="lock" :size="15" class="mt-0.5 shrink-0" />
                     <span class="min-w-0">
-                      <b class="font-semibold">Cheklov:</b> {{ ROLE_META[draft.role].limitation }}
+                      <b class="font-semibold">{{ t('cfg.limitation') }}</b>
+                      {{ roleLimitation(draft.role) }}
                     </span>
                   </p>
                   <p class="mt-1.5 text-[12px] text-ink-500">
-                    {{ ROLE_META[draft.role].level }} · {{ ROLE_META[draft.role].scope }}. Rol
-                    o‘zgarishi ruxsatlar ro‘yxatini darhol yangilaydi.
+                    {{ roleLevel(draft.role) }} · {{ roleScope(draft.role) }}.
+                    {{ t('cfg.roleChangeNote') }}
                   </p>
                 </div>
               </template>
 
               <template v-else-if="editTab === 'access'">
                 <div>
-                  <p class="text-[13px] font-semibold text-ink-700">Obyekt biriktirish</p>
+                  <p class="text-[13px] font-semibold text-ink-700">{{ field('buildingScope') }}</p>
                   <div class="mt-2.5 space-y-2">
                     <label
                       class="flex cursor-pointer items-start gap-3 rounded-field p-3 ring-1 ring-inset transition-colors"
@@ -539,10 +564,15 @@ function toggleStatus(id: string) {
                       />
                       <span>
                         <span class="block text-[14px] font-semibold text-ink-900">
-                          Barcha obyektlar ({{ BUILDINGS.length }}/{{ BUILDINGS.length }})
+                          {{
+                            t('cfg.allObjectsCount', {
+                              a: BUILDINGS.length,
+                              b: BUILDINGS.length,
+                            })
+                          }}
                         </span>
                         <span class="block text-[12px] text-ink-500">
-                          Foydalanuvchi portfeldagi barcha obyektlarni ko‘radi
+                          {{ t('cfg.scopeAllHint') }}
                         </span>
                       </span>
                     </label>
@@ -558,9 +588,11 @@ function toggleStatus(id: string) {
                         @change="setScopeAll(false)"
                       />
                       <span>
-                        <span class="block text-[14px] font-semibold text-ink-900">Tanlangan obyekt</span>
+                        <span class="block text-[14px] font-semibold text-ink-900">
+                          {{ t('cfg.scopeSelected') }}
+                        </span>
                         <span class="block text-[12px] text-ink-500">
-                          Faqat belgilangan obyektlar ma’lumotlari ko‘rinadi
+                          {{ t('cfg.scopeSelectedHint') }}
                         </span>
                       </span>
                     </label>
@@ -594,21 +626,20 @@ function toggleStatus(id: string) {
                           v-if="draft.buildings.includes(b.id)"
                           class="shrink-0 text-[12px] font-semibold text-brand-600"
                         >
-                          Biriktirildi
+                          {{ t('cfg.attached') }}
                         </span>
                       </label>
                     </li>
                   </ul>
 
                   <p v-if="draft.scopeAll" class="mt-2.5 text-[12px] text-ink-500">
-                    Hozir «Barcha obyektlar» tanlangan, alohida belgilash uchun quyidagi obyektni
-                    belgilang, rejim avtomatik «Tanlangan obyekt» ga o‘tadi.
+                    {{ t('cfg.scopeAllNote') }}
                   </p>
                 </div>
 
                 <div>
                   <p class="text-[13px] font-semibold text-ink-700">
-                    «{{ ROLE_META[draft.role].label }}» roli uchun ochiq bo‘limlar
+                    {{ t('cfg.openAreasFor', { role: roleLabel(draft.role) }) }}
                   </p>
                   <ul class="mt-2.5 grid gap-1.5 sm:grid-cols-2">
                     <li
@@ -625,7 +656,7 @@ function toggleStatus(id: string) {
                     to="/settings/roles"
                     class="mt-3 inline-flex items-center gap-1.5 text-[13px] font-semibold text-brand-600 hover:text-brand-700"
                   >
-                    Ruxsatlar matritsasini ochish
+                    {{ t('cfg.openMatrix') }}
                     <UiIcon name="arrowRight" :size="14" />
                   </NuxtLink>
                 </div>
@@ -639,9 +670,11 @@ function toggleStatus(id: string) {
                     @click="draft.status = draft.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE'"
                   >
                     <span>
-                      <span class="block text-[14px] font-semibold text-ink-900">Hisob holati</span>
+                      <span class="block text-[14px] font-semibold text-ink-900">
+                        {{ t('cfg.accountState') }}
+                      </span>
                       <span class="block text-[12px] text-ink-500">
-                        Nofaol hisob tizimga kira olmaydi
+                        {{ t('cfg.inactiveAccountHint') }}
                       </span>
                     </span>
                     <span
@@ -652,7 +685,7 @@ function toggleStatus(id: string) {
                           : 'bg-ink-100 text-ink-700 ring-ink-200'
                       "
                     >
-                      {{ draft.status === 'ACTIVE' ? 'Faol' : 'Nofaol' }}
+                      {{ draft.status === 'ACTIVE' ? t('common.active') : t('common.inactive') }}
                     </span>
                   </button>
 
@@ -661,7 +694,9 @@ function toggleStatus(id: string) {
                     class="flex w-full items-center justify-between gap-3 rounded-field px-4 py-3 text-left ring-1 ring-inset ring-ink-200 transition-colors hover:ring-ink-300"
                     @click="draft.notifyInApp = !draft.notifyInApp"
                   >
-                    <span class="text-[14px] font-semibold text-ink-900">Tizim ichidagi bildirishnomalar</span>
+                    <span class="text-[14px] font-semibold text-ink-900">
+                      {{ t('cfg.inAppNotifications') }}
+                    </span>
                     <span
                       class="inline-flex h-6 w-11 shrink-0 items-center rounded-pill p-0.5 transition-colors"
                       :class="draft.notifyInApp ? 'bg-brand-500' : 'bg-ink-300'"
@@ -679,8 +714,10 @@ function toggleStatus(id: string) {
                     @click="draft.notifyDigest = !draft.notifyDigest"
                   >
                     <span>
-                      <span class="block text-[14px] font-semibold text-ink-900">Kunlik hisobot xulosasi</span>
-                      <span class="block text-[12px] text-ink-500">Tizim ichida ko‘rsatiladi</span>
+                      <span class="block text-[14px] font-semibold text-ink-900">
+                        {{ t('cfg.dailyReportDigest') }}
+                      </span>
+                      <span class="block text-[12px] text-ink-500">{{ t('cfg.shownInSystem') }}</span>
                     </span>
                     <span
                       class="inline-flex h-6 w-11 shrink-0 items-center rounded-pill p-0.5 transition-colors"
@@ -694,15 +731,12 @@ function toggleStatus(id: string) {
                   </button>
                 </div>
 
-                <UiField
-                  label="Interfeys tili"
-                  hint="Shu hisob uchun boshlang‘ich til, egasi uni o‘z profilida o‘zgartira oladi"
-                >
+                <UiField :label="t('common.language')" :hint="t('cfg.userLanguageHint')">
                   <UiSelect
                     v-model="draft.language"
                     :options="[
-                      { value: 'uz', label: 'O‘zbekcha' },
-                      { value: 'ru', label: 'Русский' },
+                      { value: 'uz', label: t('shell.localeUz') },
+                      { value: 'ru', label: t('shell.localeRu') },
                     ]"
                   />
                 </UiField>
@@ -710,55 +744,55 @@ function toggleStatus(id: string) {
             </div>
 
             <footer class="flex items-center justify-end gap-3 border-t border-ink-200 bg-surface-sunken px-6 py-4">
-              <UiButton variant="ghost" @click="editOpen = false">Bekor qilish</UiButton>
-              <UiButton :disabled="!draftValid" @click="saveEdit">Saqlash</UiButton>
+              <UiButton variant="ghost" @click="editOpen = false">{{ t('common.cancel') }}</UiButton>
+              <UiButton :disabled="!draftValid" @click="saveEdit">{{ t('common.save') }}</UiButton>
             </footer>
           </aside>
         </div>
       </Transition>
     </Teleport>
 
-    <UiModal
-      v-model="addOpen"
-      title="Foydalanuvchi qo‘shish"
-      subtitle="Yangi hisob yaratiladi va ro‘yxatga qo‘shiladi"
-    >
+    <UiModal v-model="addOpen" :title="t('cfg.addUser')" :subtitle="t('cfg.addUserCaption')">
       <div class="space-y-4">
         <UiField
-          label="F.I.Sh."
+          :label="field('fullName')"
           required
-          :error="addTouched && addForm.fullName.trim().length < 3 ? 'Kamida 3 ta belgi kiriting' : ''"
+          :error="
+            addTouched && addForm.fullName.trim().length < 3
+              ? t('common.minChars', { n: 3 })
+              : ''
+          "
         >
-          <UiInput v-model="addForm.fullName" placeholder="Masalan: Anvar Sobirov" />
+          <UiInput v-model="addForm.fullName" :placeholder="t('cfg.nameExample')" />
         </UiField>
 
         <div class="grid gap-4 sm:grid-cols-2">
           <UiField
-            label="Email"
+            :label="t('common.email')"
             required
-            :error="addTouched && !/.+@.+\..+/.test(addForm.email) ? 'To‘g‘ri email kiriting' : ''"
+            :error="addTouched && !/.+@.+\..+/.test(addForm.email) ? t('cfg.invalidEmail') : ''"
           >
             <UiInput v-model="addForm.email" type="email" placeholder="a.sobirov@makon.uz" />
           </UiField>
-          <UiField label="Telefon">
+          <UiField :label="t('common.phone')">
             <UiInput v-model="addForm.phone" placeholder="+998 90 000 00 00" />
           </UiField>
         </div>
 
         <div class="grid gap-4 sm:grid-cols-2">
-          <UiField label="Lavozim">
-            <UiInput v-model="addForm.position" placeholder="Masalan: Obyekt rahbari" />
+          <UiField :label="field('position')">
+            <UiInput v-model="addForm.position" :placeholder="t('cfg.positionExample')" />
           </UiField>
-          <UiField label="Rol" required>
+          <UiField :label="field('role')" required>
             <UiSelect
               v-model="addForm.role"
-              :options="ROLES.map((r) => ({ value: r, label: ROLE_META[r].label }))"
+              :options="ROLES.map((r) => ({ value: r, label: roleLabel(r) }))"
             />
           </UiField>
         </div>
 
         <div>
-          <p class="mb-2 text-[13px] font-semibold text-ink-700">Obyekt biriktirish</p>
+          <p class="mb-2 text-[13px] font-semibold text-ink-700">{{ field('buildingScope') }}</p>
           <label class="mb-2 flex cursor-pointer items-center gap-2.5 text-[13px] text-ink-700">
             <input
               type="radio"
@@ -766,7 +800,7 @@ function toggleStatus(id: string) {
               :checked="addForm.scopeAll"
               @change="setAddScopeAll(true)"
             />
-            Barcha obyektlar
+            {{ t('landing.allObjects') }}
           </label>
           <label class="mb-2 flex cursor-pointer items-center gap-2.5 text-[13px] text-ink-700">
             <input
@@ -775,7 +809,7 @@ function toggleStatus(id: string) {
               :checked="!addForm.scopeAll"
               @change="setAddScopeAll(false)"
             />
-            Tanlangan obyekt
+            {{ t('cfg.scopeSelected') }}
           </label>
 
           <div class="grid gap-1.5 sm:grid-cols-2">
@@ -802,10 +836,10 @@ function toggleStatus(id: string) {
       </div>
 
       <template #footer>
-        <UiButton variant="ghost" @click="addOpen = false">Bekor qilish</UiButton>
+        <UiButton variant="ghost" @click="addOpen = false">{{ t('common.cancel') }}</UiButton>
         <UiButton @click="submitAdd">
           <UiIcon name="plus" :size="16" />
-          Qo‘shish
+          {{ t('common.add') }}
         </UiButton>
       </template>
     </UiModal>

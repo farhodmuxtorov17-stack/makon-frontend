@@ -43,10 +43,10 @@ export interface StructureKindMeta {
 export const STRUCTURE_KIND: Record<StructureKind, StructureKindMeta> = {
   main: { label: 'Asosiy bino', short: 'Asosiy', leasable: true, icon: 'building', tone: 'brand' },
   warehouse: { label: 'Ombor bloki', short: 'Ombor', leasable: true, icon: 'box', tone: 'warn' },
-  admin: { label: "Ma'muriy bino", short: "Ma'muriy", leasable: true, icon: 'contract', tone: 'brand' },
+  admin: { label: 'Ma’muriy bino', short: 'Ma’muriy', leasable: true, icon: 'contract', tone: 'brand' },
   parkingSurface: { label: 'Yer usti avtoturargoh', short: 'Parkovka', leasable: false, icon: 'cube', tone: 'neutral' },
   parkingUnderground: { label: 'Yer osti avtoturargoh', short: 'Yer osti parkovka', leasable: false, icon: 'cube', tone: 'neutral' },
-  checkpoint: { label: "Nazorat-o'tkazish punkti", short: 'KPP', leasable: false, icon: 'shield', tone: 'neutral' },
+  checkpoint: { label: 'Nazorat-o‘tkazish punkti', short: 'KPP', leasable: false, icon: 'shield', tone: 'neutral' },
   boiler: { label: 'Qozonxona', short: 'Qozonxona', leasable: false, icon: 'meter', tone: 'neutral' },
   cafe: { label: 'Kafe', short: 'Kafe', leasable: true, icon: 'users', tone: 'ok' },
   carwash: { label: 'Avtomoyka', short: 'Moyka', leasable: true, icon: 'wrench', tone: 'ok' },
@@ -139,7 +139,7 @@ function composeSite(b: Building): Structure[] {
 
     add({
       kind: 'admin',
-      name: "Ma'muriy bino",
+      name: 'Ma’muriy bino',
       floors: 2,
       undergroundFloors: 0,
       x: 30,
@@ -362,7 +362,24 @@ function composeSite(b: Building): Structure[] {
 export const STRUCTURES: Structure[] = BUILDINGS.flatMap(composeSite)
 
 export function structuresOf(buildingId: string): Structure[] {
-  return STRUCTURES.filter((s) => s.buildingId === buildingId)
+  const found = STRUCTURES.filter((s) => s.buildingId === buildingId)
+  if (found.length) return found
+
+  /*
+   * Reyestrga ish vaqtida qo'shilgan obyektda tarkib hali yo'q: u shu yerda
+   * quriladi va bir marta reyestrga qo'shiladi. Shu tufayli yangi obyekt
+   * kartochkasi ham bo'sh chiqmaydi.
+   */
+  const b = BUILDINGS.find((x) => x.id === buildingId)
+  if (!b) return []
+  const built = composeSite(b)
+  STRUCTURES.push(...built)
+  return built
+}
+
+/** Uchastkada uchraydigan qurilma turlari: reyestr filtri shu ro'yxatdan ishlaydi */
+export function structureKindsOf(buildingId: string): StructureKind[] {
+  return Array.from(new Set(structuresOf(buildingId).map((s) => s.kind)))
 }
 
 export function structureById(id: string): Structure | undefined {

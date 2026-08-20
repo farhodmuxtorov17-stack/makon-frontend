@@ -4,6 +4,34 @@ import { UNITS } from '~/data/units'
 import { dateShort, num, todayIso } from '~/utils/format'
 
 const auth = useAuthStore()
+const { t } = useI18n()
+const { field, monthName: monthTitleOf } = useAppLabels()
+
+/**
+ * Hisoblagich turi va joylashuvi ma’lumotda o‘zbekcha qiymat sifatida
+ * saqlanadi: qiymat o‘zgarmaydi, faqat ko‘rinadigan nom lug‘atdan olinadi.
+ */
+const TYPE_KEY: Record<string, string> = {
+  Suv: 'meterType.water',
+  Elektr: 'meterType.electricity',
+  Issiqlik: 'meterType.heating',
+}
+
+const PLACE_KEY: Record<string, string> = {
+  'sanuzel tuguni': 'meterPlace.water',
+  'kirish shchiti': 'meterPlace.electricity',
+  'issiqlik tuguni': 'meterPlace.heating',
+}
+
+function typeLabel(value: string) {
+  const key = TYPE_KEY[value]
+  return key ? t(key) : value
+}
+
+function placeLabel(value: string) {
+  const key = PLACE_KEY[value]
+  return key ? t(key) : value
+}
 
 /** Kabinet faqat kirgan foydalanuvchining tashkiloti bilan ishlaydi */
 const organization = computed(() => auth.user?.organization ?? '')
@@ -143,7 +171,15 @@ const meters = useState<CabinetMeter[]>('cabinet-meters', defaultMeters)
 
 /** Joylashuv unit kodidan yig‘iladi, qattiq yozilmaydi */
 function locationOf(m: CabinetMeter) {
-  return myUnit.value ? `${myUnit.value.code}-unit, ${m.place}` : m.place
+  return myUnit.value
+    ? t('cab.meterLocation', { unit: myUnit.value.code, place: placeLabel(m.place) })
+    : placeLabel(m.place)
+}
+
+/** Grafik yorliqlari ma’lumotda o‘zbekcha saqlanadi, ekranda tarjima qilinadi */
+function monthLabel(name: string) {
+  const index = MONTH_NAMES.indexOf(name)
+  return index < 0 ? name : monthTitleOf(index + 1)
 }
 
 const TONE_CLASS: Record<string, string> = {
@@ -161,11 +197,16 @@ function consumption(m: CabinetMeter) {
   return Math.round((m.lastReading - m.previousReading) * 100) / 100
 }
 
+const chartLabels = computed(() => (selected.value ? selected.value.labels.map(monthLabel) : []))
+
 const chartSeries = computed(() =>
   selected.value
     ? [
         {
-          label: `${selected.value.type} sarfi, ${selected.value.unit}`,
+          label: t('cab.consumptionSeries', {
+            type: typeLabel(selected.value.type),
+            unit: selected.value.unit,
+          }),
           tone: selected.value.tone,
           values: selected.value.history,
           fill: true,
@@ -174,22 +215,22 @@ const chartSeries = computed(() =>
     : [],
 )
 
-const columns = [
-  { key: 'code', label: 'Hisoblagich' },
-  { key: 'type', label: 'Turi' },
-  { key: 'location', label: 'Joylashuvi' },
-  { key: 'previousReading', label: 'Oldingi', align: 'right' as const, numeric: true },
-  { key: 'lastReading', label: 'Joriy', align: 'right' as const, numeric: true },
-  { key: 'consumption', label: 'Sarf', align: 'right' as const, numeric: true },
-  { key: 'readAt', label: 'O‘qilgan sana', align: 'right' as const },
-  { key: 'actions', label: 'Amallar', align: 'right' as const },
-]
+const columns = computed(() => [
+  { key: 'code', label: field('meter') },
+  { key: 'type', label: field('type') },
+  { key: 'location', label: field('location') },
+  { key: 'previousReading', label: t('common.previous'), align: 'right' as const, numeric: true },
+  { key: 'lastReading', label: t('common.current'), align: 'right' as const, numeric: true },
+  { key: 'consumption', label: field('consumption'), align: 'right' as const, numeric: true },
+  { key: 'readAt', label: field('readAt'), align: 'right' as const },
+  { key: 'actions', label: field('actions'), align: 'right' as const },
+])
 
 const rows = computed(() =>
   meters.value.map((m) => ({
     id: m.id,
     code: m.code,
-    type: m.type,
+    type: typeLabel(m.type),
     location: locationOf(m),
     previousReading: m.previousReading,
     lastReading: m.lastReading,
@@ -211,7 +252,7 @@ const entryMeter = computed(
 )
 
 const meterOptions = computed(() =>
-  meters.value.map((m) => ({ value: m.id, label: `${m.type}, ${m.code}` })),
+  meters.value.map((m) => ({ value: m.id, label: `${typeLabel(m.type)}, ${m.code}` })),
 )
 
 function openEntry(id: string) {
@@ -226,11 +267,13 @@ function saveReading() {
   if (!m) return
   const value = Number(entryValue.value)
   if (!entryValue.value.trim() || Number.isNaN(value)) {
-    entryError.value = 'Ko‘rsatkich qiymatini kiriting'
+    entryError.value = t('cab.readingRequired')
     return
   }
   if (value < m.lastReading) {
-    entryError.value = `Yangi ko‘rsatkich oldingi qiymatdan (${num(m.lastReading, 2)} ${m.unit}) kichik bo‘lishi mumkin emas`
+    entryError.value = t('cab.readingTooSmall', {
+      value: `${num(m.lastReading, 2)} ${m.unit}`,
+    })
     return
   }
   entryError.value = ''
@@ -242,29 +285,32 @@ function saveReading() {
   m.labels = [...m.labels, monthName(m.labels.length - 4)]
   m.history = [...m.history, used]
   selectedId.value = m.id
-  savedMessage.value = `${m.type} hisoblagichi bo‘yicha yangi ko‘rsatkich saqlandi: ${num(value, 2)} ${m.unit}`
+  savedMessage.value = t('cab.readingSaved', {
+    type: typeLabel(m.type),
+    value: `${num(value, 2)} ${m.unit}`,
+  })
   entryOpen.value = false
 }
 </script>
 
 <template>
   <AppTopbar
-    title="Hisoblagichlar"
+    :title="t('nav.meters')"
     :subtitle="
       myUnit && myBuilding
-        ? `${myBuilding.name} · Unit ${myUnit.code} bo‘yicha ko‘rsatkichlar`
-        : 'Unit bo‘yicha ko‘rsatkichlar'
+        ? t('cab.metersOfUnit', { building: myBuilding.name, code: myUnit.code })
+        : t('cab.metersOfUnitShort')
     "
-    :breadcrumb="[{ label: 'Kabinet', to: '/cabinet' }, { label: 'Hisoblagichlar' }]"
+    :breadcrumb="[{ label: t('cab.title'), to: '/cabinet' }, { label: t('nav.meters') }]"
   >
     <template #actions>
       <UiButton variant="secondary" size="sm" to="/cabinet/invoices">
         <UiIcon name="wallet" :size="16" />
-        Hisob-fakturalar
+        {{ t('nav.invoices') }}
       </UiButton>
       <UiButton v-if="myUnit" size="sm" @click="openEntry(selectedId)">
         <UiIcon name="plus" :size="16" />
-        Ko‘rsatkich kiritish
+        {{ t('cab.enterReading') }}
       </UiButton>
     </template>
   </AppTopbar>
@@ -273,9 +319,9 @@ function saveReading() {
     <UiCard v-if="!myUnit" flush>
       <UiEmpty
         icon="meter"
-        title="Hisoblagich biriktirilmagan"
-        description="Tashkilotingiz nomiga rasmiylashtirilgan maydon bo‘lmaguncha hisoblagich ko‘rsatkichlari ko‘rsatilmaydi."
-        action-label="Ijaraga olish arizasi"
+        :title="t('empty.noMeterAssigned')"
+        :description="t('cab.noMetersDesc')"
+        :action-label="t('cab.applyForRent')"
         action-to="/cabinet/apply"
       />
     </UiCard>
@@ -292,7 +338,7 @@ function saveReading() {
         <button
           type="button"
           class="rounded-lg p-1.5 text-ok-700 transition-colors hover:bg-ok-100"
-          aria-label="Xabarni yopish"
+          :aria-label="t('common.closeMessage')"
           @click="savedMessage = ''"
         >
           <UiIcon name="x" :size="16" />
@@ -317,12 +363,12 @@ function saveReading() {
             </span>
           </div>
 
-          <p class="mt-3 text-[13px] text-ink-500">{{ m.type }} ({{ m.unit }})</p>
+          <p class="mt-3 text-[13px] text-ink-500">{{ typeLabel(m.type) }} ({{ m.unit }})</p>
           <p class="tabular mt-1 text-[22px] font-bold leading-none text-ink-900">
             {{ num(m.lastReading, 2) }}
           </p>
           <p class="tabular mt-1.5 text-[12px] text-ink-500">
-            Oldingi: {{ num(m.previousReading, 2) }} {{ m.unit }}
+            {{ t('cab.previousValue', { value: `${num(m.previousReading, 2)} ${m.unit}` }) }}
           </p>
 
           <div class="mt-3 flex items-center justify-between border-t border-ink-100 pt-3">
@@ -335,52 +381,55 @@ function saveReading() {
       <section class="grid gap-5 xl:grid-cols-3">
         <UiCard
           class="xl:col-span-2"
-          :title="`${selected.type} sarfi dinamikasi`"
-          :subtitle="`${selected.code} · oylar kesimida, ${selected.unit}`"
+          :title="t('cab.consumptionDynamics', { type: typeLabel(selected.type) })"
+          :subtitle="t('cab.byMonthsUnit', { code: selected.code, unit: selected.unit })"
         >
           <template #actions>
             <UiButton variant="secondary" size="sm" @click="openEntry(selected.id)">
               <UiIcon name="edit" :size="15" />
-              Ko‘rsatkich kiritish
+              {{ t('cab.enterReading') }}
             </UiButton>
           </template>
-          <UiLine :labels="selected.labels" :series="chartSeries" :height="224" />
+          <UiLine :labels="chartLabels" :series="chartSeries" :height="224" />
         </UiCard>
 
-        <UiCard :title="`${selected.type} hisoblagichi`" subtitle="Pasport ma’lumotlari">
+        <UiCard
+          :title="t('cab.meterOfType', { type: typeLabel(selected.type) })"
+          :subtitle="t('cab.passportData')"
+        >
           <dl class="divide-y divide-ink-100">
             <div class="flex items-center justify-between py-2.5">
-              <dt class="text-[13px] text-ink-500">Hisoblagich raqami</dt>
+              <dt class="text-[13px] text-ink-500">{{ field('meterNo') }}</dt>
               <dd class="tabular text-[13px] font-semibold text-ink-900">{{ selected.code }}</dd>
             </div>
             <div class="flex items-center justify-between py-2.5">
-              <dt class="text-[13px] text-ink-500">Zavod raqami</dt>
+              <dt class="text-[13px] text-ink-500">{{ field('factoryNo') }}</dt>
               <dd class="tabular text-[13px] font-semibold text-ink-900">{{ selected.serial }}</dd>
             </div>
             <div class="flex items-center justify-between py-2.5">
-              <dt class="text-[13px] text-ink-500">Joylashuvi</dt>
+              <dt class="text-[13px] text-ink-500">{{ field('location') }}</dt>
               <dd class="text-[13px] font-semibold text-ink-900">{{ locationOf(selected) }}</dd>
             </div>
             <div class="flex items-center justify-between py-2.5">
-              <dt class="text-[13px] text-ink-500">Joriy sarf</dt>
+              <dt class="text-[13px] text-ink-500">{{ field('currentConsumption') }}</dt>
               <dd class="tabular text-[13px] font-bold text-brand-600">
                 {{ num(consumption(selected), 2) }} {{ selected.unit }}
               </dd>
             </div>
             <div class="flex items-center justify-between py-2.5">
-              <dt class="text-[13px] text-ink-500">Keyingi tekshiruv</dt>
+              <dt class="text-[13px] text-ink-500">{{ field('nextVerification') }}</dt>
               <dd class="tabular text-[13px] font-semibold text-ink-900">
                 {{ dateShort(selected.verifyAt) }}
               </dd>
             </div>
             <div class="flex items-center justify-between py-2.5">
-              <dt class="text-[13px] text-ink-500">Holat</dt>
+              <dt class="text-[13px] text-ink-500">{{ field('status') }}</dt>
               <dd>
                 <span
                   class="inline-flex items-center gap-1.5 rounded-pill bg-ok-50 px-2.5 py-1 text-[11px] font-semibold text-ok-700 ring-1 ring-inset ring-ok-100"
                 >
                   <UiIcon name="check" :size="12" />
-                  Faol
+                  {{ t('common.active') }}
                 </span>
               </dd>
             </div>
@@ -388,7 +437,7 @@ function saveReading() {
         </UiCard>
       </section>
 
-      <UiCard title="Barcha hisoblagichlar" subtitle="Ko‘rsatkichlar va davr sarfi" flush>
+      <UiCard :title="t('cab.allMeters')" :subtitle="t('cab.metersTableCaption')" flush>
         <UiTable :columns="columns" :rows="rows" @row-click="(row) => (selectedId = String(row.id))">
           <template #cell-code="{ row }">
             <span class="tabular text-[14px] font-semibold text-ink-900">{{ row.code }}</span>
@@ -412,7 +461,7 @@ function saveReading() {
               <button
                 type="button"
                 class="grid size-11 place-items-center rounded-field text-brand-600 transition-colors hover:bg-brand-50 md:size-9"
-                :aria-label="`${row.code}, ko‘rsatkich kiritish`"
+                :aria-label="t('cab.enterReadingAria', { code: row.code })"
                 @click.stop="openEntry(String(row.id))"
               >
                 <UiIcon name="edit" :size="17" />
@@ -425,8 +474,7 @@ function saveReading() {
       <div class="flex items-start gap-3 rounded-card bg-brand-50 px-5 py-4">
         <UiIcon name="info" :size="18" class="mt-0.5 shrink-0 text-brand-600" />
         <p class="text-[13px] leading-snug text-brand-700">
-          Ko‘rsatkichlar har oyning 18-sanasida qayd etiladi. Kiritilgan qiymat bino xizmatining
-          nazorat o‘lchovi bilan solishtiriladi va hisoblagich dalolatnomasiga yoziladi.
+          {{ t('cab.metersInfoLong') }}
         </p>
       </div>
     </template>
@@ -434,39 +482,47 @@ function saveReading() {
 
   <UiModal
     v-model="entryOpen"
-    title="Ko‘rsatkich kiritish"
-    :subtitle="entryMeter ? `${entryMeter.type} · ${entryMeter.code}` : ''"
+    :title="t('cab.enterReading')"
+    :subtitle="entryMeter ? `${typeLabel(entryMeter.type)} · ${entryMeter.code}` : ''"
     size="sm"
   >
     <div v-if="entryMeter" class="space-y-4">
-      <UiField label="Hisoblagich" required>
+      <UiField :label="field('meter')" required>
         <UiSelect v-model="entryMeterId" :options="meterOptions" />
       </UiField>
 
       <div class="grid gap-3 sm:grid-cols-2">
         <div class="rounded-field bg-surface-sunken p-3.5 ring-1 ring-ink-200">
-          <p class="text-[12px] text-ink-500">Oxirgi qayd etilgan</p>
+          <p class="text-[12px] text-ink-500">{{ t('cab.lastRecorded') }}</p>
           <p class="tabular mt-1 text-[16px] font-bold text-ink-900">
             {{ num(entryMeter.lastReading, 2) }} {{ entryMeter.unit }}
           </p>
           <p class="tabular mt-0.5 text-[12px] text-ink-500">{{ dateShort(entryMeter.readAt) }}</p>
         </div>
         <div class="rounded-field bg-surface-sunken p-3.5 ring-1 ring-ink-200">
-          <p class="text-[12px] text-ink-500">Oldingi davr</p>
+          <p class="text-[12px] text-ink-500">{{ t('cab.previousPeriod') }}</p>
           <p class="tabular mt-1 text-[16px] font-bold text-ink-900">
             {{ num(entryMeter.previousReading, 2) }} {{ entryMeter.unit }}
           </p>
           <p class="tabular mt-0.5 text-[12px] text-ink-500">
-            Sarf: {{ num(consumption(entryMeter), 2) }} {{ entryMeter.unit }}
+            {{
+              t('cab.consumptionIs', {
+                value: `${num(consumption(entryMeter), 2)} ${entryMeter.unit}`,
+              })
+            }}
           </p>
         </div>
       </div>
 
       <UiField
-        label="Yangi ko‘rsatkich"
+        :label="field('newReading')"
         required
         :error="entryError"
-        :hint="`Qiymat ${num(entryMeter.lastReading, 2)} ${entryMeter.unit} dan kichik bo‘lmasligi kerak`"
+        :hint="
+          t('cab.readingMinHint', {
+            value: `${num(entryMeter.lastReading, 2)} ${entryMeter.unit}`,
+          })
+        "
       >
         <UiInput
           v-model="entryValue"
@@ -482,10 +538,10 @@ function saveReading() {
     </div>
 
     <template #footer>
-      <UiButton variant="ghost" @click="entryOpen = false">Bekor qilish</UiButton>
+      <UiButton variant="ghost" @click="entryOpen = false">{{ t('common.cancel') }}</UiButton>
       <UiButton @click="saveReading">
         <UiIcon name="check" :size="16" />
-        Saqlash
+        {{ t('common.save') }}
       </UiButton>
     </template>
   </UiModal>

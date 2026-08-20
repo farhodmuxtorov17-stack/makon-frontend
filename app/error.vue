@@ -4,6 +4,7 @@ import type { NuxtError } from '#app'
 const props = defineProps<{ error: NuxtError }>()
 
 const auth = useAuthStore()
+const { t } = useI18n()
 
 const isForbidden = computed(() => props.error.statusCode === 403)
 const home = computed(() => auth.roleMeta?.home ?? '/')
@@ -23,22 +24,18 @@ const home = computed(() => auth.roleMeta?.home ?? '/')
         {{ error.statusCode }}
       </p>
       <h1 class="mt-2 text-lg font-bold text-ink-900">
-        {{ isForbidden ? 'Ruxsat berilmagan' : 'Sahifa topilmadi' }}
+        {{ isForbidden ? t('err.forbiddenTitle') : t('err.notFoundTitle') }}
       </h1>
       <p class="mt-2 text-[14px] leading-relaxed text-ink-600">
-        {{
-          isForbidden
-            ? 'Ushbu bo‘limga kirish sizning rolingiz doirasiga kirmaydi. Zarur bo‘lsa tizim administratoriga murojaat qiling.'
-            : 'So‘ralgan sahifa mavjud emas yoki ko‘chirilgan bo‘lishi mumkin.'
-        }}
+        {{ isForbidden ? t('err.forbiddenText') : t('err.notFoundText') }}
       </p>
 
       <div class="mt-6 flex justify-center gap-3">
         <UiButton variant="secondary" @click="clearError({ redirect: home })">
           <UiIcon name="chevronLeft" :size="16" />
-          Orqaga
+          {{ t('common.back') }}
         </UiButton>
-        <UiButton @click="clearError({ redirect: home })">Bosh sahifaga</UiButton>
+        <UiButton @click="clearError({ redirect: home })">{{ t('err.toHome') }}</UiButton>
       </div>
     </div>
   </div>

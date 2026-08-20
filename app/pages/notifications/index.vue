@@ -3,6 +3,7 @@ import { NOTIFICATION_CATEGORIES, type AppNotification } from '~/data/operations
 import { ROLE_META } from '~/constants/roles'
 
 const auth = useAuthStore()
+const { t } = useI18n()
 
 /** Header qo‘ng‘irog‘i bilan bitta umumiy ro‘yxat */
 const { items, markRead, markAllRead } = useNotifications()
@@ -29,21 +30,25 @@ interface DetailAction {
 const DETAILS = computed<Record<string, { rows: DetailRow[]; actions: DetailAction[] }>>(() => ({
   'n-01': {
     rows: [
-      { label: 'Hisob-faktura', value: 'INV-2025-0621' },
-      { label: 'Summa', value: '12 540 000 so‘m' },
-      { label: 'Muddati', value: '23.05.2025 (3 kun qoldi)', tone: 'warn' },
-      { label: 'Obyekt', value: 'Green Business Center' },
-      { label: 'To‘lov usuli', value: 'Bank o‘tkazmasi' },
+      { label: t('field.invoice'), value: 'INV-2025-0621' },
+      { label: t('field.amount'), value: t('unitOf.currencyValue', { value: '12 540 000' }) },
+      {
+        label: t('field.due'),
+        value: `23.05.2025 (${t('usr.daysLeft', { count: 3 })})`,
+        tone: 'warn',
+      },
+      { label: t('field.object'), value: 'Green Business Center' },
+      { label: t('field.paymentMethod'), value: t('usr.bankTransfer') },
     ],
     actions: [
       {
-        label: 'To‘lovni amalga oshirish',
+        label: t('usr.actPay'),
         icon: 'wallet',
         to: pick('/cabinet/invoices', '/billing/invoices'),
         primary: true,
       },
       {
-        label: 'Hisob-fakturani ko‘rish',
+        label: t('usr.actViewInvoice'),
         icon: 'doc',
         to: pick('/cabinet/invoices', '/billing/invoices'),
       },
@@ -51,75 +56,78 @@ const DETAILS = computed<Record<string, { rows: DetailRow[]; actions: DetailActi
   },
   'n-02': {
     rows: [
-      { label: 'Ariza raqami', value: 'SR-2025-0703' },
-      { label: 'Obyekt', value: 'Mega Mall' },
-      { label: 'Unit', value: '204' },
-      { label: 'Mas’ul xodim', value: 'Jasur Toshmatov' },
-      { label: 'Bajarilish darajasi', value: '100%', tone: 'ok' },
+      { label: t('field.applicationNo'), value: 'SR-2025-0703' },
+      { label: t('field.object'), value: 'Mega Mall' },
+      { label: t('field.unit'), value: '204' },
+      { label: t('usr.responsibleStaff'), value: 'Jasur Toshmatov' },
+      { label: t('field.completionRate'), value: '100%', tone: 'ok' },
     ],
     actions: [
       {
-        label: 'Arizani ko‘rish',
+        label: t('usr.actViewRequest'),
         icon: 'wrench',
         to: pick('/cabinet', '/service-requests'),
         primary: true,
       },
-      { label: 'Hujjatlarni ochish', icon: 'doc', to: pick('/cabinet/documents', '/contracts') },
+      { label: t('usr.actOpenDocs'), icon: 'doc', to: pick('/cabinet/documents', '/contracts') },
     ],
   },
   'n-03': {
     rows: [
-      { label: 'Unit', value: '706' },
-      { label: 'Obyekt', value: 'Green Business Center' },
-      { label: 'Maydon', value: '61.30 m²' },
-      { label: 'Narx', value: '11 200 000 so‘m / oy' },
-      { label: 'Holat', value: 'Bo‘sh', tone: 'ok' },
+      { label: t('field.unit'), value: '706' },
+      { label: t('field.object'), value: 'Green Business Center' },
+      { label: t('field.area'), value: t('unitOf.sqmValue', { value: '61.30' }) },
+      {
+        label: t('field.price'),
+        value: `${t('unitOf.currencyValue', { value: '11 200 000' })} / ${t('unitOf.month')}`,
+      },
+      { label: t('field.status'), value: t('status.unit.VACANT'), tone: 'ok' },
     ],
     actions: [
       {
-        label: 'Ariza yuborish',
+        label: t('apply.cta'),
         icon: 'clipboard',
         to: pick('/cabinet/applications', '/applications'),
         primary: true,
       },
-      { label: 'Obyektni ko‘rish', icon: 'building', to: pick('/cabinet/units', '/objects') },
+      { label: t('usr.actViewObject'), icon: 'building', to: pick('/cabinet/units', '/objects') },
     ],
   },
   'n-04': {
     rows: [
-      { label: 'Shartnoma', value: 'MKON-2025-0155' },
-      { label: 'Ijarachi', value: 'Global Logistics & Trans' },
-      { label: 'Obyekt', value: 'Harmony Residence' },
-      { label: 'Unit', value: 'A-502' },
-      { label: 'Tasdiqlash holati', value: 'Kutilmoqda', tone: 'warn' },
+      { label: t('field.contract'), value: 'MKON-2025-0155' },
+      { label: t('field.tenant'), value: 'Global Logistics & Trans' },
+      { label: t('field.object'), value: 'Harmony Residence' },
+      { label: t('field.unit'), value: 'A-502' },
+      { label: t('usr.approvalStatus'), value: t('usr.pending'), tone: 'warn' },
     ],
     actions: [
       {
-        label: 'Shartnomani ochish',
+        label: t('usr.actOpenContract'),
         icon: 'contract',
         to: pick('/cabinet/documents', '/contracts'),
         primary: true,
       },
-      { label: 'Hujjatlar arxivi', icon: 'doc', to: pick('/cabinet/documents', '/contracts') },
+      { label: t('usr.actDocArchive'), icon: 'doc', to: pick('/cabinet/documents', '/contracts') },
     ],
   },
   'n-05': {
     rows: [
-      { label: 'Hisob-faktura', value: 'INV-2025-0584' },
-      { label: 'Ijarachi', value: 'Dream Retail' },
-      { label: 'Summa', value: '7 890 000 so‘m' },
-      { label: 'Kechikish', value: '61 kun', tone: 'danger' },
-      { label: 'Obyekt', value: 'Mega Mall' },
+      { label: t('field.invoice'), value: 'INV-2025-0584' },
+      { label: t('field.tenant'), value: 'Dream Retail' },
+      { label: t('field.amount'), value: t('unitOf.currencyValue', { value: '7 890 000' }) },
+      { label: t('field.delay'), value: `61 ${t('unitOf.day')}`, tone: 'danger' },
+      { label: t('field.object'), value: 'Mega Mall' },
     ],
     actions: [
       {
-        label: 'Qarzdorlikni ko‘rish',
+        label: t('usr.actViewDebt'),
         icon: 'chart',
         to: pick('/cabinet/invoices', '/billing/debts'),
         primary: true,
       },
       {
-        label: 'Hisob-fakturani ochish',
+        label: t('usr.actOpenInvoice'),
         icon: 'wallet',
         to: pick('/cabinet/invoices', '/billing/invoices'),
       },
@@ -127,14 +135,14 @@ const DETAILS = computed<Record<string, { rows: DetailRow[]; actions: DetailActi
   },
   'n-06': {
     rows: [
-      { label: 'Qurilma', value: 'Chrome · Windows 11' },
-      { label: 'Hudud', value: 'Toshkent, O‘zbekiston' },
-      { label: 'Kirish vaqti', value: '19.05.2025, 21:14' },
-      { label: 'Seans holati', value: 'Faol', tone: 'ok' },
+      { label: t('field.device'), value: 'Chrome · Windows 11' },
+      { label: t('field.region'), value: t('usr.locTashkent') },
+      { label: t('usr.loginTime'), value: '19.05.2025, 21:14' },
+      { label: t('usr.sessionStatus'), value: t('common.active'), tone: 'ok' },
     ],
     actions: [
-      { label: 'Xavfsizlik sozlamalari', icon: 'shield', to: '/profile', primary: true },
-      { label: 'Faol seanslarni ko‘rish', icon: 'key', to: '/profile' },
+      { label: t('usr.actSecuritySettings'), icon: 'shield', to: '/profile', primary: true },
+      { label: t('usr.actViewSessions'), icon: 'key', to: '/profile' },
     ],
   },
 }))
@@ -164,15 +172,33 @@ const CATEGORY_ICON: Record<string, string> = {
   Tizim: 'gear',
 }
 
+/**
+ * Kategoriya nomi ma’lumotda o‘zbekcha saqlanadi: qiymat filtrlash uchun
+ * o‘zgarmaydi, ekranga esa tanlangan tildagi nomi chiqadi.
+ */
+const CATEGORY_LABEL: Record<string, string> = {
+  Barchasi: 'common.all',
+  'To‘lovlar': 'navShort.payments',
+  Arizalar: 'nav.applications',
+  Servis: 'section.service',
+  Hujjatlar: 'navShort.documents',
+  Tizim: 'usr.catSystem',
+}
+
+function categoryLabel(label: string) {
+  const key = CATEGORY_LABEL[label]
+  return key ? t(key) : label
+}
+
 const category = ref('Barchasi')
 const query = ref('')
 const readFilter = ref('all')
 
-const readOptions = [
-  { value: 'all', label: 'Barchasi' },
-  { value: 'unread', label: 'O‘qilmagan' },
-  { value: 'read', label: 'O‘qilgan' },
-]
+const readOptions = computed(() => [
+  { value: 'all', label: t('common.all') },
+  { value: 'unread', label: t('tab.unread') },
+  { value: 'read', label: t('tab.read') },
+])
 
 const categories = computed(() =>
   NOTIFICATION_CATEGORIES.map((c) => ({
@@ -189,7 +215,7 @@ const categories = computed(() =>
 )
 
 const tabs = computed(() =>
-  categories.value.map((c) => ({ value: c.label, label: c.label, count: c.count })),
+  categories.value.map((c) => ({ value: c.label, label: categoryLabel(c.label), count: c.count })),
 )
 
 const unreadTotal = computed(() => items.value.filter((n) => !n.read).length)
@@ -218,11 +244,11 @@ function select(n: AppNotification) {
   markRead(n.id)
 }
 
-const channels = [
+const channels = computed(() => [
   {
     id: 'in-app',
-    label: 'Tizim ichidagi bildirishnomalar',
-    caption: 'Makon tizimida ko‘rsatiladi',
+    label: t('usr.notifyInApp'),
+    caption: t('usr.channelInAppCaption'),
     icon: 'bell',
     tone: 'bg-brand-50 text-brand-600',
     active: true,
@@ -230,15 +256,15 @@ const channels = [
   {
     id: 'sms',
     label: 'SMS',
-    caption: 'Joriy bosqichda ulanmagan',
+    caption: t('usr.channelNotConnected'),
     icon: 'send',
     tone: 'bg-ink-100 text-ink-500',
     active: false,
   },
   {
     id: 'email',
-    label: 'E-pochta',
-    caption: 'Joriy bosqichda ulanmagan',
+    label: t('common.email'),
+    caption: t('usr.channelNotConnected'),
     icon: 'doc',
     tone: 'bg-ink-100 text-ink-500',
     active: false,
@@ -246,27 +272,27 @@ const channels = [
   {
     id: 'telegram',
     label: 'Telegram',
-    caption: 'Joriy bosqichda ulanmagan',
+    caption: t('usr.channelNotConnected'),
     icon: 'globe',
     tone: 'bg-ink-100 text-ink-500',
     active: false,
   },
-]
+])
 </script>
 
 <template>
   <AppTopbar
-    title="Bildirishnomalar markazi"
-    :subtitle="`Tizimdagi muhim hodisalar va xabarlar · ${unreadTotal} ta o‘qilmagan`"
+    :title="t('usr.notifCenter')"
+    :subtitle="t('usr.notifCenterCaption', { count: unreadTotal })"
   >
     <template #actions>
       <UiButton variant="secondary" size="sm" :disabled="!unreadTotal" @click="markAllRead">
         <UiIcon name="check" :size="16" />
-        Barchasini o‘qilgan deb belgilash
+        {{ t('common.markAllRead') }}
       </UiButton>
       <UiButton size="sm" to="/profile">
         <UiIcon name="gear" :size="16" />
-        Sozlamalar
+        {{ t('nav.settings') }}
       </UiButton>
     </template>
   </AppTopbar>
@@ -279,9 +305,9 @@ const channels = [
             <UiIcon name="bell" :size="20" />
           </span>
           <div class="min-w-0">
-            <h3 class="text-[16px] font-semibold text-ink-900">Bildirishnomalar</h3>
+            <h3 class="text-[16px] font-semibold text-ink-900">{{ t('common.notifications') }}</h3>
             <p class="mt-0.5 text-[13px] leading-snug text-ink-500">
-              Barcha muhim xabarlar va o‘zgarishlar bir joyda
+              {{ t('usr.notifLead') }}
             </p>
           </div>
         </div>
@@ -299,7 +325,7 @@ const channels = [
               @click="category = c.label"
             >
               <UiIcon :name="CATEGORY_ICON[c.label] ?? 'bell'" :size="18" />
-              <span class="flex-1 truncate text-[14px] font-semibold">{{ c.label }}</span>
+              <span class="flex-1 truncate text-[14px] font-semibold">{{ categoryLabel(c.label) }}</span>
               <span
                 class="tabular grid min-w-6 place-items-center rounded-pill px-1.5 py-0.5 text-[11px] font-bold"
                 :class="category === c.label ? 'bg-white text-brand-700' : 'bg-ink-100 text-ink-600'"
@@ -317,9 +343,9 @@ const channels = [
           >
             <UiIcon name="gear" :size="18" />
             <span class="min-w-0 flex-1">
-              <span class="block text-[14px] font-semibold">Sozlamalar</span>
+              <span class="block text-[14px] font-semibold">{{ t('nav.settings') }}</span>
               <span class="block truncate text-[12px] text-ink-500">
-                Bildirishnoma sozlamalarini o‘zgartirish
+                {{ t('usr.notifSettingsLink') }}
               </span>
             </span>
             <UiIcon name="chevronRight" :size="16" class="text-ink-400" />
@@ -331,7 +357,11 @@ const channels = [
         <div class="space-y-3 px-5 pt-5">
           <UiTabs v-model="category" :tabs="tabs" variant="line" />
           <div class="flex flex-wrap items-center gap-3">
-            <UiInput v-model="query" placeholder="Xabarlar ichida qidirish" class="min-w-56 flex-1">
+            <UiInput
+              v-model="query"
+              :placeholder="t('usr.searchMessages')"
+              class="min-w-56 flex-1"
+            >
               <template #prefix><UiIcon name="search" :size="16" /></template>
             </UiInput>
             <UiSelect v-model="readFilter" :options="readOptions" class="w-44" />
@@ -372,14 +402,14 @@ const channels = [
                   class="rounded-pill px-2 py-0.5 text-[11px] font-semibold"
                   :class="CATEGORY_TAG[n.category]"
                 >
-                  {{ n.category }}
+                  {{ categoryLabel(n.category) }}
                 </span>
                 <span class="flex items-center gap-2">
                   <span class="tabular text-[12px] text-ink-500">{{ n.at }}</span>
                   <span
                     class="size-2 rounded-full"
                     :class="n.read ? 'bg-ink-300' : 'bg-brand-500'"
-                    :aria-label="n.read ? 'O‘qilgan' : 'O‘qilmagan'"
+                    :aria-label="n.read ? t('tab.read') : t('tab.unread')"
                   />
                 </span>
               </span>
@@ -387,16 +417,17 @@ const channels = [
           </li>
 
           <li v-if="!filtered.length" class="px-5 py-16 text-center text-[14px] text-ink-500">
-            Tanlangan filtr bo‘yicha xabar topilmadi
+            {{ t('usr.noMessages') }}
           </li>
         </ul>
 
         <div class="flex items-center justify-between border-t border-ink-100 px-5 py-3.5">
           <p class="text-[13px] text-ink-500">
-            Jami: <b class="text-ink-800">{{ filtered.length }}</b> ta bildirishnoma
+            {{ t('common.total') }}: <b class="text-ink-800">{{ filtered.length }}</b>
+            {{ t('usr.notifCountUnit') }}
           </p>
           <UiButton variant="ghost" size="sm" :disabled="!unreadTotal" @click="markAllRead">
-            Barchasini o‘qilgan deb belgilash
+            {{ t('common.markAllRead') }}
           </UiButton>
         </div>
       </UiCard>
@@ -413,21 +444,21 @@ const channels = [
             <div class="min-w-0 flex-1">
               <h3 class="text-[16px] font-bold text-ink-900">{{ selected.title }}</h3>
               <p class="mt-0.5 text-[13px] text-ink-500">
-                {{ selected.category }} · {{ selected.at }}
+                {{ categoryLabel(selected.category) }} · {{ selected.at }}
               </p>
             </div>
             <span
               v-if="!selected.read"
               class="rounded-pill bg-brand-50 px-2 py-0.5 text-[11px] font-bold text-brand-700"
             >
-              Yangi
+              {{ t('common.new') }}
             </span>
           </div>
 
           <p class="mt-4 text-[14px] leading-relaxed text-ink-700">{{ selected.body }}</p>
 
           <div v-if="selectedDetail" class="mt-4">
-            <p class="mb-2 text-[13px] font-semibold text-ink-700">Tafsilotlar</p>
+            <p class="mb-2 text-[13px] font-semibold text-ink-700">{{ t('usr.details') }}</p>
             <dl class="divide-y divide-ink-100 rounded-field ring-1 ring-ink-200">
               <div
                 v-for="r in selectedDetail.rows"
@@ -454,7 +485,9 @@ const channels = [
           </div>
 
           <div v-if="selectedDetail" class="mt-4 pb-5">
-            <p class="mb-2 text-[13px] font-semibold text-ink-700">Tavsiya etilgan harakatlar</p>
+            <p class="mb-2 text-[13px] font-semibold text-ink-700">
+              {{ t('usr.recommendedActions') }}
+            </p>
             <div class="space-y-2">
               <UiButton
                 v-for="a in selectedDetail.actions"
@@ -472,7 +505,7 @@ const channels = [
         </div>
 
         <p v-else class="px-5 py-20 text-center text-[14px] text-ink-500">
-          Tafsilotlarni ko‘rish uchun bildirishnomani tanlang
+          {{ t('usr.selectNotification') }}
         </p>
       </UiCard>
     </section>
@@ -499,7 +532,7 @@ const channels = [
               : 'bg-ink-100 text-ink-600 ring-ink-200'
           "
         >
-          {{ c.active ? 'Faol' : 'Ulanmagan' }}
+          {{ c.active ? t('common.active') : t('connection.disconnected') }}
         </span>
       </NuxtLink>
     </section>
@@ -507,8 +540,7 @@ const channels = [
     <div class="flex items-start gap-3 rounded-card bg-brand-50 px-5 py-4">
       <UiIcon name="info" :size="18" class="mt-0.5 shrink-0 text-brand-600" />
       <p class="text-[13px] leading-snug text-brand-700">
-        Joriy bosqichda barcha xabarlar tizim ichida ko‘rsatiladi. SMS, e-mail va Telegram kanallari
-        keyingi bosqichda ulanadi, ulanmaguncha ular orqali xabar yuborilmaydi.
+        {{ t('usr.channelsNoteLong') }}
       </p>
     </div>
   </main>

@@ -552,7 +552,7 @@ export const UNITS: Unit[] = reactive([
     status: 'RESERVED',
     price: 10900000,
     priceUnit: 'so‘m / oy',
-    tenant: 'Makon Solutions MCHJ',
+    tenant: 'Modul Tech MCHJ',
     equipment: ['Konditsioner', 'Yong‘in datchigi'],
     polygon: [[0.3297, 0.6007], [0.4971, 0.6007], [0.4971, 0.9822], [0.3297, 0.9822]],
   },

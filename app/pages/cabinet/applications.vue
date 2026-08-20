@@ -1,10 +1,23 @@
 <script setup lang="ts">
 import { scheduleTotals, type LeaseCase } from '~/stores/lease'
-import { area, dateShort, sum, timeOf } from '~/utils/format'
+import { area, dateShort, timeOf } from '~/utils/format'
 
 const auth = useAuthStore()
 const lease = useLeaseStore()
 const route = useRoute()
+const { t } = useI18n()
+const { money, field } = useAppLabels()
+
+/** Ariza turi ma’lumotda o‘zbekcha qiymat sifatida saqlanadi */
+const REQUEST_TYPE_KEY: Record<string, string> = {
+  'Ijaraga olish': 'common.requestTypeLease',
+  'Sotib olish': 'landing.offerSale',
+}
+
+function requestTypeLabel(value: string) {
+  const key = REQUEST_TYPE_KEY[value]
+  return key ? t(key) : value
+}
 
 lease.seed()
 
@@ -50,30 +63,33 @@ function totalOf(c: LeaseCase) {
   return c.schedule.length ? scheduleTotals(c.schedule).total : c.request.offerPrice
 }
 
-const STAGE_HINT: Record<string, string> = {
-  YANGI: 'Ariza operator ko‘rigida, u siz bilan bog‘lanadi',
-  SHARTNOMA_TAYYOR: 'Shartnoma tayyorlandi, Didox’ga yuborish kutilmoqda',
-  DIDOX_YUBORILDI: 'Hujjat Didox’da imzolashingizni kutmoqda',
-  DIDOX_IMZOLANDI: 'Didox’da imzolandi, ariza yopilmoqda',
-  FAOL: 'Ariza yopildi: unit va to‘lov grafigi kabinetingizda',
-  RAD_ETILDI: 'Ariza rad etilgan',
-}
+const STAGE_HINT = computed<Record<string, string>>(() => ({
+  YANGI: t('cab.stageNew'),
+  SHARTNOMA_TAYYOR: t('cab.stageContractReady'),
+  DIDOX_YUBORILDI: t('cab.stageDidoxSent'),
+  DIDOX_IMZOLANDI: t('cab.stageDidoxSigned'),
+  FAOL: t('cab.stageActive'),
+  RAD_ETILDI: t('cab.stageRejected'),
+}))
 </script>
 
 <template>
   <AppTopbar
-    title="Arizalarim"
-    subtitle="Yuborilgan arizalar, shartnoma qoralamalari va Didox holati"
-    :breadcrumb="[{ label: 'Kabinet', to: '/cabinet' }, { label: 'Arizalarim' }]"
+    :title="t('nav.myApplications')"
+    :subtitle="t('cab.applicationsCaption')"
+    :breadcrumb="[
+      { label: t('cab.title'), to: '/cabinet' },
+      { label: t('nav.myApplications') },
+    ]"
   >
     <template #actions>
       <UiButton variant="secondary" size="sm" to="/catalog">
         <UiIcon name="search" :size="16" />
-        Bo‘sh joylar
+        {{ t('cab.vacantSpaces') }}
       </UiButton>
       <UiButton size="sm" to="/cabinet/apply">
         <UiIcon name="plus" :size="16" />
-        Yangi ariza
+        {{ t('cab.newApplication') }}
       </UiButton>
     </template>
   </AppTopbar>
@@ -88,12 +104,12 @@ const STAGE_HINT: Record<string, string> = {
         <UiIcon name="check" :size="18" />
       </span>
       <p class="min-w-0 flex-1 text-[14px] text-ok-700">
-        <b>{{ createdCase.code }}</b> raqamli arizangiz qabul qilindi va operatorga yuborildi.
+        <b>{{ createdCase.code }}</b> {{ t('cab.applicationCreatedNotice') }}
       </p>
       <button
         type="button"
         class="shrink-0 rounded-lg p-1.5 text-ok-700 transition-colors hover:bg-ok-100"
-        aria-label="Xabarni yopish"
+        :aria-label="t('common.closeMessage')"
         @click="noticeOpen = false"
       >
         <UiIcon name="x" :size="16" />
@@ -111,14 +127,14 @@ const STAGE_HINT: Record<string, string> = {
             <UiIcon name="external" :size="20" />
           </span>
           <div class="min-w-0">
-            <p class="text-[16px] font-bold text-warn-700">Didox’da imzolash kutilmoqda</p>
+            <p class="text-[16px] font-bold text-warn-700">{{ t('cab.didoxWaiting') }}</p>
             <p class="text-[13px] text-ink-600">
-              Hujjat Didox platformasiga yuborilgan, imzolash o‘sha yerda bajariladi
+              {{ t('cab.didoxWaitingHint') }}
             </p>
           </div>
         </div>
         <span class="rounded-pill bg-white px-3 py-1.5 text-[12px] font-bold text-warn-700">
-          {{ awaitingSignature.length }} ta hujjat
+          {{ t('cab.docCount', { n: awaitingSignature.length }) }}
         </span>
       </div>
 
@@ -138,7 +154,7 @@ const STAGE_HINT: Record<string, string> = {
               </span>
             </span>
             <span class="tabular shrink-0 text-[13px] font-bold text-ink-900">
-              {{ sum(totalOf(c)) }}
+              {{ money(totalOf(c)) }}
             </span>
             <UiIcon name="chevronRight" :size="16" class="shrink-0 text-ink-400" />
           </button>
@@ -147,10 +163,34 @@ const STAGE_HINT: Record<string, string> = {
     </section>
 
     <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-      <UiKpi label="Jami arizalar" :value="String(stats.total)" unit="ta" icon="clipboard" tone="brand" />
-      <UiKpi label="Jarayonda" :value="String(stats.inProgress)" unit="ta" icon="clock" tone="warn" />
-      <UiKpi label="Faol shartnoma" :value="String(stats.active)" unit="ta" icon="check" tone="ok" />
-      <UiKpi label="Rad etilgan" :value="String(stats.rejected)" unit="ta" icon="x" tone="danger" />
+      <UiKpi
+        :label="t('kpi.totalApplications')"
+        :value="String(stats.total)"
+        :unit="t('unitOf.pcs')"
+        icon="clipboard"
+        tone="brand"
+      />
+      <UiKpi
+        :label="t('tab.inProgress')"
+        :value="String(stats.inProgress)"
+        :unit="t('unitOf.pcs')"
+        icon="clock"
+        tone="warn"
+      />
+      <UiKpi
+        :label="t('kpi.activeContract')"
+        :value="String(stats.active)"
+        :unit="t('unitOf.pcs')"
+        icon="check"
+        tone="ok"
+      />
+      <UiKpi
+        :label="t('tab.rejected')"
+        :value="String(stats.rejected)"
+        :unit="t('unitOf.pcs')"
+        icon="x"
+        tone="danger"
+      />
     </section>
 
     <div v-if="myCases.length" class="grid gap-5 xl:grid-cols-[336px_minmax(0,1fr)]">
@@ -169,13 +209,17 @@ const STAGE_HINT: Record<string, string> = {
             <span class="min-w-0">
               <span class="block text-[14px] font-bold text-ink-900">{{ c.code }}</span>
               <span class="block truncate text-[12px] text-ink-500">
-                {{ c.unitId ? `${c.buildingName} · Unit ${c.unitCode}` : 'Maydon kelishilmoqda' }}
+                {{
+                  c.unitId
+                    ? `${c.buildingName} · Unit ${c.unitCode}`
+                    : t('cab.unitBeingAgreed')
+                }}
               </span>
             </span>
             <UiStatus kind="lease" :value="c.status" size="sm" />
           </span>
           <span class="tabular mt-2.5 block text-[13px] font-bold text-brand-700">
-            {{ sum(totalOf(c)) }}
+            {{ money(totalOf(c)) }}
           </span>
           <span class="mt-1 block text-[12px] leading-snug text-ink-500">
             {{ STAGE_HINT[c.status] }}
@@ -193,7 +237,7 @@ const STAGE_HINT: Record<string, string> = {
                 {{
                   selected.unitId
                     ? `${selected.buildingName} · Unit ${selected.unitCode} · ${area(selected.area)} · ${selected.floor}-qavat`
-                    : 'Maydon operator bilan kelishiladi'
+                    : t('cab.unitAgreedWithOperator')
                 }}
               </p>
             </div>
@@ -204,7 +248,7 @@ const STAGE_HINT: Record<string, string> = {
               @click="contractOpen = true"
             >
               <UiIcon name="doc" :size="15" />
-              Shartnomani ko‘rish
+              {{ t('cab.viewContract') }}
             </UiButton>
           </div>
 
@@ -247,45 +291,45 @@ const STAGE_HINT: Record<string, string> = {
           :changes="selected.activation.changes"
         />
 
-        <UiCard title="Ariza shartlari" subtitle="Siz yuborgan so‘rov" icon="clipboard">
+        <UiCard :title="t('cab.requestTerms')" :subtitle="t('cab.yourRequest')" icon="clipboard">
           <dl class="grid gap-x-6 gap-y-4 sm:grid-cols-2">
             <div>
-              <dt class="text-[12px] text-ink-500">Ariza turi</dt>
+              <dt class="text-[12px] text-ink-500">{{ field('applicationType') }}</dt>
               <dd class="mt-0.5 text-[13px] font-semibold text-ink-900">
-                {{ selected.request.type }}
+                {{ requestTypeLabel(selected.request.type) }}
               </dd>
             </div>
             <div>
-              <dt class="text-[12px] text-ink-500">Taklif narxi (oylik)</dt>
+              <dt class="text-[12px] text-ink-500">{{ field('offerPriceMonthly') }}</dt>
               <dd class="tabular mt-0.5 text-[13px] font-semibold text-ink-900">
-                {{ sum(selected.request.offerPrice) }}
+                {{ money(selected.request.offerPrice) }}
               </dd>
             </div>
             <div>
-              <dt class="text-[12px] text-ink-500">Boshlanish sanasi</dt>
+              <dt class="text-[12px] text-ink-500">{{ field('startDate') }}</dt>
               <dd class="tabular mt-0.5 text-[13px] font-semibold text-ink-900">
                 {{ dateShort(selected.request.startDate) }}
               </dd>
             </div>
             <div>
-              <dt class="text-[12px] text-ink-500">Muddat</dt>
+              <dt class="text-[12px] text-ink-500">{{ field('deadline') }}</dt>
               <dd class="tabular mt-0.5 text-[13px] font-semibold text-ink-900">
-                {{ selected.request.term }} oy
+                {{ t('apply.termMonths', { count: selected.request.term }) }}
               </dd>
             </div>
             <div>
-              <dt class="text-[12px] text-ink-500">Yuborilgan</dt>
+              <dt class="text-[12px] text-ink-500">{{ field('submitted') }}</dt>
               <dd class="tabular mt-0.5 text-[13px] font-semibold text-ink-900">
                 {{ dateShort(selected.request.submittedAt) }}
                 {{ timeOf(selected.request.submittedAt) }}
               </dd>
             </div>
             <div>
-              <dt class="text-[12px] text-ink-500">Tashkilot</dt>
+              <dt class="text-[12px] text-ink-500">{{ field('organization') }}</dt>
               <dd class="mt-0.5 text-[13px] font-semibold text-ink-900">{{ selected.org.name }}</dd>
             </div>
             <div v-if="selected.request.note" class="sm:col-span-2">
-              <dt class="text-[12px] text-ink-500">Izoh</dt>
+              <dt class="text-[12px] text-ink-500">{{ field('comment') }}</dt>
               <dd class="mt-1 rounded-field bg-surface-sunken p-3.5 text-[13px] leading-relaxed text-ink-700">
                 {{ selected.request.note }}
               </dd>
@@ -295,8 +339,8 @@ const STAGE_HINT: Record<string, string> = {
 
         <UiCard
           v-if="selected.offer"
-          title="Kelishilgan shartlar"
-          subtitle="Bino rahbari va buxgalter tasdiqlagan shartlar"
+          :title="t('tour.application.terms.title')"
+          :subtitle="t('cab.agreedTermsCaption')"
           icon="wallet"
           tone="teal"
         >
@@ -305,8 +349,8 @@ const STAGE_HINT: Record<string, string> = {
 
         <UiCard
           v-if="selected.schedule.length"
-          title="To‘lov grafigi"
-          subtitle="Davrlar bo‘yicha to‘lovlar"
+          :title="t('cab.paymentSchedule')"
+          :subtitle="t('cab.paymentScheduleCaption')"
           icon="calendar"
         >
           <LeaseSchedule :rows="selected.schedule" />
@@ -314,15 +358,20 @@ const STAGE_HINT: Record<string, string> = {
 
         <UiCard
           v-if="selected.didox"
-          title="Didox holati"
-          subtitle="Imzolash tashqi platformada bajariladi"
+          :title="t('cab.didoxStatus')"
+          :subtitle="t('cab.didoxStatusCaption')"
           icon="external"
           tone="info"
         >
           <LeaseDidox :item="selected" :can-check="false" />
         </UiCard>
 
-        <UiCard title="Ariza tarixi" subtitle="Har bir bosqich qayd etiladi" icon="clipboard" tone="neutral">
+        <UiCard
+          :title="t('cab.applicationHistory')"
+          :subtitle="t('cab.applicationHistoryCaption')"
+          icon="clipboard"
+          tone="neutral"
+        >
           <LeaseAudit :entries="selected.audit" />
         </UiCard>
       </div>
@@ -331,9 +380,9 @@ const STAGE_HINT: Record<string, string> = {
     <UiCard v-else>
       <UiEmpty
         icon="clipboard"
-        title="Hali ariza yubormagansiz"
-        description="Katalogdan bo‘sh maydonni tanlang va «Ariza yuborish» tugmasi orqali ariza yuboring."
-        action-label="Bo‘sh joylar katalogi"
+        :title="t('empty.noApplicationsSent')"
+        :description="t('cab.noApplicationsDesc')"
+        :action-label="t('landing.ctaCatalog')"
         action-to="/catalog"
       />
     </UiCard>

@@ -3,6 +3,8 @@ import type { ActivationChange } from '~/stores/lease'
 import { dateShort, timeOf } from '~/utils/format'
 
 defineProps<{ at: string; changes: ActivationChange[] }>()
+
+const { t, statusLabel } = useAppLabels()
 </script>
 
 <template>
@@ -13,16 +15,16 @@ defineProps<{ at: string; changes: ActivationChange[] }>()
           <UiIcon name="check" :size="20" />
         </span>
         <div>
-          <p class="text-[16px] font-bold text-ok-700">Ariza yopildi</p>
+          <p class="text-[16px] font-bold text-ok-700">{{ statusLabel('lease', 'FAOL') }}</p>
           <p class="tabular text-[13px] text-ok-600">
-            {{ dateShort(at) }} {{ timeOf(at) }}, amalga oshirilgan o‘zgarishlar
+            {{ dateShort(at) }} {{ timeOf(at) }}, {{ t('ui.appliedChanges') }}
           </p>
         </div>
       </div>
       <span
         class="rounded-pill bg-white px-3 py-1.5 text-[12px] font-bold text-ok-700 ring-1 ring-inset ring-ok-100"
       >
-        {{ changes.length }} ta o‘zgarish
+        {{ t('ui.changeCount', { count: changes.length }) }}
       </span>
     </div>
 

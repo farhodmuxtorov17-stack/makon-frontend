@@ -31,6 +31,7 @@ export const CAPABILITIES = [
   'unit.editTechnical',
   'unit.editContent',
   'warehouse.issue',
+  'meter.read',
   'system.administer',
 ] as const
 

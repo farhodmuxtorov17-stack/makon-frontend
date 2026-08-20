@@ -15,12 +15,48 @@ type ServiceStatus = ServiceRequest['status']
 
 interface BoardColumn {
   key: string
-  label: string
+  labelKey: string
   statuses: ServiceStatus[]
   dot: string
 }
 
+interface BoardLane extends BoardColumn {
+  label: string
+  items: ServiceRequest[]
+}
+
 const auth = useAuthStore()
+
+const { t } = useI18n()
+const { field, priorityLabel, statusLabel: statusName, moduleTitle, tr } = useAppLabels()
+
+/** Kategoriya ma’lumotda o‘zbekcha saqlanadi, ko‘rinadigan nomi lug‘atdan olinadi */
+const CATEGORY_KEY: Record<string, string> = {
+  Santexnika: 'serviceCategory.plumbing',
+  Elektr: 'serviceCategory.electric',
+  Konditsioner: 'serviceCategory.hvac',
+  Qurilish: 'serviceCategory.construction',
+  Tozalash: 'serviceCategory.cleaning',
+  Boshqa: 'serviceCategory.other',
+}
+
+/** Diagramma guruhlari reyestrda o‘zbekcha ataladi, nomi lug‘atdan olinadi */
+const GROUP_KEY: Record<string, string> = {
+  Yangi: 'status.service.NEW',
+  Saralashda: 'svc.groupTriage',
+  Jarayonda: 'status.service.IN_PROGRESS',
+  Bajarilgan: 'status.service.COMPLETED',
+  Yopilgan: 'status.service.CLOSED',
+  Qaytarilgan: 'status.service.RETURNED',
+}
+
+/** Kommunal karta yorlig‘i ham hisoblagichlar reyestridan keladi */
+const UTILITY_KEY: Record<string, string> = {
+  'Elektr energiyasi': 'meterType.electricPower',
+  Suv: 'meterType.water',
+  Gaz: 'meterType.gas',
+  Issiqlik: 'meterType.heating',
+}
 
 /** Foydalanuvchi biriktirilgan obyektlar. Ariza faqat shular bo‘yicha ko‘rinadi. */
 const scopedBuildings = computed(() => BUILDINGS.filter((b) => auth.inScope(b.id)))
@@ -39,10 +75,10 @@ const requests = computed(() => allRequests.value.filter((r) => scopedNames.valu
 const kpi = computed(() => buildServiceKpi(requests.value))
 
 const view = ref('table')
-const viewTabs = [
-  { value: 'table', label: 'Jadval' },
-  { value: 'kanban', label: 'Kanban' },
-]
+const viewTabs = computed(() => [
+  { value: 'table', label: t('view.table') },
+  { value: 'kanban', label: t('view.kanban') },
+])
 
 const query = ref('')
 const fBuilding = ref('all')
@@ -53,42 +89,45 @@ const fAssignee = ref('all')
 const fSla = ref('all')
 
 const buildingOptions = computed(() => [
-  { value: 'all', label: 'Barcha obyektlar' },
+  { value: 'all', label: t('filter.allBuildings') },
   ...scopedBuildings.value.map((b) => ({ value: b.name, label: b.name })),
 ])
 
 const statusOptions = computed(() => [
-  { value: 'all', label: 'Barcha statuslar' },
+  { value: 'all', label: t('filter.allStatuses') },
   ...Object.keys(SERVICE_STATUS)
     .filter((k) => requests.value.some((r) => r.status === k))
-    .map((k) => ({ value: k, label: SERVICE_STATUS[k]!.label })),
+    .map((k) => ({ value: k, label: statusName('service', k) })),
 ])
 
-const priorityOptions = [
-  { value: 'all', label: 'Barcha ustuvorliklar' },
-  { value: 'Yuqori', label: 'Yuqori' },
-  { value: 'O‘rtacha', label: 'O‘rtacha' },
-  { value: 'Past', label: 'Past' },
-]
+const priorityOptions = computed(() => [
+  { value: 'all', label: t('filter.allPriorities') },
+  { value: 'Yuqori', label: priorityLabel('Yuqori') },
+  { value: 'O‘rtacha', label: priorityLabel('O‘rtacha') },
+  { value: 'Past', label: priorityLabel('Past') },
+])
 
 const categoryOptions = computed(() => [
-  { value: 'all', label: 'Barcha kategoriyalar' },
-  ...[...new Set(requests.value.map((r) => r.category))].map((c) => ({ value: c, label: c })),
+  { value: 'all', label: t('filter.allCategories') },
+  ...[...new Set(requests.value.map((r) => r.category))].map((c) => ({
+    value: c,
+    label: tr(CATEGORY_KEY[c], c),
+  })),
 ])
 
 const assigneeOptions = computed(() => [
-  { value: 'all', label: 'Barcha ijrochilar' },
-  { value: 'none', label: 'Biriktirilmagan' },
+  { value: 'all', label: t('filter.allExecutors') },
+  { value: 'none', label: t('common.unassigned') },
   ...[...new Set(requests.value.map((r) => r.assignee).filter((a): a is string => !!a))].map(
     (a) => ({ value: a, label: a }),
   ),
 ])
 
-const slaOptions = [
-  { value: 'all', label: 'Barcha SLA holatlari' },
-  { value: 'breached', label: 'SLA buzilgan' },
-  { value: 'ok', label: 'Muddatida' },
-]
+const slaOptions = computed(() => [
+  { value: 'all', label: t('filter.allSla') },
+  { value: 'breached', label: t('svc.slaBreached') },
+  { value: 'ok', label: t('svc.slaOnTime') },
+])
 
 const filtered = computed(() => {
   const q = query.value.trim().toLowerCase()
@@ -136,17 +175,17 @@ function focusStatus(value: string) {
   fSla.value = 'all'
 }
 
-const columns = [
-  { key: 'code', label: 'Raqam', width: '158px' },
-  { key: 'title', label: 'Sarlavha' },
-  { key: 'place', label: 'Obyekt / Unit' },
-  { key: 'requester', label: 'Murojaatchi' },
-  { key: 'category', label: 'Kategoriya' },
-  { key: 'priority', label: 'Ustuvorlik' },
-  { key: 'sla', label: 'SLA' },
-  { key: 'assignee', label: 'Ijrochi' },
-  { key: 'status', label: 'Status' },
-]
+const columns = computed(() => [
+  { key: 'code', label: field('number'), width: '158px' },
+  { key: 'title', label: field('title') },
+  { key: 'place', label: field('objectUnit') },
+  { key: 'requester', label: field('requester') },
+  { key: 'category', label: field('category') },
+  { key: 'priority', label: field('priority') },
+  { key: 'sla', label: field('sla') },
+  { key: 'assignee', label: field('executor') },
+  { key: 'status', label: field('status') },
+])
 
 const PRIORITY_STYLE: Record<string, { text: string; shape: string }> = {
   Yuqori: { text: 'text-danger-600', shape: 'dot' },
@@ -155,26 +194,26 @@ const PRIORITY_STYLE: Record<string, { text: string; shape: string }> = {
 }
 
 const KANBAN: BoardColumn[] = [
-  { key: 'new', label: 'Yangi', statuses: ['NEW', 'TRIAGE'], dot: 'bg-brand-500' },
+  { key: 'new', labelKey: 'status.service.NEW', statuses: ['NEW', 'TRIAGE'], dot: 'bg-brand-500' },
   {
     key: 'progress',
-    label: 'Jarayonda',
+    labelKey: 'status.service.IN_PROGRESS',
     statuses: ['ASSIGNED', 'INSPECTION', 'IN_PROGRESS', 'RETURNED'],
     dot: 'bg-warn-500',
   },
   {
     key: 'material',
-    label: 'Material kutilmoqda',
+    labelKey: 'status.service.MATERIAL_PENDING',
     statuses: ['MATERIAL_PENDING'],
     dot: 'bg-warn-600',
   },
   {
     key: 'confirm',
-    label: 'Tasdiqlashda',
+    labelKey: 'status.service.TENANT_CONFIRMATION',
     statuses: ['COMPLETED', 'TENANT_CONFIRMATION'],
     dot: 'bg-info-500',
   },
-  { key: 'closed', label: 'Yopilgan', statuses: ['CLOSED'], dot: 'bg-ink-400' },
+  { key: 'closed', labelKey: 'status.service.CLOSED', statuses: ['CLOSED'], dot: 'bg-ink-400' },
 ]
 
 /** Biriktirish bosqichi rahbarga ham, ijrochiga ham ochiq */
@@ -185,7 +224,7 @@ const CONFIRM_ONLY: Capability[] = ['workorder.assign']
 
 interface StageMove {
   next: ServiceStatus
-  label: string
+  labelKey: string
   progress: number
   /** Amalni bajarish uchun yetarli bo‘lgan huquqlar */
   capabilities: Capability[]
@@ -199,35 +238,42 @@ interface StageMove {
  * shuning uchun bitta jarayon ikki xil qoida bilan ishlamaydi.
  */
 const FLOW: Record<ServiceStatus, StageMove[]> = {
-  NEW: [{ next: 'ASSIGNED', label: 'Qabul qilish', progress: 10, capabilities: ASSIGN_OR_EXECUTE }],
+  NEW: [
+    { next: 'ASSIGNED', labelKey: 'svc.actionAccept', progress: 10, capabilities: ASSIGN_OR_EXECUTE },
+  ],
   TRIAGE: [
-    { next: 'ASSIGNED', label: 'Qabul qilish', progress: 10, capabilities: ASSIGN_OR_EXECUTE },
+    { next: 'ASSIGNED', labelKey: 'svc.actionAccept', progress: 10, capabilities: ASSIGN_OR_EXECUTE },
   ],
   ASSIGNED: [
-    { next: 'IN_PROGRESS', label: 'Ishni boshlash', progress: 35, capabilities: EXECUTE_ONLY },
+    { next: 'IN_PROGRESS', labelKey: 'svc.actionStart', progress: 35, capabilities: EXECUTE_ONLY },
   ],
   INSPECTION: [
-    { next: 'IN_PROGRESS', label: 'Ishni boshlash', progress: 35, capabilities: EXECUTE_ONLY },
+    { next: 'IN_PROGRESS', labelKey: 'svc.actionStart', progress: 35, capabilities: EXECUTE_ONLY },
   ],
   RETURNED: [
-    { next: 'IN_PROGRESS', label: 'Ishni boshlash', progress: 35, capabilities: EXECUTE_ONLY },
+    { next: 'IN_PROGRESS', labelKey: 'svc.actionStart', progress: 35, capabilities: EXECUTE_ONLY },
   ],
   IN_PROGRESS: [
     {
       next: 'MATERIAL_PENDING',
-      label: 'Material so‘rash',
+      labelKey: 'svc.actionMaterial',
       progress: 50,
       capabilities: EXECUTE_ONLY,
     },
-    { next: 'COMPLETED', label: 'Yakunlash', progress: 100, capabilities: EXECUTE_ONLY },
+    { next: 'COMPLETED', labelKey: 'svc.actionFinish', progress: 100, capabilities: EXECUTE_ONLY },
   ],
   MATERIAL_PENDING: [
-    { next: 'IN_PROGRESS', label: 'Ishni davom ettirish', progress: 60, capabilities: EXECUTE_ONLY },
+    {
+      next: 'IN_PROGRESS',
+      labelKey: 'svc.actionResume',
+      progress: 60,
+      capabilities: EXECUTE_ONLY,
+    },
   ],
   COMPLETED: [
     {
       next: 'TENANT_CONFIRMATION',
-      label: 'Tasdiqlashga yuborish',
+      labelKey: 'svc.actionSendConfirm',
       progress: 100,
       capabilities: EXECUTE_ONLY,
     },
@@ -235,7 +281,7 @@ const FLOW: Record<ServiceStatus, StageMove[]> = {
   TENANT_CONFIRMATION: [
     {
       next: 'CLOSED',
-      label: 'Arizani yopish',
+      labelKey: 'svc.actionClose',
       progress: 100,
       capabilities: CONFIRM_ONLY,
       byRequester: true,
@@ -245,7 +291,7 @@ const FLOW: Record<ServiceStatus, StageMove[]> = {
 }
 
 function statusLabel(status: ServiceStatus): string {
-  return SERVICE_STATUS[status]?.label ?? status
+  return statusName('service', status)
 }
 
 function movesOf(r: ServiceRequest): StageMove[] {
@@ -267,8 +313,12 @@ function moveInto(r: ServiceRequest, column: BoardColumn): StageMove | undefined
   return movesOf(r).find((m) => column.statuses.includes(m.next))
 }
 
-const board = computed(() =>
-  KANBAN.map((c) => ({ ...c, items: filtered.value.filter((r) => c.statuses.includes(r.status)) })),
+const board = computed<BoardLane[]>(() =>
+  KANBAN.map((c) => ({
+    ...c,
+    label: t(c.labelKey),
+    items: filtered.value.filter((r) => c.statuses.includes(r.status)),
+  })),
 )
 
 const dragId = ref('')
@@ -281,7 +331,7 @@ function startDrag(r: ServiceRequest) {
   dropError.value = ''
 }
 
-function dropTo(column: BoardColumn) {
+function dropTo(column: BoardLane) {
   const target = requests.value.find((r) => r.id === dragId.value)
   dragId.value = ''
   dragOver.value = ''
@@ -290,23 +340,31 @@ function dropTo(column: BoardColumn) {
 
   const move = moveInto(target, column)
   if (!move) {
-    dropError.value = `${target.code}: «${statusLabel(target.status)}» bosqichidan «${column.label}» ustuniga o‘tib bo‘lmaydi, oraliq bosqichlar chetlab o‘tiladi.`
+    dropError.value = t('svc.dropSkipStage', {
+      code: target.code,
+      from: statusLabel(target.status),
+      to: column.label,
+    })
     return
   }
   if (!allowedMove(target, move)) {
-    dropError.value = `${target.code}: «${move.label}» amali sizning rolingizda mavjud emas.`
+    dropError.value = t('svc.dropNoRight', { code: target.code, action: t(move.labelKey) })
     return
   }
 
   target.status = move.next
   target.progress = Math.max(target.progress, move.progress)
   if (!target.assignee && auth.can('workorder.execute'))
-    target.assignee = auth.user?.fullName ?? 'Ijrochi'
+    target.assignee = auth.user?.fullName ?? t('field.executor')
   dropError.value = ''
 }
 
 const donutSlices = computed(() =>
-  kpi.value.breakdown.map((b) => ({ label: b.label, value: b.count, tone: b.tone })),
+  kpi.value.breakdown.map((b) => ({
+    label: tr(GROUP_KEY[b.label], b.label),
+    value: b.count,
+    tone: b.tone,
+  })),
 )
 const donutTotal = computed(() => kpi.value.breakdown.reduce((s, b) => s + b.count, 0))
 
@@ -331,7 +389,7 @@ const dynamicsLabels = computed(() => dynamicsDays.value.map((d) => `${d.slice(8
 
 const dynamicsSeries = computed(() => [
   {
-    label: 'Kelib tushgan',
+    label: t('svc.seriesIncoming'),
     tone: 'brand' as const,
     values: dynamicsDays.value.map(
       (d) => requests.value.filter((r) => r.createdAt.slice(0, 10) === d).length,
@@ -339,7 +397,7 @@ const dynamicsSeries = computed(() => [
     fill: true,
   },
   {
-    label: 'Bajarilgan',
+    label: t('status.service.COMPLETED'),
     tone: 'ok' as const,
     values: dynamicsDays.value.map(
       (d) => requests.value.filter((r) => (r.completedAt ?? '').slice(0, 10) === d).length,
@@ -412,7 +470,7 @@ function resetForm() {
 
 function submitRequest() {
   if (!form.unit.trim() || !form.description.trim()) {
-    formError.value = 'Joylashuv va muammo tavsifi to‘ldirilishi shart'
+    formError.value = t('svc.formRequired')
     return
   }
   const seq = allRequests.value.reduce((m, r) => Math.max(m, Number(r.code.slice(-4)) || 0), 0) + 1
@@ -426,7 +484,7 @@ function submitRequest() {
     category: form.category,
     buildingName: form.building,
     unitCode: form.unit.trim(),
-    requester: auth.user?.fullName ?? 'Ijarachi',
+    requester: auth.user?.fullName ?? t('field.tenant'),
     priority: form.priority,
     status: 'NEW',
     assignee: null,
@@ -435,7 +493,7 @@ function submitRequest() {
     slaBreached: false,
     description:
       attached.length > 0
-        ? `${form.description.trim()} Biriktirilgan fayllar: ${attached.join(', ')}.`
+        ? `${form.description.trim()} ${t('svc.attachedFiles', { files: attached.join(', ') })}`
         : form.description.trim(),
     progress: 0,
   })
@@ -447,17 +505,17 @@ function submitRequest() {
 
 <template>
   <AppTopbar
-    title="Servis arizalari"
-    subtitle="Arizalar navbati, ijro nazorati va hisoblagichlar monitoringi"
+    :title="moduleTitle('serviceRequests')"
+    :subtitle="t('svc.pageCaption')"
   >
     <template #actions>
       <UiButton variant="secondary" size="sm" to="/meters">
         <UiIcon name="meter" :size="16" />
-        Hisoblagichlar
+        {{ moduleTitle('meters') }}
       </UiButton>
       <UiButton size="sm" @click="createOpen = true">
         <UiIcon name="plus" :size="16" />
-        Yangi ariza
+        {{ t('svc.newRequest') }}
       </UiButton>
     </template>
   </AppTopbar>
@@ -465,7 +523,7 @@ function submitRequest() {
   <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-4 sm:p-6">
     <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <UiKpi
-        label="Yangi arizalar"
+        :label="t('kpi.newApplications')"
         :value="num(kpi.newCount)"
         icon="clipboard"
         tone="brand"
@@ -473,7 +531,7 @@ function submitRequest() {
         @click="focusStatus('NEW')"
       />
       <UiKpi
-        label="Jarayonda"
+        :label="t('status.service.IN_PROGRESS')"
         :value="num(kpi.inProgress)"
         icon="wrench"
         tone="warn"
@@ -481,7 +539,7 @@ function submitRequest() {
         @click="focusStatus('IN_PROGRESS')"
       />
       <UiKpi
-        label="Bajarilgan"
+        :label="t('status.service.COMPLETED')"
         :value="num(kpi.completedToday)"
         icon="check"
         tone="ok"
@@ -489,17 +547,17 @@ function submitRequest() {
         @click="focusStatus('COMPLETED')"
       />
       <UiKpi
-        label="O‘rtacha bajarish vaqti"
+        :label="t('kpi.avgResolution')"
         :value="String(kpi.avgHours)"
-        unit="soat"
+        :unit="t('unitOf.hour')"
         icon="clock"
         tone="violet"
       />
     </section>
 
     <UiCard
-      title="Arizalar navbati"
-      :subtitle="`${rows.length} ta ariza ko‘rsatilmoqda · jami ${requests.length} ta`"
+      :title="t('svc.queueTitle')"
+      :subtitle="t('svc.queueSubtitle', { shown: rows.length, total: requests.length })"
       flush
       :padded="false"
     >
@@ -510,7 +568,7 @@ function submitRequest() {
       <div class="grid gap-3 border-t border-ink-100 bg-surface-sunken px-5 py-4 lg:grid-cols-2 xl:grid-cols-4">
         <UiInput
           v-model="query"
-          placeholder="Raqam, sarlavha yoki murojaatchi bo‘yicha qidirish"
+          :placeholder="t('svc.searchPlaceholder')"
           class="xl:col-span-2"
         >
           <template #prefix>
@@ -526,7 +584,7 @@ function submitRequest() {
           <UiSelect v-model="fSla" :options="slaOptions" class="flex-1" />
           <UiButton v-if="dirty" variant="ghost" size="sm" @click="resetFilters">
             <UiIcon name="refresh" :size="16" />
-            Tozalash
+            {{ t('common.reset') }}
           </UiButton>
         </div>
       </div>
@@ -536,7 +594,7 @@ function submitRequest() {
         :columns="columns"
         :rows="rows"
         :to="(row) => `/service-requests/${row.id}`"
-        empty="Tanlangan filtrlarga mos ariza topilmadi"
+        :empty="t('empty.noMatchingRequests')"
       >
         <template #cell-code="{ row }">
           <span class="flex items-center gap-2">
@@ -583,7 +641,7 @@ function submitRequest() {
               />
               <rect v-else x="1.8" y="4.6" width="8.4" height="2.8" rx="1.4" fill="currentColor" />
             </svg>
-            {{ row.priority }}
+            {{ priorityLabel(row.priority) }}
           </span>
         </template>
 
@@ -595,7 +653,7 @@ function submitRequest() {
             <svg class="size-3 shrink-0 text-danger-500" viewBox="0 0 12 12" aria-hidden="true">
               <path d="M6 1.2 11.4 10.8H.6z" fill="currentColor" />
             </svg>
-            SLA buzilgan
+            {{ t('svc.slaBreached') }}
           </span>
           <span
             v-else
@@ -621,7 +679,7 @@ function submitRequest() {
 
         <template #cell-assignee="{ row }">
           <span v-if="row.assignee" class="text-[13px] text-ink-700">{{ row.assignee }}</span>
-          <span v-else class="text-[13px] text-ink-400">Biriktirilmagan</span>
+          <span v-else class="text-[13px] text-ink-400">{{ t('common.unassigned') }}</span>
         </template>
 
         <template #cell-status="{ row }">
@@ -631,8 +689,7 @@ function submitRequest() {
 
       <div v-else class="space-y-3 p-5">
         <p class="text-[13px] text-ink-500">
-          Kartani faqat keyingi bosqich ustuniga va faqat shu amal huquqi bo‘lsa ko‘chirish mumkin.
-          Karta ustiga bosilsa ariza tafsiloti ochiladi.
+          {{ t('svc.kanbanHint') }}
         </p>
 
         <p
@@ -668,7 +725,7 @@ function submitRequest() {
                 role="button"
                 tabindex="0"
                 :draggable="canDrag(r)"
-                :title="canDrag(r) ? undefined : 'Bu bosqichda sizning rolingizda amal yo‘q'"
+                :title="canDrag(r) ? undefined : t('svc.noStageAction')"
                 class="rounded-field bg-surface p-3 shadow-card ring-1 ring-ink-200/70 transition-shadow hover:shadow-panel"
                 :class="[
                   canDrag(r) ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer',
@@ -711,13 +768,13 @@ function submitRequest() {
                   />
                 </div>
                 <div class="mt-1.5 flex items-center justify-between text-[12px] text-ink-500">
-                  <span>{{ r.assignee ?? 'Biriktirilmagan' }}</span>
+                  <span>{{ r.assignee ?? t('common.unassigned') }}</span>
                   <span class="tabular">{{ dateShort(r.dueAt) }}</span>
                 </div>
               </div>
 
               <p v-if="!col.items.length" class="px-1 py-6 text-center text-[13px] text-ink-400">
-                Ariza yo‘q
+                {{ t('empty.noApplications') }}
               </p>
             </div>
           </div>
@@ -726,23 +783,23 @@ function submitRequest() {
     </UiCard>
 
     <section class="grid gap-5 xl:grid-cols-3">
-      <UiCard title="Arizalar bo‘yicha holat" subtitle="Joriy oy kesimida taqsimot">
+      <UiCard :title="t('svc.statusBreakdown')" :subtitle="t('svc.statusBreakdownHint')">
         <UiDonut
           :slices="donutSlices"
           :center-value="num(donutTotal)"
-          center-label="jami ariza"
+          :center-label="t('svc.totalRequests')"
           :size="176"
         />
       </UiCard>
 
-      <UiCard title="Arizalar dinamikasi" subtitle="Kunlik kelib tushish va bajarilish">
+      <UiCard :title="t('svc.requestDynamics')" :subtitle="t('svc.requestDynamicsHint')">
         <UiLine :labels="dynamicsLabels" :series="dynamicsSeries" :height="196" />
       </UiCard>
 
-      <UiCard title="Hisoblagichlar ko‘rsatkichlari" subtitle="Oxirgi qiyoslash natijalari" flush :padded="false">
+      <UiCard :title="t('svc.meterReadings')" :subtitle="t('svc.meterReadingsHint')" flush :padded="false">
         <template #actions>
           <UiButton variant="ghost" size="sm" to="/meters">
-            Reyestr
+            {{ t('common.registry') }}
             <UiIcon name="chevronRight" :size="15" />
           </UiButton>
         </template>
@@ -761,7 +818,9 @@ function submitRequest() {
                 <UiIcon :name="u.icon" :size="18" />
               </span>
               <span class="min-w-0 flex-1">
-                <span class="block truncate text-[13px] text-ink-500">{{ u.label }}</span>
+                <span class="block truncate text-[13px] text-ink-500">
+                  {{ tr(UTILITY_KEY[u.label], u.label) }}
+                </span>
                 <span class="tabular block text-[16px] font-bold text-ink-900 group-hover:text-brand-600">
                   {{ u.value }}
                   <span class="text-[12px] font-medium text-ink-500">{{ u.unit }}</span>
@@ -783,59 +842,59 @@ function submitRequest() {
 
   <UiModal
     v-model="createOpen"
-    title="Yangi ariza"
-    subtitle="Muammoni tavsiflang, ariza xizmat ko‘rsatish navbatiga tushadi"
+    :title="t('svc.newRequest')"
+    :subtitle="t('svc.newRequestHint')"
     size="lg"
   >
     <div class="space-y-4">
       <div class="grid gap-4 sm:grid-cols-2">
-        <UiField label="Kategoriya" required>
+        <UiField :label="field('category')" required>
           <UiSelect
             v-model="form.category"
             :options="[
-              { value: 'Santexnika', label: 'Santexnika' },
-              { value: 'Elektr', label: 'Elektr' },
-              { value: 'Konditsioner', label: 'Konditsioner' },
-              { value: 'Qurilish', label: 'Qurilish' },
-              { value: 'Tozalash', label: 'Tozalash' },
-              { value: 'Boshqa', label: 'Boshqa' },
+              { value: 'Santexnika', label: t('serviceCategory.plumbing') },
+              { value: 'Elektr', label: t('serviceCategory.electric') },
+              { value: 'Konditsioner', label: t('serviceCategory.hvac') },
+              { value: 'Qurilish', label: t('serviceCategory.construction') },
+              { value: 'Tozalash', label: t('serviceCategory.cleaning') },
+              { value: 'Boshqa', label: t('serviceCategory.other') },
             ]"
           />
         </UiField>
 
-        <UiField label="Ustuvorlik" required>
+        <UiField :label="field('priority')" required>
           <UiSelect
             v-model="form.priority"
             :options="[
-              { value: 'Yuqori', label: 'Yuqori' },
-              { value: 'O‘rtacha', label: 'O‘rtacha' },
-              { value: 'Past', label: 'Past' },
+              { value: 'Yuqori', label: priorityLabel('Yuqori') },
+              { value: 'O‘rtacha', label: priorityLabel('O‘rtacha') },
+              { value: 'Past', label: priorityLabel('Past') },
             ]"
           />
         </UiField>
 
-        <UiField label="Obyekt" required>
+        <UiField :label="field('object')" required>
           <UiSelect
             v-model="form.building"
             :options="scopedBuildings.map((b) => ({ value: b.name, label: b.name }))"
           />
         </UiField>
 
-        <UiField label="Joylashuv" required hint="Unit raqami yoki umumiy zona nomi">
-          <UiInput v-model="form.unit" placeholder="708-xona" />
+        <UiField :label="field('location')" required :hint="t('svc.locationHint')">
+          <UiInput v-model="form.unit" :placeholder="t('svc.locationPlaceholder')" />
         </UiField>
       </div>
 
-      <UiField label="Muammo tavsifi" required :error="formError">
+      <UiField :label="t('svc.problemDescription')" required :error="formError">
         <textarea
           v-model="form.description"
           rows="4"
-          placeholder="Muammoni qisqacha yozing"
+          :placeholder="t('svc.problemPlaceholder')"
           class="scroll-slim w-full rounded-field bg-white px-3.5 py-2.5 text-sm text-ink-800 ring-1 ring-inset ring-ink-200 transition-colors placeholder:text-ink-400 hover:ring-ink-300 focus:ring-2 focus:ring-brand-500"
         />
       </UiField>
 
-      <UiField label="Rasm biriktirish" hint="Muammoni ko‘rsatuvchi suratlar tekshiruvni tezlashtiradi">
+      <UiField :label="t('svc.attachPhoto')" :hint="t('svc.attachPhotoHint')">
         <div class="flex flex-wrap gap-3">
           <div
             v-for="(p, i) in photos"
@@ -846,7 +905,7 @@ function submitRequest() {
             <button
               type="button"
               class="absolute right-1 top-1 grid size-8 place-items-center rounded-full bg-ink-900/60 text-white transition-colors hover:bg-danger-600 md:size-6"
-              :aria-label="`${p.file.name}: rasmni olib tashlash`"
+              :aria-label="t('svc.removePhoto', { name: p.file.name })"
               @click="removePhoto(i)"
             >
               <UiIcon name="x" :size="13" />
@@ -859,7 +918,7 @@ function submitRequest() {
             accept="image/*"
             multiple
             class="sr-only"
-            aria-label="Ariza rasmlari"
+            :aria-label="t('svc.requestPhotos')"
             @change="onPhotos"
           />
 
@@ -867,7 +926,7 @@ function submitRequest() {
             v-if="photos.length < PHOTO_LIMIT"
             type="button"
             class="grid size-24 place-items-center rounded-field border-2 border-dashed border-ink-300 bg-ink-50 text-ink-500 transition-colors hover:border-brand-400 hover:bg-brand-50 hover:text-brand-600"
-            aria-label="Rasm qo‘shish"
+            :aria-label="t('svc.addPhoto')"
             @click="pickPhotos"
           >
             <svg viewBox="0 0 32 32" class="size-8" fill="none" aria-hidden="true">
@@ -894,15 +953,17 @@ function submitRequest() {
             {{ p.file.name }} · {{ fileSize(p.file.size) }}
           </li>
         </ul>
-        <p v-else class="mt-2 text-[12px] text-ink-500">Rasm biriktirilmagan</p>
+        <p v-else class="mt-2 text-[12px] text-ink-500">{{ t('svc.noPhoto') }}</p>
       </UiField>
     </div>
 
     <template #footer>
-      <UiButton variant="ghost" @click="((createOpen = false), resetForm())">Bekor qilish</UiButton>
+      <UiButton variant="ghost" @click="((createOpen = false), resetForm())">
+        {{ t('common.cancel') }}
+      </UiButton>
       <UiButton @click="submitRequest">
         <UiIcon name="send" :size="16" />
-        Ariza yuborish
+        {{ t('svc.submitRequest') }}
       </UiButton>
     </template>
   </UiModal>

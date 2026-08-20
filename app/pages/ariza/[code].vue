@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { CONTACT } from '~/constants/contacts'
-import { LEASE_STATUS } from '~/constants/statuses'
-import { area, dateShort, sum, timeOf } from '~/utils/format'
+import { area, dateShort, timeOf } from '~/utils/format'
 
 definePageMeta({ layout: 'public', public: true })
 
 const route = useRoute()
 const lease = useLeaseStore()
+const { t } = useI18n()
+const { money, field, statusLabel: statusName } = useAppLabels()
 
 lease.seed()
 
@@ -55,35 +56,70 @@ function unlock() {
   }, 420)
 }
 
-const STAGE_HINT: Record<string, string> = {
-  YANGI: 'Ariza qabul qilindi va operator ko‘rigida turibdi',
-  SHARTNOMA_TAYYOR: 'Ariza tasdiqlandi, shartnoma tayyorlandi va imzolashga yuboriladi',
-  DIDOX_YUBORILDI: 'Shartnoma imzolash uchun Didox orqali yuborildi',
-  DIDOX_IMZOLANDI: 'Shartnoma imzolandi, ariza yopilish bosqichida',
-  FAOL: 'Ariza yopildi: maydon sizning nomingizga rasmiylashtirildi',
-  RAD_ETILDI: 'Ariza rad etilgan',
+/** Har bir bosqich uchun ijarachiga tushunarli izoh */
+const STAGE_HINT_KEY: Record<string, string> = {
+  YANGI: 'apply.stageHint.YANGI',
+  SHARTNOMA_TAYYOR: 'apply.stageHint.SHARTNOMA_TAYYOR',
+  DIDOX_YUBORILDI: 'apply.stageHint.DIDOX_YUBORILDI',
+  DIDOX_IMZOLANDI: 'apply.stageHint.DIDOX_IMZOLANDI',
+  FAOL: 'apply.stageHint.FAOL',
+  RAD_ETILDI: 'apply.stageHint.RAD_ETILDI',
 }
 
-const stageHint = computed(() => (item.value ? (STAGE_HINT[item.value.status] ?? '') : ''))
-const statusLabel = computed(() =>
-  item.value ? (LEASE_STATUS[item.value.status]?.label ?? item.value.status) : '',
-)
+const stageHint = computed(() => {
+  const key = item.value ? STAGE_HINT_KEY[item.value.status] : undefined
+  return key ? t(key) : ''
+})
 
-const registerPath = computed(() => `/auth/register?ariza=${code.value}`)
+const statusLabel = computed(() => (item.value ? statusName('lease', item.value.status) : ''))
 
-const CONTACTS = [
-  { icon: 'phone', label: 'Ijara bo‘limi', value: CONTACT.phone, href: CONTACT.phoneHref },
-  { icon: 'send', label: 'E-pochta', value: CONTACT.email, href: CONTACT.emailHref },
-  { icon: 'clock', label: 'Ish vaqti', value: CONTACT.hours, href: '' },
-]
+/**
+ * So‘rov turi bazada o‘zbekcha qiymat sifatida saqlanadi, shuning uchun
+ * ekranda ko‘rinadigan nom tarjima kaliti orqali olinadi.
+ */
+const REQUEST_TYPE_KEY: Record<string, string> = {
+  'Ijaraga olish': 'common.requestTypeLease',
+  'Sotib olish': 'landing.offerSale',
+}
+
+const requestTypeLabel = computed(() => {
+  const value = item.value?.request.type ?? ''
+  const key = REQUEST_TYPE_KEY[value]
+  return key ? t(key) : value
+})
+
+const unitLine = computed(() => {
+  const it = item.value
+  if (!it) return ''
+  return it.unitId
+    ? t('apply.unitLine', { building: it.buildingName, code: it.unitCode, floor: it.floor })
+    : t('apply.unitTbd')
+})
+
+const lastFourError = computed(() => {
+  if (mismatch.value) return t('apply.lastFourMismatch')
+  if (submitted.value && digits.value.length !== 4) return t('apply.lastFourRequired')
+  return ''
+})
+
+const CONTACTS = computed(() => [
+  { icon: 'phone', label: t('section.lease'), value: CONTACT.phone, href: CONTACT.phoneHref },
+  { icon: 'send', label: t('common.email'), value: CONTACT.email, href: CONTACT.emailHref },
+  { icon: 'clock', label: t('common.workHours'), value: CONTACT.hours, href: '' },
+])
 </script>
 
 <template>
   <div class="mx-auto w-full max-w-[900px] px-4 py-8 lg:px-8 lg:py-12">
-    <nav class="flex flex-wrap items-center gap-1.5 text-[13px] text-ink-500" aria-label="Yo‘l">
-      <NuxtLink to="/" class="rounded-[6px] hover:text-brand-600">Bosh sahifa</NuxtLink>
+    <nav
+      class="flex flex-wrap items-center gap-1.5 text-[13px] text-ink-500"
+      :aria-label="t('common.breadcrumb')"
+    >
+      <NuxtLink to="/" class="rounded-[6px] hover:text-brand-600">{{ t('nav.cabinet') }}</NuxtLink>
       <span aria-hidden="true">/</span>
-      <NuxtLink to="/ariza" class="rounded-[6px] hover:text-brand-600">Ariza</NuxtLink>
+      <NuxtLink to="/ariza" class="rounded-[6px] hover:text-brand-600">
+        {{ t('field.application') }}
+      </NuxtLink>
       <span aria-hidden="true">/</span>
       <span class="tabular font-semibold text-ink-700">{{ code }}</span>
     </nav>
@@ -99,16 +135,21 @@ const CONTACTS = [
             <UiIcon name="warning" :size="26" />
           </span>
           <h1 class="mt-4 font-display text-[22px] font-extrabold text-ink-900">
-            Ariza topilmadi
+            {{ t('apply.notFoundTitle') }}
           </h1>
-          <p class="mx-auto mt-2 max-w-[52ch] text-[14px] leading-relaxed text-ink-600">
-            <span class="tabular font-semibold text-ink-900">{{ code }}</span>
-            raqamli ariza tizimda yo‘q. Havolani to‘liq nusxalaganingizni tekshiring yoki yangi
-            ariza yuboring.
-          </p>
+          <i18n-t
+            keypath="apply.notFoundText"
+            tag="p"
+            scope="global"
+            class="mx-auto mt-2 max-w-[52ch] text-[14px] leading-relaxed text-ink-600"
+          >
+            <template #code>
+              <span class="tabular font-semibold text-ink-900">{{ code }}</span>
+            </template>
+          </i18n-t>
           <div class="mt-5 flex flex-wrap justify-center gap-2.5">
-            <UiButton to="/ariza">Yangi ariza yuborish</UiButton>
-            <UiButton to="/catalog" variant="secondary">Katalog</UiButton>
+            <UiButton to="/ariza">{{ t('apply.newApplication') }}</UiButton>
+            <UiButton to="/catalog" variant="secondary">{{ t('public.navCatalog') }}</UiButton>
           </div>
         </div>
       </UiCard>
@@ -125,26 +166,25 @@ const CONTACTS = [
         </span>
 
         <h1 class="mt-4 font-display text-[22px] font-extrabold leading-tight text-ink-900">
-          Arizani ochish
+          {{ t('tour.applications.openWatch.title') }}
         </h1>
-        <p class="mt-2 text-[14px] leading-relaxed text-ink-600">
-          <span class="tabular font-semibold text-ink-900">{{ code }}</span>
-          arizasi topildi. Ma’lumotlarni ko‘rish uchun arizada ko‘rsatilgan telefon raqamining
-          oxirgi to‘rt raqamini kiriting.
-        </p>
+        <i18n-t
+          keypath="apply.unlockLead"
+          tag="p"
+          scope="global"
+          class="mt-2 text-[14px] leading-relaxed text-ink-600"
+        >
+          <template #code>
+            <span class="tabular font-semibold text-ink-900">{{ code }}</span>
+          </template>
+        </i18n-t>
 
         <form class="mt-5 space-y-4" novalidate @submit.prevent="unlock">
           <UiField
-            label="Telefon raqamining oxirgi to‘rt raqami"
+            :label="t('apply.lastFourField')"
             required
             for="last-four"
-            :error="
-              mismatch
-                ? 'Raqam mos kelmadi. Arizada ko‘rsatilgan telefon raqamini tekshiring'
-                : submitted && digits.length !== 4
-                  ? 'To‘rtta raqam kiriting'
-                  : ''
-            "
+            :error="lastFourError"
           >
             <input
               id="last-four"
@@ -162,13 +202,13 @@ const CONTACTS = [
           </UiField>
 
           <UiButton type="submit" size="lg" block :loading="pending">
-            {{ pending ? 'Tekshirilmoqda…' : 'Arizani ochish' }}
+            {{ pending ? t('common.checking') : t('tour.applications.openWatch.title') }}
           </UiButton>
         </form>
 
         <p class="mt-4 flex items-start gap-2 text-[12px] leading-relaxed text-ink-500">
           <UiIcon name="shield" :size="14" class="mt-px shrink-0" />
-          Bu tekshiruv ariza ma’lumotlari faqat uni yuborgan shaxsga ko‘rinishini ta’minlaydi.
+          {{ t('apply.unlockPrivacy') }}
         </p>
       </UiCard>
     </div>
@@ -177,17 +217,13 @@ const CONTACTS = [
     <div v-else class="mt-6 space-y-5">
       <header>
         <p class="text-[11px] font-semibold uppercase tracking-wide text-brand-600">
-          Ariza holati
+          {{ t('apply.statusEyebrow') }}
         </p>
         <h1 class="tabular mt-2 font-display text-[28px] font-extrabold leading-tight text-ink-900">
           {{ item.code }}
         </h1>
         <p class="mt-1.5 text-[14px] text-ink-600">
-          {{
-            item.unitId
-              ? `${item.buildingName}, Unit ${item.unitCode}, ${item.floor}-qavat`
-              : 'Maydon operator bilan kelishiladi'
-          }}
+          {{ unitLine }}
         </p>
       </header>
 
@@ -195,10 +231,10 @@ const CONTACTS = [
         <div class="flex flex-wrap items-center gap-2.5">
           <UiStatus kind="lease" :value="item.status" />
           <span class="rounded-pill bg-ink-100 px-2.5 py-1 text-[12px] font-semibold text-ink-700">
-            {{ item.request.type }}
+            {{ requestTypeLabel }}
           </span>
           <span class="tabular text-[13px] text-ink-500">
-            Yuborilgan: {{ dateShort(item.request.submittedAt) }}
+            {{ t('apply.submittedLabel') }} {{ dateShort(item.request.submittedAt) }}
             {{ timeOf(item.request.submittedAt) }}
           </span>
         </div>
@@ -223,7 +259,7 @@ const CONTACTS = [
           class="mt-3 flex items-start gap-2 rounded-field bg-danger-50 px-3.5 py-2.5 text-[13px] leading-relaxed text-danger-700 ring-1 ring-inset ring-danger-100"
         >
           <UiIcon name="warning" :size="15" class="mt-px shrink-0" />
-          Rad etish sababi: {{ item.rejectReason }}
+          {{ t('apply.rejectReasonLabel') }} {{ item.rejectReason }}
         </p>
 
         <p
@@ -231,53 +267,65 @@ const CONTACTS = [
           class="mt-3 flex items-center gap-2 text-[13px] font-medium text-ok-700"
         >
           <UiIcon name="check" :size="15" class="shrink-0" />
-          Operator siz bilan bog‘landi: {{ dateShort(item.contactedAt) }}
+          {{ t('apply.contactedLabel') }} {{ dateShort(item.contactedAt) }}
           {{ timeOf(item.contactedAt) }}
         </p>
       </UiCard>
 
-      <!-- Kabinet ochish taklifi -->
-      <UiCard v-if="item.guest && item.accountInvitedAt" tone="brand" icon="user" title="Kabinet ochish taklifi">
+      <!--
+        Kabinet o‘z-o‘zidan ochilmaydi. Login shartnoma imzolangandan keyin
+        tizimda beriladi, parolni operator telefon orqali yetkazadi: ochiq
+        sahifada parol ko‘rsatilmaydi.
+      -->
+      <UiCard v-if="item.access" tone="brand" icon="key" :title="t('apply.cabinetOpenedTitle')">
         <p class="text-[13px] leading-relaxed text-ink-700">
-          Operator siz uchun shaxsiy kabinet ochishni taklif qildi. Parol o‘rnatsangiz, ariza,
-          shartnoma va hisob-fakturalar bir joyda bo‘ladi, holatni har safar kod bilan ochish
-          shart emas.
+          {{ t('apply.cabinetOpenedText') }}
         </p>
-        <UiButton :to="registerPath" size="lg" class="mt-4">
+        <dl class="mt-4 rounded-[12px] border border-brand-200 bg-white px-4 py-3">
+          <div class="flex items-baseline justify-between gap-3">
+            <dt class="text-[13px] text-ink-500">{{ field('login') }}</dt>
+            <dd class="tabular text-[14px] font-bold text-ink-900">{{ item.access.login }}</dd>
+          </div>
+          <div class="mt-2 flex items-baseline justify-between gap-3">
+            <dt class="text-[13px] text-ink-500">{{ t('login.passwordLabel') }}</dt>
+            <dd class="text-[13px] font-medium text-ink-600">{{ t('apply.passwordByPhone') }}</dd>
+          </div>
+        </dl>
+        <UiButton to="/login" size="lg" class="mt-4">
           <UiIcon name="key" :size="16" />
-          Parol o‘rnatib kabinet ochish
+          {{ t('apply.enterCabinet') }}
         </UiButton>
       </UiCard>
 
       <div class="grid gap-5 lg:grid-cols-2">
-        <UiCard title="So‘rovingiz shartlari" icon="clipboard">
+        <UiCard :title="t('apply.yourTermsTitle')" icon="clipboard">
           <dl class="space-y-3">
             <div class="flex items-baseline justify-between gap-3">
-              <dt class="text-[13px] text-ink-500">Taklif narxi (oylik)</dt>
+              <dt class="text-[13px] text-ink-500">{{ t('apply.offerPriceMonthly') }}</dt>
               <dd class="tabular text-[14px] font-bold text-ink-900">
-                {{ sum(item.request.offerPrice) }}
+                {{ money(item.request.offerPrice) }}
               </dd>
             </div>
             <div class="flex items-baseline justify-between gap-3">
-              <dt class="text-[13px] text-ink-500">Muddat</dt>
+              <dt class="text-[13px] text-ink-500">{{ field('deadline') }}</dt>
               <dd class="tabular text-[14px] font-bold text-ink-900">
-                {{ item.request.term }} oy
+                {{ t('apply.termMonths', { count: item.request.term }) }}
               </dd>
             </div>
             <div class="flex items-baseline justify-between gap-3">
-              <dt class="text-[13px] text-ink-500">Boshlanish sanasi</dt>
+              <dt class="text-[13px] text-ink-500">{{ field('startDate') }}</dt>
               <dd class="tabular text-[14px] font-bold text-ink-900">
                 {{ dateShort(item.request.startDate) }}
               </dd>
             </div>
             <div class="flex items-baseline justify-between gap-3">
-              <dt class="text-[13px] text-ink-500">Maydon</dt>
+              <dt class="text-[13px] text-ink-500">{{ field('area') }}</dt>
               <dd class="tabular text-[14px] font-bold text-ink-900">
-                {{ item.unitId ? area(item.area) : 'Kelishiladi' }}
+                {{ item.unitId ? area(item.area) : t('apply.tbd') }}
               </dd>
             </div>
             <div v-if="item.request.note" class="border-t border-ink-100 pt-3">
-              <dt class="text-[13px] text-ink-500">Izohingiz</dt>
+              <dt class="text-[13px] text-ink-500">{{ t('apply.yourNote') }}</dt>
               <dd class="mt-1.5 rounded-field bg-surface-sunken p-3 text-[13px] leading-relaxed text-ink-700">
                 {{ item.request.note }}
               </dd>
@@ -285,7 +333,7 @@ const CONTACTS = [
           </dl>
         </UiCard>
 
-        <UiCard title="Savollar bo‘yicha aloqa" icon="headset" tone="teal">
+        <UiCard :title="t('apply.contactTitle')" icon="headset" tone="teal">
           <ul class="space-y-2.5">
             <li v-for="c in CONTACTS" :key="c.label">
               <component
@@ -310,7 +358,7 @@ const CONTACTS = [
           </ul>
 
           <p class="mt-3 text-[12px] leading-relaxed text-ink-500">
-            Murojaat qilganda ariza raqamini ayting: {{ item.code }}.
+            {{ t('apply.mentionCode') }} {{ item.code }}.
           </p>
         </UiCard>
       </div>
@@ -318,11 +366,11 @@ const CONTACTS = [
       <div class="flex flex-wrap gap-2.5">
         <UiButton to="/catalog" variant="secondary">
           <UiIcon name="search" :size="16" />
-          Boshqa maydonlarni ko‘rish
+          {{ t('apply.viewOtherUnits') }}
         </UiButton>
         <UiButton variant="ghost" @click="opened = false">
           <UiIcon name="lock" :size="16" />
-          Ma’lumotlarni yopish
+          {{ t('apply.hideData') }}
         </UiButton>
       </div>
     </div>

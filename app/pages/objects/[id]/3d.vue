@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { buildingById } from '~/data/buildings'
+import { STRUCTURE_KIND, structuresOf } from '~/data/structures'
 import { unitsOfBuilding, type Unit } from '~/data/units'
 import { area, num, percent } from '~/utils/format'
 
@@ -31,12 +32,12 @@ interface FloorRow {
 }
 
 /** Holat legendasi: tartib va ranglar buyurtmachi maketidan */
-const CATEGORIES: Array<{ key: string; label: string; color: string }> = [
-  { key: 'vacant', label: 'Bo‘sh', color: '#16B99A' },
-  { key: 'rented', label: 'Ijarada', color: '#0256F7' },
-  { key: 'sold', label: 'Sotilgan', color: '#F84448' },
-  { key: 'reserved', label: 'Rezerv', color: '#FAA53F' },
-  { key: 'other', label: 'Texnik / Boshqa', color: '#8494AC' },
+const CATEGORIES: Array<{ key: string; color: string }> = [
+  { key: 'vacant', color: '#16B99A' },
+  { key: 'rented', color: '#0256F7' },
+  { key: 'sold', color: '#F84448' },
+  { key: 'reserved', color: '#FAA53F' },
+  { key: 'other', color: '#8494AC' },
 ]
 
 const CATEGORY_OF: Record<string, string> = {
@@ -48,10 +49,25 @@ const CATEGORY_OF: Record<string, string> = {
   DRAFT: 'other',
 }
 
+/** Legenda nomi status registridan olinadi, «Texnik / Boshqa» esa yig‘ma guruh */
+const CATEGORY_STATUS: Record<string, string> = {
+  vacant: 'VACANT',
+  rented: 'RENTED',
+  sold: 'SOLD',
+  reserved: 'RESERVED',
+}
+
 const route = useRoute()
 const id = computed(() => String(route.params.id))
 const auth = useAuthStore()
+const { t } = useI18n()
+const { buildingTypeLabel, unitUsageLabel, field, statusLabel, moduleTitle, tr, priceUnitLabel } = useAppLabels()
 const { action: leadAction, label: leadLabel, staffHint } = useLeadAction()
+
+function categoryLabel(key: string) {
+  const status = CATEGORY_STATUS[key]
+  return status ? statusLabel('unit', status) : t('obj.categoryOther')
+}
 
 /** Biriktirilmagan obyekt 3D navigator havolasi orqali ham ochilmaydi */
 const building = computed(() => {
@@ -69,7 +85,28 @@ const showFinance = computed(
 const selectedFloor = ref(0)
 
 const selectedUnit = ref('')
+/** Navigatorda tanlangan qurilma: ro‘yxat bilan bitta holatdan boshqariladi */
+const selectedStructure = ref('')
 const viewMode = ref<ViewMode>('occupancy')
+
+/** Uchastka tarkibi: ijaraga beriladigan va xizmat qurilmalari alohida ko‘rinadi */
+const siteStructures = computed(() =>
+  (building.value ? structuresOf(building.value.id) : []).map((s) => {
+    const meta = STRUCTURE_KIND[s.kind]
+    return {
+      id: s.id,
+      name: s.name,
+      kind: tr(`obj.structureKind.${s.kind}`, meta.label),
+      leasable: meta.leasable,
+      size: `${Math.round(s.width)} × ${Math.round(s.depth)} ${t('unitOf.metre')}`,
+      note: s.gla
+        ? area(s.gla)
+        : s.parkingSpaces
+          ? t('obj.placesOf', { n: s.parkingSpaces })
+          : t('obj.floorsOf', { n: s.floors }),
+    }
+  }),
+)
 /**
  * Qavat tanlansa uning ichi darhol ochiladi: ilgari avval qavat ajratilar,
  * so'ng rejimni qo'lda "Interyer" ga o'tkazish kerak edi.
@@ -99,23 +136,26 @@ const floorRows = computed<FloorRow[]>(() => {
       const own = units.filter((u) => (CATEGORY_OF[u.status] ?? 'other') === c.key)
       return {
         key: c.key,
-        label: c.label,
+        label: categoryLabel(c.key),
         color: c.color,
         count: own.length,
         share: units.length ? own.length / units.length : 0,
       }
     }).filter((m) => m.count > 0)
 
-    let label = 'Reja kiritilmagan'
+    let label = t('obj.noPlan')
     if (units.length) {
-      if (!vacant.length) label = 'To‘liq band'
-      else if (vacant.length === units.length) label = 'Butunlay bo‘sh'
-      else label = 'Qisman bo‘sh'
+      if (!vacant.length) label = t('obj.fullyOccupied')
+      else if (vacant.length === units.length) label = t('obj.fullyVacant')
+      else label = t('obj.partlyVacant')
     }
 
     return {
       floor,
-      name: floor < 0 ? `${-floor}-yer osti qavati` : `${floor}-qavat`,
+      name:
+        floor < 0
+          ? t('obj.undergroundFloorNo', { floor: -floor })
+          : t('unitOf.floorNo', { floor }),
       short: String(floor),
       underground: floor < 0,
       units,
@@ -148,7 +188,11 @@ const legend = computed(() => {
     const key = CATEGORY_OF[u.status] ?? 'other'
     totals.set(key, (totals.get(key) ?? 0) + 1)
   }
-  return CATEGORIES.map((c) => ({ ...c, count: totals.get(c.key) ?? 0 }))
+  return CATEGORIES.map((c) => ({
+    ...c,
+    label: categoryLabel(c.key),
+    count: totals.get(c.key) ?? 0,
+  }))
 })
 
 watch(
@@ -172,30 +216,32 @@ const buildingStats = computed(() => {
   if (!b) return null
   return [
     {
-      label: 'Qavatlar',
+      label: field('floors'),
       value: String(b.floors),
-      note: b.undergroundFloors ? `+${b.undergroundFloors} yer osti` : 'yer osti yo‘q',
+      note: b.undergroundFloors
+        ? t('obj.undergroundPlus', { n: b.undergroundFloors })
+        : t('obj.noUnderground'),
       icon: 'layers',
       tone: 'bg-brand-50 text-brand-600',
     },
     {
-      label: 'Unitlar',
+      label: field('units'),
       value: num(b.units),
-      note: `${num(b.vacantUnits)} tasi bo‘sh`,
+      note: t('obj.vacantOf', { n: num(b.vacantUnits) }),
       icon: 'box',
       tone: 'bg-info-50 text-info-600',
     },
     {
-      label: 'Bandlik',
+      label: t('kpi.occupancy'),
       value: percent(b.occupancy),
-      note: `${num(b.occupiedUnits)} unit band`,
+      note: t('obj.occupiedUnitsOf', { n: num(b.occupiedUnits) }),
       icon: 'chart',
       tone: 'bg-ok-50 text-ok-600',
     },
     {
-      label: 'Bo‘sh, m²',
+      label: t('obj.vacantSqm'),
       value: num(b.vacantArea),
-      note: `GLA ${num(b.gla)} m²`,
+      note: `GLA ${num(b.gla)} ${t('unitOf.sqm')}`,
       icon: 'meter',
       tone: 'bg-warn-50 text-warn-600',
     },
@@ -211,11 +257,11 @@ const planLink = computed(() => {
 })
 
 function contractLabel(unit: Unit) {
-  if (unit.contractCode) return `Shartnoma ${unit.contractCode}`
-  if (unit.status === 'RESERVED') return 'Rezervda, shartnoma tayyorlanmoqda'
-  if (unit.status === 'MAINTENANCE') return 'Ta’mir ishlari tugagunicha to‘xtatilgan'
-  if (unit.status === 'VACANT') return 'Shartnoma rasmiylashtirilmagan'
-  return 'Shartnoma ma’lumotlari kiritilmagan'
+  if (unit.contractCode) return t('obj.contractOf', { code: unit.contractCode })
+  if (unit.status === 'RESERVED') return t('obj.contractReserved')
+  if (unit.status === 'MAINTENANCE') return t('obj.contractMaintenance')
+  if (unit.status === 'VACANT') return t('obj.contractNone')
+  return t('obj.contractUnknown')
 }
 
 const applyOpen = ref(false)
@@ -237,8 +283,11 @@ function goApply() {
 <template>
   <template v-if="!building">
     <AppTopbar
-      title="Obyekt topilmadi"
-      :breadcrumb="[{ label: 'Obyektlar', to: '/objects' }, { label: 'Topilmadi' }]"
+      :title="t('empty.noObjects')"
+      :breadcrumb="[
+        { label: moduleTitle('objects'), to: '/objects' },
+        { label: t('obj.notFoundCrumb') },
+      ]"
     />
     <main class="scroll-slim flex-1 overflow-y-auto p-4 sm:p-6">
       <UiCard>
@@ -246,13 +295,13 @@ function goApply() {
           <span class="grid size-14 place-items-center rounded-full bg-warn-50 text-warn-600">
             <UiIcon name="warning" :size="26" />
           </span>
-          <p class="text-[16px] font-bold text-ink-900">Obyekt mavjud emas</p>
+          <p class="text-[16px] font-bold text-ink-900">{{ t('obj.missingShort') }}</p>
           <p class="max-w-sm text-[13px] leading-relaxed text-ink-500">
-            Havola eskirgan yoki obyekt sizga biriktirilmagan bo‘lishi mumkin.
+            {{ t('obj.missingHint') }}
           </p>
           <UiButton to="/objects">
             <UiIcon name="chevronLeft" :size="16" />
-            Obyektlar reyestri
+            {{ t('obj.title') }}
           </UiButton>
         </div>
       </UiCard>
@@ -261,22 +310,22 @@ function goApply() {
 
   <template v-else>
     <AppTopbar
-      title="3D bino navigatori"
-      :subtitle="`${building.name} · qavat va unit darajasidagi hajmli ko‘rinish`"
+      :title="t('obj.nav3dTitle')"
+      :subtitle="t('obj.nav3dCaption', { name: building.name })"
       :breadcrumb="[
-        { label: 'Obyektlar', to: '/objects' },
+        { label: moduleTitle('objects'), to: '/objects' },
         { label: building.name, to: `/objects/${building.id}` },
-        { label: '3D navigator' },
+        { label: t('obj.navigator3d') },
       ]"
     >
       <template #actions>
         <UiButton variant="secondary" size="sm" :to="`/objects/${building.id}`">
           <UiIcon name="doc" :size="16" />
-          Bino pasporti
+          {{ t('obj.passport') }}
         </UiButton>
         <UiButton size="sm" :to="planLink">
           <UiIcon name="layers" :size="16" />
-          Qavat rejasi
+          {{ t('obj.floorPlan') }}
         </UiButton>
       </template>
     </AppTopbar>
@@ -294,7 +343,7 @@ function goApply() {
             <span
               class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-ink-900/80 via-ink-900/20 to-transparent px-3 py-2 text-[12px] font-semibold text-white"
             >
-              {{ building.buildYear }}-yil · {{ building.type }}
+              {{ t('unitOf.yearNo', { year: building.buildYear }) }} · {{ buildingTypeLabel(building.type) }}
             </span>
           </UiPhoto>
 
@@ -348,8 +397,18 @@ function goApply() {
            ikkita ro‘yxat emas -->
       <section class="grid gap-5 lg:grid-cols-[minmax(0,1fr)_336px]">
         <UiCard
-          title="Hajmli ko‘rinish"
-          :subtitle="`${building.floors} qavat${building.undergroundFloors ? ` va ${building.undergroundFloors} yer osti darajasi` : ''} · ${floorsWithPlan.length} qavatda reja bor`"
+          :title="t('obj.volumeView')"
+          :subtitle="
+            t('obj.volumeCaption', {
+              floors: building.undergroundFloors
+                ? t('obj.floorsWithUnder', {
+                    floors: building.floors,
+                    under: building.undergroundFloors,
+                  })
+                : t('obj.floorsOf', { n: building.floors }),
+              plans: floorsWithPlan.length,
+            })
+          "
           flush
           :padded="false"
         >
@@ -358,13 +417,54 @@ function goApply() {
               v-model:floor="selectedFloor"
               v-model:unit="selectedUnit"
               v-model:mode="viewMode"
+              v-model:structure="selectedStructure"
               :building="building"
             />
           </div>
         </UiCard>
 
         <div class="min-w-0 space-y-5">
-          <UiCard class="hidden lg:block" title="Holat legendasi" flush>
+          <!-- Uchastka tarkibi: qurilma bosilsa navigatorda ham tanlanadi -->
+          <UiCard
+            v-if="siteStructures.length"
+            :title="t('obj.siteComposition')"
+            :subtitle="t('obj.structuresOf', { n: siteStructures.length })"
+            flush
+          >
+            <ul class="space-y-1.5">
+              <li v-for="st in siteStructures" :key="st.id">
+                <button
+                  type="button"
+                  class="flex w-full items-center gap-2.5 rounded-field px-2.5 py-2 text-left ring-1 ring-inset transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500"
+                  :class="
+                    st.id === selectedStructure
+                      ? 'bg-brand-50 ring-brand-300'
+                      : 'ring-ink-200 hover:bg-ink-50'
+                  "
+                  :aria-pressed="st.id === selectedStructure"
+                  @click="selectedStructure = st.id"
+                >
+                  <span
+                    class="size-2.5 shrink-0 rounded-full"
+                    :class="st.leasable ? 'bg-brand-500' : 'bg-ink-300'"
+                  />
+                  <span class="min-w-0 flex-1">
+                    <span class="block truncate text-[13px] font-semibold text-ink-900">
+                      {{ st.name }}
+                    </span>
+                    <span class="block truncate text-[12px] text-ink-500">
+                      {{ st.kind }} · {{ st.size }}
+                    </span>
+                  </span>
+                  <span class="tabular shrink-0 text-[12px] font-semibold text-ink-600">
+                    {{ st.note }}
+                  </span>
+                </button>
+              </li>
+            </ul>
+          </UiCard>
+
+          <UiCard class="hidden lg:block" :title="t('obj.statusLegend')" flush>
             <ul class="space-y-2">
               <li
                 v-for="c in legend"
@@ -385,7 +485,7 @@ function goApply() {
             </ul>
           </UiCard>
 
-          <UiCard v-if="currentFloor" title="Tanlangan qavat" flush>
+          <UiCard v-if="currentFloor" :title="t('obj.selectedFloor')" flush>
             <div class="flex items-center justify-between gap-3">
               <p class="tabular min-w-0 truncate text-[22px] font-bold text-ink-900">
                 {{ currentFloor.name }}
@@ -398,43 +498,51 @@ function goApply() {
                     : 'bg-ink-100 text-ink-600 ring-ink-200'
                 "
               >
-                {{ currentFloor.total ? `Bo‘sh ${currentFloor.vacantShare}%` : currentFloor.label }}
+                {{
+                  currentFloor.total
+                    ? t('obj.vacantPct', { n: currentFloor.vacantShare })
+                    : currentFloor.label
+                }}
               </span>
             </div>
 
             <dl class="mt-4 divide-y divide-ink-100">
               <div class="flex items-center justify-between gap-4 py-2.5">
-                <dt class="text-[13px] text-ink-500">Jami maydon</dt>
+                <dt class="text-[13px] text-ink-500">{{ field('totalArea') }}</dt>
                 <dd class="tabular text-[13px] font-bold text-ink-900">
                   {{ currentFloor.total ? area(currentFloor.totalArea) : '-' }}
                 </dd>
               </div>
               <div class="flex items-center justify-between gap-4 py-2.5">
-                <dt class="text-[13px] text-ink-500">Bo‘sh maydon</dt>
+                <dt class="text-[13px] text-ink-500">{{ t('kpi.vacantArea') }}</dt>
                 <dd class="tabular text-[13px] font-bold text-ok-600">
                   {{ currentFloor.total ? area(currentFloor.vacantArea) : '-' }}
                 </dd>
               </div>
               <div class="flex items-center justify-between gap-4 py-2.5">
-                <dt class="text-[13px] text-ink-500">Unitlar soni</dt>
+                <dt class="text-[13px] text-ink-500">{{ t('kpi.unitCount') }}</dt>
                 <dd class="tabular text-[13px] font-bold text-ink-900">
-                  {{ currentFloor.total }} ta
+                  {{ currentFloor.total }} {{ t('unitOf.pcs') }}
                 </dd>
               </div>
             </dl>
 
             <UiButton block class="mt-4" :to="planLink">
               <UiIcon name="send" :size="16" />
-              Qavatga o‘tish
+              {{ t('obj.goToFloor') }}
             </UiButton>
           </UiCard>
 
           <UiCard
-            :title="currentFloor ? `${currentFloor.name} unitlari` : 'Unitlar'"
+            :title="
+              currentFloor
+                ? t('obj.floorUnitsTitle', { floor: currentFloor.name })
+                : field('units')
+            "
             :subtitle="
               currentFloor && currentFloor.total
-                ? 'Konturni ajratish uchun unitni tanlang'
-                : 'Tanlangan qavatda unit yozuvi yo‘q'
+                ? t('obj.pickUnitHint')
+                : t('obj.noUnitsOnFloor')
             "
           >
             <div v-if="currentFloor && currentFloor.total" class="space-y-1.5">
@@ -454,7 +562,7 @@ function goApply() {
                     {{ u.code }}
                   </span>
                   <span class="tabular mt-0.5 block truncate text-[12px] text-ink-500">
-                    {{ area(u.area) }} · {{ u.usage }} · {{ u.rooms }} xona
+                    {{ area(u.area) }} · {{ unitUsageLabel(u.usage) }} · {{ t('obj.roomsOf', { n: u.rooms }) }}
                   </span>
                 </span>
                 <UiStatus kind="unit" :value="u.status" size="sm" />
@@ -466,7 +574,7 @@ function goApply() {
                 <UiIcon name="box" :size="22" />
               </span>
               <p class="text-[13px] text-ink-500">
-                Bu darajada unit yozuvlari yuritilmaydi. Reja kiritilgan qavatni tanlang.
+                {{ t('obj.noUnitsLevel') }}
               </p>
               <div v-if="floorsWithPlan.length" class="flex flex-wrap justify-center gap-1.5">
                 <button
@@ -484,7 +592,7 @@ function goApply() {
 
           <UiCard
             v-if="currentUnit"
-            :title="`Unit ${currentUnit.code}`"
+            :title="t('obj.unitOf', { code: currentUnit.code })"
             :subtitle="`${currentFloor?.name} · ${building.name}`"
             icon="box"
             tone="info"
@@ -493,31 +601,32 @@ function goApply() {
 
             <dl class="mt-4 divide-y divide-ink-100">
               <div class="flex items-start gap-4 py-2.5">
-                <dt class="w-[112px] shrink-0 text-[13px] text-ink-500">Maydoni</dt>
+                <dt class="w-[112px] shrink-0 text-[13px] text-ink-500">{{ field('area') }}</dt>
                 <dd class="tabular min-w-0 flex-1 text-[13px] font-bold text-ink-900">
                   {{ area(currentUnit.area) }}
                 </dd>
               </div>
               <div class="flex items-start gap-4 py-2.5">
-                <dt class="w-[112px] shrink-0 text-[13px] text-ink-500">Turi</dt>
+                <dt class="w-[112px] shrink-0 text-[13px] text-ink-500">{{ field('type') }}</dt>
                 <dd class="min-w-0 flex-1 text-[13px] font-semibold text-ink-900">
-                  {{ currentUnit.usage }} · {{ currentUnit.rooms }} xona · {{ currentUnit.offer }}
+                  {{ unitUsageLabel(currentUnit.usage) }} · {{ t('obj.roomsOf', { n: currentUnit.rooms }) }} ·
+                  {{ currentUnit.offer }}
                 </dd>
               </div>
               <div v-if="showFinance" class="flex items-start gap-4 py-2.5">
-                <dt class="w-[112px] shrink-0 text-[13px] text-ink-500">Ijarachi</dt>
+                <dt class="w-[112px] shrink-0 text-[13px] text-ink-500">{{ field('tenant') }}</dt>
                 <dd class="min-w-0 flex-1 text-[13px] font-semibold text-ink-900">
                   {{ currentUnit.tenant ?? '-' }}
                 </dd>
               </div>
               <div v-if="showFinance" class="flex items-start gap-4 py-2.5">
-                <dt class="w-[112px] shrink-0 text-[13px] text-ink-500">Narxi</dt>
+                <dt class="w-[112px] shrink-0 text-[13px] text-ink-500">{{ field('price') }}</dt>
                 <dd class="tabular min-w-0 flex-1 text-[13px] font-bold text-brand-600">
-                  {{ num(currentUnit.price) }} {{ currentUnit.priceUnit }}
+                  {{ num(currentUnit.price) }} {{ priceUnitLabel(currentUnit.priceUnit) }}
                 </dd>
               </div>
               <div v-if="showFinance" class="flex items-start gap-4 py-2.5">
-                <dt class="w-[112px] shrink-0 text-[13px] text-ink-500">Shartnoma</dt>
+                <dt class="w-[112px] shrink-0 text-[13px] text-ink-500">{{ field('contract') }}</dt>
                 <dd class="min-w-0 flex-1 text-[13px] font-semibold text-ink-800">
                   {{ contractLabel(currentUnit) }}
                 </dd>
@@ -557,18 +666,17 @@ function goApply() {
               :to="planLink"
             >
               <UiIcon name="arrowRight" :size="16" />
-              2D rejada ochish
+              {{ t('obj.openIn2d') }}
             </UiButton>
           </UiCard>
 
-          <UiCard v-else title="Unit kartasi" subtitle="Tafsilot uchun unit tanlang">
+          <UiCard v-else :title="t('obj.unitCard')" :subtitle="t('obj.pickUnitDetail')">
             <div class="flex flex-col items-center gap-3 py-8 text-center">
               <span class="grid size-12 place-items-center rounded-full bg-brand-50 text-brand-600">
                 <UiIcon name="cube" :size="22" />
               </span>
               <p class="text-[13px] text-ink-500">
-                Hajmli ko‘rinishda yoki yuqoridagi ro‘yxatda unitni bosing, uning konturi
-                ajratiladi va shu yerda kartasi ochiladi.
+                {{ t('obj.pickUnitText') }}
               </p>
             </div>
           </UiCard>
@@ -577,13 +685,12 @@ function goApply() {
     </main>
   </template>
 
-    <UiModal v-model="applyOpen" title="Ariza yuborish" size="sm">
+    <UiModal v-model="applyOpen" :title="t('apply.cta')" size="sm">
       <p class="text-[14px] leading-relaxed text-ink-600">
-        Ariza faqat ijarachi profilidan yuboriladi. Ichki rol bilan kirgan
-        foydalanuvchi ariza yarata olmaydi, bu ijarachi tomonidagi amal.
+        {{ t('obj.applyStaffText') }}
       </p>
       <template #footer>
-        <UiButton variant="secondary" @click="applyOpen = false">Yopish</UiButton>
+        <UiButton variant="secondary" @click="applyOpen = false">{{ t('common.close') }}</UiButton>
       </template>
     </UiModal>
 </template>

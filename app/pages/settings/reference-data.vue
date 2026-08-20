@@ -1,31 +1,45 @@
 <script setup lang="ts">
 import { UNIT_STATUS } from '~/constants/statuses'
+import { csvBlob, fileSlug, saveBlob } from '~/utils/docx'
 
-const SETTINGS_TABS = [
-  { label: 'Foydalanuvchilar', to: '/settings/users', icon: 'users' },
-  { label: 'Rollar va huquqlar', to: '/settings/roles', icon: 'shield' },
-  { label: 'Integratsiyalar', to: '/settings/integrations', icon: 'globe' },
-  { label: 'Ma’lumotnomalar', to: '/settings/reference-data', icon: 'layers' },
-  { label: 'Tizim sozlamalari', to: '/settings/system', icon: 'gear' },
-  { label: 'Audit jurnali', to: '/settings/audit', icon: 'clipboard' },
-]
+const { t, locale } = useI18n()
+const { field, columns: labelColumns, statusLabel } = useAppLabels()
+
+/** Ekranga chiqadigan matn: lug‘at kaliti yoki tarjima qilinmaydigan qiymat */
+interface Phrase {
+  k?: string
+  p?: Record<string, unknown>
+  s?: string
+}
+
+const say = (p: Phrase) => (p.k ? t(p.k, p.p ?? {}) : (p.s ?? ''))
+
+const SETTINGS_TABS = computed(() => [
+  { label: t('nav.settingsUsers'), to: '/settings/users', icon: 'users' },
+  { label: t('nav.settingsRoles'), to: '/settings/roles', icon: 'shield' },
+  { label: t('nav.settingsIntegrations'), to: '/settings/integrations', icon: 'globe' },
+  { label: t('nav.settingsReference'), to: '/settings/reference-data', icon: 'layers' },
+  { label: t('nav.settingsSystem'), to: '/settings/system', icon: 'gear' },
+  { label: t('nav.settingsAudit'), to: '/settings/audit', icon: 'clipboard' },
+])
 const CURRENT_TAB = '/settings/reference-data'
 
-const CATEGORY_META: Record<string, { label: string; badge: string }> = {
-  buildings: { label: 'Binolar', badge: 'bg-ok-50 text-ok-700 ring-ok-100' },
-  units: { label: 'Unitlar', badge: 'bg-brand-50 text-brand-700 ring-brand-200' },
-  services: { label: 'Xizmatlar', badge: 'bg-info-50 text-info-700 ring-info-100' },
-  tariffs: { label: 'Tariflar', badge: 'bg-teal-50 text-teal-700 ring-teal-200' },
-  equipment: { label: 'Uskunalar', badge: 'bg-warn-50 text-warn-700 ring-warn-100' },
-  floors: { label: 'Qavatlar', badge: 'bg-ink-100 text-ink-700 ring-ink-200' },
-  statuses: { label: 'Statuslar', badge: 'bg-danger-50 text-danger-700 ring-danger-100' },
+const CATEGORY_META: Record<string, { key: string; badge: string }> = {
+  buildings: { key: 'cfg.catBuildings', badge: 'bg-ok-50 text-ok-700 ring-ok-100' },
+  units: { key: 'kpi.units', badge: 'bg-brand-50 text-brand-700 ring-brand-200' },
+  services: { key: 'cfg.catServices', badge: 'bg-info-50 text-info-700 ring-info-100' },
+  tariffs: { key: 'cfg.catTariffs', badge: 'bg-teal-50 text-teal-700 ring-teal-200' },
+  equipment: { key: 'cfg.catEquipment', badge: 'bg-warn-50 text-warn-700 ring-warn-100' },
+  floors: { key: 'field.floors', badge: 'bg-ink-100 text-ink-700 ring-ink-200' },
+  statuses: { key: 'cfg.catStatuses', badge: 'bg-danger-50 text-danger-700 ring-danger-100' },
 }
 
 /** Ro‘yxatda kutilmagan turkum uchrasa ham nishoncha ko‘rinishda qoladi */
-const CATEGORY_FALLBACK = { label: 'Turkumsiz', badge: 'bg-ink-100 text-ink-700 ring-ink-200' }
+const CATEGORY_FALLBACK = { key: 'cfg.catNone', badge: 'bg-ink-100 text-ink-700 ring-ink-200' }
 
 function categoryMeta(category: string) {
-  return CATEGORY_META[category] ?? CATEGORY_FALLBACK
+  const meta = CATEGORY_META[category] ?? CATEGORY_FALLBACK
+  return { label: t(meta.key), badge: meta.badge }
 }
 
 /**
@@ -36,6 +50,7 @@ function categoryMeta(category: string) {
 const UNIT_STATUS_RECORDS = Object.entries(UNIT_STATUS).map(([code, def]) => ({
   code,
   label: def.label,
+  labelKey: `status.unit.${code}`,
 }))
 
 const GROUPS: Record<string, string[]> = {
@@ -51,6 +66,10 @@ const GROUPS: Record<string, string[]> = {
 interface RefRecord {
   code: string
   label: string
+  /** Ruscha nomi: ma’lumotnoma yozuvi tahrirlanadigan ma’lumot */
+  labelRu?: string
+  /** Registrdan keladigan yozuv uchun lug‘at kaliti */
+  labelKey?: string
 }
 
 interface RefEntry {
@@ -61,11 +80,24 @@ interface RefEntry {
   category: string
   code: string
   description: string
+  descriptionRu: string
   status: 'ACTIVE' | 'ARCHIVED'
-  updatedAt: string
+  updatedAt: Phrase
   updatedBy: string
   icon: string
   records: RefRecord[]
+}
+
+/** Ro‘yxat va panel nomni tanlangan tilda ko‘rsatadi */
+const entryName = (e: { name: string; nameRu?: string }) =>
+  locale.value === 'ru' && e.nameRu ? e.nameRu : e.name
+
+const entryDescription = (e: { description: string; descriptionRu?: string }) =>
+  locale.value === 'ru' && e.descriptionRu ? e.descriptionRu : e.description
+
+const recordLabel = (r: RefRecord) => {
+  if (r.labelKey) return t(r.labelKey)
+  return locale.value === 'ru' && r.labelRu ? r.labelRu : r.label
 }
 
 const entries = ref<RefEntry[]>([
@@ -77,16 +109,17 @@ const entries = ref<RefEntry[]>([
     category: 'buildings',
     code: 'BLD_TYPE',
     description: 'Turli xil bino turlarining klassifikatori',
+    descriptionRu: 'Классификатор типов зданий',
     status: 'ACTIVE',
-    updatedAt: '18.05.2025 10:24',
+    updatedAt: { s: '18.05.2025 10:24' },
     updatedBy: 'Jahongir Alimov',
     icon: 'building',
     records: [
-      { code: 'BT-01', label: 'Biznes markaz' },
-      { code: 'BT-02', label: 'Savdo markaz' },
-      { code: 'BT-03', label: 'Ombor / logistika' },
-      { code: 'BT-04', label: 'Turar joy' },
-      { code: 'BT-05', label: 'Ofis binosi' },
+      { code: 'BT-01', label: 'Biznes markaz', labelRu: 'Бизнес-центр' },
+      { code: 'BT-02', label: 'Savdo markaz', labelRu: 'Торговый центр' },
+      { code: 'BT-03', label: 'Ombor / logistika', labelRu: 'Склад / логистика' },
+      { code: 'BT-04', label: 'Turar joy', labelRu: 'Жилое здание' },
+      { code: 'BT-05', label: 'Ofis binosi', labelRu: 'Офисное здание' },
     ],
   },
   {
@@ -97,16 +130,17 @@ const entries = ref<RefEntry[]>([
     category: 'units',
     code: 'UNIT_CAT',
     description: 'Bo‘sh unitlar toifalari va o‘lchov birliklari',
+    descriptionRu: 'Категории свободных помещений и единицы измерения',
     status: 'ACTIVE',
-    updatedAt: '18.05.2025 09:41',
+    updatedAt: { s: '18.05.2025 09:41' },
     updatedBy: 'Dilshod Karimov',
     icon: 'cube',
     records: [
-      { code: 'UC-01', label: 'Ofis maydoni' },
-      { code: 'UC-02', label: 'Savdo maydoni' },
-      { code: 'UC-03', label: 'Ombor maydoni' },
-      { code: 'UC-04', label: 'Turar joy' },
-      { code: 'UC-05', label: 'Parking o‘rni' },
+      { code: 'UC-01', label: 'Ofis maydoni', labelRu: 'Офисная площадь' },
+      { code: 'UC-02', label: 'Savdo maydoni', labelRu: 'Торговая площадь' },
+      { code: 'UC-03', label: 'Ombor maydoni', labelRu: 'Складская площадь' },
+      { code: 'UC-04', label: 'Turar joy', labelRu: 'Жилое помещение' },
+      { code: 'UC-05', label: 'Parking o‘rni', labelRu: 'Парковочное место' },
     ],
   },
   {
@@ -117,17 +151,18 @@ const entries = ref<RefEntry[]>([
     category: 'services',
     code: 'SRV_CAT',
     description: 'Ko‘rsatiladigan xizmatlar klassifikatori',
+    descriptionRu: 'Классификатор оказываемых услуг',
     status: 'ACTIVE',
-    updatedAt: '18.05.2025 09:12',
+    updatedAt: { s: '18.05.2025 09:12' },
     updatedBy: 'Otabek Rahimov',
     icon: 'wrench',
     records: [
-      { code: 'SC-01', label: 'Elektr ta’minoti' },
-      { code: 'SC-02', label: 'Suv ta’minoti' },
-      { code: 'SC-03', label: 'Isitish va sovitish' },
-      { code: 'SC-04', label: 'Tozalash xizmati' },
-      { code: 'SC-05', label: 'Qo‘riqlash xizmati' },
-      { code: 'SC-06', label: 'Lift xizmati' },
+      { code: 'SC-01', label: 'Elektr ta’minoti', labelRu: 'Электроснабжение' },
+      { code: 'SC-02', label: 'Suv ta’minoti', labelRu: 'Водоснабжение' },
+      { code: 'SC-03', label: 'Isitish va sovitish', labelRu: 'Отопление и охлаждение' },
+      { code: 'SC-04', label: 'Tozalash xizmati', labelRu: 'Клининг' },
+      { code: 'SC-05', label: 'Qo‘riqlash xizmati', labelRu: 'Охрана' },
+      { code: 'SC-06', label: 'Lift xizmati', labelRu: 'Обслуживание лифтов' },
     ],
   },
   {
@@ -138,16 +173,17 @@ const entries = ref<RefEntry[]>([
     category: 'tariffs',
     code: 'TARIFF_TAB',
     description: 'Tarif rejalari va narx jadvallari',
+    descriptionRu: 'Тарифные планы и таблицы цен',
     status: 'ACTIVE',
-    updatedAt: '17.05.2025 18:30',
+    updatedAt: { s: '17.05.2025 18:30' },
     updatedBy: 'Sevara Yusupova',
     icon: 'wallet',
     records: [
-      { code: 'TR-01', label: 'Elektr energiyasi (kVt-soat)' },
-      { code: 'TR-02', label: 'Suv ta’minoti (m³)' },
-      { code: 'TR-03', label: 'Issiqlik ta’minoti (Gkal)' },
-      { code: 'TR-04', label: 'Boshqaruv xizmati (m²)' },
-      { code: 'TR-05', label: 'Tozalash xizmati (m²)' },
+      { code: 'TR-01', label: 'Elektr energiyasi (kVt-soat)', labelRu: 'Электроэнергия (кВт-ч)' },
+      { code: 'TR-02', label: 'Suv ta’minoti (m³)', labelRu: 'Водоснабжение (м³)' },
+      { code: 'TR-03', label: 'Issiqlik ta’minoti (Gkal)', labelRu: 'Теплоснабжение (Гкал)' },
+      { code: 'TR-04', label: 'Boshqaruv xizmati (m²)', labelRu: 'Услуги управления (м²)' },
+      { code: 'TR-05', label: 'Tozalash xizmati (m²)', labelRu: 'Клининг (м²)' },
     ],
   },
   {
@@ -158,18 +194,19 @@ const entries = ref<RefEntry[]>([
     category: 'equipment',
     code: 'EQP_TYPE',
     description: 'Bino uskunalari va texnikalar turlari',
+    descriptionRu: 'Типы оборудования и техники здания',
     status: 'ACTIVE',
-    updatedAt: '17.05.2025 16:08',
+    updatedAt: { s: '17.05.2025 16:08' },
     updatedBy: 'Sardor Yo‘ldoshev',
     icon: 'box',
     records: [
-      { code: 'EQ-01', label: 'Lift' },
-      { code: 'EQ-02', label: 'Eskalator' },
-      { code: 'EQ-03', label: 'Generator' },
-      { code: 'EQ-04', label: 'Yong‘in signalizatsiyasi' },
-      { code: 'EQ-05', label: 'Suv nasosi' },
-      { code: 'EQ-06', label: 'Videokuzatuv (CCTV)' },
-      { code: 'EQ-07', label: 'Havo tozalash tizimi' },
+      { code: 'EQ-01', label: 'Lift', labelRu: 'Лифт' },
+      { code: 'EQ-02', label: 'Eskalator', labelRu: 'Эскалатор' },
+      { code: 'EQ-03', label: 'Generator', labelRu: 'Генератор' },
+      { code: 'EQ-04', label: 'Yong‘in signalizatsiyasi', labelRu: 'Пожарная сигнализация' },
+      { code: 'EQ-05', label: 'Suv nasosi', labelRu: 'Водяной насос' },
+      { code: 'EQ-06', label: 'Videokuzatuv (CCTV)', labelRu: 'Видеонаблюдение (CCTV)' },
+      { code: 'EQ-07', label: 'Havo tozalash tizimi', labelRu: 'Система очистки воздуха' },
     ],
   },
   {
@@ -180,17 +217,18 @@ const entries = ref<RefEntry[]>([
     category: 'floors',
     code: 'FLR_LABEL',
     description: 'Qavatlar nomi va belgilar klassifikatori',
+    descriptionRu: 'Классификатор названий и обозначений этажей',
     status: 'ACTIVE',
-    updatedAt: '15.05.2025 11:02',
+    updatedAt: { s: '15.05.2025 11:02' },
     updatedBy: 'Bobur Ismoilov',
     icon: 'layers',
     records: [
-      { code: 'FL-B2', label: 'Yerto‘la −2' },
-      { code: 'FL-B1', label: 'Yerto‘la −1' },
-      { code: 'FL-00', label: 'Zamin qavat' },
-      { code: 'FL-01', label: '1-qavat' },
-      { code: 'FL-TP', label: 'Tipovoy qavat' },
-      { code: 'FL-TX', label: 'Texnik qavat' },
+      { code: 'FL-B2', label: 'Yerto‘la −2', labelRu: 'Подвал −2' },
+      { code: 'FL-B1', label: 'Yerto‘la −1', labelRu: 'Подвал −1' },
+      { code: 'FL-00', label: 'Zamin qavat', labelRu: 'Цокольный этаж' },
+      { code: 'FL-01', label: '1-qavat', labelRu: '1 этаж' },
+      { code: 'FL-TP', label: 'Tipovoy qavat', labelRu: 'Типовой этаж' },
+      { code: 'FL-TX', label: 'Texnik qavat', labelRu: 'Технический этаж' },
     ],
   },
   {
@@ -201,8 +239,9 @@ const entries = ref<RefEntry[]>([
     category: 'statuses',
     code: 'STATUS_CAT',
     description: 'Tizimdagi statuslar va ularning holatlari',
+    descriptionRu: 'Статусы системы и их состояния',
     status: 'ACTIVE',
-    updatedAt: '15.05.2025 10:22',
+    updatedAt: { s: '15.05.2025 10:22' },
     updatedBy: 'Jahongir Alimov',
     icon: 'clipboard',
     records: UNIT_STATUS_RECORDS,
@@ -214,13 +253,13 @@ const search = ref('')
 const statusFilter = ref('all')
 
 const groupTabs = computed(() => [
-  { value: 'all', label: 'Barchasi', count: entries.value.length },
-  { value: 'building', label: 'Binolar va birliklar', count: countOf('building') },
-  { value: 'service', label: 'Xizmatlar', count: countOf('service') },
-  { value: 'tariff', label: 'Tariflar va to‘lovlar', count: countOf('tariff') },
-  { value: 'equipment', label: 'Uskunalar', count: countOf('equipment') },
-  { value: 'floor', label: 'Qavatlar', count: countOf('floor') },
-  { value: 'status', label: 'Statuslar', count: countOf('status') },
+  { value: 'all', label: t('tab.all'), count: entries.value.length },
+  { value: 'building', label: t('cfg.tabBuildingsUnits'), count: countOf('building') },
+  { value: 'service', label: t('cfg.catServices'), count: countOf('service') },
+  { value: 'tariff', label: t('cfg.tabTariffsPayments'), count: countOf('tariff') },
+  { value: 'equipment', label: t('cfg.catEquipment'), count: countOf('equipment') },
+  { value: 'floor', label: t('field.floors'), count: countOf('floor') },
+  { value: 'status', label: t('cfg.catStatuses'), count: countOf('status') },
 ])
 
 function countOf(group: string) {
@@ -233,23 +272,25 @@ const filtered = computed(() => {
     const inGroup = GROUPS[activeGroup.value]!.includes(e.category)
     const matchQ =
       !q ||
-      e.name.toLowerCase().includes(q) ||
+      entryName(e).toLowerCase().includes(q) ||
       e.code.toLowerCase().includes(q) ||
-      e.description.toLowerCase().includes(q)
+      entryDescription(e).toLowerCase().includes(q)
     const matchStatus = statusFilter.value === 'all' || e.status === statusFilter.value
     return inGroup && matchQ && matchStatus
   })
 })
 
-const columns = [
-  { key: 'name', label: 'Nomi' },
-  { key: 'category', label: 'Turkum' },
-  { key: 'code', label: 'Kod' },
-  { key: 'description', label: 'Tavsif' },
-  { key: 'status', label: 'Status' },
-  { key: 'updatedAt', label: 'Oxirgi yangilangan', align: 'right' as const },
-  { key: 'actions', label: 'Amallar', align: 'right' as const, width: '96px' },
-]
+const columns = computed(() =>
+  labelColumns([
+    { key: 'name', field: 'name' },
+    { key: 'category', field: 'group' },
+    { key: 'code', field: 'code' },
+    { key: 'description', field: 'description' },
+    { key: 'status', field: 'status' },
+    { key: 'updatedAt', field: 'lastUpdate', align: 'right' },
+    { key: 'actions', field: 'actions', align: 'right', width: '96px' },
+  ]),
+)
 
 const stats = computed(() => {
   const activeEntries = entries.value.filter((e) => e.status === 'ACTIVE')
@@ -263,19 +304,45 @@ const stats = computed(() => {
 const addedCount = ref(9)
 const changedCount = ref(14)
 
-const activity = ref([
-  { id: 'af-01', title: 'Tarif jadvallari yangilandi', who: 'Jahongir Alimov', when: '2 soat oldin', icon: 'wallet' },
-  { id: 'af-02', title: 'Xizmat turlari qo‘shildi', who: 'Otabek Rahimov', when: '5 soat oldin', icon: 'wrench' },
-  { id: 'af-03', title: 'Unit toifasi o‘zgartirildi', who: 'Dilshod Karimov', when: '1 kun oldin', icon: 'cube' },
-  { id: 'af-04', title: 'Status yangi qo‘shildi', who: 'Sevara Yusupova', when: '2 kun oldin', icon: 'clipboard' },
+const activity = ref<
+  Array<{ id: string; title: Phrase; who: string; when: Phrase; icon: string }>
+>([
+  {
+    id: 'af-01',
+    title: { k: 'cfg.actTariffUpdated' },
+    who: 'Jahongir Alimov',
+    when: { k: 'cfg.hoursAgo', p: { n: 2 } },
+    icon: 'wallet',
+  },
+  {
+    id: 'af-02',
+    title: { k: 'cfg.actServiceAdded' },
+    who: 'Otabek Rahimov',
+    when: { k: 'cfg.hoursAgo', p: { n: 5 } },
+    icon: 'wrench',
+  },
+  {
+    id: 'af-03',
+    title: { k: 'cfg.actUnitCatChanged' },
+    who: 'Dilshod Karimov',
+    when: { k: 'cfg.daysAgo', p: { n: 1 } },
+    icon: 'cube',
+  },
+  {
+    id: 'af-04',
+    title: { k: 'cfg.actStatusAdded' },
+    who: 'Sevara Yusupova',
+    when: { k: 'cfg.daysAgo', p: { n: 2 } },
+    icon: 'clipboard',
+  },
 ])
 
-function logActivity(title: string, icon: string) {
+function logActivity(title: Phrase, icon: string) {
   activity.value.unshift({
     id: `af-${activity.value.length + 5}`,
     title,
     who: 'Jahongir Alimov',
-    when: 'Hozirgina',
+    when: { k: 'common.justNow' },
     icon,
   })
   if (activity.value.length > 8) activity.value.pop()
@@ -289,10 +356,10 @@ onKeyStroke('Escape', () => {
 })
 
 const panelTab = ref('general')
-const panelTabs = [
-  { value: 'general', label: 'Umumiy ma’lumot' },
-  { value: 'records', label: 'Yozuvlar ro‘yxati' },
-]
+const panelTabs = computed(() => [
+  { value: 'general', label: t('cfg.tabGeneral') },
+  { value: 'records', label: t('cfg.tabRecords') },
+])
 
 const draft = reactive({
   id: '',
@@ -302,22 +369,37 @@ const draft = reactive({
   category: 'buildings',
   code: '',
   description: '',
+  descriptionRu: '',
   status: 'ACTIVE' as 'ACTIVE' | 'ARCHIVED',
+})
+
+/**
+ * Tavsif maydoni tanlangan tildagi matnni tahrirlaydi: rus tilida ochilgan
+ * panelda o‘zbekcha matn qolib ketmaydi.
+ */
+const draftDescription = computed({
+  get: () => (locale.value === 'ru' ? draft.descriptionRu : draft.description),
+  set: (value: string) => {
+    if (locale.value === 'ru') draft.descriptionRu = value
+    else draft.description = value
+  },
 })
 
 const draftRecords = ref<RefRecord[]>([])
 
-const categoryOptions = Object.entries(CATEGORY_META).map(([value, meta]) => ({
-  value,
-  label: meta.label,
-}))
+const categoryOptions = computed(() =>
+  Object.entries(CATEGORY_META).map(([value, meta]) => ({ value, label: t(meta.key) })),
+)
 
-const statusOptions = [
-  { value: 'ACTIVE', label: 'Faol' },
-  { value: 'ARCHIVED', label: 'Arxivlangan' },
-]
+const statusOptions = computed(() => [
+  { value: 'ACTIVE', label: t('common.active') },
+  { value: 'ARCHIVED', label: statusLabel('unit', 'ARCHIVED') },
+])
 
-const filterStatusOptions = [{ value: 'all', label: 'Barcha statuslar' }, ...statusOptions]
+const filterStatusOptions = computed(() => [
+  { value: 'all', label: t('filter.allStatuses') },
+  ...statusOptions.value,
+])
 
 function openPanel(row: Record<string, unknown>) {
   const e = entries.value.find((x) => x.id === row.id)
@@ -329,6 +411,7 @@ function openPanel(row: Record<string, unknown>) {
   draft.category = e.category
   draft.code = e.code
   draft.description = e.description
+  draft.descriptionRu = e.descriptionRu
   draft.status = e.status
   draftRecords.value = e.records.map((r) => ({ ...r }))
   actionResult.value = ''
@@ -352,14 +435,15 @@ function savePanel() {
     category: draft.category,
     code: draft.code.trim().toUpperCase(),
     description: draft.description.trim(),
+    descriptionRu: draft.descriptionRu.trim(),
     status: draft.status,
     records: draftRecords.value.map((r) => ({ ...r })),
-    updatedAt: 'Hozirgina',
+    updatedAt: { k: 'common.justNow' },
     updatedBy: 'Jahongir Alimov',
   }
   changedCount.value += 1
-  logActivity(`«${draft.name.trim()}» ma’lumotnomasi yangilandi`, 'edit')
-  flash.value = `«${draft.name.trim()}» saqlandi.`
+  logActivity({ k: 'cfg.actRefUpdated', p: { name: draft.name.trim() } }, 'edit')
+  flash.value = t('cfg.refSaved', { name: draft.name.trim() })
   panelOpen.value = false
 }
 
@@ -369,10 +453,14 @@ function confirmArchive() {
   draft.status = 'ARCHIVED'
   const i = entries.value.findIndex((e) => e.id === draft.id)
   if (i !== -1) {
-    entries.value[i] = { ...entries.value[i]!, status: 'ARCHIVED', updatedAt: 'Hozirgina' }
+    entries.value[i] = {
+      ...entries.value[i]!,
+      status: 'ARCHIVED',
+      updatedAt: { k: 'common.justNow' },
+    }
   }
-  logActivity(`«${draft.name}» arxivlandi`, 'box')
-  flash.value = `«${draft.name}» arxivga o‘tkazildi.`
+  logActivity({ k: 'cfg.actRefArchived', p: { name: draft.name } }, 'box')
+  flash.value = t('cfg.refArchived', { name: draft.name })
   archiveOpen.value = false
   panelOpen.value = false
 }
@@ -396,7 +484,7 @@ function submitRecord() {
   if (!newRecord.code.trim() || !newRecord.label.trim()) return
   const code = newRecord.code.trim().toUpperCase()
   if (draftRecords.value.some((r) => r.code === code)) {
-    recordError.value = 'Bu kod allaqachon mavjud'
+    recordError.value = t('cfg.codeExists')
     return
   }
   draftRecords.value.push({
@@ -404,7 +492,7 @@ function submitRecord() {
     label: newRecord.label.trim(),
   })
   addedCount.value += 1
-  logActivity(`«${draft.name}» ga yangi yozuv qo‘shildi`, 'plus')
+  logActivity({ k: 'cfg.actRecordAdded', p: { name: draft.name } }, 'plus')
   recordOpen.value = false
   panelTab.value = 'records'
 }
@@ -414,64 +502,88 @@ function removeRecord(code: string) {
 }
 
 const actionOpen = ref(false)
-const actionInfo = reactive({ key: '', title: '', text: '', confirmLabel: 'Tasdiqlash' })
+const actionInfo = reactive({ key: '', title: '', text: '', confirmLabel: '' })
 
-const QUICK_ACTIONS = [
-  { key: 'import', label: 'Excel’dan import qilish', icon: 'upload', tone: 'text-brand-600 bg-brand-50' },
-  { key: 'template', label: 'Shablon yuklab olish', icon: 'doc', tone: 'text-teal-700 bg-teal-50' },
-  { key: 'export', label: 'Eksport (Excel)', icon: 'download', tone: 'text-ok-700 bg-ok-50' },
-  { key: 'recount', label: 'Yozuvlar sonini yangilash', icon: 'refresh', tone: 'text-info-700 bg-info-50' },
-]
+const QUICK_ACTIONS = computed(() => [
+  {
+    key: 'template',
+    label: t('cfg.downloadTemplate'),
+    icon: 'doc',
+    tone: 'text-teal-700 bg-teal-50',
+  },
+  { key: 'export', label: t('cfg.exportCsv'), icon: 'download', tone: 'text-ok-700 bg-ok-50' },
+  {
+    key: 'recount',
+    label: t('cfg.recountRecords'),
+    icon: 'refresh',
+    tone: 'text-info-700 bg-info-50',
+  },
+])
 
 function openAction(key: string) {
   actionInfo.key = key
-  if (key === 'import') {
-    actionInfo.title = 'Excel’dan import qilish'
-    actionInfo.text = `«${draft.name}» ma’lumotnomasiga yozuvlar Excel faylidan yuklanadi. Fayl ustunlari shablon bilan mos bo‘lishi kerak: kod va nomi.`
-    actionInfo.confirmLabel = 'Importni boshlash'
-  } else if (key === 'template') {
-    actionInfo.title = 'Shablon yuklab olish'
-    actionInfo.text = `«${draft.code}» kodi uchun to‘ldirish shabloni (XLSX) tayyorlanadi.`
-    actionInfo.confirmLabel = 'Yuklab olish'
+  if (key === 'template') {
+    actionInfo.title = t('cfg.downloadTemplate')
+    actionInfo.text = t('cfg.templateText', { code: draft.code })
+    actionInfo.confirmLabel = t('common.download')
   } else if (key === 'export') {
-    actionInfo.title = 'Eksport (Excel)'
-    actionInfo.text = `«${draft.name}» ma’lumotnomasidagi ${draftRecords.value.length} ta yozuv XLSX ko‘rinishida eksport qilinadi.`
-    actionInfo.confirmLabel = 'Eksport qilish'
+    actionInfo.title = t('common.export')
+    actionInfo.text = t('cfg.exportText', {
+      name: draft.name,
+      n: draftRecords.value.length,
+    })
+    actionInfo.confirmLabel = t('common.exportAction')
   } else {
-    actionInfo.title = 'Yozuvlar sonini yangilash'
-    actionInfo.text = 'Ma’lumotnoma bo‘yicha yozuvlar soni qayta hisoblanadi va ro‘yxatda yangilanadi.'
-    actionInfo.confirmLabel = 'Qayta hisoblash'
+    actionInfo.title = t('cfg.recountRecords')
+    actionInfo.text = t('cfg.recountText')
+    actionInfo.confirmLabel = t('cfg.recount')
   }
   actionOpen.value = true
 }
 
 const actionResult = ref('')
 
+/**
+ * Eksport va shablon endi haqiqiy fayl beradi.
+ *
+ * Ilgari tugma «tayyorlandi» deb yozardi, lekin foydalanuvchi qo'lida hech
+ * nima qolmasdi. Endi ma'lumotnoma yozuvlari jadval fayliga yig'iladi va
+ * brauzer uni yuklab oladi; shablon esa o'sha ustunlar bilan bo'sh jadval.
+ * Excel'dan import olib tashlandi: u serversiz haqiqiy ishlay olmaydi,
+ * shuning uchun tizimda bo'lmagani ma'qul.
+ */
 function confirmAction() {
+  const nom = fileSlug(draft.code || draft.name)
+  const head: Array<string | number> = [field('code'), field('name')]
   if (actionInfo.key === 'recount') {
-    actionResult.value = `Qayta hisoblandi: ${draftRecords.value.length} ta yozuv.`
-  } else if (actionInfo.key === 'import') {
-    actionResult.value = 'Import navbatga qo‘yildi, fayl yuklangach yozuvlar qo‘shiladi.'
+    actionResult.value = t('cfg.recountDone', { n: draftRecords.value.length })
   } else if (actionInfo.key === 'template') {
-    actionResult.value = `Shablon tayyorlandi: ${draft.code}_shablon.xlsx`
+    saveBlob(csvBlob([head]), `${nom}-shablon.csv`)
+    actionResult.value = t('cfg.templateDone')
   } else {
-    actionResult.value = `Eksport tayyorlandi: ${draft.code}.xlsx (${draftRecords.value.length} ta yozuv)`
+    const rows: Array<Array<string | number>> = [head]
+    for (const r of draftRecords.value) rows.push([r.code, recordLabel(r)])
+    saveBlob(csvBlob(rows), `${nom}.csv`)
+    actionResult.value = t('cfg.exportDone', { n: draftRecords.value.length })
   }
-  logActivity(`${actionInfo.title}, «${draft.name}»`, 'refresh')
+  logActivity({ k: 'cfg.actQuick', p: { title: actionInfo.title, name: draft.name } }, 'refresh')
   actionOpen.value = false
 }
 </script>
 
 <template>
   <AppTopbar
-    title="Ma’lumotnomalar va klassifikatorlar"
-    subtitle="Tizim ma’lumotnomalari, kodlari va yozuvlarini boshqarish"
-    :breadcrumb="[{ label: 'Sozlamalar', to: '/settings/users' }, { label: 'Ma’lumotnomalar' }]"
+    :title="t('cfg.referenceTitle')"
+    :subtitle="t('cfg.referenceCaption')"
+    :breadcrumb="[
+      { label: t('nav.settings'), to: '/settings/users' },
+      { label: t('nav.settingsReference') },
+    ]"
   >
     <template #actions>
       <UiButton variant="secondary" size="sm" to="/settings/audit">
         <UiIcon name="clipboard" :size="16" />
-        Audit jurnali
+        {{ t('nav.settingsAudit') }}
       </UiButton>
     </template>
   </AppTopbar>
@@ -504,7 +616,7 @@ function confirmAction() {
       <button
         type="button"
         class="shrink-0 rounded-[6px] p-1 transition-colors hover:bg-ok-100"
-        aria-label="Xabarni yopish"
+        :aria-label="t('common.dismiss')"
         @click="flash = ''"
       >
         <UiIcon name="x" :size="15" />
@@ -516,12 +628,12 @@ function confirmAction() {
     </div>
 
     <UiCard
-      title="Ma’lumotnomalar ro‘yxati"
-      :subtitle="`Ko‘rsatilmoqda: ${filtered.length} / ${entries.length} ta`"
+      :title="t('cfg.refList')"
+      :subtitle="t('cfg.shownOf', { shown: filtered.length, total: entries.length })"
       flush
     >
       <div class="grid gap-3 px-5 pb-4 sm:grid-cols-[minmax(0,1fr)_220px]">
-        <UiInput v-model="search" placeholder="Nomi, kodi yoki tavsifi bo‘yicha qidirish">
+        <UiInput v-model="search" :placeholder="t('cfg.refSearchPlaceholder')">
           <template #prefix><UiIcon name="search" :size="17" /></template>
         </UiInput>
         <UiSelect v-model="statusFilter" :options="filterStatusOptions" />
@@ -530,7 +642,7 @@ function confirmAction() {
       <UiTable
         :columns="columns"
         :rows="filtered"
-        empty="Bu turkumda ma’lumotnoma topilmadi"
+        :empty="t('cfg.emptyRefs')"
         @row-click="openPanel"
       >
         <template #cell-name="{ row }">
@@ -539,9 +651,11 @@ function confirmAction() {
               <UiIcon :name="row.icon" :size="18" />
             </span>
             <span class="min-w-0">
-              <span class="block truncate text-[14px] font-semibold text-ink-900">{{ row.name }}</span>
+              <span class="block truncate text-[14px] font-semibold text-ink-900">
+                {{ entryName(row) }}
+              </span>
               <span class="tabular block text-[12px] text-ink-500">
-                {{ row.records.length }} ta yozuv
+                {{ t('cfg.recordCount', { n: row.records.length }) }}
               </span>
             </span>
           </span>
@@ -564,7 +678,7 @@ function confirmAction() {
 
         <template #cell-description="{ row }">
           <span class="block max-w-[24rem] truncate text-[13px] text-ink-600">
-            {{ row.description }}
+            {{ entryDescription(row) }}
           </span>
         </template>
 
@@ -581,12 +695,12 @@ function confirmAction() {
               <circle v-if="row.status === 'ACTIVE'" cx="6" cy="6" r="4" fill="currentColor" />
               <rect v-else x="2.4" y="2.4" width="7.2" height="7.2" rx="1.6" fill="currentColor" />
             </svg>
-            {{ row.status === 'ACTIVE' ? 'Faol' : 'Arxivlangan' }}
+            {{ row.status === 'ACTIVE' ? t('common.active') : statusLabel('unit', 'ARCHIVED') }}
           </span>
         </template>
 
         <template #cell-updatedAt="{ row }">
-          <span class="tabular block text-[13px] text-ink-700">{{ row.updatedAt }}</span>
+          <span class="tabular block text-[13px] text-ink-700">{{ say(row.updatedAt) }}</span>
           <span class="block text-[12px] text-ink-500">{{ row.updatedBy }}</span>
         </template>
 
@@ -597,41 +711,41 @@ function confirmAction() {
             @click.stop="openPanel(row)"
           >
             <UiIcon name="edit" :size="15" />
-            Ochish
+            {{ t('common.open') }}
           </button>
         </template>
       </UiTable>
     </UiCard>
 
     <section class="grid gap-5 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
-      <UiCard title="Tezkor statistika" subtitle="Ma’lumotnomalar bo‘yicha joriy holat">
+      <UiCard :title="t('cfg.quickStats')" :subtitle="t('cfg.quickStatsCaption')">
         <dl class="grid gap-4 sm:grid-cols-3 xl:grid-cols-5">
           <div class="rounded-field p-4 ring-1 ring-ink-200">
-            <dt class="text-[12px] text-ink-500">Jami ma’lumotnomalar</dt>
+            <dt class="text-[12px] text-ink-500">{{ t('cfg.statTotalRefs') }}</dt>
             <dd class="tabular mt-1.5 text-[22px] font-bold leading-none text-ink-900">
               {{ stats.total }}
             </dd>
           </div>
           <div class="rounded-field p-4 ring-1 ring-ink-200">
-            <dt class="text-[12px] text-ink-500">Faol yozuvlar</dt>
+            <dt class="text-[12px] text-ink-500">{{ t('cfg.statActiveRecords') }}</dt>
             <dd class="tabular mt-1.5 text-[22px] font-bold leading-none text-ok-600">
               {{ stats.activeRecords }}
             </dd>
           </div>
           <div class="rounded-field p-4 ring-1 ring-ink-200">
-            <dt class="text-[12px] text-ink-500">Yangi qo‘shilgan</dt>
+            <dt class="text-[12px] text-ink-500">{{ t('cfg.statAdded') }}</dt>
             <dd class="tabular mt-1.5 text-[22px] font-bold leading-none text-brand-600">
               {{ addedCount }}
             </dd>
           </div>
           <div class="rounded-field p-4 ring-1 ring-ink-200">
-            <dt class="text-[12px] text-ink-500">O‘zgartirilgan</dt>
+            <dt class="text-[12px] text-ink-500">{{ t('cfg.statChanged') }}</dt>
             <dd class="tabular mt-1.5 text-[22px] font-bold leading-none text-info-600">
               {{ changedCount }}
             </dd>
           </div>
           <div class="rounded-field p-4 ring-1 ring-ink-200">
-            <dt class="text-[12px] text-ink-500">Arxivlangan</dt>
+            <dt class="text-[12px] text-ink-500">{{ statusLabel('unit', 'ARCHIVED') }}</dt>
             <dd class="tabular mt-1.5 text-[22px] font-bold leading-none text-ink-700">
               {{ stats.archived }}
             </dd>
@@ -644,15 +758,19 @@ function confirmAction() {
         </p>
       </UiCard>
 
-      <UiCard title="So‘nggi faoliyat" subtitle="Ma’lumotnomalar bo‘yicha o‘zgarishlar" flush>
+      <UiCard :title="t('cfg.recentActivity')" :subtitle="t('cfg.recentActivityCaption')" flush>
         <ul class="divide-y divide-ink-100">
           <li v-for="a in activity" :key="a.id" class="flex items-center gap-3.5 px-5 py-3">
             <span class="grid size-9 shrink-0 place-items-center rounded-[10px] bg-brand-50 text-brand-600">
               <UiIcon :name="a.icon" :size="17" />
             </span>
             <span class="min-w-0 flex-1">
-              <span class="block truncate text-[13px] font-semibold text-ink-900">{{ a.title }}</span>
-              <span class="block truncate text-[12px] text-ink-500">{{ a.who }} • {{ a.when }}</span>
+              <span class="block truncate text-[13px] font-semibold text-ink-900">
+                {{ say(a.title) }}
+              </span>
+              <span class="block truncate text-[12px] text-ink-500">
+                {{ a.who }} • {{ say(a.when) }}
+              </span>
             </span>
           </li>
         </ul>
@@ -675,17 +793,17 @@ function confirmAction() {
             class="flex h-full w-full max-w-lg flex-col bg-surface shadow-pop"
             role="dialog"
             aria-modal="true"
-            aria-label="Ma’lumotnoma tahrirlash"
+            :aria-label="t('cfg.editRef')"
           >
             <header class="flex items-start justify-between gap-4 border-b border-ink-200 px-6 py-5">
               <div class="min-w-0">
-                <h2 class="truncate text-lg font-bold text-ink-900">{{ draft.name }}</h2>
+                <h2 class="truncate text-lg font-bold text-ink-900">{{ entryName(draft) }}</h2>
                 <p class="tabular mt-0.5 text-[13px] text-ink-500">{{ draft.code }}</p>
               </div>
               <button
                 type="button"
                 class="-mr-1 -mt-1 rounded-lg p-2 text-ink-400 transition-colors hover:bg-ink-100 hover:text-ink-700"
-                aria-label="Yopish"
+                :aria-label="t('common.close')"
                 @click="panelOpen = false"
               >
                 <UiIcon name="x" :size="18" />
@@ -698,49 +816,65 @@ function confirmAction() {
 
             <div class="scroll-slim flex-1 space-y-5 overflow-y-auto px-6 py-5">
               <template v-if="panelTab === 'general'">
-                <UiField label="Nomi" required :error="draft.name.trim().length > 2 ? '' : 'Kamida 3 ta belgi'">
+                <UiField
+                  :label="field('name')"
+                  required
+                  :error="
+                    draft.name.trim().length > 2 ? '' : t('common.minCharsShort', { n: 3 })
+                  "
+                >
                   <UiInput v-model="draft.name" />
                 </UiField>
 
                 <div class="grid gap-4 sm:grid-cols-2">
-                  <UiField label="Kod" required :error="draft.code.trim().length > 2 ? '' : 'Kamida 3 ta belgi'">
+                  <UiField
+                    :label="field('code')"
+                    required
+                    :error="
+                      draft.code.trim().length > 2 ? '' : t('common.minCharsShort', { n: 3 })
+                    "
+                  >
                     <UiInput v-model="draft.code" />
                   </UiField>
-                  <UiField label="Turkum">
+                  <UiField :label="field('group')">
                     <UiSelect v-model="draft.category" :options="categoryOptions" />
                   </UiField>
                 </div>
 
-                <UiField label="Status">
+                <UiField :label="field('status')">
                   <UiSelect v-model="draft.status" :options="statusOptions" />
                 </UiField>
 
-                <UiField label="Tavsif">
+                <UiField :label="field('description')">
                   <textarea
-                    v-model="draft.description"
+                    v-model="draftDescription"
                     rows="3"
                     class="w-full rounded-field bg-white px-3.5 py-2.5 text-sm text-ink-800 ring-1 ring-inset ring-ink-200 transition-colors placeholder:text-ink-400 hover:ring-ink-300 focus:ring-2 focus:ring-brand-500"
-                    placeholder="Ma’lumotnoma vazifasini qisqacha yozing"
+                    :placeholder="t('cfg.refDescPlaceholder')"
                   />
                 </UiField>
 
                 <div>
-                  <p class="mb-2.5 text-[13px] font-semibold text-ink-700">Ko‘p tildagi nomlar</p>
+                  <p class="mb-2.5 text-[13px] font-semibold text-ink-700">
+                    {{ t('cfg.multilingualNames') }}
+                  </p>
                   <div class="space-y-3">
-                    <UiField label="O‘zbekcha">
+                    <UiField :label="t('shell.localeUz')">
                       <UiInput v-model="draft.name" />
                     </UiField>
-                    <UiField label="Русский">
+                    <UiField :label="t('shell.localeRu')">
                       <UiInput v-model="draft.nameRu" />
                     </UiField>
-                    <UiField label="English">
+                    <UiField :label="t('cfg.langEn')">
                       <UiInput v-model="draft.nameEn" />
                     </UiField>
                   </div>
                 </div>
 
                 <div>
-                  <p class="mb-2.5 text-[13px] font-semibold text-ink-700">Tezkor amallar</p>
+                  <p class="mb-2.5 text-[13px] font-semibold text-ink-700">
+                    {{ t('cfg.quickActions') }}
+                  </p>
                   <ul class="space-y-1.5">
                     <li>
                       <button
@@ -752,7 +886,7 @@ function confirmAction() {
                           <UiIcon name="plus" :size="16" />
                         </span>
                         <span class="flex-1 text-[13px] font-semibold text-ink-800">
-                          Yangi yozuv qo‘shish
+                          {{ t('cfg.addRecord') }}
                         </span>
                         <UiIcon name="chevronRight" :size="16" class="text-ink-400" />
                       </button>
@@ -784,11 +918,11 @@ function confirmAction() {
               <template v-else>
                 <div class="flex items-center justify-between gap-3">
                   <p class="text-[13px] font-semibold text-ink-700">
-                    Yozuvlar: {{ draftRecords.length }} ta
+                    {{ t('cfg.recordsCountLabel', { n: draftRecords.length }) }}
                   </p>
                   <UiButton variant="secondary" size="sm" @click="openRecordForm">
                     <UiIcon name="plus" :size="15" />
-                    Qo‘shish
+                    {{ t('common.add') }}
                   </UiButton>
                 </div>
 
@@ -797,7 +931,7 @@ function confirmAction() {
                     v-if="!draftRecords.length"
                     class="px-4 py-8 text-center text-[13px] text-ink-500"
                   >
-                    Yozuvlar yo‘q: «Qo‘shish» tugmasi orqali kiriting.
+                    {{ t('cfg.noRecords') }}
                   </li>
                   <li
                     v-for="r in draftRecords"
@@ -807,11 +941,13 @@ function confirmAction() {
                     <span class="tabular shrink-0 rounded-[6px] bg-ink-100 px-2 py-1 text-[12px] font-semibold text-ink-700">
                       {{ r.code }}
                     </span>
-                    <span class="min-w-0 flex-1 truncate text-[13px] text-ink-800">{{ r.label }}</span>
+                    <span class="min-w-0 flex-1 truncate text-[13px] text-ink-800">
+                      {{ recordLabel(r) }}
+                    </span>
                     <button
                       type="button"
                       class="shrink-0 rounded-[6px] p-1.5 text-ink-400 transition-colors hover:bg-danger-50 hover:text-danger-600"
-                      :aria-label="`${r.label} yozuvini olib tashlash`"
+                      :aria-label="t('cfg.removeRecordAria', { label: recordLabel(r) })"
                       @click="removeRecord(r.code)"
                     >
                       <UiIcon name="trash" :size="16" />
@@ -819,20 +955,20 @@ function confirmAction() {
                   </li>
                 </ul>
 
-                <p class="text-[12px] leading-relaxed text-ink-500">
-                  O‘zgarishlar «Saqlash» tugmasi bosilgandan keyin ma’lumotnomaga yoziladi.
-                </p>
+                <p class="text-[12px] leading-relaxed text-ink-500">{{ t('cfg.saveNote') }}</p>
               </template>
             </div>
 
             <footer class="flex items-center justify-between gap-3 border-t border-ink-200 bg-surface-sunken px-6 py-4">
               <UiButton variant="danger" size="sm" @click="archiveOpen = true">
                 <UiIcon name="box" :size="16" />
-                Arxivlash
+                {{ t('cfg.archive') }}
               </UiButton>
               <span class="flex gap-3">
-                <UiButton variant="ghost" @click="panelOpen = false">Bekor qilish</UiButton>
-                <UiButton :disabled="!draftValid" @click="savePanel">Saqlash</UiButton>
+                <UiButton variant="ghost" @click="panelOpen = false">
+                  {{ t('common.cancel') }}
+                </UiButton>
+                <UiButton :disabled="!draftValid" @click="savePanel">{{ t('common.save') }}</UiButton>
               </span>
             </footer>
           </aside>
@@ -840,50 +976,51 @@ function confirmAction() {
       </Transition>
     </Teleport>
 
-    <UiModal v-model="recordOpen" title="Yangi yozuv qo‘shish" size="sm">
+    <UiModal v-model="recordOpen" :title="t('cfg.addRecord')" size="sm">
       <div class="space-y-4">
         <UiField
-          label="Kod"
+          :label="field('code')"
           required
-          :error="recordError || (recordTouched && !newRecord.code.trim() ? 'Kod majburiy' : '')"
+          :error="
+            recordError || (recordTouched && !newRecord.code.trim() ? t('cfg.codeRequired') : '')
+          "
         >
-          <UiInput v-model="newRecord.code" placeholder="Masalan: BT-06" />
+          <UiInput v-model="newRecord.code" :placeholder="t('cfg.egCode')" />
         </UiField>
         <UiField
-          label="Nomi"
+          :label="field('name')"
           required
-          :error="recordTouched && !newRecord.label.trim() ? 'Nomi majburiy' : ''"
+          :error="recordTouched && !newRecord.label.trim() ? t('cfg.nameRequired') : ''"
         >
-          <UiInput v-model="newRecord.label" placeholder="Yozuv nomi" />
+          <UiInput v-model="newRecord.label" :placeholder="t('cfg.recordNamePlaceholder')" />
         </UiField>
       </div>
       <template #footer>
-        <UiButton variant="ghost" @click="recordOpen = false">Bekor qilish</UiButton>
-        <UiButton @click="submitRecord">Qo‘shish</UiButton>
+        <UiButton variant="ghost" @click="recordOpen = false">{{ t('common.cancel') }}</UiButton>
+        <UiButton @click="submitRecord">{{ t('common.add') }}</UiButton>
       </template>
     </UiModal>
 
     <UiModal v-model="actionOpen" :title="actionInfo.title" size="sm">
       <p class="text-[14px] leading-relaxed text-ink-700">{{ actionInfo.text }}</p>
       <template #footer>
-        <UiButton variant="ghost" @click="actionOpen = false">Bekor qilish</UiButton>
+        <UiButton variant="ghost" @click="actionOpen = false">{{ t('common.cancel') }}</UiButton>
         <UiButton @click="confirmAction">{{ actionInfo.confirmLabel }}</UiButton>
       </template>
     </UiModal>
 
     <UiModal
       v-model="archiveOpen"
-      title="Ma’lumotnomani arxivlash"
-      subtitle="Arxivlangan ma’lumotnoma yangi yozuvlarda tanlanmaydi"
+      :title="t('cfg.archiveRef')"
+      :subtitle="t('cfg.archiveRefCaption')"
       size="sm"
     >
       <p class="text-[14px] leading-relaxed text-ink-700">
-        «{{ draft.name }}» ({{ draft.code }}) arxivga o‘tkaziladi. Mavjud yozuvlar saqlanadi, ammo
-        ma’lumotnoma yangi shakllarni to‘ldirishda ko‘rinmaydi.
+        {{ t('cfg.archiveRefText', { name: entryName(draft), code: draft.code }) }}
       </p>
       <template #footer>
-        <UiButton variant="ghost" @click="archiveOpen = false">Bekor qilish</UiButton>
-        <UiButton variant="danger" @click="confirmArchive">Arxivlash</UiButton>
+        <UiButton variant="ghost" @click="archiveOpen = false">{{ t('common.cancel') }}</UiButton>
+        <UiButton variant="danger" @click="confirmArchive">{{ t('cfg.archive') }}</UiButton>
       </template>
     </UiModal>
   </main>

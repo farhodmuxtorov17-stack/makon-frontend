@@ -19,7 +19,7 @@ const NAV = [
   { key: 'public.navCatalog', to: '/catalog' },
   { key: 'public.navObjects', to: '/#obyektlar' },
   { key: 'public.navFavourites', to: '/catalog?fav=1' },
-  { key: 'public.navRegister', to: '/register' },
+  { key: 'public.navApply', to: '/ariza' },
   { key: 'nav.help', to: '/help' },
 ]
 
@@ -29,7 +29,7 @@ const QUICK = [
   { key: 'public.quickCatalog', to: '/catalog' },
   { key: 'public.quickMap', to: '/#obyektlar' },
   { key: 'public.quickFavourites', to: '/catalog?fav=1' },
-  { key: 'public.navRegister', to: '/register' },
+  { key: 'public.navApply', to: '/ariza' },
   { key: 'public.quickHelp', to: '/help' },
 ]
 

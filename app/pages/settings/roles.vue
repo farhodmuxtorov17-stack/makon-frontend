@@ -14,61 +14,89 @@ import {
 } from '~/constants/accessAreas'
 import { ROLES, type AccessLevel, type Capability, type Role } from '~/types/rbac'
 
-const SETTINGS_TABS = [
-  { label: 'Foydalanuvchilar', to: '/settings/users', icon: 'users' },
-  { label: 'Rollar va huquqlar', to: '/settings/roles', icon: 'shield' },
-  { label: 'Integratsiyalar', to: '/settings/integrations', icon: 'globe' },
-  { label: 'Ma’lumotnomalar', to: '/settings/reference-data', icon: 'layers' },
-  { label: 'Tizim sozlamalari', to: '/settings/system', icon: 'gear' },
-  { label: 'Audit jurnali', to: '/settings/audit', icon: 'clipboard' },
-]
+const { t } = useI18n()
+const { tr, field, roleLabel, roleCaption } = useAppLabels()
+
+/** Rol kartochkasidagi daraja, ko‘rish sohasi va cheklov matni */
+const roleLevel = (r: Role) => tr(`role.${r}.level`, ROLE_META[r].level)
+const roleScope = (r: Role) => tr(`role.${r}.scope`, ROLE_META[r].scope)
+const roleLimitation = (r: Role) => tr(`role.${r}.limitation`, ROLE_META[r].limitation)
+
+const SETTINGS_TABS = computed(() => [
+  { label: t('nav.settingsUsers'), to: '/settings/users', icon: 'users' },
+  { label: t('nav.settingsRoles'), to: '/settings/roles', icon: 'shield' },
+  { label: t('nav.settingsIntegrations'), to: '/settings/integrations', icon: 'globe' },
+  { label: t('nav.settingsReference'), to: '/settings/reference-data', icon: 'layers' },
+  { label: t('nav.settingsSystem'), to: '/settings/system', icon: 'gear' },
+  { label: t('nav.settingsAudit'), to: '/settings/audit', icon: 'clipboard' },
+])
 const CURRENT_TAB = '/settings/roles'
 
 const auth = useAuthStore()
 
-/** Amal huquqlarining interfeysdagi nomi */
-const CAPABILITY_LABELS: Record<Capability, string> = {
-  'application.decide': 'Ariza bo‘yicha qaror',
-  'contract.manage': 'Shartnoma tayyorlash va yuborish',
-  'payment.confirm': 'To‘lovni tasdiqlash',
-  'invoice.create': 'Hisob-faktura chiqarish',
-  'workorder.assign': 'Ish topshirig‘ini biriktirish',
-  'workorder.execute': 'Ish topshirig‘ini bajarish',
-  'unit.editTechnical': 'Unit texnik holatini tahrirlash',
-  'unit.editContent': 'Unit kontentini tahrirlash',
-  'warehouse.issue': 'Material berish',
-  'system.administer': 'Tizimni boshqarish',
+/** Amal huquqlarining interfeysdagi nomi lug‘atdan olinadi */
+const CAPABILITY_KEY: Record<Capability, string> = {
+  'application.decide': 'cfg.capApplicationDecide',
+  'contract.manage': 'cfg.capContractManage',
+  'payment.confirm': 'cfg.capPaymentConfirm',
+  'invoice.create': 'cfg.capInvoiceCreate',
+  'workorder.assign': 'cfg.capWorkOrderAssign',
+  'workorder.execute': 'cfg.capWorkOrderExecute',
+  'unit.editTechnical': 'cfg.capUnitTechnical',
+  'unit.editContent': 'cfg.capUnitContent',
+  'warehouse.issue': 'cfg.capWarehouseIssue',
+  'meter.read': 'cfg.capMeterRead',
+  'system.administer': 'cfg.capSystemAdminister',
 }
 
-/** Ustun sarlavhasi va izoh ro‘yxati uchun tayyor ko‘rinish */
-const AREA_VIEW = ACCESS_AREAS.map((a) => ({
-  ...a,
-  writeLabel: a.writes.length
-    ? a.writes.map((c) => CAPABILITY_LABELS[c]).join(' · ')
-    : 'Yozuv huquqi yo‘q: faqat ko‘rish',
-}))
+const capabilityLabel = (c: Capability) => t(CAPABILITY_KEY[c]!)
 
-const LEVEL_META: Record<AccessLevel, { label: string; badge: string; mark: string; desc: string }> =
-  {
-    full: {
-      label: 'To‘liq',
-      badge: 'bg-ok-50 text-ok-700 ring-ok-100',
-      mark: 'text-ok-600',
-      desc: 'bo‘lim ochiq va rolda yozuv huquqi bor',
-    },
-    scoped: {
-      label: 'Cheklangan',
-      badge: 'bg-warn-50 text-warn-700 ring-warn-100',
-      mark: 'text-warn-600',
-      desc: 'bo‘lim ochiq, lekin yozuv huquqi yo‘q, faqat ko‘rish',
-    },
-    none: {
-      label: 'Yo‘q',
-      badge: 'bg-ink-100 text-ink-600 ring-ink-200',
-      mark: 'text-ink-400',
-      desc: 'bo‘lim rol uchun umuman ochilmaydi',
-    },
-  }
+/** Matritsa ustunlari nomi: registrdagi o‘zbekcha nom zaxira sifatida qoladi */
+const AREA_KEY: Record<AreaKey, string> = {
+  dashboard: 'nav.dashboardExecutive',
+  objects: 'cfg.areaObjects',
+  content: 'cfg.areaContent',
+  applications: 'nav.applications',
+  contracts: 'nav.contracts',
+  billing: 'cfg.areaBilling',
+  service: 'cfg.areaService',
+  warehouse: 'cfg.areaWarehouse',
+  meters: 'nav.meters',
+  reports: 'nav.reports',
+  settings: 'cfg.areaSettings',
+  cabinet: 'cfg.areaCabinet',
+}
+
+const areaLabel = (key: AreaKey, fallback: string) => tr(AREA_KEY[key], fallback)
+
+/** Ustun sarlavhasi va izoh ro‘yxati uchun tayyor ko‘rinish */
+const AREA_VIEW = computed(() =>
+  ACCESS_AREAS.map((a) => ({
+    key: a.key,
+    label: areaLabel(a.key, a.label),
+    writeLabel: a.writes.length
+      ? a.writes.map((c) => capabilityLabel(c)).join(' · ')
+      : t('cfg.noWriteRight'),
+  })),
+)
+
+const LEVEL_STYLE: Record<AccessLevel, { badge: string; mark: string }> = {
+  full: { badge: 'bg-ok-50 text-ok-700 ring-ok-100', mark: 'text-ok-600' },
+  scoped: { badge: 'bg-warn-50 text-warn-700 ring-warn-100', mark: 'text-warn-600' },
+  none: { badge: 'bg-ink-100 text-ink-600 ring-ink-200', mark: 'text-ink-400' },
+}
+
+const LEVEL_META = computed<
+  Record<AccessLevel, { label: string; badge: string; mark: string; desc: string }>
+>(() => ({
+  full: { ...LEVEL_STYLE.full, label: t('accessLevel.full'), desc: t('cfg.levelFullDesc') },
+  scoped: {
+    ...LEVEL_STYLE.scoped,
+    label: t('accessLevel.limited'),
+    desc: t('cfg.levelLimitedDesc'),
+  },
+  none: { ...LEVEL_STYLE.none, label: t('accessLevel.none'), desc: t('cfg.levelNoneDesc') },
+}))
 
 type Matrix = Record<Role, Record<AreaKey, AccessLevel>>
 
@@ -117,7 +145,8 @@ const changes = computed(() => {
     for (const area of ACCESS_AREAS) {
       const from = baseline.value[role][area.key]
       const to = matrix.value[role][area.key]
-      if (from !== to) list.push({ role, areaKey: area.key, areaLabel: area.label, from, to })
+      if (from !== to)
+        list.push({ role, areaKey: area.key, areaLabel: areaLabel(area.key, area.label), from, to })
     }
   }
   return list
@@ -141,7 +170,7 @@ const flash = ref('')
 
 function restore() {
   matrix.value = cloneMatrix(baseline.value)
-  flash.value = 'Matritsa saqlangan holatiga qaytarildi.'
+  flash.value = t('cfg.matrixReverted')
 }
 
 /**
@@ -160,7 +189,7 @@ function confirmSave() {
   }
   auth.applyAccessOverrides(next)
   baseline.value = cloneMatrix(matrix.value)
-  flash.value = `Ruxsatlar matritsasi saqlandi: ${count} ta katak yangilandi va darhol kuchga kirdi.`
+  flash.value = t('cfg.matrixSaved', { n: count })
   saveOpen.value = false
 }
 
@@ -180,24 +209,27 @@ function levelCount(role: Role, level: AccessLevel) {
 }
 
 function capabilitiesOf(role: Role) {
-  return ROLE_CAPABILITIES[role].map((c) => ({ code: c, label: CAPABILITY_LABELS[c] }))
+  return ROLE_CAPABILITIES[role].map((c) => ({ code: c, label: capabilityLabel(c) }))
 }
 </script>
 
 <template>
   <AppTopbar
-    title="Rollar va huquqlar"
-    subtitle="Sakkiz rol bo‘yicha bo‘lim ruxsatlari va amal huquqlari"
-    :breadcrumb="[{ label: 'Sozlamalar', to: '/settings/users' }, { label: 'Rollar va huquqlar' }]"
+    :title="t('nav.settingsRoles')"
+    :subtitle="t('cfg.rolesCaption')"
+    :breadcrumb="[
+      { label: t('nav.settings'), to: '/settings/users' },
+      { label: t('nav.settingsRoles') },
+    ]"
   >
     <template #actions>
       <UiButton variant="ghost" size="sm" :disabled="!dirty" @click="restore">
         <UiIcon name="refresh" :size="16" />
-        Qaytarish
+        {{ t('cfg.revert') }}
       </UiButton>
       <UiButton size="sm" :disabled="!dirty" @click="saveOpen = true">
         <UiIcon name="check" :size="16" />
-        O‘zgarishlarni saqlash
+        {{ t('common.saveChanges') }}
       </UiButton>
     </template>
   </AppTopbar>
@@ -230,7 +262,7 @@ function capabilitiesOf(role: Role) {
       <button
         type="button"
         class="shrink-0 rounded-[6px] p-1 transition-colors hover:bg-ok-100"
-        aria-label="Xabarni yopish"
+        :aria-label="t('common.dismiss')"
         @click="flash = ''"
       >
         <UiIcon name="x" :size="15" />
@@ -242,22 +274,19 @@ function capabilitiesOf(role: Role) {
       class="flex flex-wrap items-center gap-3 rounded-card bg-warn-50 px-4 py-3 text-[13px] text-warn-700 ring-1 ring-warn-100"
     >
       <UiIcon name="warning" :size="17" class="shrink-0" />
-      <span class="min-w-0 flex-1">
-        Saqlanmagan o‘zgarishlar: {{ changes.length }} ta katak. Saqlamaguningizcha amaldagi
-        ruxsatlar o‘zgarmaydi.
-      </span>
-      <UiButton size="sm" @click="saveOpen = true">O‘zgarishlarni saqlash</UiButton>
+      <span class="min-w-0 flex-1">{{ t('cfg.matrixDirty', { n: changes.length }) }}</span>
+      <UiButton size="sm" @click="saveOpen = true">{{ t('common.saveChanges') }}</UiButton>
     </div>
 
     <UiCard
-      title="Ruxsatlar matritsasi"
-      subtitle="Katakni bosing: holat «To‘liq → Cheklangan → Yo‘q» tartibida almashadi"
+      :title="t('cfg.matrixTitle')"
+      :subtitle="t('cfg.matrixCaption')"
       flush
       :padded="false"
     >
       <template #actions>
         <span class="tabular text-[13px] font-semibold text-ink-500">
-          {{ ROLES.length }} rol × {{ AREA_VIEW.length }} bo‘lim
+          {{ t('cfg.matrixSize', { roles: ROLES.length, areas: AREA_VIEW.length }) }}
         </span>
       </template>
 
@@ -269,7 +298,7 @@ function capabilitiesOf(role: Role) {
                 scope="col"
                 class="sticky left-0 z-20 w-[152px] min-w-[152px] border-r border-ink-200 bg-surface-sunken px-3 py-3 text-left text-[12px] font-semibold uppercase tracking-wide text-ink-500"
               >
-                Rol
+                {{ field('role') }}
               </th>
               <th
                 v-for="a in AREA_VIEW"
@@ -302,11 +331,16 @@ function capabilitiesOf(role: Role) {
                   />
                   <span class="min-w-0">
                     <span class="block text-[13px] font-semibold leading-snug text-ink-900">
-                      {{ ROLE_META[role].label }}
+                      {{ roleLabel(role) }}
                     </span>
                     <span class="mt-1 block text-[11px] font-normal leading-snug text-ink-500">
-                      To‘liq {{ levelCount(role, 'full') }} • Cheklangan
-                      {{ levelCount(role, 'scoped') }} • Yo‘q {{ levelCount(role, 'none') }}
+                      {{
+                        t('cfg.levelCounts', {
+                          full: levelCount(role, 'full'),
+                          limited: levelCount(role, 'scoped'),
+                          none: levelCount(role, 'none'),
+                        })
+                      }}
                     </span>
                   </span>
                 </span>
@@ -317,8 +351,20 @@ function capabilitiesOf(role: Role) {
                   type="button"
                   class="mx-auto flex w-full max-w-[108px] flex-col items-center gap-1 rounded-field px-2 py-2 ring-1 ring-inset transition-colors hover:ring-brand-300"
                   :class="LEVEL_META[cell(role, a.key)].badge"
-                  :aria-label="`${ROLE_META[role].label}, ${a.label}: ${LEVEL_META[cell(role, a.key)].label}. Keyingi holat: ${LEVEL_META[nextLevel(cell(role, a.key))].label}`"
-                  :title="`${a.label}: ${LEVEL_META[cell(role, a.key)].label} (o‘zgartirish uchun bosing)`"
+                  :aria-label="
+                    t('cfg.cellAria', {
+                      role: roleLabel(role),
+                      area: a.label,
+                      level: LEVEL_META[cell(role, a.key)].label,
+                      next: LEVEL_META[nextLevel(cell(role, a.key))].label,
+                    })
+                  "
+                  :title="
+                    t('cfg.cellTitle', {
+                      area: a.label,
+                      level: LEVEL_META[cell(role, a.key)].label,
+                    })
+                  "
                   @click="cycle(role, a.key)"
                 >
                   <svg
@@ -370,14 +416,17 @@ function capabilitiesOf(role: Role) {
       </div>
 
       <div class="px-5 py-4">
-        <p class="text-[13px] font-semibold text-ink-700">Belgilar izohi</p>
+        <p class="text-[13px] font-semibold text-ink-700">{{ t('cfg.legend') }}</p>
         <ul class="mt-2.5 space-y-2">
           <li class="flex items-start gap-2 text-[13px] text-ink-600">
             <svg class="mt-px size-5 shrink-0 text-ok-600" viewBox="0 0 20 20" fill="none" aria-hidden="true">
               <circle cx="10" cy="10" r="8.4" fill="currentColor" opacity=".16" />
               <path d="m5.8 10.4 2.9 2.9 5.6-6.4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
-            <span><b class="font-semibold text-ink-800">To‘liq</b>, {{ LEVEL_META.full.desc }}</span>
+            <span>
+              <b class="font-semibold text-ink-800">{{ t('accessLevel.full') }}</b>,
+              {{ LEVEL_META.full.desc }}
+            </span>
           </li>
           <li class="flex items-start gap-2 text-[13px] text-ink-600">
             <svg class="mt-px size-5 shrink-0 text-warn-600" viewBox="0 0 20 20" fill="none" aria-hidden="true">
@@ -385,20 +434,22 @@ function capabilitiesOf(role: Role) {
               <circle cx="10" cy="10" r="2.4" fill="currentColor" />
             </svg>
             <span>
-              <b class="font-semibold text-ink-800">Cheklangan</b>, {{ LEVEL_META.scoped.desc }}
+              <b class="font-semibold text-ink-800">{{ t('accessLevel.limited') }}</b>,
+              {{ LEVEL_META.scoped.desc }}
             </span>
           </li>
           <li class="flex items-start gap-2 text-[13px] text-ink-600">
             <svg class="mt-px size-5 shrink-0 text-ink-400" viewBox="0 0 20 20" fill="none" aria-hidden="true">
               <path d="M6 6l8 8M14 6l-8 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
             </svg>
-            <span><b class="font-semibold text-ink-800">Yo‘q</b>, {{ LEVEL_META.none.desc }}</span>
+            <span>
+              <b class="font-semibold text-ink-800">{{ t('accessLevel.none') }}</b>,
+              {{ LEVEL_META.none.desc }}
+            </span>
           </li>
         </ul>
 
-        <p class="mt-4 text-[13px] font-semibold text-ink-700">
-          Ustun qaysi amal huquqi bilan «To‘liq» bo‘ladi
-        </p>
+        <p class="mt-4 text-[13px] font-semibold text-ink-700">{{ t('cfg.legendWrites') }}</p>
         <ul class="mt-2.5 grid gap-1.5 sm:grid-cols-2 xl:grid-cols-3">
           <li
             v-for="a in AREA_VIEW"
@@ -414,9 +465,12 @@ function capabilitiesOf(role: Role) {
         </ul>
 
         <p class="mt-3.5 text-[12px] leading-relaxed text-ink-500">
-          Boshlang‘ich qiymatlar marshrut ruxsatlari va rol amal huquqlari jadvalidan hisoblanadi.
-          Shuning uchun «Super rahbar» arizalarni ko‘radi, lekin qaror qabul qilmaydi, u
-          «Cheklangan» darajada turadi.
+          {{
+            t('cfg.matrixNote', {
+              role: roleLabel('SUPER_HEAD'),
+              level: t('accessLevel.limited'),
+            })
+          }}
         </p>
       </div>
     </UiCard>
@@ -428,26 +482,26 @@ function capabilitiesOf(role: Role) {
             class="inline-flex items-center rounded-pill px-2.5 py-1 text-xs font-semibold ring-1 ring-inset"
             :class="ROLE_TONE_CLASSES[ROLE_META[role].tone]"
           >
-            {{ ROLE_META[role].label }}
+            {{ roleLabel(role) }}
           </span>
           <span class="tabular shrink-0 text-[13px] font-semibold text-ink-500">
-            {{ USER_COUNT[role] }} ta foydalanuvchi
+            {{ t('cfg.userCount', { n: USER_COUNT[role] }) }}
           </span>
         </div>
 
-        <p class="mt-2.5 text-[13px] leading-relaxed text-ink-600">{{ ROLE_META[role].caption }}</p>
+        <p class="mt-2.5 text-[13px] leading-relaxed text-ink-600">{{ roleCaption(role) }}</p>
 
         <dl class="mt-3.5 space-y-2.5 border-t border-ink-100 pt-3.5 text-[13px]">
           <div class="flex items-start justify-between gap-3">
-            <dt class="shrink-0 text-ink-500">Daraja</dt>
-            <dd class="text-right font-semibold text-ink-900">{{ ROLE_META[role].level }}</dd>
+            <dt class="shrink-0 text-ink-500">{{ t('cfg.roleLevel') }}</dt>
+            <dd class="text-right font-semibold text-ink-900">{{ roleLevel(role) }}</dd>
           </div>
           <div class="flex items-start justify-between gap-3">
-            <dt class="shrink-0 text-ink-500">Ko‘rish sohasi</dt>
-            <dd class="text-right font-semibold text-ink-900">{{ ROLE_META[role].scope }}</dd>
+            <dt class="shrink-0 text-ink-500">{{ t('cfg.roleScope') }}</dt>
+            <dd class="text-right font-semibold text-ink-900">{{ roleScope(role) }}</dd>
           </div>
           <div class="flex items-center justify-between gap-3">
-            <dt class="text-ink-500">Bosh sahifa</dt>
+            <dt class="text-ink-500">{{ t('nav.cabinet') }}</dt>
             <dd>
               <NuxtLink
                 :to="ROLE_META[role].home"
@@ -459,7 +513,7 @@ function capabilitiesOf(role: Role) {
             </dd>
           </div>
           <div class="flex items-center justify-between gap-3">
-            <dt class="text-ink-500">Ochiq bo‘limlar</dt>
+            <dt class="text-ink-500">{{ t('cfg.openAreas') }}</dt>
             <dd class="tabular font-semibold text-ink-900">
               {{ levelCount(role, 'full') + levelCount(role, 'scoped') }} / {{ AREA_VIEW.length }}
             </dd>
@@ -471,12 +525,12 @@ function capabilitiesOf(role: Role) {
         >
           <UiIcon name="lock" :size="15" class="mt-0.5 shrink-0" />
           <span class="min-w-0">
-            <b class="font-semibold">Cheklov:</b> {{ ROLE_META[role].limitation }}
+            <b class="font-semibold">{{ t('cfg.limitation') }}</b> {{ roleLimitation(role) }}
           </span>
         </div>
 
         <p class="mt-3.5 text-[12px] font-semibold uppercase tracking-wide text-ink-500">
-          Amal huquqlari
+          {{ t('cfg.capabilities') }}
         </p>
         <ul class="mt-2 flex flex-wrap gap-1.5">
           <li
@@ -488,27 +542,27 @@ function capabilitiesOf(role: Role) {
             {{ c.label }}
           </li>
           <li v-if="!capabilitiesOf(role).length" class="text-[12px] text-ink-500">
-            Yozuv huquqi berilmagan: faqat ko‘rish
+            {{ t('cfg.noWriteGranted') }}
           </li>
         </ul>
 
         <UiButton variant="secondary" size="sm" block class="mt-4" @click="toggleFocus(role)">
-          {{ focusRole === role ? 'Ajratishni bekor qilish' : 'Matritsada ajratib ko‘rsatish' }}
+          {{ focusRole === role ? t('cfg.unfocus') : t('cfg.focusInMatrix') }}
         </UiButton>
       </UiCard>
     </section>
 
     <p class="tabular text-[13px] text-ink-500">
-      Jami {{ ROLES.length }} ta rol va {{ totalUsers }} ta foydalanuvchi hisobi.
+      {{ t('cfg.rolesTotal', { roles: ROLES.length, users: totalUsers }) }}
     </p>
 
     <UiModal
       v-model="saveOpen"
-      title="O‘zgarishlarni saqlash"
-      subtitle="Quyidagi ruxsat o‘zgarishlari tasdiqlanadi"
+      :title="t('common.saveChanges')"
+      :subtitle="t('cfg.saveMatrixCaption')"
       size="lg"
     >
-      <p v-if="!changes.length" class="text-[14px] text-ink-600">O‘zgarish topilmadi.</p>
+      <p v-if="!changes.length" class="text-[14px] text-ink-600">{{ t('empty.noChanges') }}.</p>
 
       <ul v-else class="scroll-slim max-h-[50vh] divide-y divide-ink-100 overflow-y-auto">
         <li
@@ -520,7 +574,7 @@ function capabilitiesOf(role: Role) {
             class="inline-flex items-center rounded-pill px-2.5 py-1 text-xs font-semibold ring-1 ring-inset"
             :class="ROLE_TONE_CLASSES[ROLE_META[c.role].tone]"
           >
-            {{ ROLE_META[c.role].label }}
+            {{ roleLabel(c.role) }}
           </span>
           <span class="min-w-0 flex-1 truncate text-[14px] font-semibold text-ink-900">
             {{ c.areaLabel }}
@@ -545,12 +599,14 @@ function capabilitiesOf(role: Role) {
         class="mt-4 flex items-start gap-2 rounded-field bg-warn-50 px-3.5 py-3 text-[13px] text-warn-700"
       >
         <UiIcon name="warning" :size="16" class="mt-0.5 shrink-0" />
-        O‘zgarishlar barcha faol seanslarga darhol qo‘llanadi va audit jurnalida qayd etiladi.
+        {{ t('cfg.matrixApplyNote') }}
       </p>
 
       <template #footer>
-        <UiButton variant="ghost" @click="saveOpen = false">Bekor qilish</UiButton>
-        <UiButton :disabled="!changes.length" @click="confirmSave">Tasdiqlash va saqlash</UiButton>
+        <UiButton variant="ghost" @click="saveOpen = false">{{ t('common.cancel') }}</UiButton>
+        <UiButton :disabled="!changes.length" @click="confirmSave">
+          {{ t('cfg.confirmAndSave') }}
+        </UiButton>
       </template>
     </UiModal>
   </main>

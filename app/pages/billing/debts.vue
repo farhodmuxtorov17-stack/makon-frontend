@@ -2,10 +2,11 @@
 import AppTopbar from '~/components/layout/AppTopbar.vue'
 import { BUILDINGS } from '~/data/buildings'
 import { INVOICES, agingKeyOf, agingLabel, agingOf, settledInvoices } from '~/data/business'
-import { dateShort, num, percent, sum, sumShort, todayIso } from '~/utils/format'
-import { csvBlob, docxBlob, fileSlug, saveBlob } from '~/utils/docx'
+import { dateShort, num, percent, sum, todayIso } from '~/utils/format'
+import { csvBlob, docxBlob, saveBlob } from '~/utils/docx'
 
-const { field, moduleCaption, moduleTitle, sectionLabel } = useAppLabels()
+const { money, moneyShort, field, moduleCaption, moduleTitle, sectionLabel } = useAppLabels()
+const { t } = useI18n()
 
 /**
  * Qarzdorlar ro‘yxati umumiy hisob-faktura reyestridan hisoblanadi: to‘lov
@@ -40,13 +41,13 @@ const building = ref('all')
 const bucket = ref('all')
 const banner = ref('')
 
-const buildingOptions = [
-  { value: 'all', label: 'Barcha obyektlar' },
+const buildingOptions = computed(() => [
+  { value: 'all', label: t('landing.allObjects') },
   ...BUILDINGS.map((b) => ({ value: b.name, label: b.name })),
-]
+])
 
 const bucketOptions = computed(() => [
-  { value: 'all', label: 'Barcha muddatlar' },
+  { value: 'all', label: t('filter.allAging') },
   ...buckets.value.map((b) => ({ value: b.key, label: b.bucket })),
 ])
 
@@ -63,11 +64,11 @@ const filtered = computed(() =>
 
 const columns = computed(() => [
   { key: 'tenant', label: field('organization', 'Tashkilot') },
-  { key: 'place', label: 'Obyekt / Unit' },
+  { key: 'place', label: field('objectUnit', 'Obyekt / Unit') },
   { key: 'code', label: field('document', 'Hujjat') },
-  { key: 'dueAt', label: 'Muddati' },
+  { key: 'dueAt', label: field('deadline', 'Muddati') },
   { key: 'balance', label: field('balance', 'Qoldiq'), align: 'right' as const, numeric: true },
-  { key: 'aging', label: 'Muddat guruhi' },
+  { key: 'aging', label: field('agingBucket', 'Muddat guruhi') },
   { key: 'status', label: field('status', 'Holat') },
 ])
 
@@ -118,20 +119,34 @@ const exportOpen = ref(false)
  * qanday ko‘rinsa, faylda ham shunday bo‘ladi.
  */
 function runExport(format: 'DOCX' | 'CSV') {
-  const scope = building.value === 'all' ? 'Barcha obyektlar' : building.value
+  const scope = building.value === 'all' ? t('landing.allObjects') : building.value
   /** Faylga ichki kalit («0-30») emas, ekrandagi yorliq («0–30 kun») yoziladi */
-  const period = bucket.value === 'all' ? 'Barcha muddatlar' : bucketMeta(bucket.value).bucket
-  const title = 'Qarzdorlik reyestri'
-  const name = `${fileSlug(title)}-${todayIso()}.${format.toLowerCase()}`
+  const period = bucket.value === 'all' ? t('filter.allAging') : bucketMeta(bucket.value).bucket
+  const title = t('bil.debtRegistry')
+  const name = `${t('bil.debtRegistryFile')}-${todayIso()}.${format.toLowerCase()}`
 
   if (format === 'DOCX') {
     saveBlob(
       docxBlob([
         { text: title, style: 'title' },
         { text: `${scope} · ${period} · ${dateShort(todayIso())}`, style: 'subtitle' },
-        { text: `Jami: ${num(filtered.value.length)} ta yozuv, ${sum(filteredTotal.value)}`, style: 'heading' },
+        {
+          text: t('bil.exportTotalLine', {
+            n: num(filtered.value.length),
+            amount: sum(filteredTotal.value),
+          }),
+          style: 'heading',
+        },
         ...filtered.value.map((d) => ({
-          text: `${d.tenant} · ${d.buildingName}, ${d.unitCode} · ${d.code} · to‘lov muddati ${dateShort(d.dueAt)} · ${sum(d.balance)} · ${agingLabel(d.agingBucket)}`,
+          text: t('bil.exportRow', {
+            tenant: d.tenant,
+            building: d.buildingName,
+            unit: d.unitCode,
+            code: d.code,
+            due: dateShort(d.dueAt),
+            balance: sum(d.balance),
+            aging: agingLabel(d.agingBucket),
+          }),
           style: 'body' as const,
         })),
       ]),
@@ -140,7 +155,15 @@ function runExport(format: 'DOCX' | 'CSV') {
   } else {
     saveBlob(
       csvBlob([
-        ['Tashkilot', 'Obyekt', 'Unit', 'Hujjat', 'To‘lov muddati', 'Qarz, so‘m', 'Muddat guruhi'],
+        [
+          field('organization', 'Tashkilot'),
+          field('object', 'Obyekt'),
+          field('unit', 'Unit'),
+          field('document', 'Hujjat'),
+          field('dueDate', 'To‘lov muddati'),
+          t('bil.debtCurrencyColumn'),
+          field('agingBucket', 'Muddat guruhi'),
+        ],
         ...filtered.value.map((d) => [
           d.tenant,
           d.buildingName,
@@ -150,13 +173,17 @@ function runExport(format: 'DOCX' | 'CSV') {
           d.balance,
           agingLabel(d.agingBucket),
         ]),
-        ['Jami', '', '', '', '', filteredTotal.value, ''],
+        [t('common.total'), '', '', '', '', filteredTotal.value, ''],
       ]),
       name,
     )
   }
 
-  banner.value = `${name} yuklab olindi: ${num(filtered.value.length)} ta yozuv, ${sum(filteredTotal.value)}.`
+  banner.value = t('bil.exportDownloaded', {
+    name,
+    n: num(filtered.value.length),
+    amount: sum(filteredTotal.value),
+  })
   exportOpen.value = false
 }
 
@@ -177,11 +204,11 @@ const agingSlices = computed(() =>
     <template #actions>
       <UiButton variant="secondary" size="sm" to="/billing/payments">
         <UiIcon name="check" :size="16" />
-        To‘lovlarni tasdiqlash
+        {{ moduleTitle('paymentsApprove', 'To‘lovlarni tasdiqlash') }}
       </UiButton>
       <UiButton size="sm" @click="exportOpen = true">
         <UiIcon name="download" :size="16" />
-        Eksport
+        {{ t('common.export') }}
       </UiButton>
     </template>
   </AppTopbar>
@@ -196,7 +223,7 @@ const agingSlices = computed(() =>
       <button
         type="button"
         class="rounded-lg p-1 text-ok-700 transition-colors hover:bg-ok-100"
-        aria-label="Xabarni yopish"
+        :aria-label="t('common.dismissMessage')"
         @click="banner = ''"
       >
         <UiIcon name="x" :size="16" />
@@ -213,8 +240,8 @@ const agingSlices = computed(() =>
         @click="toggleBucket(b.key)"
       >
         <UiKpi
-          :label="`${b.bucket} qarzdorlik`"
-          :value="sumShort(b.amount)"
+          :label="t('bil.bucketDebt', { bucket: b.bucket })"
+          :value="moneyShort(b.amount)"
           :unit="percent(b.share)"
           :icon="b.icon"
           :tone="b.tone"
@@ -225,15 +252,15 @@ const agingSlices = computed(() =>
     <section class="grid gap-5 xl:grid-cols-3">
       <UiCard
         class="xl:col-span-2"
-        title="Qarzdor tashkilotlar"
-        subtitle="Muddati o‘tgan hisob-fakturalar bo‘yicha qoldiqlar"
+        :title="t('bil.debtorOrgs')"
+        :subtitle="t('bil.debtorOrgsCaption')"
         flush
         :padded="false"
       >
         <div class="flex flex-wrap items-center gap-3 px-5 pb-4">
           <UiInput
             v-model="search"
-            placeholder="Tashkilot yoki hujjat bo‘yicha qidirish"
+            :placeholder="t('bil.searchDebtors')"
             class="min-w-[220px] flex-1"
           >
             <template #prefix>
@@ -244,14 +271,14 @@ const agingSlices = computed(() =>
           <UiSelect v-model="bucket" :options="bucketOptions" class="w-full sm:w-44" />
           <UiButton variant="ghost" @click="resetFilters">
             <UiIcon name="refresh" :size="16" />
-            Tozalash
+            {{ t('common.reset') }}
           </UiButton>
         </div>
 
         <UiTable
           :columns="columns"
           :rows="rows"
-          empty="Tanlangan shartlarga mos qarzdorlik topilmadi"
+          :empty="t('empty.noDebtsMatch')"
           @row-click="openHistory"
         >
           <template #cell-tenant="{ row }">
@@ -265,7 +292,7 @@ const agingSlices = computed(() =>
           </template>
           <template #cell-dueAt="{ row }">{{ dateShort(String(row.dueAt)) }}</template>
           <template #cell-balance="{ row }">
-            <span class="text-danger-600">{{ sum(Number(row.balance)) }}</span>
+            <span class="text-danger-600">{{ money(Number(row.balance)) }}</span>
           </template>
           <template #cell-aging="{ row }">
             <span
@@ -292,20 +319,23 @@ const agingSlices = computed(() =>
           class="flex flex-wrap items-center justify-between gap-3 border-t border-ink-100 px-5 py-3.5"
         >
           <p class="text-[13px] text-ink-500">
-            Jami: <b class="text-ink-800">{{ rows.length }} ta</b> qarzdor
+            {{ t('common.totalColon') }}
+            <b class="text-ink-800">{{ t('common.countPcs', { n: rows.length }) }}</b>
+            {{ t('bil.debtorsWord') }}
           </p>
           <p class="text-[13px] text-ink-500">
-            Umumiy qoldiq: <b class="tabular text-danger-600">{{ sum(filteredTotal) }}</b>
+            {{ t('bil.totalBalanceColon') }}
+            <b class="tabular text-danger-600">{{ money(filteredTotal) }}</b>
           </p>
         </div>
       </UiCard>
 
       <div class="space-y-5">
-        <UiCard title="Muddat guruhlari taqsimoti" subtitle="Qarzdorlikning muddat bo‘yicha ulushi">
+        <UiCard :title="t('bil.agingBreakdown')" :subtitle="t('bil.agingBreakdownCaption')">
           <UiDonut
             :slices="agingSlices"
-            :center-value="sumShort(debtTotal)"
-            center-label="jami qarzdorlik"
+            :center-value="moneyShort(debtTotal)"
+            :center-label="t('bil.totalDebtLower')"
             :size="170"
           />
           <ul class="mt-4 divide-y divide-ink-100 border-t border-ink-100">
@@ -320,14 +350,19 @@ const agingSlices = computed(() =>
                   {{ percent(b.share) }}
                 </span>
                 <span class="tabular w-32 text-right text-[13px] font-bold text-ink-900">
-                  {{ sum(b.amount) }}
+                  {{ money(b.amount) }}
                 </span>
               </button>
             </li>
           </ul>
         </UiCard>
 
-        <UiCard title="Eng katta qarzdorlar" subtitle="Qoldiq bo‘yicha yuqori uchlik" flush :padded="false">
+        <UiCard
+          :title="t('bil.topDebtors')"
+          :subtitle="t('bil.topDebtorsCaption')"
+          flush
+          :padded="false"
+        >
           <ul class="divide-y divide-ink-100 border-t border-ink-100">
             <li
               v-for="d in [...debtors].sort((a, b) => b.balance - a.balance).slice(0, 3)"
@@ -351,7 +386,7 @@ const agingSlices = computed(() =>
                   </span>
                 </span>
                 <span class="tabular shrink-0 text-[14px] font-bold text-danger-600">
-                  {{ sumShort(d.balance) }}
+                  {{ moneyShort(d.balance) }}
                 </span>
               </button>
             </li>
@@ -364,14 +399,15 @@ const agingSlices = computed(() =>
       v-model="historyOpen"
       size="lg"
       :title="historyTenant"
-      subtitle="Tashkilot bo‘yicha hisob-faktura tarixi"
+      :subtitle="t('bil.orgInvoiceHistory')"
     >
       <div class="flex flex-wrap items-center gap-3">
         <span class="rounded-field bg-surface-sunken px-3 py-2 text-[13px] text-ink-600">
-          Hujjatlar: <b class="tabular text-ink-900">{{ num(history.length) }} ta</b>
+          {{ t('bil.docsColon') }}
+          <b class="tabular text-ink-900">{{ t('common.countPcs', { n: num(history.length) }) }}</b>
         </span>
         <span class="rounded-field bg-danger-50 px-3 py-2 text-[13px] text-danger-700">
-          Joriy qarzdorlik: <b class="tabular">{{ sum(historyDebt) }}</b>
+          {{ t('bil.currentDebtColon') }} <b class="tabular">{{ money(historyDebt) }}</b>
         </span>
       </div>
 
@@ -380,13 +416,13 @@ const agingSlices = computed(() =>
           <span class="min-w-0 flex-1">
             <span class="block text-[14px] font-semibold text-ink-900">{{ h.code }}</span>
             <span class="block text-[12px] text-ink-500">
-              {{ h.period }} · muddati {{ dateShort(h.dueAt) }}
+              {{ h.period }} · {{ t('bil.dueLower', { date: dateShort(h.dueAt) }) }}
             </span>
           </span>
           <span class="shrink-0 text-right">
-            <span class="tabular block text-[14px] font-bold text-ink-900">{{ sum(h.total) }}</span>
+            <span class="tabular block text-[14px] font-bold text-ink-900">{{ money(h.total) }}</span>
             <span class="tabular block text-[12px] text-ok-600">
-              to‘langan {{ sum(h.paid) }}
+              {{ t('bil.paidLower', { amount: money(h.paid) }) }}
             </span>
           </span>
           <UiStatus kind="invoice" :value="h.status" size="sm" />
@@ -394,10 +430,10 @@ const agingSlices = computed(() =>
       </ul>
 
       <template #footer>
-        <UiButton variant="ghost" @click="historyOpen = false">Yopish</UiButton>
+        <UiButton variant="ghost" @click="historyOpen = false">{{ t('common.close') }}</UiButton>
         <UiButton to="/billing/payments">
           <UiIcon name="wallet" :size="16" />
-          To‘lovlarni tasdiqlash
+          {{ moduleTitle('paymentsApprove', 'To‘lovlarni tasdiqlash') }}
         </UiButton>
       </template>
     </UiModal>
@@ -405,8 +441,8 @@ const agingSlices = computed(() =>
     <UiModal
       v-model="exportOpen"
       size="sm"
-      title="Eksport"
-      subtitle="Joriy filtrga mos qarzdorlik reyestri yuklab olinadi"
+      :title="t('common.export')"
+      :subtitle="t('bil.exportCaption')"
     >
       <div class="space-y-3">
         <button
@@ -418,8 +454,8 @@ const agingSlices = computed(() =>
             <UiIcon name="doc" :size="18" />
           </span>
           <span class="min-w-0 flex-1">
-            <span class="block text-[14px] font-semibold text-ink-900">Word hujjat</span>
-            <span class="block text-[12px] text-ink-500">Chop etish uchun tayyor ko‘rinish</span>
+            <span class="block text-[14px] font-semibold text-ink-900">{{ t('bil.wordDoc') }}</span>
+            <span class="block text-[12px] text-ink-500">{{ t('bil.wordDocCaption') }}</span>
           </span>
           <UiIcon name="chevronRight" :size="16" class="text-ink-400" />
         </button>
@@ -433,15 +469,15 @@ const agingSlices = computed(() =>
             <UiIcon name="layers" :size="18" />
           </span>
           <span class="min-w-0 flex-1">
-            <span class="block text-[14px] font-semibold text-ink-900">CSV jadval</span>
-            <span class="block text-[12px] text-ink-500">Qo‘shimcha hisob-kitob uchun</span>
+            <span class="block text-[14px] font-semibold text-ink-900">{{ t('bil.csvTable') }}</span>
+            <span class="block text-[12px] text-ink-500">{{ t('bil.csvTableCaption') }}</span>
           </span>
           <UiIcon name="chevronRight" :size="16" class="text-ink-400" />
         </button>
       </div>
 
       <template #footer>
-        <UiButton variant="ghost" @click="exportOpen = false">Bekor qilish</UiButton>
+        <UiButton variant="ghost" @click="exportOpen = false">{{ t('common.cancel') }}</UiButton>
       </template>
     </UiModal>
   </main>

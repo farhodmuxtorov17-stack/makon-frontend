@@ -3,8 +3,10 @@ import { CONTACT } from '~/constants/contacts'
 import { ROLE_META } from '~/constants/roles'
 import { docxBlob, fileSize, saveBlob, type DocxLine } from '~/utils/docx'
 import { dateShort } from '~/utils/format'
+import type { Role } from '~/types/rbac'
 
 const auth = useAuthStore()
+const { t, moduleTitle, roleLabel, priorityLabel } = useAppLabels()
 
 /**
  * Rol nomlari rollar registridan olinadi: yordam markazidagi yozuv bilan
@@ -21,169 +23,113 @@ const ROLE = {
   general: 'Umumiy',
 }
 
+/**
+ * Saralash qiymati registrdagi yozuvga bog‘liq bo‘lib qoladi, ko‘rinadigan
+ * nom esa tarjima lug‘atidan olinadi: til almashganda saralash buzilmaydi.
+ */
+const ROLE_CODE = new Map<string, Role>([
+  [ROLE.head, 'SUPER_HEAD'],
+  [ROLE.manager, 'BUILDING_MANAGER'],
+  [ROLE.accountant, 'ACCOUNTANT'],
+  [ROLE.facility, 'FACILITY'],
+  [ROLE.warehouse, 'WAREHOUSE_OPERATOR'],
+  [ROLE.content, 'CONTENT_OPERATOR'],
+  [ROLE.tenant, 'TENANT_OWNER'],
+])
+
+function roleName(value: string) {
+  const code = ROLE_CODE.get(value)
+  return code ? roleLabel(code) : t('hlp.roleGeneral')
+}
+
 const roleCards = [
   {
     value: ROLE.tenant,
-    caption: 'Shartnoma, to‘lov va to‘lov holati',
+    captionKey: 'hlp.capTenant',
     icon: 'user',
     tone: 'bg-brand-50 text-brand-600',
   },
   {
     value: ROLE.accountant,
-    caption: 'Hisobotlar, hisob-faktura va to‘lovlar',
+    captionKey: 'hlp.capAccountant',
     icon: 'wallet',
     tone: 'bg-ok-50 text-ok-600',
   },
   {
     value: ROLE.manager,
-    caption: 'Bino boshqaruvi va xizmatlar',
+    captionKey: 'hlp.capManager',
     icon: 'building',
     tone: 'bg-info-50 text-info-600',
   },
   {
     value: ROLE.facility,
-    caption: 'Xizmat ko‘rsatish va buyurtmalar',
+    captionKey: 'hlp.capFacility',
     icon: 'wrench',
     tone: 'bg-warn-50 text-warn-600',
   },
   {
     value: ROLE.head,
-    caption: 'Portfel ko‘rsatkichlari va nazorat',
+    captionKey: 'hlp.capHead',
     icon: 'chart',
     tone: 'bg-brand-50 text-brand-600',
   },
   {
     value: ROLE.warehouse,
-    caption: 'Ombor qoldig‘i va materiallar harakati',
+    captionKey: 'hlp.capWarehouse',
     icon: 'box',
     tone: 'bg-lime-50 text-lime-700',
   },
   {
     value: ROLE.content,
-    caption: 'Qavat rejalari va unit atributlari',
+    captionKey: 'hlp.capContent',
     icon: 'layers',
     tone: 'bg-rose-50 text-rose-700',
   },
 ]
 
-const FAQ = [
-  {
-    id: 'f-01',
-    role: ROLE.tenant,
-    question: 'To‘lovni qanday amalga oshirish mumkin?',
-    answer:
-      '«To‘lovlarim» bo‘limida joriy hisob-fakturani oching va rekvizitlar bo‘yicha bank o‘tkazmasini amalga oshiring. To‘lov tasdiqlangach hisob-faktura holati avtomatik «To‘langan» ga o‘zgaradi.',
-  },
-  {
-    id: 'f-02',
-    role: ROLE.tenant,
-    question: 'Hisob-fakturani qayerdan yuklab olish mumkin?',
-    answer:
-      'Hisob-faktura qatorini bosing va ochilgan oynadagi «Yuklab olish» tugmasini tanlang. Barcha hisob-fakturalar «Hujjatlarim» bo‘limida ham saqlanadi.',
-  },
-  {
-    id: 'f-03',
-    role: ROLE.tenant,
-    question: 'Servis arizasini qanday yuborish kerak?',
-    answer:
-      'Bosh sahifadagi «Yangi ariza yaratish» tugmasini bosing, kategoriya va prioritetni tanlab muammoni tavsiflang. Ariza bino xizmatiga yuboriladi va holati kabinetda kuzatiladi.',
-  },
-  {
-    id: 'f-04',
-    role: ROLE.manager,
-    question: 'Yangi ijarachi qo‘shish tartibi qanday?',
-    answer:
-      'Ariza qabul qilinadi, operatsiya uni tasdiqlaydi, buxgalter esa moliyaviy shartlarni tasdiqlaydi. So‘ng shartnoma qoralamasi avtomatik tuziladi va Didox orqali imzoga yuboriladi. Didox holati tekshirilib, imzolangan hujjat tizimga yuklanadi: shartnoma faollashadi va unit «Ijarada» holatiga o‘tadi. Har bir bosqich ariza kartochkasida qayd etiladi.',
-  },
-  {
-    id: 'f-05',
-    role: ROLE.manager,
-    question: 'Obyekt uchun xizmatlar buyurtma qilish qanday ishlaydi?',
-    answer:
-      'Servis arizasi yaratiladi, mas’ul xodim biriktiriladi va material so‘rovi tasdiqlanadi. Ish yakunlangach ijarachi tasdiqlashi uchun ariza yuboriladi.',
-  },
-  {
-    id: 'f-06',
-    role: ROLE.accountant,
-    question: 'Hisob-faktura qanday shakllantiriladi?',
-    answer:
-      'Shartnoma shartlari va hisoblagich ko‘rsatkichlari asosida davr yakunida hisob-faktura yaratiladi. Tariflar ma’lumotnomasi hisob-kitobga avtomatik qo‘llanadi.',
-  },
-  {
-    id: 'f-07',
-    role: ROLE.accountant,
-    question: 'Qarzdorlik hisobotini qayerdan olish mumkin?',
-    answer:
-      '«Qarzdorlik tahlili» bo‘limida muddat bo‘yicha taqsimot va ijarachilar kesimidagi qoldiqlar ko‘rsatiladi. Hisobotni eksport qilish mumkin.',
-  },
-  {
-    id: 'f-08',
-    role: ROLE.facility,
-    question: 'Ish topshirig‘ini qanday yopish mumkin?',
-    answer:
-      'Tekshiruv ro‘yxatidagi barcha bandlar bajarilgach ish topshirig‘i «Bajarilgan» holatiga o‘tkaziladi va ijarachi tasdiqlashiga yuboriladi.',
-  },
-  {
-    id: 'f-09',
-    role: ROLE.facility,
-    question: 'Material so‘rovini kim tasdiqlaydi?',
-    answer:
-      'Material so‘rovi bino rahbari tomonidan ko‘rib chiqiladi, tasdiqlangach ombordan beriladi va ish topshirig‘iga biriktiriladi.',
-  },
-  {
-    id: 'f-10',
-    role: ROLE.head,
-    question: 'Portfel bo‘yicha ko‘rsatkichlar qayerdan ko‘riladi?',
-    answer:
-      'Boshqaruv panelida bandlik, tushum va qarzdorlik obyektlar kesimida jamlanadi. «Hisobotlar» bo‘limida davr tanlanadi va natija jadval ko‘rinishida eksport qilinadi.',
-  },
-  {
-    id: 'f-11',
-    role: ROLE.head,
-    question: 'Yangi xodimga kirish huquqi qanday beriladi?',
-    answer:
-      'Sozlamalardagi «Foydalanuvchilar» bo‘limida hisob yaratiladi, unga rol va biriktirilgan obyektlar tanlanadi. Rolga ochiq modullar ro‘yxati «Rollar va huquqlar» sahifasida ko‘rinadi.',
-  },
-  {
-    id: 'f-12',
-    role: ROLE.warehouse,
-    question: 'Materialni ombordan qanday chiqaraman?',
-    answer:
-      'Tasdiqlangan material so‘rovini oching va berish amalini tanlang. Miqdor qoldiqdan yechiladi, harakat esa «Kirim va chiqim» jurnalida qayd etiladi.',
-  },
-  {
-    id: 'f-13',
-    role: ROLE.warehouse,
-    question: 'Inventarizatsiya natijasi qanday kiritiladi?',
-    answer:
-      '«Inventarizatsiya» bo‘limida sanoq varag‘i ochiladi va har bir pozitsiya bo‘yicha haqiqiy miqdor kiritiladi. Farq avtomatik hisoblanadi, tasdiqlangach qoldiqqa yoziladi.',
-  },
-  {
-    id: 'f-14',
-    role: ROLE.content,
-    question: 'Qavat rejasini qanday yuklayman?',
-    answer:
-      '«Qavat rejalari» bo‘limida obyekt va qavat tanlanadi, reja tasviri yuklanadi va unit chegaralari belgilanadi. Saqlangach reja katalogda hamda 3D navigatorda ko‘rinadi.',
-  },
-  {
-    id: 'f-15',
-    role: ROLE.content,
-    question: 'Unit atributlari qayerda to‘ldiriladi?',
-    answer:
-      '«Unit atributlari» bo‘limida maydon, xonalar soni, qulayliklar va suratlar kiritiladi. To‘liq to‘ldirilgan unit kontent navbatidan chiqadi va e’lon qilishga tayyor bo‘ladi.',
-  },
+const FAQ_SOURCE = [
+  { id: 'f-01', role: ROLE.tenant, q: 'hlp.faq01q', a: 'hlp.faq01a' },
+  { id: 'f-02', role: ROLE.tenant, q: 'hlp.faq02q', a: 'hlp.faq02a' },
+  { id: 'f-03', role: ROLE.tenant, q: 'hlp.faq03q', a: 'hlp.faq03a' },
+  { id: 'f-04', role: ROLE.manager, q: 'hlp.faq04q', a: 'hlp.faq04a' },
+  { id: 'f-05', role: ROLE.manager, q: 'hlp.faq05q', a: 'hlp.faq05a' },
+  { id: 'f-06', role: ROLE.accountant, q: 'hlp.faq06q', a: 'hlp.faq06a' },
+  { id: 'f-07', role: ROLE.accountant, q: 'hlp.faq07q', a: 'hlp.faq07a' },
+  { id: 'f-08', role: ROLE.facility, q: 'hlp.faq08q', a: 'hlp.faq08a' },
+  { id: 'f-09', role: ROLE.facility, q: 'hlp.faq09q', a: 'hlp.faq09a' },
+  { id: 'f-10', role: ROLE.head, q: 'hlp.faq10q', a: 'hlp.faq10a' },
+  { id: 'f-11', role: ROLE.head, q: 'hlp.faq11q', a: 'hlp.faq11a' },
+  { id: 'f-12', role: ROLE.warehouse, q: 'hlp.faq12q', a: 'hlp.faq12a' },
+  { id: 'f-13', role: ROLE.warehouse, q: 'hlp.faq13q', a: 'hlp.faq13a' },
+  { id: 'f-14', role: ROLE.content, q: 'hlp.faq14q', a: 'hlp.faq14a' },
+  { id: 'f-15', role: ROLE.content, q: 'hlp.faq15q', a: 'hlp.faq15a' },
 ]
 
+/** Qidiruv ko‘rinadigan matn bo‘yicha ishlashi uchun savollar tarjima bilan yig‘iladi */
+const FAQ = computed(() =>
+  FAQ_SOURCE.map((f) => ({
+    id: f.id,
+    role: f.role,
+    question: t(f.q),
+    answer: t(f.a),
+  })),
+)
+
 const MANUALS = [
-  { id: 'm-01', role: ROLE.tenant, name: 'Ijarachi uchun qo‘llanma', at: '2026-07-21' },
-  { id: 'm-02', role: ROLE.accountant, name: 'Buxgalter uchun qo‘llanma', at: '2026-07-21' },
-  { id: 'm-03', role: ROLE.manager, name: 'Bino rahbari uchun qo‘llanma', at: '2026-07-21' },
-  { id: 'm-04', role: ROLE.facility, name: 'Pudratchi uchun qo‘llanma', at: '2026-07-21' },
-  { id: 'm-06', role: ROLE.head, name: 'Super rahbar uchun qo‘llanma', at: '2026-07-21' },
-  { id: 'm-07', role: ROLE.warehouse, name: 'Omborchi uchun qo‘llanma', at: '2026-07-21' },
-  { id: 'm-08', role: ROLE.content, name: 'Operator uchun qo‘llanma', at: '2026-07-21' },
-  { id: 'm-05', role: ROLE.general, name: 'Tizim bo‘yicha umumiy qo‘llanma', at: '2026-08-06' },
+  { id: 'm-01', role: ROLE.tenant, nameKey: 'hlp.manualTenant', at: '2026-07-21' },
+  { id: 'm-02', role: ROLE.accountant, nameKey: 'hlp.manualAccountant', at: '2026-07-21' },
+  { id: 'm-03', role: ROLE.manager, nameKey: 'hlp.manualManager', at: '2026-07-21' },
+  { id: 'm-04', role: ROLE.facility, nameKey: 'hlp.manualFacility', at: '2026-07-21' },
+  { id: 'm-06', role: ROLE.head, nameKey: 'hlp.manualHead', at: '2026-07-21' },
+  { id: 'm-07', role: ROLE.warehouse, nameKey: 'hlp.manualWarehouse', at: '2026-07-21' },
+  { id: 'm-08', role: ROLE.content, nameKey: 'hlp.manualContent', at: '2026-07-21' },
+  { id: 'm-05', role: ROLE.general, nameKey: 'hlp.manualGeneral', at: '2026-08-06' },
 ]
+
+/** Qo‘llanma nomi hujjat sarlavhasida ham, fayl nomida ham shu yerdan olinadi */
+function manualName(m: (typeof MANUALS)[number]) {
+  return t(m.nameKey)
+}
 
 const roleFilter = ref('all')
 const query = ref('')
@@ -191,7 +137,7 @@ const openFaq = ref('')
 const searchNote = ref('')
 
 const filteredFaq = computed(() =>
-  FAQ.filter((f) => {
+  FAQ.value.filter((f) => {
     const byRole = roleFilter.value === 'all' || f.role === roleFilter.value
     const q = query.value.trim().toLowerCase()
     const byQuery =
@@ -220,10 +166,10 @@ function runSearch() {
   const first = filteredFaq.value[0]
   if (first) {
     openFaq.value = first.id
-    searchNote.value = `${filteredFaq.value.length} ta javob topildi`
+    searchNote.value = t('hlp.searchFound', { n: filteredFaq.value.length })
   } else {
     openFaq.value = ''
-    searchNote.value = 'So‘rov bo‘yicha javob topilmadi, murojaat yuborishingiz mumkin'
+    searchNote.value = t('hlp.searchNone')
   }
 }
 
@@ -241,33 +187,35 @@ function openManual(m: (typeof MANUALS)[number]) {
 
 /** Qo‘llanma matni savol-javob bazasidan yig‘iladi */
 function manualLines(m: (typeof MANUALS)[number]): DocxLine[] {
-  const topics = m.role === ROLE.general ? FAQ : FAQ.filter((q) => q.role === m.role)
+  const topics =
+    m.role === ROLE.general ? FAQ.value : FAQ.value.filter((q) => q.role === m.role)
   const lines: DocxLine[] = [
     { text: 'Makon Property Group', style: 'subtitle' },
-    { text: m.name, style: 'title' },
-    { text: `Nashr sanasi ${dateShort(m.at)}`, style: 'subtitle' },
-    { text: 'Qo‘llanma haqida', style: 'heading' },
+    { text: manualName(m), style: 'title' },
+    { text: t('hlp.docPublished', { date: dateShort(m.at) }), style: 'subtitle' },
+    { text: t('hlp.docAbout'), style: 'heading' },
     {
       text:
         m.role === ROLE.general
-          ? 'Ushbu qo‘llanmada tizimning barcha rollari bo‘yicha ko‘p uchraydigan savollar va ish tartibi jamlangan.'
-          : `Ushbu qo‘llanma «${m.role}» roli uchun tayyorlangan va shu roldagi asosiy amallar tartibini tushuntiradi.`,
+          ? t('hlp.docAboutGeneral')
+          : t('hlp.docAboutRole', { role: roleName(m.role) }),
     },
   ]
 
   let index = 0
-  for (const t of topics) {
+  for (const topic of topics) {
     index += 1
-    lines.push({ text: `${index}. ${t.question}`, style: 'heading' })
-    if (m.role === ROLE.general) lines.push({ text: `Rol: ${t.role}`, style: 'small' })
-    lines.push({ text: t.answer })
+    lines.push({ text: `${index}. ${topic.question}`, style: 'heading' })
+    if (m.role === ROLE.general)
+      lines.push({ text: t('hlp.docRoleLine', { role: roleName(topic.role) }), style: 'small' })
+    lines.push({ text: topic.answer })
   }
 
   lines.push(
-    { text: 'Qo‘llab-quvvatlash', style: 'heading' },
-    { text: `Telefon: ${CONTACT.phone}` },
-    { text: `E-pochta: ${CONTACT.email}` },
-    { text: `Ish vaqti: ${CONTACT.hours}.`, style: 'small' },
+    { text: t('hlp.docSupport'), style: 'heading' },
+    { text: t('hlp.docPhone', { value: CONTACT.phone }) },
+    { text: t('hlp.docEmail', { value: CONTACT.email }) },
+    { text: t('hlp.workHours', { value: CONTACT.hours }), style: 'small' },
   )
 
   return lines
@@ -278,13 +226,13 @@ const manualOutput = computed(() => {
   const m = selectedManual.value
   if (!m) return null
   const blob = docxBlob(manualLines(m))
-  return { name: `${m.name}.docx`, size: fileSize(blob.size) }
+  return { name: `${manualName(m)}.docx`, size: fileSize(blob.size) }
 })
 
 function downloadManual() {
   const m = selectedManual.value
   if (!m) return
-  const fileName = `${m.name}.docx`
+  const fileName = `${manualName(m)}.docx`
   saveBlob(docxBlob(manualLines(m)), fileName)
   savedManual.value = fileName
 }
@@ -292,11 +240,14 @@ function downloadManual() {
 type Ticket = {
   id: string
   code: string
+  /** Namunaviy yozuvlar lug‘atdan, foydalanuvchi yozgani esa matn sifatida saqlanadi */
+  subjectKey?: string
   subject: string
   category: string
   priority: 'Past' | 'O‘rtacha' | 'Yuqori'
   status: string
   createdAt: string
+  descriptionKey?: string
   description: string
 }
 
@@ -304,110 +255,163 @@ const tickets = ref<Ticket[]>([
   {
     id: 't-078',
     code: 'TK-2025-078',
-    subject: 'To‘lov kvitansiyasini olishda xato',
+    subjectKey: 'hlp.t078Subject',
+    subject: '',
     category: 'To‘lovlar',
     priority: 'O‘rtacha',
     status: 'IN_PROGRESS',
     createdAt: '2025-05-18 10:24',
-    description:
-      'To‘lov amalga oshirilgach kvitansiya yuklanmayapti, hisob-faktura holati yangilanmagan.',
+    descriptionKey: 'hlp.t078Text',
+    description: '',
   },
   {
     id: 't-077',
     code: 'TK-2025-077',
-    subject: 'Hisob-faktura ro‘yxatda ko‘rinmayapti',
+    subjectKey: 'hlp.t077Subject',
+    subject: '',
     category: 'Hisobotlar',
     priority: 'Yuqori',
     status: 'NEW',
     createdAt: '2025-05-18 09:41',
-    description: 'May oyi uchun shakllantirilgan hisob-faktura ro‘yxatda aks etmayapti.',
+    descriptionKey: 'hlp.t077Text',
+    description: '',
   },
   {
     id: 't-076',
     code: 'TK-2025-076',
-    subject: 'Ijara shartnomasiga o‘zgartirish kiritish',
+    subjectKey: 'hlp.t076Subject',
+    subject: '',
     category: 'Shartnomalar',
     priority: 'O‘rtacha',
     status: 'IN_PROGRESS',
     createdAt: '2025-05-17 16:08',
-    description: 'Shartnomaga qo‘shimcha maydon bo‘yicha ilova kiritish so‘ralmoqda.',
+    descriptionKey: 'hlp.t076Text',
+    description: '',
   },
   {
     id: 't-075',
     code: 'TK-2025-075',
-    subject: 'Texnik xizmat buyurtmasi holati',
+    subjectKey: 'hlp.t075Subject',
+    subject: '',
     category: 'Xizmatlar',
     priority: 'Past',
     status: 'TRIAGE',
     createdAt: '2025-05-16 11:02',
-    description: 'Yuborilgan servis arizasi bo‘yicha mas’ul xodim biriktirilmagan.',
+    descriptionKey: 'hlp.t075Text',
+    description: '',
   },
   {
     id: 't-074',
     code: 'TK-2025-074',
-    subject: 'Yangi foydalanuvchi qo‘shishda yordam',
+    subjectKey: 'hlp.t074Subject',
+    subject: '',
     category: 'Foydalanuvchilar',
     priority: 'O‘rtacha',
     status: 'CLOSED',
     createdAt: '2025-05-15 14:33',
-    description: 'Tashkilot xodimiga kabinetdan foydalanish huquqi berildi.',
+    descriptionKey: 'hlp.t074Text',
+    description: '',
   },
   {
     id: 't-073',
     code: 'TK-2025-073',
-    subject: 'Hisoblagich ko‘rsatkichi noto‘g‘ri hisoblandi',
+    subjectKey: 'hlp.t073Subject',
+    subject: '',
     category: 'Hisoblagichlar',
     priority: 'Yuqori',
     status: 'CLOSED',
     createdAt: '2025-05-14 09:15',
-    description: 'Suv hisoblagichi bo‘yicha sarf qayta hisoblab chiqildi va tuzatildi.',
+    descriptionKey: 'hlp.t073Text',
+    description: '',
   },
   {
     id: 't-072',
     code: 'TK-2025-072',
-    subject: 'Mobil qurilmadan kirishda muammo',
+    subjectKey: 'hlp.t072Subject',
+    subject: '',
     category: 'Tizim',
     priority: 'Past',
     status: 'CLOSED',
     createdAt: '2025-05-13 17:50',
-    description: 'Brauzer keshini tozalash orqali kirish tiklandi.',
+    descriptionKey: 'hlp.t072Text',
+    description: '',
   },
 ])
+
+/**
+ * Murojaat kategoriyasi ma’lumotda o‘zbekcha qiymat sifatida saqlanadi, shuning
+ * uchun filtr va tanlov ishlashda qoladi, tarjima faqat ko‘rinadigan nomga tegadi.
+ */
+const CATEGORY_KEYS: Record<string, string> = {
+  'To‘lovlar': 'navShort.payments',
+  Hisobotlar: 'nav.reports',
+  Shartnomalar: 'nav.contracts',
+  Xizmatlar: 'hlp.catServices',
+  Hisoblagichlar: 'nav.meters',
+  Foydalanuvchilar: 'nav.settingsUsers',
+  Tizim: 'hlp.catSystem',
+}
+
+function categoryLabel(value: string) {
+  const key = CATEGORY_KEYS[value]
+  return key ? t(key) : value
+}
+
+function ticketSubject(row: Ticket) {
+  return row.subjectKey ? t(row.subjectKey) : row.subject
+}
+
+function ticketText(row: Ticket) {
+  return row.descriptionKey ? t(row.descriptionKey) : row.description
+}
 
 const ticketStatus = ref('all')
 
 const ticketTabs = computed(() => [
-  { value: 'all', label: 'Barchasi', count: tickets.value.length },
-  { value: 'NEW', label: 'Yangi', count: tickets.value.filter((t) => t.status === 'NEW').length },
+  { value: 'all', label: t('tab.all'), count: tickets.value.length },
+  {
+    value: 'NEW',
+    label: t('tab.new'),
+    count: tickets.value.filter((x) => x.status === 'NEW').length,
+  },
   {
     value: 'IN_PROGRESS',
-    label: 'Jarayonda',
-    count: tickets.value.filter((t) => t.status === 'IN_PROGRESS').length,
+    label: t('tab.inProgress'),
+    count: tickets.value.filter((x) => x.status === 'IN_PROGRESS').length,
   },
   {
     value: 'TRIAGE',
-    label: 'Ko‘rib chiqilmoqda',
-    count: tickets.value.filter((t) => t.status === 'TRIAGE').length,
+    label: t('tab.underReview'),
+    count: tickets.value.filter((x) => x.status === 'TRIAGE').length,
   },
   {
     value: 'CLOSED',
-    label: 'Yopilgan',
-    count: tickets.value.filter((t) => t.status === 'CLOSED').length,
+    label: t('tab.closed'),
+    count: tickets.value.filter((x) => x.status === 'CLOSED').length,
   },
 ])
 
 const filteredTickets = computed(() =>
-  tickets.value.filter((t) => ticketStatus.value === 'all' || t.status === ticketStatus.value),
+  tickets.value.filter((x) => ticketStatus.value === 'all' || x.status === ticketStatus.value),
 )
 
-const ticketColumns = [
-  { key: 'code', label: 'ID' },
-  { key: 'subject', label: 'Mavzu' },
-  { key: 'category', label: 'Kategoriya' },
-  { key: 'priority', label: 'Prioritet' },
-  { key: 'status', label: 'Holat' },
-  { key: 'createdAt', label: 'Yaratilgan sana', align: 'right' as const },
-]
+/** Jadval qatorlari: ko‘rinadigan matn tarjima bilan, saralash qiymatlari o‘zgarmaydi */
+const ticketRows = computed(() =>
+  filteredTickets.value.map((x) => ({
+    ...x,
+    subject: ticketSubject(x),
+    category: categoryLabel(x.category),
+  })),
+)
+
+const ticketColumns = computed(() => [
+  { key: 'code', label: t('field.id') },
+  { key: 'subject', label: t('field.subject') },
+  { key: 'category', label: t('field.category') },
+  { key: 'priority', label: t('hlp.priority') },
+  { key: 'status', label: t('field.status') },
+  { key: 'createdAt', label: t('field.createdDate'), align: 'right' as const },
+])
 
 const PRIORITY_CLASS: Record<string, string> = {
   Yuqori: 'bg-danger-50 text-danger-700',
@@ -419,7 +423,7 @@ const ticketOpen = ref(false)
 const selectedTicket = ref<Ticket | null>(null)
 
 function openTicket(row: Record<string, unknown>) {
-  selectedTicket.value = tickets.value.find((t) => t.id === row.id) ?? null
+  selectedTicket.value = tickets.value.find((x) => x.id === row.id) ?? null
   ticketOpen.value = true
 }
 
@@ -434,25 +438,17 @@ const ticketForm = reactive({
 })
 const ticketError = ref('')
 
-const categoryOptions = [
-  { value: 'To‘lovlar', label: 'To‘lovlar' },
-  { value: 'Hisobotlar', label: 'Hisobotlar' },
-  { value: 'Shartnomalar', label: 'Shartnomalar' },
-  { value: 'Xizmatlar', label: 'Xizmatlar' },
-  { value: 'Hisoblagichlar', label: 'Hisoblagichlar' },
-  { value: 'Foydalanuvchilar', label: 'Foydalanuvchilar' },
-  { value: 'Tizim', label: 'Tizim' },
-]
+const categoryOptions = computed(() =>
+  Object.keys(CATEGORY_KEYS).map((value) => ({ value, label: categoryLabel(value) })),
+)
 
-const priorityOptions = [
-  { value: 'Past', label: 'Past' },
-  { value: 'O‘rtacha', label: 'O‘rtacha' },
-  { value: 'Yuqori', label: 'Yuqori' },
-]
+const priorityOptions = computed(() =>
+  ['Past', 'O‘rtacha', 'Yuqori'].map((value) => ({ value, label: priorityLabel(value) })),
+)
 
 function submitTicket() {
   if (ticketForm.subject.trim().length < 4) {
-    ticketError.value = 'Murojaat mavzusini kamida 4 ta belgidan iborat qilib yozing'
+    ticketError.value = t('hlp.subjectError')
     return
   }
   ticketError.value = ''
@@ -466,7 +462,7 @@ function submitTicket() {
     priority: ticketForm.priority as Ticket['priority'],
     status: 'NEW',
     createdAt: '2025-05-18 11:05',
-    description: ticketForm.description.trim() || 'Qo‘shimcha izoh ko‘rsatilmagan.',
+    description: ticketForm.description.trim() || t('hlp.noComment'),
   })
   createdCode.value = code
   ticketForm.subject = ''
@@ -475,11 +471,11 @@ function submitTicket() {
 }
 
 const onboarding = ref([
-  { id: 'o-1', label: 'Hisobingizni sozlash', done: true },
-  { id: 'o-2', label: 'Obyekt ma’lumotlarini tekshirish', done: true },
-  { id: 'o-3', label: 'Ijara shartnomasini ko‘rib chiqish', done: false },
-  { id: 'o-4', label: 'To‘lov shartlarini sozlash', done: false },
-  { id: 'o-5', label: 'Hisobotlarni ko‘rish', done: false },
+  { id: 'o-1', labelKey: 'hlp.step1', done: true },
+  { id: 'o-2', labelKey: 'hlp.step2', done: true },
+  { id: 'o-3', labelKey: 'hlp.step3', done: false },
+  { id: 'o-4', labelKey: 'hlp.step4', done: false },
+  { id: 'o-5', labelKey: 'hlp.step5', done: false },
 ])
 
 const onboardingProgress = computed(() =>
@@ -500,42 +496,42 @@ const supportChannel = ref<{
   icon: string
 } | null>(null)
 
-const supportChannels = [
+const supportChannels = computed(() => [
   {
     id: 'chat',
-    title: 'Chat orqali yordam',
-    value: 'Onlayn mutaxassis bilan suhbat',
-    caption: `Ish vaqti: ${CONTACT.hours}.`,
+    title: t('hlp.chChatTitle'),
+    value: t('hlp.chChatValue'),
+    caption: t('hlp.workHours', { value: CONTACT.hours }),
     icon: 'send',
     tone: 'bg-ok-50 text-ok-600',
   },
   {
     id: 'call',
-    title: 'Qo‘ng‘iroq qilish',
+    title: t('hlp.chCallTitle'),
     value: CONTACT.phone,
-    caption: `Ijara, hisob-kitob va servis bo‘yicha yagona raqam. Ish vaqti: ${CONTACT.hours}.`,
+    caption: t('hlp.chCallCaption', { hours: CONTACT.hours }),
     icon: 'help',
     tone: 'bg-brand-50 text-brand-600',
   },
   {
     id: 'email',
-    title: 'E-pochta orqali murojaat',
+    title: t('hlp.chEmailTitle'),
     value: CONTACT.email,
-    caption: 'Murojaatlar ish kuni davomida ko‘rib chiqiladi.',
+    caption: t('hlp.chEmailCaption'),
     icon: 'doc',
     tone: 'bg-info-50 text-info-600',
   },
   {
     id: 'remote',
-    title: 'Masofaviy yordam',
-    value: 'So‘rov yuborish',
-    caption: 'Mutaxassis ruxsatingiz bilan ekraningizga masofadan ulanadi.',
+    title: t('hlp.chRemoteTitle'),
+    value: t('hlp.chRemoteValue'),
+    caption: t('hlp.chRemoteCaption'),
     icon: 'external',
     tone: 'bg-warn-50 text-warn-600',
   },
-]
+])
 
-function openSupport(c: (typeof supportChannels)[number]) {
+function openSupport(c: (typeof supportChannels.value)[number]) {
   supportChannel.value = c
   supportOpen.value = true
 }
@@ -565,28 +561,29 @@ async function copyChannel() {
 
 const statusOpen = ref(false)
 
-const systemServices = [
-  { label: 'Kabinet va veb interfeys', state: 'Ishlamoqda' },
-  { label: 'Hisob-kitob va billing', state: 'Ishlamoqda' },
-  { label: 'Hujjatlar arxivi', state: 'Ishlamoqda' },
-  { label: 'Hisoblagichlar yig‘ish xizmati', state: 'Ishlamoqda' },
-  { label: 'Bildirishnomalar xizmati', state: 'Ishlamoqda' },
+const SERVICE_KEYS = [
+  'hlp.svcCabinet',
+  'hlp.svcBilling',
+  'hlp.svcArchive',
+  'hlp.svcMeters',
+  'hlp.svcNotify',
 ]
+
+const systemServices = computed(() =>
+  SERVICE_KEYS.map((key) => ({ label: t(key), state: t('hlp.svcRunning') })),
+)
 </script>
 
 <template>
-  <AppTopbar
-    title="Yordam markazi"
-    subtitle="FAQ, qo‘llanmalar, murojaatlar va tezkor yordam"
-  >
+  <AppTopbar :title="moduleTitle('help')" :subtitle="t('hlp.subtitle')">
     <template #actions>
       <UiButton variant="secondary" size="sm" @click="statusOpen = true">
         <UiIcon name="shield" :size="16" />
-        Tizim holati
+        {{ t('hlp.systemStatus') }}
       </UiButton>
       <UiButton size="sm" @click="createOpen = true">
         <UiIcon name="plus" :size="16" />
-        Yangi murojaat
+        {{ t('hlp.newTicket') }}
       </UiButton>
     </template>
   </AppTopbar>
@@ -599,14 +596,18 @@ const systemServices = [
       <span class="grid size-9 shrink-0 place-items-center rounded-[10px] bg-ok-500 text-white">
         <UiIcon name="check" :size="18" />
       </span>
-      <p class="min-w-0 flex-1 text-[14px] text-ok-700">
-        <b>#{{ createdCode }}</b> raqamli murojaatingiz qabul qilindi. Javob kabinetdagi
-        bildirishnomalar orqali yuboriladi.
-      </p>
+      <i18n-t
+        keypath="hlp.ticketCreated"
+        tag="p"
+        scope="global"
+        class="min-w-0 flex-1 text-[14px] text-ok-700"
+      >
+        <template #code><b>#{{ createdCode }}</b></template>
+      </i18n-t>
       <button
         type="button"
         class="rounded-lg p-1.5 text-ok-700 transition-colors hover:bg-ok-100"
-        aria-label="Xabarni yopish"
+        :aria-label="t('common.closeMessage')"
         @click="createdCode = ''"
       >
         <UiIcon name="x" :size="16" />
@@ -618,22 +619,22 @@ const systemServices = [
         <UiCard>
           <div class="flex flex-wrap items-start justify-between gap-4">
             <div class="min-w-0">
-              <h2 class="text-[18px] font-bold text-ink-900">Yordam markaziga xush kelibsiz</h2>
+              <h2 class="text-[18px] font-bold text-ink-900">{{ t('hlp.welcome') }}</h2>
               <p class="mt-1 text-[14px] text-ink-500">
-                Savolingiz bormi? Javobni qidiring yoki murojaat yuboring.
+                {{ t('hlp.welcomeLead') }}
               </p>
             </div>
             <div class="flex w-full items-center gap-2.5 sm:w-auto">
               <UiInput
                 v-model="query"
-                placeholder="Yordam markazidan qidirish"
+                :placeholder="t('hlp.searchPlaceholder')"
                 class="w-full sm:w-72"
               >
                 <template #prefix><UiIcon name="search" :size="16" /></template>
               </UiInput>
               <UiButton @click="runSearch">
                 <UiIcon name="search" :size="16" />
-                Qidirish
+                {{ t('common.search') }}
               </UiButton>
             </div>
           </div>
@@ -656,26 +657,34 @@ const systemServices = [
               <span class="grid size-10 place-items-center rounded-[10px]" :class="r.tone">
                 <UiIcon :name="r.icon" :size="19" />
               </span>
-              <span class="mt-3 block text-[14px] font-bold text-ink-900">{{ r.value }}</span>
-              <span class="mt-0.5 block text-[12px] leading-snug text-ink-500">{{ r.caption }}</span>
+              <span class="mt-3 block text-[14px] font-bold text-ink-900">
+                {{ roleName(r.value) }}
+              </span>
+              <span class="mt-0.5 block text-[12px] leading-snug text-ink-500">
+                {{ t(r.captionKey) }}
+              </span>
             </button>
           </div>
 
           <div v-if="roleFilter !== 'all'" class="mt-3 flex items-center gap-2">
-            <span class="text-[13px] text-ink-500">Faol saralash:</span>
+            <span class="text-[13px] text-ink-500">{{ t('hlp.activeFilter') }}</span>
             <button
               type="button"
               class="inline-flex items-center gap-1.5 rounded-pill bg-brand-50 px-2.5 py-1 text-[12px] font-semibold text-brand-700 transition-colors hover:bg-brand-100"
               @click="roleFilter = 'all'"
             >
-              {{ roleFilter }}
+              {{ roleName(roleFilter) }}
               <UiIcon name="x" :size="12" />
             </button>
           </div>
         </UiCard>
 
         <div class="grid gap-5 lg:grid-cols-2">
-          <UiCard title="Tezkor javoblar (FAQ)" :subtitle="`${filteredFaq.length} ta savol`" flush>
+          <UiCard
+            :title="t('hlp.faqTitle')"
+            :subtitle="t('hlp.faqCount', { n: filteredFaq.length })"
+            flush
+          >
             <ul class="divide-y divide-ink-100">
               <li v-for="f in filteredFaq" :key="f.id">
                 <button
@@ -697,7 +706,7 @@ const systemServices = [
                     {{ f.question }}
                   </span>
                   <span class="shrink-0 rounded-pill bg-ink-100 px-2 py-0.5 text-[11px] font-semibold text-ink-600">
-                    {{ f.role }}
+                    {{ roleName(f.role) }}
                   </span>
                 </button>
                 <p
@@ -708,27 +717,29 @@ const systemServices = [
                 </p>
               </li>
               <li v-if="!filteredFaq.length" class="px-5 py-12 text-center text-[13px] text-ink-500">
-                So‘rov bo‘yicha javob topilmadi
+                {{ t('hlp.faqEmpty') }}
               </li>
             </ul>
           </UiCard>
 
-          <UiCard title="Foydalanuvchi qo‘llanmalari" subtitle="Word hujjatlari" flush>
+          <UiCard :title="t('hlp.manualsTitle')" :subtitle="t('hlp.manualsCaption')" flush>
             <ul class="divide-y divide-ink-100">
               <li v-for="m in filteredManuals" :key="m.id" class="flex items-center gap-3.5 px-5 py-3.5">
                 <span class="grid size-10 shrink-0 place-items-center rounded-[10px] bg-danger-50 text-danger-600">
                   <UiIcon name="doc" :size="18" />
                 </span>
                 <span class="min-w-0 flex-1">
-                  <span class="block truncate text-[14px] font-semibold text-ink-900">{{ m.name }}</span>
+                  <span class="block truncate text-[14px] font-semibold text-ink-900">
+                    {{ manualName(m) }}
+                  </span>
                   <span class="block truncate text-[12px] text-ink-500">
-                    {{ m.role }} · {{ dateShort(m.at) }}
+                    {{ roleName(m.role) }} · {{ dateShort(m.at) }}
                   </span>
                 </span>
                 <button
                   type="button"
                   class="grid size-11 shrink-0 place-items-center rounded-field text-brand-600 transition-colors hover:bg-brand-50 md:size-9"
-                  :aria-label="`${m.name}: yuklab olish`"
+                  :aria-label="t('hlp.manualDownloadAria', { name: manualName(m) })"
                   @click="openManual(m)"
                 >
                   <UiIcon name="download" :size="18" />
@@ -738,11 +749,11 @@ const systemServices = [
           </UiCard>
         </div>
 
-        <UiCard title="Mening murojaatlarim" subtitle="Yuborilgan so‘rovlar va ularning holati" flush>
+        <UiCard :title="t('hlp.ticketsTitle')" :subtitle="t('hlp.ticketsCaption')" flush>
           <template #actions>
             <UiButton size="sm" @click="createOpen = true">
               <UiIcon name="plus" :size="15" />
-              Yangi murojaat yaratish
+              {{ t('hlp.newTicketCreate') }}
             </UiButton>
           </template>
 
@@ -752,8 +763,8 @@ const systemServices = [
 
           <UiTable
             :columns="ticketColumns"
-            :rows="filteredTickets"
-            empty="Tanlangan holat bo‘yicha murojaat topilmadi"
+            :rows="ticketRows"
+            :empty="t('hlp.ticketsEmpty')"
             @row-click="openTicket"
           >
             <template #cell-code="{ value }">
@@ -762,12 +773,12 @@ const systemServices = [
             <template #cell-subject="{ value }">
               <span class="text-[14px] text-ink-800">{{ value }}</span>
             </template>
-            <template #cell-priority="{ value }">
+            <template #cell-priority="{ row }">
               <span
                 class="rounded-pill px-2.5 py-1 text-[12px] font-semibold"
-                :class="PRIORITY_CLASS[String(value)]"
+                :class="PRIORITY_CLASS[String(row.priority)]"
               >
-                {{ value }}
+                {{ priorityLabel(String(row.priority)) }}
               </span>
             </template>
             <template #cell-status="{ row }">
@@ -781,7 +792,7 @@ const systemServices = [
       </div>
 
       <div class="min-w-0 space-y-5">
-        <UiCard title="Boshlash uchun qo‘llanma" subtitle="Bosqichlarni belgilab boring">
+        <UiCard :title="t('hlp.onboardingTitle')" :subtitle="t('hlp.onboardingCaption')">
           <div class="flex items-center gap-3">
             <div class="h-2 flex-1 overflow-hidden rounded-pill bg-ink-100">
               <div
@@ -811,7 +822,7 @@ const systemServices = [
                   class="min-w-0 flex-1 truncate text-[13px]"
                   :class="s.done ? 'font-medium text-ink-500 line-through' : 'font-semibold text-ink-800'"
                 >
-                  {{ s.label }}
+                  {{ t(s.labelKey) }}
                 </span>
               </button>
             </li>
@@ -824,12 +835,12 @@ const systemServices = [
             block
             @click="openManual(generalManual)"
           >
-            Qo‘llanmani davom ettirish
+            {{ t('hlp.onboardingContinue') }}
             <UiIcon name="chevronRight" :size="15" />
           </UiButton>
         </UiCard>
 
-        <UiCard title="Tezkor yordam" subtitle="Bog‘lanish kanallari" flush>
+        <UiCard :title="t('hlp.supportTitle')" :subtitle="t('hlp.supportCaption')" flush>
           <div class="space-y-2.5 px-5 pb-5">
             <button
               v-for="c in supportChannels"
@@ -850,22 +861,24 @@ const systemServices = [
           </div>
         </UiCard>
 
-        <UiCard title="Tizim holati" subtitle="Xizmatlar barqarorligi">
+        <UiCard :title="t('hlp.systemStatus')" :subtitle="t('hlp.statusCaption')">
           <div class="flex items-center gap-3 rounded-field bg-ok-50 px-4 py-3">
             <span class="grid size-9 shrink-0 place-items-center rounded-[10px] bg-ok-500 text-white">
               <UiIcon name="check" :size="18" />
             </span>
             <p class="min-w-0 flex-1 text-[13px] font-semibold text-ok-700">
-              Barchasi ishlamoqda
+              {{ t('hlp.allRunning') }}
               <span class="block font-normal text-ok-600">
-                Barcha xizmatlar faol va barqaror ishlayapti
+                {{ t('hlp.allRunningText') }}
               </span>
             </p>
           </div>
 
           <div class="mt-3 flex items-center justify-between">
-            <p class="text-[13px] text-ink-500">Oxirgi yangilanish: bugun, 10:30</p>
-            <UiButton variant="ghost" size="sm" @click="statusOpen = true">Batafsil</UiButton>
+            <p class="text-[13px] text-ink-500">{{ t('hlp.lastUpdate') }}</p>
+            <UiButton variant="ghost" size="sm" @click="statusOpen = true">
+              {{ t('common.more') }}
+            </UiButton>
           </div>
         </UiCard>
       </div>
@@ -874,8 +887,8 @@ const systemServices = [
 
   <UiModal
     v-model="manualOpen"
-    title="Qo‘llanmani yuklab olish"
-    :subtitle="selectedManual?.name ?? ''"
+    :title="t('hlp.manualModalTitle')"
+    :subtitle="selectedManual ? manualName(selectedManual) : ''"
     size="sm"
   >
     <div v-if="selectedManual" class="space-y-4">
@@ -894,55 +907,55 @@ const systemServices = [
       </div>
 
       <p v-if="!savedManual" class="text-[13px] text-ink-600">
-        Qo‘llanma Word ko‘rinishida yig‘iladi va brauzeringiz orqali saqlanadi.
+        {{ t('hlp.manualNote') }}
       </p>
       <p v-else class="flex items-start gap-2 text-[13px] font-semibold text-ok-700">
         <UiIcon name="check" :size="16" class="mt-px shrink-0" />
-        <span class="min-w-0">{{ savedManual }} fayli saqlandi.</span>
+        <span class="min-w-0">{{ t('hlp.manualSaved', { name: savedManual }) }}</span>
       </p>
     </div>
 
     <template #footer>
-      <UiButton variant="ghost" @click="manualOpen = false">Yopish</UiButton>
+      <UiButton variant="ghost" @click="manualOpen = false">{{ t('common.close') }}</UiButton>
       <UiButton @click="downloadManual">
         <UiIcon name="download" :size="16" />
-        Yuklab olish
+        {{ t('common.download') }}
       </UiButton>
     </template>
   </UiModal>
 
   <UiModal
     v-model="ticketOpen"
-    :title="selectedTicket ? `#${selectedTicket.code}` : 'Murojaat'"
-    :subtitle="selectedTicket?.subject ?? ''"
+    :title="selectedTicket ? `#${selectedTicket.code}` : t('hlp.ticket')"
+    :subtitle="selectedTicket ? ticketSubject(selectedTicket) : ''"
   >
     <div v-if="selectedTicket" class="space-y-4">
       <div class="flex flex-wrap items-center gap-2.5">
         <UiStatus kind="service" :value="selectedTicket.status" />
         <span class="rounded-pill bg-ink-100 px-2.5 py-1 text-[12px] font-semibold text-ink-700">
-          {{ selectedTicket.category }}
+          {{ categoryLabel(selectedTicket.category) }}
         </span>
         <span
           class="rounded-pill px-2.5 py-1 text-[12px] font-semibold"
           :class="PRIORITY_CLASS[selectedTicket.priority]"
         >
-          Prioritet: {{ selectedTicket.priority }}
+          {{ t('hlp.priorityValue', { value: priorityLabel(selectedTicket.priority) }) }}
         </span>
       </div>
 
-      <p class="text-[14px] leading-relaxed text-ink-700">{{ selectedTicket.description }}</p>
+      <p class="text-[14px] leading-relaxed text-ink-700">{{ ticketText(selectedTicket) }}</p>
 
       <dl class="divide-y divide-ink-100 rounded-field ring-1 ring-ink-200">
         <div class="flex items-center justify-between px-4 py-2.5">
-          <dt class="text-[13px] text-ink-500">Murojaat raqami</dt>
+          <dt class="text-[13px] text-ink-500">{{ t('hlp.ticketNo') }}</dt>
           <dd class="tabular text-[13px] font-semibold text-ink-900">#{{ selectedTicket.code }}</dd>
         </div>
         <div class="flex items-center justify-between px-4 py-2.5">
-          <dt class="text-[13px] text-ink-500">Yaratilgan sana</dt>
+          <dt class="text-[13px] text-ink-500">{{ t('field.createdDate') }}</dt>
           <dd class="tabular text-[13px] font-semibold text-ink-900">{{ selectedTicket.createdAt }}</dd>
         </div>
         <div class="flex items-center justify-between px-4 py-2.5">
-          <dt class="text-[13px] text-ink-500">Murojaat egasi</dt>
+          <dt class="text-[13px] text-ink-500">{{ t('hlp.ticketOwner') }}</dt>
           <dd class="text-[13px] font-semibold text-ink-900">
             {{ auth.user?.fullName ?? 'Dilshod Ergashev' }}
           </dd>
@@ -951,7 +964,7 @@ const systemServices = [
     </div>
 
     <template #footer>
-      <UiButton variant="ghost" @click="ticketOpen = false">Yopish</UiButton>
+      <UiButton variant="ghost" @click="ticketOpen = false">{{ t('common.close') }}</UiButton>
       <UiButton
         variant="secondary"
         @click="
@@ -962,52 +975,56 @@ const systemServices = [
         "
       >
         <UiIcon name="plus" :size="16" />
-        Yangi murojaat
+        {{ t('hlp.newTicket') }}
       </UiButton>
     </template>
   </UiModal>
 
-  <UiModal v-model="createOpen" title="Yangi murojaat" subtitle="So‘rovingizni qo‘llab-quvvatlash xizmatiga yuboring">
+  <UiModal
+    v-model="createOpen"
+    :title="t('hlp.newTicket')"
+    :subtitle="t('hlp.newTicketCaption')"
+  >
     <div class="space-y-4">
-      <UiField label="Mavzu" required :error="ticketError">
+      <UiField :label="t('field.subject')" required :error="ticketError">
         <UiInput
           v-model="ticketForm.subject"
-          placeholder="Masalan: hisob-faktura ko‘rinmayapti"
+          :placeholder="t('hlp.subjectPlaceholder')"
           :invalid="!!ticketError"
         />
       </UiField>
 
       <div class="grid gap-4 sm:grid-cols-2">
-        <UiField label="Kategoriya" required>
+        <UiField :label="t('field.category')" required>
           <UiSelect v-model="ticketForm.category" :options="categoryOptions" />
         </UiField>
-        <UiField label="Prioritet" required>
+        <UiField :label="t('hlp.priority')" required>
           <UiSelect v-model="ticketForm.priority" :options="priorityOptions" />
         </UiField>
       </div>
 
-      <UiField label="Tavsif" hint="Muammoni imkon qadar aniq yozing">
+      <UiField :label="t('field.description')" :hint="t('hlp.descHint')">
         <textarea
           v-model="ticketForm.description"
           rows="4"
-          placeholder="Qo‘shimcha ma’lumot"
+          :placeholder="t('hlp.descPlaceholder')"
           class="w-full rounded-field bg-white px-3.5 py-2.5 text-sm text-ink-800 ring-1 ring-inset ring-ink-200 transition-colors placeholder:text-ink-400 hover:ring-ink-300 focus:ring-2 focus:ring-brand-500"
         />
       </UiField>
     </div>
 
     <template #footer>
-      <UiButton variant="ghost" @click="createOpen = false">Bekor qilish</UiButton>
+      <UiButton variant="ghost" @click="createOpen = false">{{ t('common.cancel') }}</UiButton>
       <UiButton @click="submitTicket">
         <UiIcon name="send" :size="16" />
-        Murojaatni yuborish
+        {{ t('hlp.submitTicket') }}
       </UiButton>
     </template>
   </UiModal>
 
   <UiModal
     v-model="supportOpen"
-    :title="supportChannel?.title ?? 'Tezkor yordam'"
+    :title="supportChannel?.title ?? t('hlp.supportTitle')"
     :subtitle="supportChannel?.value ?? ''"
     size="sm"
   >
@@ -1018,26 +1035,24 @@ const systemServices = [
       </div>
 
       <p v-if="!supportLink" class="text-[13px] leading-relaxed text-ink-600">
-        Bu kanal {{ CONTACT.phone }} raqami orqali ochiladi: mutaxassisga murojaat qilib, kanal
-        nomini ayting. Yozma murojaat qoldirmoqchi bo‘lsangiz, «Yangi murojaat» tugmasidan
-        foydalaning.
+        {{ t('hlp.channelHint', { phone: CONTACT.phone }) }}
       </p>
 
       <p v-if="copied" class="flex items-center gap-2 text-[13px] font-semibold text-ok-700">
         <UiIcon name="check" :size="16" />
-        Manzil nusxalandi.
+        {{ t('hlp.addressCopied') }}
       </p>
     </div>
 
     <template #footer>
-      <UiButton variant="ghost" @click="supportOpen = false">Yopish</UiButton>
+      <UiButton variant="ghost" @click="supportOpen = false">{{ t('common.close') }}</UiButton>
       <UiButton variant="secondary" @click="copyChannel">
         <UiIcon name="clipboard" :size="16" />
-        Nusxalash
+        {{ t('common.copy') }}
       </UiButton>
       <UiButton v-if="supportLink" :to="supportLink">
         <UiIcon name="send" :size="16" />
-        {{ supportChannel?.id === 'call' ? 'Qo‘ng‘iroq qilish' : 'Xat yozish' }}
+        {{ supportChannel?.id === 'call' ? t('hlp.chCallTitle') : t('hlp.writeEmail') }}
       </UiButton>
       <UiButton
         v-else
@@ -1049,12 +1064,16 @@ const systemServices = [
         "
       >
         <UiIcon name="send" :size="16" />
-        Yangi murojaat
+        {{ t('hlp.newTicket') }}
       </UiButton>
     </template>
   </UiModal>
 
-  <UiModal v-model="statusOpen" title="Tizim holati" subtitle="Xizmatlar bo‘yicha batafsil ma’lumot">
+  <UiModal
+    v-model="statusOpen"
+    :title="t('hlp.systemStatus')"
+    :subtitle="t('hlp.statusModalCaption')"
+  >
     <ul class="divide-y divide-ink-100 rounded-field ring-1 ring-ink-200">
       <li v-for="s in systemServices" :key="s.label" class="flex items-center justify-between px-4 py-3">
         <span class="text-[13px] font-medium text-ink-800">{{ s.label }}</span>
@@ -1067,10 +1086,10 @@ const systemServices = [
       </li>
     </ul>
 
-    <p class="mt-4 text-[13px] text-ink-500">Oxirgi yangilanish: bugun, 10:30</p>
+    <p class="mt-4 text-[13px] text-ink-500">{{ t('hlp.lastUpdate') }}</p>
 
     <template #footer>
-      <UiButton variant="ghost" @click="statusOpen = false">Yopish</UiButton>
+      <UiButton variant="ghost" @click="statusOpen = false">{{ t('common.close') }}</UiButton>
     </template>
   </UiModal>
 </template>

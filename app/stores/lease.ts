@@ -238,7 +238,6 @@ export interface LeaseCase {
   /** Ariza yuborgan shaxs ismi, tashkilot rahbaridan farq qilishi mumkin */
   contactName: string
   /** Operator kabinet ochishni taklif qilgan vaqt */
-  accountInvitedAt: string | null
   /** Ariza yopilganda berilgan kabinet kaliti */
   access: TenantAccess | null
   /** Operator shartnomaga kiritgan tahrirlar soni */
@@ -657,11 +656,11 @@ const SEEDS: SeedInput[] = [
     code: 'ARZ-2026-0156',
     unitId: 'u-704',
     org: {
-      name: 'Makon Solutions MCHJ',
+      name: 'Modul Tech MCHJ',
       tin: '306 118 402',
       director: 'Bekzod Sultonov',
       phone: '+998 90 512 30 40',
-      email: 'info@makonsolutions.uz',
+      email: 'info@modultech.uz',
       address: 'Toshkent shahri, Mirobod tumani, Shahrisabz ko‘chasi 14',
     },
     status: 'YANGI',
@@ -875,7 +874,6 @@ function seedCase(seed: SeedInput): LeaseCase | null {
     rejectReason: seed.rejectReason ?? '',
     guest: false,
     contactName: seed.org.director,
-    accountInvitedAt: null,
     access: null,
     contractEdits: 0,
     activation: null,
@@ -1013,8 +1011,7 @@ export const useLeaseStore = defineStore('lease', {
         rejectReason: '',
         guest: input.guest === true,
         contactName: input.contactName?.trim() || input.org.director,
-        accountInvitedAt: null,
-        access: null,
+            access: null,
         contractEdits: 0,
         activation: null,
       }
@@ -1036,35 +1033,6 @@ export const useLeaseStore = defineStore('lease', {
 
       this.cases.unshift(item)
       return item
-    },
-
-    /**
-     * Operator hisobsiz mijozga kabinet ochishni taklif qiladi. Belgilangandan
-     * so‘ng mijoz ariza raqami bilan parol o‘rnatishi mumkin bo‘ladi.
-     */
-    inviteAccount(id: string, actor: string, roleLabel: string) {
-      const item = this.byId(id)
-      if (!item || !item.guest || item.accountInvitedAt) return
-      item.accountInvitedAt = now()
-      this.log(item, {
-        actor,
-        roleLabel,
-        action: 'Kabinet yaratish taklif qilindi',
-        detail: `${item.contactName} (${item.org.phone}) parol o‘rnatib kabinetga kira oladi`,
-      })
-    },
-
-    /** Mijoz parol o‘rnatdi: ariza kabinetga bog‘landi */
-    attachAccount(id: string, actor: string) {
-      const item = this.byId(id)
-      if (!item || !item.guest) return
-      item.guest = false
-      this.log(item, {
-        actor,
-        roleLabel: 'Ijarachi',
-        action: 'Kabinet ochildi',
-        detail: `${item.org.name} nomiga hisob yaratildi, ariza kabinetga bog‘landi`,
-      })
     },
 
     markContacted(id: string, actor: string, roleLabel: string) {
@@ -1717,7 +1685,6 @@ export const useLeaseStore = defineStore('lease', {
         if (typeof item.contactName !== 'string' || !item.contactName) {
           item.contactName = item.org.director
         }
-        if (item.accountInvitedAt === undefined) item.accountInvitedAt = null
         if (item.access === undefined) item.access = null
         if (typeof item.contractEdits !== 'number') item.contractEdits = 0
         if (item.didox && typeof item.didox.stateAt !== 'number') item.didox.stateAt = 0

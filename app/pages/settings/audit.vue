@@ -4,20 +4,63 @@ import { ROLES, type Role } from '~/types/rbac'
 import { dateShort, todayIso } from '~/utils/format'
 import { csvBlob, docxBlob, fileSlug, saveBlob } from '~/utils/docx'
 
-const SETTINGS_TABS = [
-  { label: 'Foydalanuvchilar', to: '/settings/users', icon: 'users' },
-  { label: 'Rollar va huquqlar', to: '/settings/roles', icon: 'shield' },
-  { label: 'Integratsiyalar', to: '/settings/integrations', icon: 'globe' },
-  { label: 'Ma’lumotnomalar', to: '/settings/reference-data', icon: 'layers' },
-  { label: 'Tizim sozlamalari', to: '/settings/system', icon: 'gear' },
-  { label: 'Audit jurnali', to: '/settings/audit', icon: 'clipboard' },
-]
+const { t } = useI18n()
+const { field, columns: labelColumns, roleLabel } = useAppLabels()
+
+/** Ekranga chiqadigan matn: lug‘at kaliti yoki tarjima qilinmaydigan qiymat */
+interface Phrase {
+  k?: string
+  p?: Record<string, unknown>
+  s?: string
+}
+
+const say = (p: Phrase) => (p.k ? t(p.k, p.p ?? {}) : (p.s ?? ''))
+
+const SETTINGS_TABS = computed(() => [
+  { label: t('nav.settingsUsers'), to: '/settings/users', icon: 'users' },
+  { label: t('nav.settingsRoles'), to: '/settings/roles', icon: 'shield' },
+  { label: t('nav.settingsIntegrations'), to: '/settings/integrations', icon: 'globe' },
+  { label: t('nav.settingsReference'), to: '/settings/reference-data', icon: 'layers' },
+  { label: t('nav.settingsSystem'), to: '/settings/system', icon: 'gear' },
+  { label: t('nav.settingsAudit'), to: '/settings/audit', icon: 'clipboard' },
+])
 const CURRENT_TAB = '/settings/audit'
 
+/**
+ * Modul va amal qiymati o‘zgarmaydi: filtr va solishtirish shu qiymat bo‘yicha
+ * ishlaydi, ekranda esa lug‘atdagi nom ko‘rinadi.
+ */
+const MODULE_KEY: Record<string, string> = {
+  Sozlamalar: 'nav.settings',
+  Billing: 'cfg.moduleBilling',
+  Obyektlar: 'nav.objects',
+  Foydalanuvchilar: 'nav.settingsUsers',
+  Autentifikatsiya: 'cfg.moduleAuth',
+  Shartnomalar: 'nav.contracts',
+  Servis: 'section.service',
+  Hisobotlar: 'nav.reports',
+  Ombor: 'section.warehouse',
+}
+
+const ACTION_KEY: Record<string, string> = {
+  'O‘zgartirish': 'cfg.actionEdit',
+  Tasdiqlash: 'cfg.actionApprove',
+  Kirish: 'cfg.actionLogin',
+  Imzolash: 'cfg.actionSign',
+  Eksport: 'common.export',
+  Yaratish: 'cfg.actionCreate',
+  'O‘chirish': 'cfg.actionDelete',
+}
+
+const moduleLabel = (value: string) => (MODULE_KEY[value] ? t(MODULE_KEY[value]!) : value)
+const actionLabel = (value: string) => (ACTION_KEY[value] ? t(ACTION_KEY[value]!) : value)
+const resultLabel = (result: 'SUCCESS' | 'ERROR') =>
+  result === 'SUCCESS' ? t('cfg.resultSuccess') : t('connection.error')
+
 interface DiffLine {
-  field: string
-  before: string
-  after: string
+  field: Phrase
+  before: Phrase
+  after: Phrase
 }
 
 interface AuditEvent {
@@ -28,9 +71,10 @@ interface AuditEvent {
   role: Role
   module: string
   action: string
-  object: string
+  object: Phrase
   result: 'SUCCESS' | 'ERROR'
   ip: string
+  /** Tafsilot matnining lug‘at kaliti */
   detail: string
   diff: DiffLine[]
 }
@@ -44,13 +88,21 @@ const EVENTS: AuditEvent[] = [
     role: 'SUPER_HEAD',
     module: 'Sozlamalar',
     action: 'O‘zgartirish',
-    object: 'Xavfsizlik siyosatlari',
+    object: { k: 'cfg.objSecurityPolicies' },
     result: 'SUCCESS',
     ip: '10.0.14.22',
-    detail: 'Kirish siyosatlari yangilandi va barcha faol seanslarga qo‘llandi.',
+    detail: 'cfg.detPolicyApplied',
     diff: [
-      { field: 'Ikki bosqichli autentifikatsiya', before: 'O‘chirilgan', after: 'Yoqilgan' },
-      { field: 'Seans muddati', before: '30 daqiqa', after: '15 daqiqa' },
+      {
+        field: { k: 'cfg.twoFactor' },
+        before: { k: 'common.disabled' },
+        after: { k: 'common.enabled' },
+      },
+      {
+        field: { k: 'cfg.sessionLength' },
+        before: { k: 'cfg.minutesValue', p: { value: 30 } },
+        after: { k: 'cfg.minutesValue', p: { value: 15 } },
+      },
     ],
   },
   {
@@ -61,13 +113,21 @@ const EVENTS: AuditEvent[] = [
     role: 'ACCOUNTANT',
     module: 'Billing',
     action: 'Tasdiqlash',
-    object: 'INV-2025-0412',
+    object: { s: 'INV-2025-0412' },
     result: 'SUCCESS',
     ip: '10.0.14.31',
-    detail: 'Hisob-faktura to‘lovi tasdiqlandi va yopildi.',
+    detail: 'cfg.detInvoicePaid',
     diff: [
-      { field: 'Status', before: 'Qisman to‘langan', after: 'To‘langan' },
-      { field: 'To‘langan summa', before: '18 400 000 so‘m', after: '24 600 000 so‘m' },
+      {
+        field: { k: 'field.status' },
+        before: { k: 'status.invoice.PARTIALLY_PAID' },
+        after: { k: 'status.invoice.PAID' },
+      },
+      {
+        field: { k: 'cfg.paidAmount' },
+        before: { k: 'unitOf.currencyValue', p: { value: '18 400 000' } },
+        after: { k: 'unitOf.currencyValue', p: { value: '24 600 000' } },
+      },
     ],
   },
   {
@@ -78,13 +138,21 @@ const EVENTS: AuditEvent[] = [
     role: 'BUILDING_MANAGER',
     module: 'Obyektlar',
     action: 'O‘zgartirish',
-    object: 'Mega Mall / Unit MM-214',
+    object: { s: 'Mega Mall / Unit MM-214' },
     result: 'SUCCESS',
     ip: '10.0.21.9',
-    detail: 'Unit maydoni va ijara narxi qayta kiritildi.',
+    detail: 'cfg.detUnitEdited',
     diff: [
-      { field: 'Maydon', before: '118.40 m²', after: '124.60 m²' },
-      { field: 'Ijara narxi', before: '9 200 000 so‘m', after: '9 850 000 so‘m' },
+      {
+        field: { k: 'field.area' },
+        before: { k: 'unitOf.sqmValue', p: { value: '118.40' } },
+        after: { k: 'unitOf.sqmValue', p: { value: '124.60' } },
+      },
+      {
+        field: { k: 'cfg.rentPrice' },
+        before: { k: 'unitOf.currencyValue', p: { value: '9 200 000' } },
+        after: { k: 'unitOf.currencyValue', p: { value: '9 850 000' } },
+      },
     ],
   },
   {
@@ -95,13 +163,21 @@ const EVENTS: AuditEvent[] = [
     role: 'SUPER_HEAD',
     module: 'Foydalanuvchilar',
     action: 'O‘zgartirish',
-    object: 'Malika Tosheva',
+    object: { s: 'Malika Tosheva' },
     result: 'SUCCESS',
     ip: '10.0.14.22',
-    detail: 'Foydalanuvchi roli va obyekt biriktirilishi yangilandi.',
+    detail: 'cfg.detUserUpdated',
     diff: [
-      { field: 'Rol', before: 'Bino rahbari', after: 'Buxgalter' },
-      { field: 'Obyekt biriktirish', before: 'Mega Mall', after: 'Green Business Center, Harmony Residence' },
+      {
+        field: { k: 'field.role' },
+        before: { k: 'role.BUILDING_MANAGER.label' },
+        after: { k: 'role.ACCOUNTANT.label' },
+      },
+      {
+        field: { k: 'field.buildingScope' },
+        before: { s: 'Mega Mall' },
+        after: { s: 'Green Business Center, Harmony Residence' },
+      },
     ],
   },
   {
@@ -112,10 +188,10 @@ const EVENTS: AuditEvent[] = [
     role: 'FACILITY',
     module: 'Autentifikatsiya',
     action: 'Kirish',
-    object: 'Veb interfeys',
+    object: { k: 'cfg.objWebInterface' },
     result: 'ERROR',
     ip: '84.54.72.118',
-    detail: 'Parol uch marta noto‘g‘ri kiritildi, hisob vaqtincha bloklandi.',
+    detail: 'cfg.detLoginBlocked',
     diff: [],
   },
   {
@@ -126,13 +202,21 @@ const EVENTS: AuditEvent[] = [
     role: 'ACCOUNTANT',
     module: 'Sozlamalar',
     action: 'O‘zgartirish',
-    object: 'Tarif jadvallari (TARIFF_TAB)',
+    object: { k: 'cfg.objTariffTables' },
     result: 'SUCCESS',
     ip: '10.0.14.31',
-    detail: 'Kommunal tarif qiymatlari yangi davr uchun yangilandi.',
+    detail: 'cfg.detTariffUpdated',
     diff: [
-      { field: 'Elektr energiyasi', before: '1 180 so‘m / kVt-soat', after: '1 250 so‘m / kVt-soat' },
-      { field: 'Amal qilish sanasi', before: '02.07.2026', after: '01.08.2026' },
+      {
+        field: { k: 'cfg.electricity' },
+        before: { k: 'cfg.tariffPerKwh', p: { value: '1 180' } },
+        after: { k: 'cfg.tariffPerKwh', p: { value: '1 250' } },
+      },
+      {
+        field: { k: 'cfg.effectiveDate' },
+        before: { s: '02.07.2026' },
+        after: { s: '01.08.2026' },
+      },
     ],
   },
   {
@@ -143,14 +227,26 @@ const EVENTS: AuditEvent[] = [
     role: 'BUILDING_MANAGER',
     module: 'Shartnomalar',
     action: 'Imzolash',
-    object: 'SH-2025-0148',
+    object: { s: 'SH-2025-0148' },
     result: 'SUCCESS',
     ip: '10.0.33.7',
-    detail: 'Shartnoma tizim ichida tasdiqlandi va faol holatga o‘tdi.',
+    detail: 'cfg.detContractSigned',
     diff: [
-      { field: 'Status', before: 'Kelishilmoqda', after: 'Imzolangan' },
-      { field: 'Tasdiqlagan shaxs', before: '-', after: 'Nigora Aripova' },
-      { field: 'Tasdiqlash sanasi', before: '-', after: '17.08.2026' },
+      {
+        field: { k: 'field.status' },
+        before: { k: 'status.contract.REVIEW' },
+        after: { k: 'status.contract.SIGNED' },
+      },
+      {
+        field: { k: 'cfg.approvedBy' },
+        before: { s: '-' },
+        after: { s: 'Nigora Aripova' },
+      },
+      {
+        field: { k: 'cfg.approvalDate' },
+        before: { s: '-' },
+        after: { s: '17.08.2026' },
+      },
     ],
   },
   {
@@ -161,13 +257,21 @@ const EVENTS: AuditEvent[] = [
     role: 'FACILITY',
     module: 'Servis',
     action: 'O‘zgartirish',
-    object: 'SR-2025-0921',
+    object: { s: 'SR-2025-0921' },
     result: 'SUCCESS',
     ip: '10.0.44.15',
-    detail: 'Servis arizasi holati yakuniy bosqichga o‘tkazildi.',
+    detail: 'cfg.detServiceClosed',
     diff: [
-      { field: 'Status', before: 'Jarayonda', after: 'Bajarilgan' },
-      { field: 'Sarflangan vaqt', before: '3.5 soat', after: '5.0 soat' },
+      {
+        field: { k: 'field.status' },
+        before: { k: 'status.service.IN_PROGRESS' },
+        after: { k: 'status.service.COMPLETED' },
+      },
+      {
+        field: { k: 'cfg.timeSpent' },
+        before: { k: 'cfg.hoursValue', p: { value: '3.5' } },
+        after: { k: 'cfg.hoursValue', p: { value: '5.0' } },
+      },
     ],
   },
   {
@@ -178,10 +282,10 @@ const EVENTS: AuditEvent[] = [
     role: 'TENANT_OWNER',
     module: 'Hisobotlar',
     action: 'Eksport',
-    object: 'Ijara to‘lovlari hisoboti',
+    object: { k: 'cfg.objRentPaymentsReport' },
     result: 'SUCCESS',
     ip: '213.230.98.44',
-    detail: 'Kabinet orqali shaxsiy to‘lovlar hisoboti PDF ko‘rinishida yuklab olindi.',
+    detail: 'cfg.detCabinetExport',
     diff: [],
   },
   {
@@ -192,13 +296,21 @@ const EVENTS: AuditEvent[] = [
     role: 'ACCOUNTANT',
     module: 'Billing',
     action: 'Yaratish',
-    object: 'INV-2025-0407',
+    object: { s: 'INV-2025-0407' },
     result: 'SUCCESS',
     ip: '10.0.14.44',
-    detail: 'Yangi hisob-faktura shakllantirildi va ijarachiga yuborildi.',
+    detail: 'cfg.detInvoiceCreated',
     diff: [
-      { field: 'Summa', before: '-', after: '31 200 000 so‘m' },
-      { field: 'To‘lov muddati', before: '-', after: '25.08.2026' },
+      {
+        field: { k: 'field.amount' },
+        before: { s: '-' },
+        after: { k: 'unitOf.currencyValue', p: { value: '31 200 000' } },
+      },
+      {
+        field: { k: 'field.dueDate' },
+        before: { s: '-' },
+        after: { s: '25.08.2026' },
+      },
     ],
   },
   {
@@ -209,11 +321,17 @@ const EVENTS: AuditEvent[] = [
     role: 'BUILDING_MANAGER',
     module: 'Ombor',
     action: 'O‘zgartirish',
-    object: 'MT-2025-0096',
+    object: { s: 'MT-2025-0096' },
     result: 'SUCCESS',
     ip: '10.0.52.3',
-    detail: 'Material so‘rovi tasdiqlandi va omborga berish uchun yuborildi.',
-    diff: [{ field: 'Status', before: 'Yuborilgan', after: 'Tasdiqlangan' }],
+    detail: 'cfg.detMaterialApproved',
+    diff: [
+      {
+        field: { k: 'field.status' },
+        before: { k: 'status.material.SUBMITTED' },
+        after: { k: 'status.material.APPROVED' },
+      },
+    ],
   },
   {
     id: 'log-0173',
@@ -223,10 +341,10 @@ const EVENTS: AuditEvent[] = [
     role: 'TENANT_OWNER',
     module: 'Autentifikatsiya',
     action: 'Kirish',
-    object: 'Mobil ilova',
+    object: { k: 'cfg.mobileApp' },
     result: 'ERROR',
     ip: '178.218.201.76',
-    detail: 'Hisob nofaol holatda bo‘lgani uchun kirish rad etildi.',
+    detail: 'cfg.detLoginRejected',
     diff: [],
   },
   {
@@ -237,13 +355,21 @@ const EVENTS: AuditEvent[] = [
     role: 'SUPER_HEAD',
     module: 'Foydalanuvchilar',
     action: 'Yaratish',
-    object: 'Sardor Yo‘ldoshev',
+    object: { s: 'Sardor Yo‘ldoshev' },
     result: 'SUCCESS',
     ip: '10.0.14.22',
-    detail: 'Yangi foydalanuvchi yaratildi va texnik xizmat roliga biriktirildi.',
+    detail: 'cfg.detUserCreated',
     diff: [
-      { field: 'Rol', before: '-', after: 'Pudratchi / xo‘jalik bo‘limi' },
-      { field: 'Obyekt biriktirish', before: '-', after: 'Green Business Center, Urban Office' },
+      {
+        field: { k: 'field.role' },
+        before: { s: '-' },
+        after: { k: 'role.FACILITY.label' },
+      },
+      {
+        field: { k: 'field.buildingScope' },
+        before: { s: '-' },
+        after: { s: 'Green Business Center, Urban Office' },
+      },
     ],
   },
   {
@@ -254,11 +380,17 @@ const EVENTS: AuditEvent[] = [
     role: 'SUPER_HEAD',
     module: 'Sozlamalar',
     action: 'O‘zgartirish',
-    object: 'Telegram bildirishnoma kanali',
+    object: { k: 'cfg.objTelegramChannel' },
     result: 'SUCCESS',
     ip: '10.0.14.22',
-    detail: 'Bildirishnoma kanalining yuborish jadvali o‘zgartirildi va ulanish qayta tekshirildi.',
-    diff: [{ field: 'Yuborish jadvali', before: 'Har 6 soatda', after: 'Har kuni 02:00' }],
+    detail: 'cfg.detChannelSchedule',
+    diff: [
+      {
+        field: { k: 'cfg.sendSchedule' },
+        before: { k: 'cfg.every6h' },
+        after: { k: 'cfg.dailyAt', p: { time: '02:00' } },
+      },
+    ],
   },
   {
     id: 'log-0170',
@@ -268,11 +400,17 @@ const EVENTS: AuditEvent[] = [
     role: 'BUILDING_MANAGER',
     module: 'Obyektlar',
     action: 'O‘chirish',
-    object: 'Mega Mall / Unit MM-118 e’loni',
+    object: { k: 'cfg.objUnitListing' },
     result: 'SUCCESS',
     ip: '10.0.21.9',
-    detail: 'Unit e’loni arxivga o‘tkazildi, unitning o‘zi saqlanib qoldi.',
-    diff: [{ field: 'E’lon holati', before: 'E’lon qilingan', after: 'Arxivlangan' }],
+    detail: 'cfg.detListingArchived',
+    diff: [
+      {
+        field: { k: 'cfg.listingState' },
+        before: { k: 'status.listing.PUBLISHED' },
+        after: { k: 'status.listing.ARCHIVED' },
+      },
+    ],
   },
   {
     id: 'log-0169',
@@ -282,16 +420,16 @@ const EVENTS: AuditEvent[] = [
     role: 'ACCOUNTANT',
     module: 'Hisobotlar',
     action: 'Eksport',
-    object: 'Qarzdorlik detallashtirilgan hisoboti',
+    object: { k: 'cfg.objDebtReport' },
     result: 'SUCCESS',
     ip: '10.0.14.31',
-    detail: 'Hisobot XLSX ko‘rinishida tayyorlandi va yuklab olindi.',
+    detail: 'cfg.detReportExported',
     diff: [],
   },
 ]
 
-const MODULES = [...new Set(EVENTS.map((e) => e.module))].sort()
-const ACTIONS = [...new Set(EVENTS.map((e) => e.action))].sort()
+const MODULES = [...new Set(EVENTS.map((e) => e.module))]
+const ACTIONS = [...new Set(EVENTS.map((e) => e.action))]
 const USERS = [...new Set(EVENTS.map((e) => e.user))].sort()
 
 const search = ref('')
@@ -311,26 +449,39 @@ const LOG_TO = LOG_DATES[LOG_DATES.length - 1] ?? todayIso()
 const fromDate = ref(LOG_FROM)
 const toDate = ref(LOG_TO)
 
-const userOptions = [{ value: 'all', label: 'Barcha foydalanuvchilar' }, ...USERS.map((u) => ({ value: u, label: u }))]
-const roleOptions = [
-  { value: 'all', label: 'Barcha rollar' },
-  ...ROLES.map((r) => ({ value: r, label: ROLE_META[r].label })),
-]
-const moduleOptions = [{ value: 'all', label: 'Barcha modullar' }, ...MODULES.map((m) => ({ value: m, label: m }))]
-const actionOptions = [{ value: 'all', label: 'Barcha amallar' }, ...ACTIONS.map((a) => ({ value: a, label: a }))]
-const resultOptions = [
-  { value: 'all', label: 'Barcha natijalar' },
-  { value: 'SUCCESS', label: 'Muvaffaqiyatli' },
-  { value: 'ERROR', label: 'Xatolik' },
-]
+const userOptions = computed(() => [
+  { value: 'all', label: t('cfg.allUsers') },
+  ...USERS.map((u) => ({ value: u, label: u })),
+])
+const roleOptions = computed(() => [
+  { value: 'all', label: t('filter.allRoles') },
+  ...ROLES.map((r) => ({ value: r, label: roleLabel(r) })),
+])
+const moduleOptions = computed(() => [
+  { value: 'all', label: t('cfg.allModules') },
+  ...MODULES.map((m) => ({ value: m, label: moduleLabel(m) })).sort((a, b) =>
+    a.label.localeCompare(b.label),
+  ),
+])
+const actionOptions = computed(() => [
+  { value: 'all', label: t('cfg.allActions') },
+  ...ACTIONS.map((a) => ({ value: a, label: actionLabel(a) })).sort((a, b) =>
+    a.label.localeCompare(b.label),
+  ),
+])
+const resultOptions = computed(() => [
+  { value: 'all', label: t('cfg.allResults') },
+  { value: 'SUCCESS', label: t('cfg.resultSuccess') },
+  { value: 'ERROR', label: t('connection.error') },
+])
 
 const filtered = computed(() => {
   const q = search.value.trim().toLowerCase()
   return EVENTS.filter((e) => {
     const matchQ =
       !q ||
-      e.object.toLowerCase().includes(q) ||
-      e.detail.toLowerCase().includes(q) ||
+      say(e.object).toLowerCase().includes(q) ||
+      t(e.detail).toLowerCase().includes(q) ||
       e.id.toLowerCase().includes(q) ||
       e.ip.includes(q)
     const matchUser = userFilter.value === 'all' || e.user === userFilter.value
@@ -358,16 +509,18 @@ function resetFilters() {
   toDate.value = LOG_TO
 }
 
-const columns = [
-  { key: 'at', label: 'Vaqt' },
-  { key: 'user', label: 'Foydalanuvchi' },
-  { key: 'role', label: 'Rol' },
-  { key: 'module', label: 'Modul' },
-  { key: 'action', label: 'Amal' },
-  { key: 'object', label: 'Obyekt' },
-  { key: 'result', label: 'Natija' },
-  { key: 'ip', label: 'IP', align: 'right' as const },
-]
+const columns = computed(() =>
+  labelColumns([
+    { key: 'at', field: 'time' },
+    { key: 'user', field: 'user' },
+    { key: 'role', field: 'role' },
+    { key: 'module', field: 'module' },
+    { key: 'action', field: 'action' },
+    { key: 'object', field: 'object' },
+    { key: 'result', field: 'result' },
+    { key: 'ip', field: 'ip', align: 'right' },
+  ]),
+)
 
 const detailOpen = ref(false)
 const selected = ref<AuditEvent | null>(null)
@@ -397,10 +550,13 @@ function confirmExport() {
   if (exportFormat.value === 'DOCX') {
     saveBlob(
       docxBlob([
-        { text: 'Audit jurnali', style: 'title' },
-        { text: `${range} · ${filtered.value.length} ta yozuv`, style: 'subtitle' },
+        { text: t('nav.settingsAudit'), style: 'title' },
+        {
+          text: `${range} · ${t('cfg.recordCount', { n: filtered.value.length })}`,
+          style: 'subtitle',
+        },
         ...filtered.value.map((e) => ({
-          text: `${dateShort(e.date)} ${e.time} · ${e.user} (${ROLE_META[e.role].label}) · ${e.module} · ${e.action} · ${e.object} · ${e.result === 'SUCCESS' ? 'Muvaffaqiyatli' : 'Xato'} · ${e.ip}`,
+          text: `${dateShort(e.date)} ${e.time} · ${e.user} (${roleLabel(e.role)}) · ${moduleLabel(e.module)} · ${actionLabel(e.action)} · ${say(e.object)} · ${resultLabel(e.result)} · ${e.ip}`,
           style: 'body' as const,
         })),
       ]),
@@ -409,16 +565,26 @@ function confirmExport() {
   } else {
     saveBlob(
       csvBlob([
-        ['Sana', 'Vaqt', 'Foydalanuvchi', 'Rol', 'Modul', 'Amal', 'Obyekt', 'Natija', 'IP manzil'],
+        [
+          field('date'),
+          field('time'),
+          field('user'),
+          field('role'),
+          field('module'),
+          field('action'),
+          field('object'),
+          field('result'),
+          field('ip'),
+        ],
         ...filtered.value.map((e) => [
           dateShort(e.date),
           e.time,
           e.user,
-          ROLE_META[e.role].label,
-          e.module,
-          e.action,
-          e.object,
-          e.result === 'SUCCESS' ? 'Muvaffaqiyatli' : 'Xato',
+          roleLabel(e.role),
+          moduleLabel(e.module),
+          actionLabel(e.action),
+          say(e.object),
+          resultLabel(e.result),
           e.ip,
         ]),
       ]),
@@ -426,21 +592,28 @@ function confirmExport() {
     )
   }
 
-  exportResult.value = `${name} yuklab olindi: ${filtered.value.length} ta yozuv (${range}).`
+  exportResult.value = t('cfg.exportSaved', {
+    name,
+    n: filtered.value.length,
+    range,
+  })
   exportOpen.value = false
 }
 </script>
 
 <template>
   <AppTopbar
-    title="Audit jurnali"
-    subtitle="Tizimdagi barcha amallar qayd yozuvlari"
-    :breadcrumb="[{ label: 'Sozlamalar', to: '/settings/users' }, { label: 'Audit jurnali' }]"
+    :title="t('nav.settingsAudit')"
+    :subtitle="t('cfg.auditCaption')"
+    :breadcrumb="[
+      { label: t('nav.settings'), to: '/settings/users' },
+      { label: t('nav.settingsAudit') },
+    ]"
   >
     <template #actions>
       <UiButton variant="secondary" size="sm" @click="exportOpen = true">
         <UiIcon name="download" :size="16" />
-        Eksport
+        {{ t('common.export') }}
       </UiButton>
     </template>
   </AppTopbar>
@@ -468,10 +641,7 @@ function confirmExport() {
       class="flex items-start gap-2.5 rounded-card bg-brand-50 px-4 py-3 text-[13px] leading-relaxed text-brand-800"
     >
       <UiIcon name="lock" :size="17" class="mt-0.5 shrink-0 text-brand-600" />
-      <span>
-        Audit yozuvlari faqat qo‘shiladi: ularni tahrirlash yoki o‘chirish mumkin emas. Har bir
-        yozuv vaqt belgisi, foydalanuvchi va IP manzil bilan doimiy saqlanadi.
-      </span>
+      <span>{{ t('cfg.auditAppendOnly') }}</span>
     </div>
 
     <p v-if="exportResult" class="flex items-center gap-2 rounded-card bg-ok-50 px-4 py-3 text-[13px] text-ok-700 ring-1 ring-ok-100">
@@ -479,59 +649,61 @@ function confirmExport() {
       {{ exportResult }}
     </p>
 
-    <UiCard title="Filtrlar" subtitle="Jurnalni foydalanuvchi, modul va davr bo‘yicha toraytiring">
+    <UiCard :title="t('common.filters')" :subtitle="t('cfg.auditFilterCaption')">
       <template #actions>
-        <UiButton variant="ghost" size="sm" @click="resetFilters">Tozalash</UiButton>
+        <UiButton variant="ghost" size="sm" @click="resetFilters">{{ t('common.reset') }}</UiButton>
       </template>
 
       <div class="grid gap-4 lg:grid-cols-3 2xl:grid-cols-4">
-        <UiField label="Qidiruv">
-          <UiInput v-model="search" placeholder="Obyekt, tavsif, IP yoki yozuv raqami">
+        <UiField :label="t('common.search')">
+          <UiInput v-model="search" :placeholder="t('cfg.auditSearchPlaceholder')">
             <template #prefix><UiIcon name="search" :size="17" /></template>
           </UiInput>
         </UiField>
-        <UiField label="Foydalanuvchi">
+        <UiField :label="field('user')">
           <UiSelect v-model="userFilter" :options="userOptions" />
         </UiField>
-        <UiField label="Rol">
+        <UiField :label="field('role')">
           <UiSelect v-model="roleFilter" :options="roleOptions" />
         </UiField>
-        <UiField label="Modul">
+        <UiField :label="field('module')">
           <UiSelect v-model="moduleFilter" :options="moduleOptions" />
         </UiField>
-        <UiField label="Amal">
+        <UiField :label="field('action')">
           <UiSelect v-model="actionFilter" :options="actionOptions" />
         </UiField>
-        <UiField label="Natija">
+        <UiField :label="field('result')">
           <UiSelect v-model="resultFilter" :options="resultOptions" />
         </UiField>
-        <UiField label="Sana (dan)">
+        <UiField :label="t('cfg.dateFrom')">
           <UiInput v-model="fromDate" type="date" />
         </UiField>
-        <UiField label="Sana (gacha)">
+        <UiField :label="t('cfg.dateTo')">
           <UiInput v-model="toDate" type="date" />
         </UiField>
       </div>
 
       <div class="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-ink-100 pt-4 text-[13px]">
-        <span class="tabular font-semibold text-ink-700">Topildi: {{ filtered.length }} ta yozuv</span>
+        <span class="tabular font-semibold text-ink-700">
+          {{ t('cfg.foundRecords', { n: filtered.length }) }}
+        </span>
         <span class="inline-flex items-center gap-1.5 text-ok-700">
           <UiIcon name="check" :size="14" />
-          Muvaffaqiyatli: {{ successCount }}
+          {{ t('cfg.resultSuccess') }}: {{ successCount }}
         </span>
         <span class="inline-flex items-center gap-1.5 text-danger-700">
           <UiIcon name="x" :size="14" />
-          Xatolik: {{ errorCount }}
+          {{ t('connection.error') }}: {{ errorCount }}
         </span>
       </div>
     </UiCard>
 
-    <UiCard title="Hodisalar ro‘yxati" subtitle="Qatorni bosing, to‘liq tafsilot va o‘zgarishlar" flush>
+    <UiCard :title="t('cfg.eventsList')" :subtitle="t('cfg.eventsListCaption')" flush>
       <UiTable
         :page-size="25"
         :columns="columns"
         :rows="filtered"
-        empty="Filtrga mos yozuv topilmadi"
+        :empty="t('cfg.emptyLog')"
         @row-click="openDetail"
       >
         <template #cell-at="{ row }">
@@ -551,22 +723,24 @@ function confirmExport() {
             class="inline-flex items-center rounded-pill px-2.5 py-1 text-xs font-semibold ring-1 ring-inset"
             :class="ROLE_TONE_CLASSES[ROLE_META[row.role].tone]"
           >
-            {{ ROLE_META[row.role].label }}
+            {{ roleLabel(row.role) }}
           </span>
         </template>
 
         <template #cell-module="{ row }">
-          <span class="text-[13px] text-ink-700">{{ row.module }}</span>
+          <span class="text-[13px] text-ink-700">{{ moduleLabel(row.module) }}</span>
         </template>
 
         <template #cell-action="{ row }">
           <span class="rounded-[6px] bg-ink-100 px-2 py-1 text-[12px] font-semibold text-ink-700">
-            {{ row.action }}
+            {{ actionLabel(row.action) }}
           </span>
         </template>
 
         <template #cell-object="{ row }">
-          <span class="block max-w-[18rem] truncate text-[13px] text-ink-700">{{ row.object }}</span>
+          <span class="block max-w-[18rem] truncate text-[13px] text-ink-700">
+            {{ say(row.object) }}
+          </span>
         </template>
 
         <template #cell-result="{ row }">
@@ -579,7 +753,7 @@ function confirmExport() {
             "
           >
             <UiIcon :name="row.result === 'SUCCESS' ? 'check' : 'x'" :size="13" />
-            {{ row.result === 'SUCCESS' ? 'Muvaffaqiyatli' : 'Xatolik' }}
+            {{ resultLabel(row.result) }}
           </span>
         </template>
 
@@ -591,43 +765,43 @@ function confirmExport() {
 
     <UiModal
       v-model="detailOpen"
-      title="Audit yozuvi tafsiloti"
+      :title="t('cfg.auditDetailTitle')"
       :subtitle="selected ? `${selected.id} • ${dateShort(selected.date)} ${selected.time}` : ''"
       size="lg"
     >
       <template v-if="selected">
         <dl class="grid gap-4 sm:grid-cols-2">
           <div>
-            <dt class="text-[12px] text-ink-500">Foydalanuvchi</dt>
+            <dt class="text-[12px] text-ink-500">{{ field('user') }}</dt>
             <dd class="mt-1 text-[14px] font-semibold text-ink-900">{{ selected.user }}</dd>
           </div>
           <div>
-            <dt class="text-[12px] text-ink-500">Rol</dt>
+            <dt class="text-[12px] text-ink-500">{{ field('role') }}</dt>
             <dd class="mt-1">
               <span
                 class="inline-flex items-center rounded-pill px-2.5 py-1 text-xs font-semibold ring-1 ring-inset"
                 :class="ROLE_TONE_CLASSES[ROLE_META[selected.role].tone]"
               >
-                {{ ROLE_META[selected.role].label }}
+                {{ roleLabel(selected.role) }}
               </span>
             </dd>
           </div>
           <div>
-            <dt class="text-[12px] text-ink-500">Modul va amal</dt>
+            <dt class="text-[12px] text-ink-500">{{ t('cfg.moduleAndAction') }}</dt>
             <dd class="mt-1 text-[14px] font-semibold text-ink-900">
-              {{ selected.module }} • {{ selected.action }}
+              {{ moduleLabel(selected.module) }} • {{ actionLabel(selected.action) }}
             </dd>
           </div>
           <div>
-            <dt class="text-[12px] text-ink-500">Obyekt</dt>
-            <dd class="mt-1 text-[14px] font-semibold text-ink-900">{{ selected.object }}</dd>
+            <dt class="text-[12px] text-ink-500">{{ field('object') }}</dt>
+            <dd class="mt-1 text-[14px] font-semibold text-ink-900">{{ say(selected.object) }}</dd>
           </div>
           <div>
-            <dt class="text-[12px] text-ink-500">IP manzil</dt>
+            <dt class="text-[12px] text-ink-500">{{ field('ip') }}</dt>
             <dd class="tabular mt-1 text-[14px] font-semibold text-ink-900">{{ selected.ip }}</dd>
           </div>
           <div>
-            <dt class="text-[12px] text-ink-500">Natija</dt>
+            <dt class="text-[12px] text-ink-500">{{ field('result') }}</dt>
             <dd class="mt-1">
               <span
                 class="inline-flex items-center gap-1.5 rounded-pill px-2.5 py-1 text-xs font-semibold ring-1 ring-inset"
@@ -638,42 +812,46 @@ function confirmExport() {
                 "
               >
                 <UiIcon :name="selected.result === 'SUCCESS' ? 'check' : 'x'" :size="13" />
-                {{ selected.result === 'SUCCESS' ? 'Muvaffaqiyatli' : 'Xatolik' }}
+                {{ resultLabel(selected.result) }}
               </span>
             </dd>
           </div>
         </dl>
 
         <p class="mt-4 rounded-field bg-ink-50 px-4 py-3 text-[13px] leading-relaxed text-ink-700">
-          {{ selected.detail }}
+          {{ t(selected.detail) }}
         </p>
 
         <div class="mt-5">
-          <p class="text-[13px] font-semibold text-ink-700">O‘zgarishlar (oldingi / yangi qiymat)</p>
+          <p class="text-[13px] font-semibold text-ink-700">{{ t('cfg.diffTitle') }}</p>
 
           <p v-if="!selected.diff.length" class="mt-2 text-[13px] text-ink-500">
-            Bu hodisada maydon qiymatlari o‘zgarmagan, faqat amal fakti qayd etilgan.
+            {{ t('cfg.diffEmpty') }}
           </p>
 
           <ul v-else class="mt-2.5 space-y-2.5">
-            <li v-for="d in selected.diff" :key="d.field" class="rounded-field ring-1 ring-ink-200">
+            <li
+              v-for="d in selected.diff"
+              :key="say(d.field)"
+              class="rounded-field ring-1 ring-ink-200"
+            >
               <p class="border-b border-ink-100 px-4 py-2 text-[13px] font-semibold text-ink-700">
-                {{ d.field }}
+                {{ say(d.field) }}
               </p>
               <div class="grid gap-px bg-ink-100 sm:grid-cols-2">
                 <div class="bg-danger-50 px-4 py-3">
                   <p class="flex items-center gap-1.5 text-[12px] font-semibold text-danger-700">
                     <UiIcon name="arrowDown" :size="13" />
-                    Oldingi qiymat
+                    {{ t('cfg.previousValue') }}
                   </p>
-                  <p class="mt-1 text-[13px] text-ink-800">{{ d.before }}</p>
+                  <p class="mt-1 text-[13px] text-ink-800">{{ say(d.before) }}</p>
                 </div>
                 <div class="bg-ok-50 px-4 py-3">
                   <p class="flex items-center gap-1.5 text-[12px] font-semibold text-ok-700">
                     <UiIcon name="arrowUp" :size="13" />
-                    Yangi qiymat
+                    {{ t('cfg.newValue') }}
                   </p>
-                  <p class="mt-1 text-[13px] text-ink-800">{{ d.after }}</p>
+                  <p class="mt-1 text-[13px] text-ink-800">{{ say(d.after) }}</p>
                 </div>
               </div>
             </li>
@@ -682,28 +860,31 @@ function confirmExport() {
 
         <p class="mt-5 flex items-start gap-2 rounded-field bg-ink-50 px-3.5 py-3 text-[12px] text-ink-600">
           <UiIcon name="lock" :size="15" class="mt-0.5 shrink-0" />
-          Yozuv o‘zgartirilmaydi va o‘chirilmaydi, audit jurnali faqat qo‘shiladigan rejimda
-          ishlaydi.
+          {{ t('cfg.auditImmutable') }}
         </p>
       </template>
 
       <template #footer>
-        <UiButton variant="ghost" @click="detailOpen = false">Yopish</UiButton>
+        <UiButton variant="ghost" @click="detailOpen = false">{{ t('common.close') }}</UiButton>
         <UiButton variant="secondary" @click="exportFromDetail">
           <UiIcon name="download" :size="16" />
-          Eksport
+          {{ t('common.export') }}
         </UiButton>
       </template>
     </UiModal>
 
-    <UiModal v-model="exportOpen" title="Audit jurnalini eksport qilish" size="sm">
+    <UiModal v-model="exportOpen" :title="t('cfg.exportAuditTitle')" size="sm">
       <p class="text-[14px] leading-relaxed text-ink-700">
-        Joriy filtr bo‘yicha {{ filtered.length }} ta yozuv eksport qilinadi
-        ({{ dateShort(fromDate) }} – {{ dateShort(toDate) }}).
+        {{
+          t('cfg.exportAuditText', {
+            n: filtered.length,
+            range: `${dateShort(fromDate)} – ${dateShort(toDate)}`,
+          })
+        }}
       </p>
 
       <div class="mt-4">
-        <p class="mb-2 text-[13px] font-semibold text-ink-700">Format</p>
+        <p class="mb-2 text-[13px] font-semibold text-ink-700">{{ field('format') }}</p>
         <div class="flex gap-2">
           <button
             v-for="f in ['CSV', 'DOCX']"
@@ -724,8 +905,8 @@ function confirmExport() {
       </div>
 
       <template #footer>
-        <UiButton variant="ghost" @click="exportOpen = false">Bekor qilish</UiButton>
-        <UiButton @click="confirmExport">Eksport qilish</UiButton>
+        <UiButton variant="ghost" @click="exportOpen = false">{{ t('common.cancel') }}</UiButton>
+        <UiButton @click="confirmExport">{{ t('common.exportAction') }}</UiButton>
       </template>
     </UiModal>
   </main>

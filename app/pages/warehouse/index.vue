@@ -13,7 +13,7 @@ import {
   type WorkMaterialLine,
 } from '~/data/operations'
 import { docxBlob, saveBlob, type DocxLine } from '~/utils/docx'
-import { dateShort, num, sum, sumShort, todayIso } from '~/utils/format'
+import { dateShort, num, todayIso } from '~/utils/format'
 
 /** Material so‘rovi reyestrdagi yozuvga asos va haqiqiy pozitsiyalarni qo‘shadi */
 interface MaterialRequestEntry extends MaterialRequest {
@@ -37,6 +37,8 @@ interface IssueAct {
 
 const auth = useAuthStore()
 
+const { money, moneyShort, t, field, moduleTitle } = useAppLabels()
+
 /** Ombor mudiriga faqat biriktirilgan ombor ko‘rinadi */
 const items = ref<StockItem[]>(
   STOCK_ITEMS.filter((i) => auth.inWarehouseScope(i.warehouse)).map((i) => ({ ...i })),
@@ -49,12 +51,12 @@ const fCategory = ref('all')
 const fWarehouse = ref('all')
 
 const categoryOptions = computed(() => [
-  { value: 'all', label: 'Barcha kategoriyalar' },
+  { value: 'all', label: t('filter.allCategories') },
   ...STOCK_CATEGORIES.map((c) => ({ value: c.label, label: c.label })),
 ])
 
 const warehouseOptions = computed(() => [
-  { value: 'all', label: 'Barcha omborlar' },
+  { value: 'all', label: t('filter.allWarehouses') },
   ...warehouses.value.map((w) => ({ value: w, label: w })),
 ])
 
@@ -97,7 +99,7 @@ function levelOf(qty: number, minQty: number): LevelDef {
   if (qty >= minQty * 2)
     return {
       key: 'ok',
-      label: 'Yetarli',
+      label: t('whs.levelOk'),
       badge: 'bg-ok-50 text-ok-700 ring-ok-100',
       mark: 'text-ok-500',
       shape: 'check',
@@ -105,30 +107,30 @@ function levelOf(qty: number, minQty: number): LevelDef {
   if (qty >= minQty)
     return {
       key: 'warn',
-      label: 'O‘rta',
+      label: t('whs.levelMid'),
       badge: 'bg-warn-50 text-warn-700 ring-warn-100',
       mark: 'text-warn-500',
       shape: 'bar',
     }
   return {
     key: 'danger',
-    label: 'Kam',
+    label: t('whs.levelLow'),
     badge: 'bg-danger-50 text-danger-700 ring-danger-100',
     mark: 'text-danger-500',
     shape: 'triangle',
   }
 }
 
-const columns = [
-  { key: 'code', label: 'Kodi', width: '116px' },
-  { key: 'name', label: 'Nomi' },
-  { key: 'category', label: 'Kategoriya' },
-  { key: 'unit', label: 'O‘lchov birligi' },
-  { key: 'qty', label: 'Mavjud miqdor', align: 'right' as const, numeric: true },
-  { key: 'minQty', label: 'Minimal zaxira', align: 'right' as const, numeric: true },
-  { key: 'level', label: 'Zaxira darajasi' },
-  { key: 'warehouse', label: 'Ombor' },
-]
+const columns = computed(() => [
+  { key: 'code', label: field('code', 'Kod'), width: '116px' },
+  { key: 'name', label: field('name', 'Nomi') },
+  { key: 'category', label: field('category', 'Kategoriya') },
+  { key: 'unit', label: field('unitOfMeasure', 'O‘lchov birligi') },
+  { key: 'qty', label: field('available', 'Mavjud miqdor'), align: 'right' as const, numeric: true },
+  { key: 'minQty', label: field('minStock', 'Minimal zaxira'), align: 'right' as const, numeric: true },
+  { key: 'level', label: field('stockLevel', 'Zaxira darajasi') },
+  { key: 'warehouse', label: field('warehouse', 'Ombor') },
+])
 
 const extraIn = ref(0)
 const extraOut = ref(0)
@@ -145,25 +147,25 @@ const scopedSummary = computed(() =>
 const summary = computed(() => [
   {
     key: 'in',
-    label: 'Kirim',
+    label: t('movement.in'),
     value: num(scopedSummary.value.inbound + extraIn.value),
-    unit: 'birlik',
+    unit: t('unitOf.piece'),
     icon: 'arrowUp',
     tone: 'ok',
   },
   {
     key: 'out',
-    label: 'Chiqim',
+    label: t('movement.out'),
     value: num(scopedSummary.value.outbound + extraOut.value),
-    unit: 'birlik',
+    unit: t('unitOf.piece'),
     icon: 'arrowDown',
     tone: 'danger',
   },
   {
     key: 'balance',
-    label: 'Qoldiq',
+    label: t('field.balance'),
     value: num(scopedSummary.value.balance),
-    unit: 'birlik',
+    unit: t('unitOf.piece'),
     icon: 'box',
     tone: 'brand',
   },
@@ -246,8 +248,8 @@ function handoverRequest(r: MaterialRequestEntry) {
   if (short) {
     const target = items.value.find((i) => i.code === short.code)
     handoverError.value = target
-      ? `«${short.name}» bo‘yicha omborda faqat ${target.qty} ${target.unit} mavjud`
-      : `«${short.name}» sizga biriktirilgan omborda mavjud emas`
+      ? t('whs.shortInStock', { name: short.name, qty: target.qty, unit: target.unit })
+      : t('whs.notInYourWarehouse', { name: short.name })
     return
   }
   for (const l of lines) {
@@ -263,16 +265,16 @@ function handoverRequest(r: MaterialRequestEntry) {
   handoverError.value = ''
 }
 
-const actColumns = [
-  { key: 'code', label: 'Raqam', width: '150px' },
-  { key: 'recipient', label: 'Kimga berildi' },
-  { key: 'request', label: 'Qaysi ariza bo‘yicha' },
-  { key: 'warehouse', label: 'Ombor' },
-  { key: 'positions', label: 'Pozitsiya', align: 'right' as const, numeric: true },
-  { key: 'at', label: 'Sana' },
-  { key: 'status', label: 'Holat' },
-  { key: 'print', label: 'Amal', align: 'right' as const },
-]
+const actColumns = computed(() => [
+  { key: 'code', label: field('number', 'Raqam'), width: '150px' },
+  { key: 'recipient', label: field('issuedTo', 'Kimga berildi') },
+  { key: 'request', label: field('basisRequest', 'Qaysi ariza bo‘yicha') },
+  { key: 'warehouse', label: field('warehouse', 'Ombor') },
+  { key: 'positions', label: field('positions', 'Pozitsiya'), align: 'right' as const, numeric: true },
+  { key: 'at', label: field('date', 'Sana') },
+  { key: 'status', label: field('status', 'Holat') },
+  { key: 'print', label: field('action', 'Amal'), align: 'right' as const },
+])
 
 const actRows = computed(() => acts.value.map((a) => ({ ...a })))
 
@@ -296,18 +298,18 @@ function sendToPrinter() {
 function actDocLines(a: IssueAct): DocxLine[] {
   return [
     { text: 'Makon Property Group', style: 'subtitle' },
-    { text: 'Jihoz va material berish dalolatnomasi', style: 'title' },
+    { text: t('whs.issueActTitle'), style: 'title' },
     { text: `${a.code} · ${dateShort(a.at)}`, style: 'subtitle' },
-    { text: 'Hujjat', style: 'heading' },
-    { text: `Kimga berildi: ${a.recipient}` },
-    { text: `Qaysi ariza bo‘yicha: ${a.request}` },
-    { text: `Ombor: ${a.warehouse}` },
-    { text: `Omborchi: ${auth.user?.fullName ?? 'Ombor mas’uli'}` },
-    { text: 'Pozitsiyalar', style: 'heading' },
+    { text: t('field.document'), style: 'heading' },
+    { text: `${t('field.issuedTo')}: ${a.recipient}` },
+    { text: `${t('field.basisRequest')}: ${a.request}` },
+    { text: `${t('field.warehouse')}: ${a.warehouse}` },
+    { text: `${t('role.WAREHOUSE_OPERATOR.label')}: ${auth.user?.fullName ?? t('whs.warehouseManager')}` },
+    { text: t('whs.positionsSection'), style: 'heading' },
     ...a.lines.map((l, i) => ({ text: `${i + 1}. ${l.name}: ${l.qty} ${l.unit}` })),
-    { text: 'Imzolar', style: 'heading' },
-    { text: `Berdi: ${auth.user?.fullName ?? 'Ombor mas’uli'}`, style: 'small' as const },
-    { text: `Oldi: ${a.recipient}`, style: 'small' as const },
+    { text: t('whs.signatures'), style: 'heading' },
+    { text: `${t('whs.issuedBy')}: ${auth.user?.fullName ?? t('whs.warehouseManager')}`, style: 'small' as const },
+    { text: `${t('whs.receivedBy')}: ${a.recipient}`, style: 'small' as const },
   ]
 }
 
@@ -335,7 +337,7 @@ function saveReceive() {
   const target = receivePool.value.find((i) => i.id === receiveItem.value)
   const qty = Number(receiveQty.value)
   if (!target || !qty || qty < 1) {
-    receiveError.value = 'Pozitsiyani tanlang va miqdorni to‘g‘ri kiriting'
+    receiveError.value = t('whs.selectItemAndQty')
     return
   }
   target.qty += qty
@@ -384,12 +386,12 @@ function resetIssue() {
 
 function saveIssue() {
   if (!issueLines.value.length) {
-    issueError.value = 'Kamida bitta pozitsiya uchun miqdor kiriting'
+    issueError.value = t('whs.enterAtLeastOneQty')
     return
   }
   const over = issueLines.value.find((l) => l.qty > l.item.qty)
   if (over) {
-    issueError.value = `«${over.item.name}» bo‘yicha omborda faqat ${over.item.qty} ${over.item.unit} mavjud`
+    issueError.value = t('whs.shortInStock', { name: over.item.name, qty: over.item.qty, unit: over.item.unit })
     return
   }
   const seq = acts.value.reduce((m, a) => Math.max(m, Number(a.code.slice(-4)) || 0), 0) + 1
@@ -415,34 +417,93 @@ function saveIssue() {
   issueOpen.value = false
   resetIssue()
 }
+
+/* --- Jonli izoh ---
+ * Omborchi uchun izoh kunlik tartibni takrorlaydi: qoldiqni ko‘rish, kirimni
+ * qabul qilish, so‘rov bo‘yicha material berish va dalolatnoma bilan
+ * rasmiylashtirish. Berish huquqi yo‘q rol kuzatuv izohini oladi.
+ */
+function tourStep(key: string, target?: string) {
+  return {
+    target,
+    title: t(`tour.warehouse.${key}.title`),
+    body: t(`tour.warehouse.${key}.body`),
+    after: t(`tour.warehouse.${key}.after`),
+    next: t(`tour.warehouse.${key}.next`),
+  }
+}
+
+const tourSteps = computed(() => {
+  if (!canIssue.value) {
+    // Kuzatuvchi uchun birinchi qadam markazda: rejim nima ekanini aytadi
+    return [
+      tourStep('watch'),
+      tourStep('stock', '[data-tour="wh-stock"]'),
+      tourStep('movement', '[data-tour="wh-movement"]'),
+      tourStep('acts', '[data-tour="wh-acts"]'),
+    ]
+  }
+
+  const steps = [
+    tourStep('stock', '[data-tour="wh-stock"]'),
+    tourStep('movement', '[data-tour="wh-movement"]'),
+    tourStep('receive', '[data-tour="wh-receive"]'),
+  ]
+  if (pendingIssue.value.length) steps.push(tourStep('requests', '[data-tour="wh-requests"]'))
+  steps.push(tourStep('issue', '[data-tour="wh-issue"]'))
+  steps.push(tourStep('acts', '[data-tour="wh-acts"]'))
+  return steps
+})
+
+/** Xotira kaliti rol bilan birga: har bir rol o‘z izohini bir marta ko‘radi */
+const tourId = computed(() => `warehouse:${auth.role ?? 'guest'}`)
 </script>
 
 <template>
   <AppTopbar
-    title="Ombor va jihozlar"
-    subtitle="Material va jihozlarni qabul qilish, saqlash va berish"
+    :title="moduleTitle('warehouse', 'Ombor va jihozlar')"
+    :subtitle="t('whs.stockCaption')"
   >
     <template #actions>
-      <UiButton variant="secondary" size="sm" @click="receiveOpen = true">
+      <UiButton variant="secondary" size="sm" data-tour="wh-receive" @click="receiveOpen = true">
         <UiIcon name="download" :size="16" />
-        Yangi qabul
+        {{ t('whs.newReceipt') }}
       </UiButton>
-      <UiButton size="sm" @click="issueOpen = true">
+      <UiButton size="sm" data-tour="wh-issue" @click="issueOpen = true">
         <UiIcon name="send" :size="16" />
-        Berish dalolatnomasi
+        {{ t('whs.issueAct') }}
       </UiButton>
+      <UiTour :id="tourId" :steps="tourSteps" />
     </template>
   </AppTopbar>
 
   <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-4 sm:p-6">
+    <!-- Modul chegarasi: bu yerda javondagi material, ijara omborlari boshqa bo‘limda -->
+    <div
+      class="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-card bg-ink-100 px-4 py-2 ring-1 ring-inset ring-ink-200"
+    >
+      <UiIcon name="info" :size="18" class="shrink-0 text-ink-500" />
+      <p class="min-w-[240px] flex-1 py-1 text-[13px] leading-relaxed text-ink-700">
+        {{ t('whs.stockScopeNote') }}
+      </p>
+      <NuxtLink
+        to="/warehouse/blocks"
+        class="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-field px-3 text-[13px] font-semibold text-brand-600 transition-colors hover:bg-ink-200"
+      >
+        {{ t('whs.blocksTitle') }}
+        <UiIcon name="chevronRight" :size="15" />
+      </NuxtLink>
+    </div>
+
     <section class="grid gap-5 xl:grid-cols-3">
       <UiCard
         class="xl:col-span-2"
-        title="Jihoz va material kategoriyalari"
-        subtitle="Kategoriya ustiga bosilsa jadval shu bo‘yicha filtrlanadi"
+        data-tour="wh-stock"
+        :title="t('whs.categoriesTitle')"
+        :subtitle="t('whs.categoriesCaption')"
       >
         <template #actions>
-          <UiButton variant="ghost" size="sm" @click="fCategory = 'all'">Barchasi</UiButton>
+          <UiButton variant="ghost" size="sm" @click="fCategory = 'all'">{{ t('tab.all') }}</UiButton>
         </template>
 
         <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
@@ -468,12 +529,16 @@ function saveIssue() {
             <span class="mt-2.5 block truncate text-[13px] font-semibold text-ink-900">
               {{ c.label }}
             </span>
-            <span class="tabular mt-0.5 block text-[12px] text-ink-500">{{ c.count }} nom</span>
+            <span class="tabular mt-0.5 block text-[12px] text-ink-500">{{ t('whs.nameCount', { n: c.count }) }}</span>
           </button>
         </div>
       </UiCard>
 
-      <UiCard title="Ombor harakati (bugun)" subtitle="Kirim, chiqim va joriy qoldiq">
+      <UiCard
+        data-tour="wh-movement"
+        :title="t('whs.movementToday')"
+        :subtitle="t('whs.movementTodayCaption')"
+      >
         <div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
           <div
             v-for="s in summary"
@@ -501,21 +566,21 @@ function saveIssue() {
 
         <dl class="mt-4 space-y-3 border-t border-ink-100 pt-4">
           <div class="flex items-baseline justify-between gap-3">
-            <dt class="text-[13px] text-ink-500">Sizga biriktirilgan omborlar</dt>
+            <dt class="text-[13px] text-ink-500">{{ t('whs.assignedWarehouses') }}</dt>
             <dd class="tabular text-[14px] font-bold text-ink-900">
-              {{ warehouses.length }} ta
+              {{ warehouses.length }} {{ t('unitOf.pcs') }}
             </dd>
           </div>
           <div class="flex items-baseline justify-between gap-3">
-            <dt class="text-[13px] text-ink-500">Jami pozitsiyalar</dt>
+            <dt class="text-[13px] text-ink-500">{{ t('whs.totalPositions') }}</dt>
             <dd class="tabular text-[14px] font-bold text-ink-900">
-              {{ num(scopedSummary.positions) }} nom
+              {{ t('whs.nameCount', { n: num(scopedSummary.positions) }) }}
             </dd>
           </div>
           <div class="flex items-baseline justify-between gap-3">
-            <dt class="text-[13px] text-ink-500">Jami qoldiq qiymati</dt>
+            <dt class="text-[13px] text-ink-500">{{ t('whs.totalStockValue') }}</dt>
             <dd class="tabular text-[14px] font-bold text-ink-900">
-              {{ sumShort(scopedSummary.totalValue) }}
+              {{ moneyShort(scopedSummary.totalValue) }}
             </dd>
           </div>
         </dl>
@@ -523,20 +588,20 @@ function saveIssue() {
     </section>
 
     <UiCard
-      title="Mavjud material va jihozlar"
-      :subtitle="`${rows.length} ta pozitsiya ko‘rsatilmoqda`"
+      :title="t('whs.stockListTitle')"
+      :subtitle="t('whs.positionsShown', { n: rows.length })"
       flush
       :padded="false"
     >
       <template #actions>
         <UiButton variant="secondary" size="sm" @click="receiveOpen = true">
           <UiIcon name="plus" :size="16" />
-          Yangi qabul
+          {{ t('whs.newReceipt') }}
         </UiButton>
       </template>
 
       <div class="grid gap-3 border-t border-ink-100 bg-surface-sunken px-5 py-4 lg:grid-cols-4">
-        <UiInput v-model="query" placeholder="Kod yoki nom bo‘yicha qidirish" class="lg:col-span-2">
+        <UiInput v-model="query" :placeholder="t('whs.searchCodeOrName')" class="lg:col-span-2">
           <template #prefix>
             <UiIcon name="search" :size="18" />
           </template>
@@ -546,12 +611,12 @@ function saveIssue() {
           <UiSelect v-model="fWarehouse" :options="warehouseOptions" class="flex-1" />
           <UiButton v-if="dirty" variant="ghost" size="sm" @click="resetFilters">
             <UiIcon name="refresh" :size="16" />
-            Tozalash
+            {{ t('common.reset') }}
           </UiButton>
         </div>
       </div>
 
-      <UiTable :columns="columns" :rows="rows" empty="Tanlangan shartga mos pozitsiya topilmadi">
+      <UiTable :columns="columns" :rows="rows" :empty="t('whs.emptyPositions')">
         <template #cell-code="{ row }">
           <span class="tabular text-[13px] font-bold text-ink-900">{{ row.code }}</span>
         </template>
@@ -602,8 +667,9 @@ function saveIssue() {
 
     <UiCard
       v-if="pendingIssue.length"
-      title="Berishni kutayotgan material so‘rovlari"
-      :subtitle="`${pendingIssue.length} ta tasdiqlangan so‘rov`"
+      data-tour="wh-requests"
+      :title="t('whs.pendingIssueTitle')"
+      :subtitle="t('whs.approvedRequestCount', { n: pendingIssue.length })"
     >
       <p
         v-if="handoverError"
@@ -622,38 +688,39 @@ function saveIssue() {
           <span class="min-w-0 flex-1">
             <span class="tabular block text-[14px] font-bold text-ink-900">{{ r.code }}</span>
             <span class="block truncate text-[13px] text-ink-500">
-              {{ r.workOrder }} · {{ r.requester }} · {{ r.items }} ta pozitsiya
+              {{ r.workOrder }} · {{ r.requester }} · {{ t('whs.positionCount', { n: r.items }) }}
             </span>
           </span>
           <span class="tabular shrink-0 text-[14px] font-bold text-ink-900">
-            {{ sum(r.amount) }}
+            {{ money(r.amount) }}
           </span>
           <UiButton v-if="canIssue" size="sm" variant="success" @click="handoverRequest(r)">
             <UiIcon name="send" :size="16" />
-            Berish
+            {{ t('whs.issue') }}
           </UiButton>
-          <span v-else class="shrink-0 text-[13px] text-ink-500">Berish huquqi yo‘q</span>
+          <span v-else class="shrink-0 text-[13px] text-ink-500">{{ t('whs.noIssueRight') }}</span>
         </li>
       </ul>
     </UiCard>
 
     <UiCard
-      title="Berish dalolatnomalari"
-      :subtitle="`${acts.length} ta hujjat`"
+      data-tour="wh-acts"
+      :title="t('whs.issueActsTitle')"
+      :subtitle="t('whs.documentCount', { n: acts.length })"
       flush
       :padded="false"
     >
       <template #actions>
         <UiButton size="sm" @click="issueOpen = true">
           <UiIcon name="plus" :size="16" />
-          Yangi dalolatnoma
+          {{ t('whs.newAct') }}
         </UiButton>
       </template>
 
       <UiTable
         :columns="actColumns"
         :rows="actRows"
-        empty="Dalolatnoma mavjud emas"
+        :empty="t('whs.emptyActs')"
         @row-click="openAct"
       >
         <template #cell-code="{ row }">
@@ -664,7 +731,7 @@ function saveIssue() {
           <span class="tabular text-[13px] font-semibold text-brand-600">{{ row.request }}</span>
         </template>
 
-        <template #cell-positions="{ row }">{{ row.positions }} ta</template>
+        <template #cell-positions="{ row }">{{ row.positions }} {{ t('unitOf.pcs') }}</template>
 
         <template #cell-at="{ row }">
           <span class="tabular">{{ dateShort(row.at) }}</span>
@@ -677,7 +744,7 @@ function saveIssue() {
         <template #cell-print="{ row }">
           <UiButton variant="ghost" size="sm" @click.stop="openAct(row)">
             <UiIcon name="print" :size="16" />
-            Chop etish
+            {{ t('common.print') }}
           </UiButton>
         </template>
       </UiTable>
@@ -686,11 +753,11 @@ function saveIssue() {
 
   <UiModal
     v-model="receiveOpen"
-    title="Yangi qabul"
-    subtitle="Omborga kirim qilingan material yoki jihozni qayd eting"
+    :title="t('whs.newReceipt')"
+    :subtitle="t('whs.newReceiptCaption')"
   >
     <div class="space-y-4">
-      <UiField label="Ombor" required hint="Kirim tanlangan ombor qoldig‘iga qo‘shiladi">
+      <UiField :label="field('warehouse', 'Ombor')" required :hint="t('whs.receiveWarehouseHint')">
         <UiSelect
           v-model="receiveWarehouse"
           :options="warehouses.map((w) => ({ value: w, label: w }))"
@@ -698,51 +765,51 @@ function saveIssue() {
       </UiField>
 
       <div class="grid gap-4 sm:grid-cols-2">
-        <UiField label="Pozitsiya" required>
+        <UiField :label="field('position', 'Pozitsiya')" required>
           <UiSelect
             v-model="receiveItem"
             :options="receivePool.map((i) => ({ value: i.id, label: `${i.name} (${i.code})` }))"
           />
         </UiField>
-        <UiField label="Miqdor" required>
+        <UiField :label="field('quantity', 'Miqdor')" required>
           <UiInput v-model="receiveQty" type="number" />
         </UiField>
       </div>
 
-      <UiField label="Izoh" :error="receiveError" hint="Yetkazib beruvchi yoki hujjat raqami">
+      <UiField :label="t('common.note')" :error="receiveError" :hint="t('whs.receiveNoteHint')">
         <textarea
           v-model="receiveNote"
           rows="3"
-          placeholder="Kirim asosini yozing"
+          :placeholder="t('whs.receiveNotePlaceholder')"
           class="scroll-slim w-full rounded-field bg-white px-3.5 py-2.5 text-sm text-ink-800 ring-1 ring-inset ring-ink-200 transition-colors placeholder:text-ink-400 hover:ring-ink-300 focus:ring-2 focus:ring-brand-500"
         />
       </UiField>
     </div>
 
     <template #footer>
-      <UiButton variant="ghost" @click="receiveOpen = false">Bekor qilish</UiButton>
+      <UiButton variant="ghost" @click="receiveOpen = false">{{ t('common.cancel') }}</UiButton>
       <UiButton variant="success" @click="saveReceive">
         <UiIcon name="check" :size="16" />
-        Qabulni saqlash
+        {{ t('whs.saveReceipt') }}
       </UiButton>
     </template>
   </UiModal>
 
   <UiModal
     v-model="issueOpen"
-    title="Berish dalolatnomasi"
-    subtitle="Material va jihozlarni ariza bo‘yicha rasmiylashtirib bering"
+    :title="t('whs.issueAct')"
+    :subtitle="t('whs.issueActCaption')"
     size="xl"
   >
     <div class="space-y-4">
       <div class="grid gap-4 lg:grid-cols-3">
-        <UiField label="Kimga beriladi" required>
+        <UiField :label="t('whs.issueTo')" required>
           <UiSelect v-model="issueRecipient" :options="recipientOptions" />
         </UiField>
-        <UiField label="Qaysi ariza bo‘yicha" required>
+        <UiField :label="field('basisRequest', 'Qaysi ariza bo‘yicha')" required>
           <UiSelect v-model="issueRequest" :options="requestOptions" />
         </UiField>
-        <UiField label="Ombor" required>
+        <UiField :label="field('warehouse', 'Ombor')" required>
           <UiSelect
             v-model="issueWarehouse"
             :options="warehouses.map((w) => ({ value: w, label: w }))"
@@ -752,9 +819,9 @@ function saveIssue() {
 
       <div class="overflow-hidden rounded-field ring-1 ring-ink-200">
         <div class="flex items-center justify-between border-b border-ink-200 bg-surface-sunken px-4 py-3">
-          <span class="text-[13px] font-semibold text-ink-700">Jihoz va materiallarni tanlash</span>
+          <span class="text-[13px] font-semibold text-ink-700">{{ t('whs.selectItems') }}</span>
           <span class="tabular text-[13px] text-ink-500">
-            {{ issuePool.length }} ta pozitsiya mavjud
+            {{ t('whs.positionsAvailable', { n: issuePool.length }) }}
           </span>
         </div>
 
@@ -766,7 +833,7 @@ function saveIssue() {
             <span class="min-w-0 flex-1">
               <span class="block truncate text-[14px] font-semibold text-ink-900">{{ i.name }}</span>
               <span class="tabular block text-[12px] text-ink-500">
-                {{ i.code }} · mavjud {{ num(i.qty) }} {{ i.unit }}
+                {{ i.code }} · {{ t('whs.availableQty', { qty: num(i.qty), unit: i.unit }) }}
               </span>
             </span>
             <span
@@ -779,47 +846,47 @@ function saveIssue() {
           </li>
 
           <li v-if="!issuePool.length" class="px-4 py-8 text-center text-[13px] text-ink-500">
-            Bu omborda pozitsiya yo‘q
+            {{ t('whs.emptyWarehousePositions') }}
           </li>
         </ul>
 
         <div class="flex items-center justify-between border-t border-ink-200 bg-surface-sunken px-4 py-3">
           <span class="text-[13px] font-semibold text-ink-700">
-            Tanlandi: {{ issueLines.length }} ta pozitsiya · {{ num(issueUnits) }} birlik
+            {{ t('whs.selectedSummary', { n: issueLines.length, u: num(issueUnits) }) }}
           </span>
-          <span class="tabular text-[14px] font-bold text-ink-900">{{ sum(issueTotal) }}</span>
+          <span class="tabular text-[14px] font-bold text-ink-900">{{ money(issueTotal) }}</span>
         </div>
       </div>
 
-      <UiField label="Izoh" :error="issueError">
+      <UiField :label="t('common.note')" :error="issueError">
         <textarea
           v-model="issueNote"
           rows="2"
-          placeholder="Izoh kiriting"
+          :placeholder="t('whs.notePlaceholder')"
           class="scroll-slim w-full rounded-field bg-white px-3.5 py-2.5 text-sm text-ink-800 ring-1 ring-inset ring-ink-200 transition-colors placeholder:text-ink-400 hover:ring-ink-300 focus:ring-2 focus:ring-brand-500"
         />
       </UiField>
     </div>
 
     <template #footer>
-      <UiButton variant="ghost" @click="((issueOpen = false), resetIssue())">Bekor qilish</UiButton>
+      <UiButton variant="ghost" @click="((issueOpen = false), resetIssue())">{{ t('common.cancel') }}</UiButton>
       <UiButton @click="saveIssue">
         <UiIcon name="check" :size="16" />
-        Dalolatnomani rasmiylashtirish
+        {{ t('whs.formalizeAct') }}
       </UiButton>
     </template>
   </UiModal>
 
   <UiModal
     v-model="printOpen"
-    :title="`Dalolatnoma ${printAct?.code ?? ''}`"
-    subtitle="Chop etishdan oldingi ko‘rinish"
+    :title="t('whs.actTitleWithCode', { code: printAct?.code ?? '' })"
+    :subtitle="t('whs.printPreview')"
     size="lg"
   >
     <div v-if="printAct" class="rounded-field bg-white p-6 ring-1 ring-ink-200">
       <div class="flex items-start justify-between gap-4 border-b border-ink-200 pb-4">
         <div>
-          <p class="text-[18px] font-bold text-ink-900">Jihoz va material berish dalolatnomasi</p>
+          <p class="text-[18px] font-bold text-ink-900">{{ t('whs.issueActTitle') }}</p>
           <p class="tabular mt-1 text-[13px] text-ink-500">
             {{ printAct.code }} · {{ dateShort(printAct.at) }}
           </p>
@@ -829,21 +896,21 @@ function saveIssue() {
 
       <dl class="mt-4 grid gap-x-6 gap-y-3 sm:grid-cols-2">
         <div class="flex justify-between gap-3 border-b border-ink-100 pb-2">
-          <dt class="text-[13px] text-ink-500">Kimga berildi</dt>
+          <dt class="text-[13px] text-ink-500">{{ field('issuedTo', 'Kimga berildi') }}</dt>
           <dd class="text-[13px] font-semibold text-ink-900">{{ printAct.recipient }}</dd>
         </div>
         <div class="flex justify-between gap-3 border-b border-ink-100 pb-2">
-          <dt class="text-[13px] text-ink-500">Qaysi ariza bo‘yicha</dt>
+          <dt class="text-[13px] text-ink-500">{{ field('basisRequest', 'Qaysi ariza bo‘yicha') }}</dt>
           <dd class="tabular text-[13px] font-semibold text-ink-900">{{ printAct.request }}</dd>
         </div>
         <div class="flex justify-between gap-3 border-b border-ink-100 pb-2">
-          <dt class="text-[13px] text-ink-500">Ombor</dt>
+          <dt class="text-[13px] text-ink-500">{{ field('warehouse', 'Ombor') }}</dt>
           <dd class="text-[13px] font-semibold text-ink-900">{{ printAct.warehouse }}</dd>
         </div>
         <div class="flex justify-between gap-3 border-b border-ink-100 pb-2">
-          <dt class="text-[13px] text-ink-500">Omborchi</dt>
+          <dt class="text-[13px] text-ink-500">{{ t('role.WAREHOUSE_OPERATOR.label') }}</dt>
           <dd class="text-[13px] font-semibold text-ink-900">
-            {{ auth.user?.fullName ?? 'Ombor mas’uli' }}
+            {{ auth.user?.fullName ?? t('whs.warehouseManager') }}
           </dd>
         </div>
       </dl>
@@ -855,13 +922,13 @@ function saveIssue() {
               №
             </th>
             <th class="px-3 py-2 text-left text-[12px] font-semibold uppercase tracking-wide text-ink-500">
-              Nomi
+              {{ field('name', 'Nomi') }}
             </th>
             <th class="px-3 py-2 text-left text-[12px] font-semibold uppercase tracking-wide text-ink-500">
-              O‘lchov birligi
+              {{ field('unitOfMeasure', 'O‘lchov birligi') }}
             </th>
             <th class="px-3 py-2 text-right text-[12px] font-semibold uppercase tracking-wide text-ink-500">
-              Miqdor
+              {{ field('quantity', 'Miqdor') }}
             </th>
           </tr>
         </thead>
@@ -877,13 +944,13 @@ function saveIssue() {
 
       <div class="mt-6 grid gap-6 sm:grid-cols-2">
         <div>
-          <p class="text-[12px] text-ink-500">Berdi (omborchi)</p>
+          <p class="text-[12px] text-ink-500">{{ t('whs.issuedByStorekeeper') }}</p>
           <p class="mt-6 border-t border-ink-300 pt-1.5 text-[13px] text-ink-600">
-            {{ auth.user?.fullName ?? 'Ombor mas’uli' }}
+            {{ auth.user?.fullName ?? t('whs.warehouseManager') }}
           </p>
         </div>
         <div>
-          <p class="text-[12px] text-ink-500">Oldi</p>
+          <p class="text-[12px] text-ink-500">{{ t('whs.receivedBy') }}</p>
           <p class="mt-6 border-t border-ink-300 pt-1.5 text-[13px] text-ink-600">
             {{ printAct.recipient }}
           </p>
@@ -892,14 +959,14 @@ function saveIssue() {
     </div>
 
     <template #footer>
-      <UiButton variant="ghost" @click="printAct = null">Yopish</UiButton>
+      <UiButton variant="ghost" @click="printAct = null">{{ t('tour.skip') }}</UiButton>
       <UiButton variant="secondary" :disabled="!printAct" @click="downloadAct">
         <UiIcon name="download" :size="16" />
-        Yuklab olish
+        {{ t('common.download') }}
       </UiButton>
       <UiButton @click="sendToPrinter">
         <UiIcon name="print" :size="16" />
-        Chop etish
+        {{ t('common.print') }}
       </UiButton>
     </template>
   </UiModal>

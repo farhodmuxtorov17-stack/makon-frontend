@@ -36,6 +36,8 @@ const props = withDefaults(
   { height: 200, valueLabels: 'auto' },
 )
 
+const { t } = useI18n()
+
 /* --- Ohanglar: bitta asosiy rangdan butun gradient oilasi hosil qilinadi --- */
 
 const BASE: Record<ChartTone, string> = {
@@ -197,13 +199,21 @@ const tipShift = computed(() => {
 const summary = computed(() => {
   const rows = props.series.map((s) => {
     const vs = s.values.filter((v) => Number.isFinite(v))
-    if (!vs.length) return `${s.label}: ma’lumot yo‘q`
-    return `${s.label}: ${fmt(Math.min(...vs))} dan ${fmt(Math.max(...vs))} gacha`
+    if (!vs.length) return t('ui.seriesNoData', { label: s.label })
+    return t('ui.seriesRange', {
+      label: s.label,
+      from: fmt(Math.min(...vs)),
+      to: fmt(Math.max(...vs)),
+    })
   })
   const span = props.labels.length
-    ? `${props.labels.length} ta ustun: ${props.labels[0]} dan ${props.labels[props.labels.length - 1]} gacha`
-    : 'ustunlar yo‘q'
-  return `Ustunli diagramma${props.unit ? `, ${props.unit}` : ''}. ${span}. ${rows.join('; ')}.`
+    ? t('ui.barsSpan', {
+        count: props.labels.length,
+        from: props.labels[0],
+        to: props.labels[props.labels.length - 1],
+      })
+    : t('ui.barsNone')
+  return `${t('ui.barChart')}${props.unit ? `, ${props.unit}` : ''}. ${span}. ${rows.join('; ')}.`
 })
 </script>
 
@@ -378,7 +388,7 @@ const summary = computed(() => {
             v-if="stacked && series.length > 1"
             class="flex items-center justify-between gap-3 border-t border-white/15 pt-1 text-[12px] font-semibold text-white"
           >
-            <span>Jami</span>
+            <span>{{ t('common.total') }}</span>
             <span class="tabular">{{ fmt(columnTotal(active)) }}</span>
           </li>
         </ul>

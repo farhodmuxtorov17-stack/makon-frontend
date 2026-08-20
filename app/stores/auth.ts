@@ -1,6 +1,12 @@
 import { defineStore } from 'pinia'
 import { ROLE_CAPABILITIES, ROLE_META } from '~/constants/roles'
-import { ACCESS_AREAS, areaOfPath, overrideKey, type AccessLevel } from '~/constants/accessAreas'
+import {
+  ACCESS_AREAS,
+  areaOfPath,
+  baseLevel,
+  overrideKey,
+  type AccessLevel,
+} from '~/constants/accessAreas'
 import { canAccess } from '~/constants/navigation'
 import { warehouseByName } from '~/constants/warehouses'
 import type { Capability, Role, SessionUser } from '~/types/rbac'
@@ -126,16 +132,29 @@ export const useAuthStore = defineStore('auth', {
       if (!s.user) return false
       const role = s.user.role
       /*
-       * Bitta amal bir nechta bo‘limda uchraydi (masalan `contract.manage`
-       * shartnomalarda ham, kabinetda ham). Matritsada shulardan biri
-       * o‘zgartirilgan bo‘lsa, o‘sha o‘zgartirishlar hal qiladi: kamida
-       * bittasi «To‘liq» bo‘lsa huquq beriladi.
+       * Bitta amal bir nechta bo‘limda uchraydi: `unit.editContent` ham
+       * «Obyektlar va unitlar» da, ham «Kontent» da turadi.
+       *
+       * Ikkita qoida bor.
+       *
+       * Birinchisi: o‘zgartirilmagan bo‘lim o‘zining asosiy darajasi bilan
+       * qatnashadi. Ilgari bunday bo‘lim ro‘yxatdan tushib qolardi va bitta
+       * bo‘limni cheklash boshqa bo‘limdagi huquqni ham o‘chirardi: Operator
+       * «Obyektlar» bo‘yicha cheklansa, o‘zining kontent modulida ham barcha
+       * tahrir tugmalarini yo‘qotardi, matritsada esa «To‘liq» ko‘rinib
+       * turardi.
+       *
+       * Ikkinchisi: matritsa huquqni faqat toraytiradi, yangisini bermaydi.
+       * Aks holda «Servis» bo‘limini «To‘liq» qilish bino rahbariga ish
+       * topshirig‘ini bajarish huquqini ham berardi, holbuki ijro faqat
+       * ijrochida bo‘lishi kerak.
        */
-      const levels = ACCESS_AREAS.filter((a) => a.writes.includes(capability))
-        .map((a) => s.accessOverrides[overrideKey(role, a.key)])
-        .filter(Boolean)
-      if (levels.length) return levels.includes('full')
-      return ROLE_CAPABILITIES[role].includes(capability)
+      const owning = ACCESS_AREAS.filter((a) => a.writes.includes(capability))
+      const levels = owning.map(
+        (a) => s.accessOverrides[overrideKey(role, a.key)] ?? baseLevel(role, a),
+      )
+      const areaAllows = levels.length ? levels.includes('full') : true
+      return areaAllows && ROLE_CAPABILITIES[role].includes(capability)
     },
 
     /**
@@ -172,18 +191,6 @@ export const useAuthStore = defineStore('auth', {
     signIn(role: Role) {
       this.user = { ...ACCOUNTS[role] }
       this.realRole = role
-    },
-
-    /** Administrator va super rahbar boshqa rol ko‘rinishiga o‘tadi */
-    viewAs(role: Role) {
-      if (this.realRole !== 'SUPER_HEAD') return
-      this.user = { ...ACCOUNTS[role] }
-    },
-
-    /** O‘z roliga qaytadi */
-    exitViewAs() {
-      if (!this.realRole) return
-      this.user = { ...ACCOUNTS[this.realRole] }
     },
 
     /** Sozlamalardagi matritsa saqlanganda chaqiriladi */

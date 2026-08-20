@@ -22,10 +22,15 @@ const props = withDefaults(
      */
     pageSize?: number
   }>(),
-  { rowKey: 'id', empty: 'Ma’lumot topilmadi' },
+  { rowKey: 'id' },
 )
 
 const emit = defineEmits<{ rowClick: [row: T] }>()
+
+const { t } = useI18n()
+
+/** Bo‘sh jadval yozuvi: ekran bermasa umumiy tarjima olinadi */
+const emptyText = computed(() => props.empty || t('empty.noDataFound'))
 
 /**
  * `rowClick` e’lon qilingan emit bo‘lgani uchun Vue uni `$attrs` dan olib
@@ -103,7 +108,7 @@ function activate(row: T) {
       <tbody>
         <tr v-if="!rows.length">
           <td :colspan="columns.length" class="px-4 py-14 text-center text-ink-500">
-            {{ empty }}
+            {{ emptyText }}
           </td>
         </tr>
 
@@ -143,13 +148,13 @@ function activate(row: T) {
       <div class="flex items-center gap-2">
         <UiButton variant="ghost" size="sm" :disabled="page === 1" @click="page -= 1">
           <UiIcon name="chevronLeft" :size="15" />
-          Oldingi
+          {{ t('common.previous') }}
         </UiButton>
         <span class="tabular text-[12px] font-semibold text-ink-700">
           {{ page }} / {{ pageCount }}
         </span>
         <UiButton variant="ghost" size="sm" :disabled="page === pageCount" @click="page += 1">
-          Keyingi
+          {{ t('common.next') }}
           <UiIcon name="chevronRight" :size="15" />
         </UiButton>
       </div>

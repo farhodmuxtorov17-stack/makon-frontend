@@ -4,11 +4,11 @@ import { ROLE_META } from '~/constants/roles'
  * Autentifikatsiyasiz ochiladigan sahifalar. `/ariza` ochiq ariza formasi:
  * potensial mijoz hisob ochmasdan ariza yuboradi va uni kod bo‘yicha kuzatadi.
  */
-const PUBLIC_EXACT = ['/', '/login', '/register', '/auth']
-const PUBLIC_PREFIXES = ['/auth/', '/catalog', '/ariza']
+const PUBLIC_EXACT = ['/', '/login']
+const PUBLIC_PREFIXES = ['/catalog', '/ariza']
 
 /** Kirgan foydalanuvchi uchun ma’nosiz sahifalar. */
-const GUEST_ONLY = ['/login', '/register']
+const GUEST_ONLY = ['/login']
 
 export default defineNuxtRouteMiddleware((to) => {
   const auth = useAuthStore()

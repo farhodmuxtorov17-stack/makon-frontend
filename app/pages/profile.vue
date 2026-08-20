@@ -43,9 +43,9 @@ function resetForm() {
 }
 
 function saveProfile() {
-  errors.fullName = form.fullName.trim().length >= 4 ? '' : 'F.I.Sh. to‘liq kiritilishi kerak'
-  errors.phone = form.phone.trim().length >= 9 ? '' : 'Telefon raqamini to‘liq kiriting'
-  errors.email = /.+@.+\..+/.test(form.email.trim()) ? '' : 'E-pochta manzili noto‘g‘ri'
+  errors.fullName = form.fullName.trim().length >= 4 ? '' : t('usr.errFullName')
+  errors.phone = form.phone.trim().length >= 9 ? '' : t('usr.errPhone')
+  errors.email = /.+@.+\..+/.test(form.email.trim()) ? '' : t('usr.errEmail')
   if (errors.fullName || errors.phone || errors.email) return
   if (!auth.user) return
 
@@ -53,7 +53,7 @@ function saveProfile() {
   auth.user.position = form.position.trim()
   auth.user.phone = form.phone.trim()
   auth.user.email = form.email.trim()
-  savedMessage.value = 'Profil ma’lumotlari saqlandi'
+  savedMessage.value = t('usr.savedProfile')
 }
 
 const passwordOpen = ref(false)
@@ -80,19 +80,19 @@ function submitPassword() {
   clearPasswordErrors()
 
   if (!passwordForm.current.trim()) {
-    passwordErrors.current = 'Joriy parolni kiriting'
+    passwordErrors.current = t('usr.errCurrentPassword')
     return
   }
   if (passwordForm.next.trim().length < 8) {
-    passwordErrors.next = 'Yangi parol kamida 8 ta belgidan iborat bo‘lishi kerak'
+    passwordErrors.next = t('usr.passwordRule')
     return
   }
   if (passwordForm.next !== passwordForm.repeat) {
-    passwordErrors.repeat = 'Yangi parol va tasdiqlash mos kelmadi'
+    passwordErrors.repeat = t('usr.errPasswordMismatch')
     return
   }
 
-  savedMessage.value = 'Parol muvaffaqiyatli yangilandi'
+  savedMessage.value = t('usr.savedPassword')
   passwordOpen.value = false
 }
 
@@ -105,36 +105,41 @@ interface Session {
   current: boolean
 }
 
-const sessions = ref<Session[]>([
-  {
-    id: 'ss-1',
-    device: 'Chrome brauzeri',
-    platform: 'Windows 11',
-    location: 'Toshkent, O‘zbekiston',
-    at: 'Bugun, 09:12',
-    current: true,
-  },
-  {
-    id: 'ss-2',
-    device: 'Safari brauzeri',
-    platform: 'macOS 15',
-    location: 'Toshkent, O‘zbekiston',
-    at: '17.05.2025, 18:40',
-    current: false,
-  },
-  {
-    id: 'ss-3',
-    device: 'Makon mobil ilovasi',
-    platform: 'Android 15',
-    location: 'Samarqand, O‘zbekiston',
-    at: '15.05.2025, 12:05',
-    current: false,
-  },
-])
+/** Tugatilgan seans ro‘yxatdan chiqadi, nomlar esa tanlangan tilda qoladi */
+const endedSessions = ref<string[]>([])
+
+const sessions = computed<Session[]>(() =>
+  [
+    {
+      id: 'ss-1',
+      device: t('usr.deviceChrome'),
+      platform: 'Windows 11',
+      location: t('usr.locTashkent'),
+      at: t('usr.sessionToday', { time: '09:12' }),
+      current: true,
+    },
+    {
+      id: 'ss-2',
+      device: t('usr.deviceSafari'),
+      platform: 'macOS 15',
+      location: t('usr.locTashkent'),
+      at: '17.05.2025, 18:40',
+      current: false,
+    },
+    {
+      id: 'ss-3',
+      device: t('usr.deviceMobileApp'),
+      platform: 'Android 15',
+      location: t('usr.locSamarkand'),
+      at: '15.05.2025, 12:05',
+      current: false,
+    },
+  ].filter((s) => !endedSessions.value.includes(s.id)),
+)
 
 function endSession(id: string) {
-  sessions.value = sessions.value.filter((s) => s.id !== id)
-  savedMessage.value = 'Tanlangan seans tugatildi'
+  if (!endedSessions.value.includes(id)) endedSessions.value.push(id)
+  savedMessage.value = t('usr.sessionEnded')
 }
 
 /**
@@ -161,49 +166,56 @@ const languageOptions = computed(() =>
   })),
 )
 
-const notificationSettings = ref([
+/** Yoqilgan-o‘chirilgan holat alohida saqlanadi, nomlar esa tarjimadan keladi */
+const notificationOn = reactive<Record<string, boolean>>({
+  'ns-1': true,
+  'ns-2': true,
+  'ns-3': true,
+  'ns-4': false,
+})
+
+const notificationSettings = computed(() => [
   {
     id: 'ns-1',
-    label: 'Tizim ichidagi bildirishnomalar',
-    caption: 'Kabinetdagi qo‘ng‘iroqcha orqali ko‘rsatiladi',
-    on: true,
+    label: t('usr.notifyInApp'),
+    caption: t('usr.notifyInAppHint'),
+    on: notificationOn['ns-1'],
   },
   {
     id: 'ns-2',
-    label: 'To‘lov eslatmalari',
-    caption: 'To‘lov muddati yaqinlashganda xabar beriladi',
-    on: true,
+    label: t('usr.notifyPayment'),
+    caption: t('usr.notifyPaymentHint'),
+    on: notificationOn['ns-2'],
   },
   {
     id: 'ns-3',
-    label: 'Servis arizalari yangiliklari',
-    caption: 'Ariza holati o‘zgarganda xabar beriladi',
-    on: true,
+    label: t('usr.notifyService'),
+    caption: t('usr.notifyServiceHint'),
+    on: notificationOn['ns-3'],
   },
   {
     id: 'ns-4',
-    label: 'Hujjat va shartnoma o‘zgarishlari',
-    caption: 'Yangi hujjat qo‘shilganda xabar beriladi',
-    on: false,
+    label: t('usr.notifyDocs'),
+    caption: t('usr.notifyDocsHint'),
+    on: notificationOn['ns-4'],
   },
 ])
 
 function toggleNotification(id: string) {
-  const item = notificationSettings.value.find((n) => n.id === id)
-  if (item) item.on = !item.on
+  notificationOn[id] = !notificationOn[id]
 }
 </script>
 
 <template>
-  <AppTopbar title="Profil" subtitle="Shaxsiy ma’lumotlar, xavfsizlik va interfeys sozlamalari">
+  <AppTopbar :title="t('common.profile')" :subtitle="t('usr.profileCaption')">
     <template #actions>
       <UiButton variant="secondary" size="sm" @click="openPassword">
         <UiIcon name="lock" :size="16" />
-        Parolni o‘zgartirish
+        {{ t('usr.changePassword') }}
       </UiButton>
       <UiButton size="sm" to="/notifications">
         <UiIcon name="bell" :size="16" />
-        Bildirishnomalar
+        {{ t('common.notifications') }}
       </UiButton>
     </template>
   </AppTopbar>
@@ -220,7 +232,7 @@ function toggleNotification(id: string) {
       <button
         type="button"
         class="rounded-lg p-1.5 text-ok-700 transition-colors hover:bg-ok-100"
-        aria-label="Xabarni yopish"
+        :aria-label="t('usr.closeMessage')"
         @click="savedMessage = ''"
       >
         <UiIcon name="x" :size="16" />
@@ -246,102 +258,114 @@ function toggleNotification(id: string) {
         </div>
 
         <div class="mt-4 rounded-field bg-brand-50 px-4 py-3">
-          <p class="text-[11px] font-bold uppercase tracking-wider text-brand-600">Rol</p>
+          <p class="text-[11px] font-bold uppercase tracking-wider text-brand-600">
+            {{ t('field.role') }}
+          </p>
           <p class="mt-0.5 text-[14px] font-bold text-brand-700">{{ roleLabel }}</p>
           <p class="mt-0.5 text-[12px] leading-snug text-brand-600">{{ roleCaption }}</p>
         </div>
 
         <dl class="mt-4 divide-y divide-ink-100 border-t border-ink-100">
           <div class="flex items-center justify-between py-2.5">
-            <dt class="text-[13px] text-ink-500">Tashkilot</dt>
+            <dt class="text-[13px] text-ink-500">{{ t('field.organization') }}</dt>
             <dd class="text-[13px] font-semibold text-ink-900">{{ auth.user?.organization ?? '-' }}</dd>
           </div>
           <div class="flex items-center justify-between py-2.5">
-            <dt class="text-[13px] text-ink-500">Telefon</dt>
+            <dt class="text-[13px] text-ink-500">{{ t('common.phone') }}</dt>
             <dd class="tabular text-[13px] font-semibold text-ink-900">{{ auth.user?.phone ?? '-' }}</dd>
           </div>
           <div class="flex items-center justify-between py-2.5">
-            <dt class="text-[13px] text-ink-500">E-pochta</dt>
+            <dt class="text-[13px] text-ink-500">{{ t('common.email') }}</dt>
             <dd class="truncate text-[13px] font-semibold text-ink-900">{{ auth.user?.email ?? '-' }}</dd>
           </div>
         </dl>
 
         <UiButton variant="secondary" size="sm" class="mt-4" block to="/help">
           <UiIcon name="help" :size="15" />
-          Yordam markazi
+          {{ t('nav.help') }}
         </UiButton>
       </UiCard>
 
-      <UiCard title="Shaxsiy ma’lumotlar" subtitle="Ma’lumotlarni tahrirlab, saqlang">
+      <UiCard :title="t('usr.personalData')" :subtitle="t('usr.personalDataCaption')">
         <template #actions>
           <span
             v-if="dirty"
             class="rounded-pill bg-warn-50 px-2.5 py-1 text-[12px] font-semibold text-warn-700"
           >
-            Saqlanmagan o‘zgarishlar
+            {{ t('usr.unsavedChanges') }}
           </span>
         </template>
 
         <div class="grid gap-4 sm:grid-cols-2">
-          <UiField label="F.I.Sh." required :error="errors.fullName">
-            <UiInput v-model="form.fullName" :invalid="!!errors.fullName" placeholder="Familiya Ism" />
+          <UiField :label="t('field.fullName')" required :error="errors.fullName">
+            <UiInput
+              v-model="form.fullName"
+              :invalid="!!errors.fullName"
+              :placeholder="t('usr.fullNamePlaceholder')"
+            />
           </UiField>
 
-          <UiField label="Lavozim">
-            <UiInput v-model="form.position" placeholder="Lavozim nomi" />
+          <UiField :label="t('field.position')">
+            <UiInput v-model="form.position" :placeholder="t('usr.positionPlaceholder')" />
           </UiField>
 
-          <UiField label="Tashkilot" hint="Tashkilot nomi shartnoma asosida belgilanadi">
+          <UiField :label="t('field.organization')" :hint="t('usr.organizationHint')">
             <UiInput :model-value="auth.user?.organization ?? ''" readonly />
           </UiField>
 
-          <UiField label="Rol" hint="Rolni tizim administratori o‘zgartiradi">
+          <UiField :label="t('field.role')" :hint="t('usr.roleHint')">
             <UiInput :model-value="roleLabel" readonly />
           </UiField>
 
-          <UiField label="Telefon" required :error="errors.phone">
+          <UiField :label="t('common.phone')" required :error="errors.phone">
             <UiInput v-model="form.phone" :invalid="!!errors.phone" placeholder="+998 90 000 00 00" />
           </UiField>
 
-          <UiField label="E-pochta" required :error="errors.email">
+          <UiField :label="t('common.email')" required :error="errors.email">
             <UiInput
               v-model="form.email"
               type="email"
               :invalid="!!errors.email"
-              placeholder="ism@tashkilot.uz"
+              :placeholder="t('usr.emailPlaceholder')"
             />
           </UiField>
         </div>
 
         <div class="mt-5 flex items-center justify-end gap-3 border-t border-ink-100 pt-4">
-          <UiButton variant="ghost" :disabled="!dirty" @click="resetForm">Bekor qilish</UiButton>
+          <UiButton variant="ghost" :disabled="!dirty" @click="resetForm">
+            {{ t('common.cancel') }}
+          </UiButton>
           <UiButton :disabled="!dirty" @click="saveProfile">
             <UiIcon name="check" :size="16" />
-            Saqlash
+            {{ t('common.save') }}
           </UiButton>
         </div>
       </UiCard>
     </section>
 
     <section class="grid gap-5 xl:grid-cols-2">
-      <UiCard title="Xavfsizlik" subtitle="Parol va faol seanslar" flush>
+      <UiCard :title="t('usr.security')" :subtitle="t('usr.securityCaption')" flush>
         <div class="px-5 pb-4">
           <div class="flex items-center gap-3.5 rounded-field p-4 ring-1 ring-ink-200">
             <span class="grid size-10 shrink-0 place-items-center rounded-[10px] bg-brand-50 text-brand-600">
               <UiIcon name="lock" :size="19" />
             </span>
             <span class="min-w-0 flex-1">
-              <span class="block text-[14px] font-semibold text-ink-900">Parol</span>
+              <span class="block text-[14px] font-semibold text-ink-900">
+                {{ t('login.passwordLabel') }}
+              </span>
               <span class="block text-[12px] text-ink-500">
-                Xavfsizlik uchun parolni muntazam yangilab turing
+                {{ t('usr.passwordAdvice') }}
               </span>
             </span>
-            <UiButton variant="secondary" size="sm" @click="openPassword">O‘zgartirish</UiButton>
+            <UiButton variant="secondary" size="sm" @click="openPassword">
+              {{ t('common.change') }}
+            </UiButton>
           </div>
         </div>
 
         <div class="px-5 pb-5">
-          <p class="mb-2 text-[13px] font-semibold text-ink-700">Faol seanslar</p>
+          <p class="mb-2 text-[13px] font-semibold text-ink-700">{{ t('usr.activeSessions') }}</p>
           <ul class="divide-y divide-ink-100 rounded-field ring-1 ring-ink-200">
             <li v-for="s in sessions" :key="s.id" class="flex items-center gap-3.5 px-4 py-3">
               <span class="grid size-10 shrink-0 place-items-center rounded-[10px] bg-ink-100 text-ink-600">
@@ -354,7 +378,7 @@ function toggleNotification(id: string) {
                     v-if="s.current"
                     class="rounded-pill bg-ok-50 px-2 py-0.5 text-[11px] font-semibold text-ok-700"
                   >
-                    Joriy seans
+                    {{ t('usr.currentSession') }}
                   </span>
                 </span>
                 <span class="block truncate text-[12px] text-ink-500">
@@ -367,23 +391,23 @@ function toggleNotification(id: string) {
                 :disabled="s.current"
                 @click="endSession(s.id)"
               >
-                Seansni tugatish
+                {{ t('usr.endSession') }}
               </UiButton>
             </li>
             <li v-if="!sessions.length" class="px-4 py-8 text-center text-[13px] text-ink-500">
-              Faol seanslar yo‘q
+              {{ t('empty.noSessions') }}
             </li>
           </ul>
         </div>
       </UiCard>
 
-      <UiCard title="Interfeys" subtitle="Til va bildirishnoma sozlamalari">
-        <UiField label="Interfeys tili" hint="Tanlov darhol qo‘llanadi">
+      <UiCard :title="t('usr.interface')" :subtitle="t('usr.interfaceCaption')">
+        <UiField :label="t('common.language')" :hint="t('usr.languageHint')">
           <UiSelect v-model="language" :options="languageOptions" />
         </UiField>
 
         <div class="mt-5">
-          <p class="mb-2 text-[13px] font-semibold text-ink-700">Bildirishnoma sozlamalari</p>
+          <p class="mb-2 text-[13px] font-semibold text-ink-700">{{ t('usr.notifySettings') }}</p>
           <ul class="divide-y divide-ink-100 rounded-field ring-1 ring-ink-200">
             <li v-for="n in notificationSettings" :key="n.id" class="flex items-center gap-3.5 px-4 py-3">
               <span class="min-w-0 flex-1">
@@ -407,8 +431,7 @@ function toggleNotification(id: string) {
             </li>
           </ul>
           <p class="mt-2.5 text-[12px] text-ink-500">
-            Joriy bosqichda barcha xabarlar tizim ichida ko‘rsatiladi. SMS, e-mail va Telegram
-            kanallari keyingi bosqichda ulanadi.
+            {{ t('usr.channelsNote') }}
           </p>
         </div>
       </UiCard>
@@ -417,48 +440,47 @@ function toggleNotification(id: string) {
 
   <UiModal
     v-model="passwordOpen"
-    title="Parolni o‘zgartirish"
-    subtitle="Yangi parol kamida 8 ta belgidan iborat bo‘lishi kerak"
+    :title="t('usr.changePassword')"
+    :subtitle="t('usr.passwordRule')"
     size="sm"
   >
     <div class="space-y-4">
-      <UiField label="Joriy parol" required :error="passwordErrors.current">
+      <UiField :label="t('usr.currentPassword')" required :error="passwordErrors.current">
         <UiInput
           v-model="passwordForm.current"
           type="password"
-          placeholder="Joriy parol"
+          :placeholder="t('usr.currentPassword')"
           :invalid="!!passwordErrors.current"
         />
       </UiField>
-      <UiField label="Yangi parol" required :error="passwordErrors.next">
+      <UiField :label="t('usr.newPassword')" required :error="passwordErrors.next">
         <UiInput
           v-model="passwordForm.next"
           type="password"
-          placeholder="Yangi parol"
+          :placeholder="t('usr.newPassword')"
           :invalid="!!passwordErrors.next"
         />
       </UiField>
-      <UiField label="Yangi parolni tasdiqlash" required :error="passwordErrors.repeat">
+      <UiField :label="t('usr.confirmPassword')" required :error="passwordErrors.repeat">
         <UiInput
           v-model="passwordForm.repeat"
           type="password"
-          placeholder="Yangi parolni takrorlang"
+          :placeholder="t('usr.repeatPassword')"
           :invalid="!!passwordErrors.repeat"
         />
       </UiField>
 
       <p class="flex items-start gap-2 rounded-field bg-brand-50 px-3.5 py-2.5 text-[12px] text-brand-700">
         <UiIcon name="info" :size="15" class="mt-0.5 shrink-0" />
-        Parol o‘zgartirilgach boshqa qurilmalardagi seanslar amal qilishda davom etadi, kerak
-        bo‘lsa ularni «Xavfsizlik» bo‘limidan tugating.
+        {{ t('usr.passwordNote', { section: t('usr.security') }) }}
       </p>
     </div>
 
     <template #footer>
-      <UiButton variant="ghost" @click="passwordOpen = false">Bekor qilish</UiButton>
+      <UiButton variant="ghost" @click="passwordOpen = false">{{ t('common.cancel') }}</UiButton>
       <UiButton @click="submitPassword">
         <UiIcon name="check" :size="16" />
-        Saqlash
+        {{ t('common.save') }}
       </UiButton>
     </template>
   </UiModal>

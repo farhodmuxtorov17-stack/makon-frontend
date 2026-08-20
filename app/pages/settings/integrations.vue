@@ -1,10 +1,17 @@
 <script setup lang="ts">
 type IntegrationStatus = 'CONNECTED' | 'DISCONNECTED' | 'ERROR'
 
+/** Ekranga chiqadigan matn: lug‘at kaliti yoki tarjima qilinmaydigan qiymat */
+interface Phrase {
+  k?: string
+  p?: Record<string, unknown>
+  s?: string
+}
+
 interface Integration {
   id: string
-  name: string
-  caption: string
+  nameKey: string
+  captionKey: string
   icon: string
   status: IntegrationStatus
   enabled: boolean
@@ -13,10 +20,10 @@ interface Integration {
   keyPrefix: string
   timeout: number
   retries: number
-  lastCheck: string
+  lastCheck: Phrase
   responseMs: number
   steps: string[]
-  failReason: string
+  failKey: string
 }
 
 interface CheckStep {
@@ -32,19 +39,20 @@ interface CheckState {
 
 interface ApiKey {
   id: string
+  nameKey?: string
   name: string
   prefix: string
   tail: string
   scope: string
   createdAt: string
-  lastUsed: string
+  lastUsed: Phrase
   status: 'ACTIVE' | 'REVOKED'
 }
 
 interface Webhook {
   id: string
   url: string
-  event: string
+  eventKey: string
   active: boolean
   lastCode: number
 }
@@ -52,45 +60,60 @@ interface Webhook {
 const auth = useAuthStore()
 const canAdmin = computed(() => auth.can('system.administer'))
 
-const SETTINGS_TABS = [
-  { label: 'Foydalanuvchilar', to: '/settings/users', icon: 'users' },
-  { label: 'Rollar va huquqlar', to: '/settings/roles', icon: 'shield' },
-  { label: 'Integratsiyalar', to: '/settings/integrations', icon: 'globe' },
-  { label: 'Ma’lumotnomalar', to: '/settings/reference-data', icon: 'layers' },
-  { label: 'Tizim sozlamalari', to: '/settings/system', icon: 'gear' },
-  { label: 'Audit jurnali', to: '/settings/audit', icon: 'clipboard' },
-]
+const { t } = useI18n()
+const { field, columns: labelColumns } = useAppLabels()
+
+const say = (p: Phrase) => (p.k ? t(p.k, p.p ?? {}) : (p.s ?? ''))
+
+const SETTINGS_TABS = computed(() => [
+  { label: t('nav.settingsUsers'), to: '/settings/users', icon: 'users' },
+  { label: t('nav.settingsRoles'), to: '/settings/roles', icon: 'shield' },
+  { label: t('nav.settingsIntegrations'), to: '/settings/integrations', icon: 'globe' },
+  { label: t('nav.settingsReference'), to: '/settings/reference-data', icon: 'layers' },
+  { label: t('nav.settingsSystem'), to: '/settings/system', icon: 'gear' },
+  { label: t('nav.settingsAudit'), to: '/settings/audit', icon: 'clipboard' },
+])
 const CURRENT_TAB = '/settings/integrations'
 
-const STATUS_META: Record<
+const STATUS_STYLE: Record<
   IntegrationStatus,
-  { label: string; badge: string; mark: string; shape: 'check' | 'bar' | 'cross' }
+  { key: string; badge: string; mark: string; shape: 'check' | 'bar' | 'cross' }
 > = {
   CONNECTED: {
-    label: 'Ulangan',
+    key: 'connection.connected',
     badge: 'bg-ok-50 text-ok-700 ring-ok-100',
     mark: 'text-ok-500',
     shape: 'check',
   },
   DISCONNECTED: {
-    label: 'Ulanmagan',
+    key: 'connection.disconnected',
     badge: 'bg-ink-100 text-ink-700 ring-ink-200',
     mark: 'text-ink-400',
     shape: 'bar',
   },
   ERROR: {
-    label: 'Xatolik',
+    key: 'connection.error',
     badge: 'bg-danger-50 text-danger-700 ring-danger-100',
     mark: 'text-danger-500',
     shape: 'cross',
   },
 }
 
+const STATUS_META = computed<
+  Record<IntegrationStatus, { label: string; badge: string; mark: string; shape: string }>
+>(() => ({
+  CONNECTED: { ...STATUS_STYLE.CONNECTED, label: t(STATUS_STYLE.CONNECTED.key) },
+  DISCONNECTED: { ...STATUS_STYLE.DISCONNECTED, label: t(STATUS_STYLE.DISCONNECTED.key) },
+  ERROR: { ...STATUS_STYLE.ERROR, label: t(STATUS_STYLE.ERROR.key) },
+}))
+
+const intName = (i: Integration | null | undefined) => (i ? t(i.nameKey) : '')
+
 const integrations = ref<Integration[]>([
   {
     id: 'soliq',
-    name: 'Soliq qo‘mitasi API',
-    caption: 'Hisob-faktura va soliq hisobotlari almashinuvi',
+    nameKey: 'cfg.intSoliq',
+    captionKey: 'cfg.intSoliqCaption',
     icon: 'doc',
     status: 'DISCONNECTED',
     enabled: false,
@@ -99,15 +122,15 @@ const integrations = ref<Integration[]>([
     keyTail: '9c30',
     timeout: 45,
     retries: 2,
-    lastCheck: '28.04.2025 16:20',
+    lastCheck: { s: '28.04.2025 16:20' },
     responseMs: 0,
-    steps: ['Kanal ochilishi', 'Tashkilot STIR tasdiqlash', 'Hisob-faktura formati muvofiqligi'],
-    failReason: '',
+    steps: ['cfg.stepChannelOpen', 'cfg.stepStirCheck', 'cfg.stepInvoiceFormat'],
+    failKey: '',
   },
   {
     id: 'bank',
-    name: 'Bank to‘lov shlyuzi',
-    caption: 'Ijara to‘lovlarini qabul qilish kanali',
+    nameKey: 'cfg.intBank',
+    captionKey: 'cfg.intBankCaption',
     icon: 'wallet',
     status: 'ERROR',
     enabled: true,
@@ -116,15 +139,15 @@ const integrations = ref<Integration[]>([
     keyTail: '71ad',
     timeout: 20,
     retries: 4,
-    lastCheck: 'Bugun 07:44',
+    lastCheck: { k: 'cfg.todayAt', p: { time: '07:44' } },
     responseMs: 0,
-    steps: ['Shlyuz bilan bog‘lanish', 'Merchant identifikatori', 'To‘lov kanali holati'],
-    failReason: 'Merchant identifikatori shlyuz tomonidan tasdiqlanmadi (javob kodi 401).',
+    steps: ['cfg.stepGatewayConnect', 'cfg.stepMerchantId', 'cfg.stepPayChannelState'],
+    failKey: 'cfg.failMerchant',
   },
   {
     id: 'sms',
-    name: 'SMS gateway',
-    caption: 'To‘lov va ariza bo‘yicha qisqa xabarlar',
+    nameKey: 'cfg.intSms',
+    captionKey: 'cfg.intSmsCaption',
     icon: 'send',
     status: 'DISCONNECTED',
     enabled: false,
@@ -133,15 +156,15 @@ const integrations = ref<Integration[]>([
     keyTail: '2e58',
     timeout: 15,
     retries: 2,
-    lastCheck: '12.04.2025 11:05',
+    lastCheck: { s: '12.04.2025 11:05' },
     responseMs: 0,
-    steps: ['Provayder bilan bog‘lanish', 'Jo‘natuvchi nomi tasdig‘i', 'Balans va limit holati'],
-    failReason: '',
+    steps: ['cfg.stepProviderConnect', 'cfg.stepSenderName', 'cfg.stepBalanceLimit'],
+    failKey: '',
   },
   {
     id: 'smtp',
-    name: 'E-pochta (SMTP)',
-    caption: 'Hisob-faktura va hujjatlarni yuborish',
+    nameKey: 'cfg.intSmtp',
+    captionKey: 'cfg.intSmtpCaption',
     icon: 'doc',
     status: 'DISCONNECTED',
     enabled: false,
@@ -150,15 +173,15 @@ const integrations = ref<Integration[]>([
     keyTail: '6d14',
     timeout: 25,
     retries: 3,
-    lastCheck: '05.05.2025 08:30',
+    lastCheck: { s: '05.05.2025 08:30' },
     responseMs: 0,
-    steps: ['SMTP server bilan bog‘lanish', 'TLS shifrlash kanali', 'Jo‘natuvchi manzil tasdig‘i'],
-    failReason: '',
+    steps: ['cfg.stepSmtpConnect', 'cfg.stepTls', 'cfg.stepSenderAddress'],
+    failKey: '',
   },
   {
     id: 'telegram',
-    name: 'Telegram bot',
-    caption: 'Bir martalik kod va bildirishnoma kanali',
+    nameKey: 'cfg.intTelegram',
+    captionKey: 'cfg.intTelegramCaption',
     icon: 'bell',
     status: 'CONNECTED',
     enabled: true,
@@ -167,10 +190,10 @@ const integrations = ref<Integration[]>([
     keyTail: '8f02',
     timeout: 10,
     retries: 2,
-    lastCheck: 'Bugun 09:02',
+    lastCheck: { k: 'cfg.todayAt', p: { time: '09:02' } },
     responseMs: 148,
-    steps: ['Kanal bilan bog‘lanish', 'Kanal a’zoligi', 'Xabar yuborish huquqi'],
-    failReason: '',
+    steps: ['cfg.stepChannelConnect', 'cfg.stepChannelMembership', 'cfg.stepSendRight'],
+    failKey: '',
   },
 ])
 
@@ -200,8 +223,8 @@ function runCheck(item: Integration) {
           if (last && willFail) {
             c.steps[idx]!.state = 'fail'
             c.phase = 'fail'
-            c.message = item.failReason
-            item.lastCheck = 'Hozirgina'
+            c.message = item.failKey
+            item.lastCheck = { k: 'common.justNow' }
             item.responseMs = 0
             return
           }
@@ -211,9 +234,9 @@ function runCheck(item: Integration) {
             return
           }
           c.phase = 'ok'
-          c.message = 'Ulanish muvaffaqiyatli: endpoint javob berdi va kalit tasdiqlandi.'
+          c.message = 'cfg.checkOk'
           item.status = 'CONNECTED'
-          item.lastCheck = 'Hozirgina'
+          item.lastCheck = { k: 'common.justNow' }
           item.responseMs = 120 + item.timeout * 3
         },
         650 * (idx + 1),
@@ -248,17 +271,17 @@ function saveConfig() {
   const target = configTarget.value
   if (!target) return
   if (!configEndpoint.value.trim()) {
-    configError.value = 'Endpoint manzilini kiriting'
+    configError.value = t('cfg.endpointRequired')
     return
   }
   const timeout = Number(configTimeout.value)
   const retries = Number(configRetries.value)
   if (!timeout || timeout < 5 || timeout > 180) {
-    configError.value = 'Timeout 5 dan 180 soniyagacha bo‘lishi kerak'
+    configError.value = t('cfg.timeoutRange')
     return
   }
   if (retries < 0 || retries > 9) {
-    configError.value = 'Qayta urinish soni 0 dan 9 gacha bo‘lishi kerak'
+    configError.value = t('cfg.retriesRange')
     return
   }
   target.endpoint = configEndpoint.value.trim()
@@ -272,9 +295,9 @@ function saveConfig() {
   checks.value[target.id] = {
     phase: 'ok',
     steps: [],
-    message: 'Sozlamalar saqlandi. Ulanishni qayta tekshiring.',
+    message: 'cfg.configSaved',
   }
-  target.lastCheck = 'Hozirgina'
+  target.lastCheck = { k: 'common.justNow' }
   configOpen.value = false
   configError.value = ''
 }
@@ -301,78 +324,93 @@ function confirmToggle() {
     checks.value[target.id] = {
       phase: 'ok',
       steps: [],
-      message: 'Integratsiya yoqildi. Ulanishni tekshirishni ishga tushiring.',
+      message: 'cfg.integrationEnabled',
     }
   }
-  target.lastCheck = 'Hozirgina'
+  target.lastCheck = { k: 'common.justNow' }
   toggleOpen.value = false
 }
 
 const keys = ref<ApiKey[]>([
   {
     id: 'k-01',
+    nameKey: 'cfg.keyPortal',
     name: 'Portal integratsiyasi',
     prefix: 'mk_live',
     tail: '3f8a',
     scope: 'To‘liq huquq',
     createdAt: '2026-04-16',
-    lastUsed: 'Bugun 09:41',
+    lastUsed: { k: 'cfg.todayAt', p: { time: '09:41' } },
     status: 'ACTIVE',
   },
   {
     id: 'k-02',
+    nameKey: 'cfg.keyAccounting',
     name: 'Buxgalteriya eksporti',
     prefix: 'mk_live',
     tail: 'c204',
     scope: 'Faqat o‘qish',
     createdAt: '2026-05-06',
-    lastUsed: 'Kecha 18:05',
+    lastUsed: { k: 'cfg.yesterdayAt', p: { time: '18:05' } },
     status: 'ACTIVE',
   },
   {
     id: 'k-03',
+    nameKey: 'cfg.mobileApp',
     name: 'Mobil ilova',
     prefix: 'mk_live',
     tail: '9b71',
     scope: 'To‘liq huquq',
     createdAt: '2026-02-22',
-    lastUsed: '02.08.2026',
+    lastUsed: { s: '02.08.2026' },
     status: 'ACTIVE',
   },
   {
     id: 'k-04',
+    nameKey: 'cfg.keyLegacyReports',
     name: 'Eski hisobot moduli',
     prefix: 'mk_live',
     tail: '10e6',
     scope: 'Faqat o‘qish',
     createdAt: '2025-11-09',
-    lastUsed: '20.05.2026',
+    lastUsed: { s: '20.05.2026' },
     status: 'REVOKED',
   },
 ])
 
-const keyColumns = [
-  { key: 'name', label: 'Nomi' },
-  { key: 'masked', label: 'Prefiks', width: '210px' },
-  { key: 'scope', label: 'Amal doirasi' },
-  { key: 'createdAt', label: 'Yaratilgan', width: '130px' },
-  { key: 'lastUsed', label: 'Oxirgi ishlatilgan', width: '160px' },
-  { key: 'status', label: 'Holati', width: '150px' },
-  { key: 'action', label: 'Amal', align: 'right' as const, width: '140px' },
-]
+const keyName = (k: { nameKey?: string; name: string }) => (k.nameKey ? t(k.nameKey) : k.name)
 
-const keyRows = computed(() =>
-  keys.value.map((k) => ({ ...k, masked: maskedKey(k.prefix, k.tail) })),
+const keyColumns = computed(() =>
+  labelColumns([
+    { key: 'name', field: 'name' },
+    { key: 'masked', field: 'prefix', width: '210px' },
+    { key: 'scope', field: 'scope' },
+    { key: 'createdAt', field: 'createdAt', width: '130px' },
+    { key: 'lastUsed', field: 'lastUsed', width: '160px' },
+    { key: 'status', field: 'status', width: '150px' },
+    { key: 'action', field: 'action', align: 'right', width: '140px' },
+  ]),
 )
 
-const SCOPE_OPTIONS = [
-  { value: 'To‘liq huquq', label: 'To‘liq huquq' },
-  { value: 'Faqat o‘qish', label: 'Faqat o‘qish' },
-]
+const keyRows = computed(() =>
+  keys.value.map((k) => ({ ...k, label: keyName(k), masked: maskedKey(k.prefix, k.tail) })),
+)
+
+/** Amal doirasi qiymati o‘zgarmaydi, faqat ko‘rinadigan nomi tarjima qilinadi */
+const SCOPE_KEY: Record<string, string> = {
+  'To‘liq huquq': 'cfg.scopeFull',
+  'Faqat o‘qish': 'cfg.scopeReadOnly',
+}
+
+const scopeLabel = (value: string) => t(SCOPE_KEY[value] ?? 'cfg.scopeFull')
+
+const SCOPE_OPTIONS = computed(() =>
+  Object.keys(SCOPE_KEY).map((value) => ({ value, label: scopeLabel(value) })),
+)
 
 const newKeyOpen = ref(false)
 const newKeyName = ref('')
-const newKeyScope = ref(SCOPE_OPTIONS[0]!.value)
+const newKeyScope = ref(SCOPE_OPTIONS.value[0]!.value)
 const newKeyError = ref('')
 
 const issuedOpen = ref(false)
@@ -383,7 +421,7 @@ let copyTimer: ReturnType<typeof setTimeout> | undefined
 
 function openNewKey() {
   newKeyName.value = ''
-  newKeyScope.value = SCOPE_OPTIONS[0]!.value
+  newKeyScope.value = SCOPE_OPTIONS.value[0]!.value
   newKeyError.value = ''
   newKeyOpen.value = true
 }
@@ -396,7 +434,7 @@ function freshTail() {
 
 function createKey() {
   if (!newKeyName.value.trim()) {
-    newKeyError.value = 'Kalit nomini kiriting'
+    newKeyError.value = t('cfg.keyNameRequired')
     return
   }
   const tail = freshTail()
@@ -408,7 +446,7 @@ function createKey() {
     tail,
     scope: newKeyScope.value,
     createdAt: '2026-08-18',
-    lastUsed: 'Hali ishlatilmagan',
+    lastUsed: { k: 'cfg.neverUsed' },
     status: 'ACTIVE',
   })
   issuedName.value = newKeyName.value.trim()
@@ -448,28 +486,28 @@ const webhooks = ref<Webhook[]>([
   {
     id: 'wh-01',
     url: 'https://portal.makon.uz/hooks/invoice',
-    event: 'Hisob-faktura to‘landi',
+    eventKey: 'cfg.hookInvoicePaid',
     active: true,
     lastCode: 200,
   },
   {
     id: 'wh-02',
     url: 'https://portal.makon.uz/hooks/contract',
-    event: 'Shartnoma imzolandi',
+    eventKey: 'cfg.hookContractSigned',
     active: true,
     lastCode: 200,
   },
   {
     id: 'wh-03',
     url: 'https://crm.makon.uz/hooks/application',
-    event: 'Yangi ariza qabul qilindi',
+    eventKey: 'cfg.hookApplicationReceived',
     active: true,
     lastCode: 200,
   },
   {
     id: 'wh-04',
     url: 'https://crm.makon.uz/hooks/service',
-    event: 'Servis arizasi yopildi',
+    eventKey: 'cfg.hookServiceClosed',
     active: false,
     lastCode: 0,
   },
@@ -496,8 +534,8 @@ function probeWebhook(w: Webhook) {
         code,
         ms,
         body: w.active
-          ? `{ "qabul_qilindi": true, "hodisa": "${w.event}", "kechikish_ms": ${ms} }`
-          : `{ "qabul_qilindi": false, "sabab": "Webhook to‘xtatilgan" }`,
+          ? `{ "qabul_qilindi": true, "hodisa": "${t(w.eventKey)}", "kechikish_ms": ${ms} }`
+          : `{ "qabul_qilindi": false, "sabab": "${t('cfg.webhookStopped')}" }`,
       }
     }, 900),
   )
@@ -525,20 +563,23 @@ const activeHooks = computed(() => webhooks.value.filter((w) => w.active).length
 
 <template>
   <AppTopbar
-    title="Integratsiyalar"
-    subtitle="Tashqi xizmatlar, API kalitlari va webhook kanallarini boshqarish"
-    :breadcrumb="[{ label: 'Sozlamalar', to: '/settings/users' }, { label: 'Integratsiyalar' }]"
+    :title="t('nav.settingsIntegrations')"
+    :subtitle="t('cfg.integrationsCaption')"
+    :breadcrumb="[
+      { label: t('nav.settings'), to: '/settings/users' },
+      { label: t('nav.settingsIntegrations') },
+    ]"
   >
     <template #actions>
       <span
         class="hidden items-center gap-2 rounded-pill bg-brand-50 px-3 py-1.5 text-[13px] font-semibold text-brand-700 ring-1 ring-inset ring-brand-200 lg:inline-flex"
       >
         <UiIcon name="globe" :size="15" />
-        {{ connectedCount }} / {{ integrations.length }} ulangan
+        {{ t('cfg.connectedOf', { n: connectedCount, total: integrations.length }) }}
       </span>
       <UiButton v-if="canAdmin" size="sm" @click="openNewKey">
         <UiIcon name="key" :size="16" />
-        Yangi kalit
+        {{ t('cfg.newKey') }}
       </UiButton>
     </template>
   </AppTopbar>
@@ -567,21 +608,47 @@ const activeHooks = computed(() => webhooks.value.filter((w) => w.active).length
       class="flex flex-wrap items-center gap-3 rounded-card bg-ink-50 px-4 py-3 text-[13px] text-ink-600 ring-1 ring-ink-200"
     >
       <UiIcon name="lock" :size="17" class="shrink-0" />
-      <span class="min-w-0 flex-1">
-        Integratsiya parametrlarini faqat tizim administratori o‘zgartira oladi. Sahifa kuzatuv
-        rejimida ochildi.
-      </span>
+      <span class="min-w-0 flex-1">{{ t('cfg.adminOnlyNote') }}</span>
     </div>
 
     <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-      <UiKpi label="Ulangan integratsiyalar" :value="String(connectedCount)" unit="ta" icon="check" tone="ok" />
-      <UiKpi label="Xatolik bilan" :value="String(errorCount)" unit="ta" icon="warning" tone="danger" />
-      <UiKpi label="Faol API kalitlari" :value="String(activeKeys)" unit="ta" icon="key" tone="brand" />
-      <UiKpi label="Faol webhooklar" :value="String(activeHooks)" unit="ta" icon="send" tone="violet" />
+      <UiKpi
+        :label="t('cfg.kpiConnected')"
+        :value="String(connectedCount)"
+        :unit="t('unitOf.pcs')"
+        icon="check"
+        tone="ok"
+      />
+      <UiKpi
+        :label="t('cfg.kpiWithError')"
+        :value="String(errorCount)"
+        :unit="t('unitOf.pcs')"
+        icon="warning"
+        tone="danger"
+      />
+      <UiKpi
+        :label="t('cfg.kpiActiveKeys')"
+        :value="String(activeKeys)"
+        :unit="t('unitOf.pcs')"
+        icon="key"
+        tone="brand"
+      />
+      <UiKpi
+        :label="t('cfg.kpiActiveHooks')"
+        :value="String(activeHooks)"
+        :unit="t('unitOf.pcs')"
+        icon="send"
+        tone="violet"
+      />
     </section>
 
     <section class="grid gap-5 lg:grid-cols-2 2xl:grid-cols-3">
-      <UiCard v-for="item in integrations" :key="item.id" :title="item.name" :subtitle="item.caption">
+      <UiCard
+        v-for="item in integrations"
+        :key="item.id"
+        :title="intName(item)"
+        :subtitle="t(item.captionKey)"
+      >
         <template #actions>
           <span
             class="inline-flex items-center gap-1.5 rounded-pill px-2.5 py-1 text-xs font-semibold ring-1 ring-inset"
@@ -630,25 +697,27 @@ const activeHooks = computed(() => webhooks.value.filter((w) => w.active).length
               </dd>
             </div>
             <div class="flex items-start justify-between gap-3">
-              <dt class="shrink-0 text-ink-500">Kalit</dt>
+              <dt class="shrink-0 text-ink-500">{{ t('cfg.key') }}</dt>
               <dd class="tabular min-w-0 truncate text-right font-semibold text-ink-700">
                 {{ maskedKey(item.keyPrefix, item.keyTail) }}
               </dd>
             </div>
             <div class="flex items-start justify-between gap-3">
-              <dt class="shrink-0 text-ink-500">Oxirgi sinov</dt>
-              <dd class="tabular text-right font-semibold text-ink-900">{{ item.lastCheck }}</dd>
+              <dt class="shrink-0 text-ink-500">{{ t('cfg.lastCheck') }}</dt>
+              <dd class="tabular text-right font-semibold text-ink-900">
+                {{ say(item.lastCheck) }}
+              </dd>
             </div>
             <div class="flex items-start justify-between gap-3">
-              <dt class="shrink-0 text-ink-500">Javob vaqti</dt>
+              <dt class="shrink-0 text-ink-500">{{ t('cfg.responseTime') }}</dt>
               <dd class="tabular text-right font-semibold text-ink-900">
                 {{ item.responseMs ? `${item.responseMs} ms` : '-' }}
               </dd>
             </div>
             <div class="flex items-start justify-between gap-3">
-              <dt class="shrink-0 text-ink-500">Timeout / qayta urinish</dt>
+              <dt class="shrink-0 text-ink-500">{{ t('cfg.timeoutRetries') }}</dt>
               <dd class="tabular text-right font-semibold text-ink-700">
-                {{ item.timeout }} s · {{ item.retries }} marta
+                {{ t('cfg.timeoutRetriesValue', { t: item.timeout, r: item.retries }) }}
               </dd>
             </div>
           </dl>
@@ -681,7 +750,7 @@ const activeHooks = computed(() => webhooks.value.filter((w) => w.active).length
               "
               :size="14"
             />
-            {{ s.label }}
+            {{ t(s.label) }}
           </li>
         </ul>
 
@@ -699,15 +768,15 @@ const activeHooks = computed(() => webhooks.value.filter((w) => w.active).length
             :size="15"
             class="mt-0.5 shrink-0"
           />
-          {{ checks[item.id]!.message }}
+          {{ t(checks[item.id]!.message) }}
         </p>
 
         <p
-          v-else-if="item.status === 'ERROR' && !checks[item.id]"
+          v-else-if="item.status === 'ERROR' && !checks[item.id] && item.failKey"
           class="mt-3 flex items-start gap-2 rounded-field bg-danger-50 px-3 py-2.5 text-[13px] text-danger-700"
         >
           <UiIcon name="warning" :size="15" class="mt-0.5 shrink-0" />
-          {{ item.failReason }}
+          {{ t(item.failKey) }}
         </p>
 
         <div v-if="canAdmin" class="mt-4 grid gap-2.5">
@@ -719,12 +788,16 @@ const activeHooks = computed(() => webhooks.value.filter((w) => w.active).length
             @click="runCheck(item)"
           >
             <UiIcon :name="checks[item.id]?.phase === 'running' ? 'refresh' : 'send'" :size="15" />
-            {{ checks[item.id]?.phase === 'running' ? 'Tekshirilmoqda…' : 'Ulanishni tekshirish' }}
+            {{
+              checks[item.id]?.phase === 'running'
+                ? t('common.checking')
+                : t('cfg.checkConnection')
+            }}
           </UiButton>
 
           <UiButton variant="ghost" size="sm" block @click="openConfig(item)">
             <UiIcon name="gear" :size="15" />
-            Sozlash
+            {{ t('cfg.configure') }}
           </UiButton>
           <UiButton
             :variant="item.enabled ? 'danger' : 'success'"
@@ -733,11 +806,11 @@ const activeHooks = computed(() => webhooks.value.filter((w) => w.active).length
             @click="askToggle(item)"
           >
             <UiIcon :name="item.enabled ? 'x' : 'check'" :size="15" />
-            {{ item.enabled ? 'O‘chirib qo‘yish' : 'Yoqish' }}
+            {{ item.enabled ? t('cfg.turnOff') : t('cfg.turnOn') }}
           </UiButton>
 
           <p v-if="!item.enabled" class="text-center text-[12px] text-ink-500">
-            Integratsiya o‘chirilgan: tekshirish uchun avval yoqing
+            {{ t('cfg.disabledHint') }}
           </p>
         </div>
 
@@ -745,27 +818,31 @@ const activeHooks = computed(() => webhooks.value.filter((w) => w.active).length
           v-else
           class="mt-4 rounded-field bg-ink-50 px-3 py-2.5 text-center text-[12px] text-ink-500"
         >
-          Boshqaruv amallari administratorga ochiq
+          {{ t('cfg.adminActionsOnly') }}
         </p>
       </UiCard>
     </section>
 
     <UiCard
-      title="API kalitlari"
-      :subtitle="`${activeKeys} ta faol · ${keys.length} ta jami`"
+      :title="t('cfg.apiKeys')"
+      :subtitle="t('cfg.keysSummary', { active: activeKeys, total: keys.length })"
       flush
       :padded="false"
     >
       <template #actions>
         <UiButton v-if="canAdmin" size="sm" @click="openNewKey">
           <UiIcon name="plus" :size="16" />
-          Yangi kalit
+          {{ t('cfg.newKey') }}
         </UiButton>
       </template>
 
-      <UiTable :columns="keyColumns" :rows="keyRows" empty="API kaliti yaratilmagan">
+      <UiTable :columns="keyColumns" :rows="keyRows" :empty="t('empty.noApiKeys')">
         <template #cell-name="{ row }">
-          <span class="font-semibold text-ink-900">{{ row.name }}</span>
+          <span class="font-semibold text-ink-900">{{ row.label }}</span>
+        </template>
+
+        <template #cell-scope="{ row }">
+          <span class="text-[13px] text-ink-700">{{ scopeLabel(row.scope) }}</span>
         </template>
 
         <template #cell-masked="{ row }">
@@ -777,7 +854,7 @@ const activeHooks = computed(() => webhooks.value.filter((w) => w.active).length
         </template>
 
         <template #cell-lastUsed="{ row }">
-          <span class="tabular text-[13px]">{{ row.lastUsed }}</span>
+          <span class="tabular text-[13px]">{{ say(row.lastUsed) }}</span>
         </template>
 
         <template #cell-status="{ row }">
@@ -812,7 +889,7 @@ const activeHooks = computed(() => webhooks.value.filter((w) => w.active).length
                 stroke-linecap="round"
               />
             </svg>
-            {{ row.status === 'ACTIVE' ? 'Faol' : 'Bekor qilingan' }}
+            {{ row.status === 'ACTIVE' ? t('common.active') : t('cfg.revoked') }}
           </span>
         </template>
 
@@ -824,21 +901,20 @@ const activeHooks = computed(() => webhooks.value.filter((w) => w.active).length
             @click="askRevoke(row.id)"
           >
             <UiIcon name="trash" :size="15" />
-            Bekor qilish
+            {{ t('cfg.revoke') }}
           </UiButton>
           <span v-else class="text-[12px] text-ink-400">-</span>
         </template>
       </UiTable>
 
       <div class="border-t border-ink-200 bg-surface-sunken px-5 py-3.5 text-[13px] text-ink-600">
-        Kalitning to‘liq qiymati faqat yaratilgan paytda bir marta ko‘rsatiladi, keyin esa
-        prefiks ko‘rinishida saqlanadi.
+        {{ t('cfg.keyValueNote') }}
       </div>
     </UiCard>
 
     <UiCard
-      title="Webhook kanallari"
-      :subtitle="`${activeHooks} ta faol kanal`"
+      :title="t('cfg.webhooks')"
+      :subtitle="t('cfg.activeChannels', { n: activeHooks })"
       flush
       :padded="false"
     >
@@ -856,7 +932,9 @@ const activeHooks = computed(() => webhooks.value.filter((w) => w.active).length
               <span class="tabular block truncate text-[14px] font-semibold text-ink-900">
                 {{ w.url }}
               </span>
-              <span class="block truncate text-[12px] text-ink-500">Hodisa: {{ w.event }}</span>
+              <span class="block truncate text-[12px] text-ink-500">
+                {{ t('cfg.eventLabel', { event: t(w.eventKey) }) }}
+              </span>
             </span>
 
             <span
@@ -875,7 +953,7 @@ const activeHooks = computed(() => webhooks.value.filter((w) => w.active).length
                 <circle v-if="w.active" cx="6" cy="6" r="4" fill="currentColor" />
                 <rect v-else x="1.8" y="4.6" width="8.4" height="2.8" rx="1.4" fill="currentColor" />
               </svg>
-              {{ w.active ? 'Faol' : 'To‘xtatilgan' }}
+              {{ w.active ? t('common.active') : t('status.listing.PAUSED') }}
             </span>
 
             <span
@@ -896,10 +974,12 @@ const activeHooks = computed(() => webhooks.value.filter((w) => w.active).length
                 @click="probeWebhook(w)"
               >
                 <UiIcon name="send" :size="15" />
-                {{ probes[w.id]?.phase === 'sending' ? 'Yuborilmoqda…' : 'Sinov so‘rovi yuborish' }}
+                {{
+                  probes[w.id]?.phase === 'sending' ? t('cfg.sending') : t('cfg.sendTestRequest')
+                }}
               </UiButton>
               <UiButton variant="ghost" size="sm" @click="toggleWebhook(w)">
-                {{ w.active ? 'To‘xtatish' : 'Faollashtirish' }}
+                {{ w.active ? t('cfg.pause') : t('cfg.activate') }}
               </UiButton>
             </span>
           </div>
@@ -940,8 +1020,8 @@ const activeHooks = computed(() => webhooks.value.filter((w) => w.active).length
                 />
                 {{
                   probes[w.id]!.phase === 'sending'
-                    ? 'So‘rov yuborilmoqda…'
-                    : `Javob: HTTP ${probes[w.id]!.code}`
+                    ? t('cfg.requestSending')
+                    : t('cfg.responseHttp', { code: probes[w.id]!.code })
                 }}
               </span>
               <span
@@ -960,27 +1040,32 @@ const activeHooks = computed(() => webhooks.value.filter((w) => w.active).length
       </ul>
 
       <div class="border-t border-ink-200 bg-surface-sunken px-5 py-3.5 text-[13px] text-ink-600">
-        Sinov so‘rovi kanalning javob kodi va kechikishini tekshiradi, haqiqiy hodisa
-        yaratilmaydi.
+        {{ t('cfg.testRequestNote') }}
       </div>
     </UiCard>
   </main>
 
   <UiModal
     v-model="configOpen"
-    :title="configTarget ? `${configTarget.name} sozlamalari` : 'Integratsiya sozlamalari'"
-    subtitle="Parametrlar saqlangach ulanishni qayta tekshiring"
+    :title="
+      configTarget
+        ? t('cfg.integrationSettingsOf', { name: intName(configTarget) })
+        : t('cfg.integrationSettings')
+    "
+    :subtitle="t('cfg.configCaption')"
   >
     <div class="space-y-4">
-      <UiField label="Endpoint manzili" required>
+      <UiField :label="t('cfg.endpointAddress')" required>
         <UiInput v-model="configEndpoint" />
       </UiField>
 
       <UiField
-        label="Maxfiy kalit"
+        :label="t('cfg.secretKey')"
         :hint="
           configTarget
-            ? `Joriy kalit: ${maskedKey(configTarget.keyPrefix, configTarget.keyTail)}, bo‘sh qoldirilsa o‘zgarmaydi`
+            ? t('cfg.currentKeyHint', {
+                key: maskedKey(configTarget.keyPrefix, configTarget.keyTail),
+              })
             : ''
         "
       >
@@ -988,13 +1073,13 @@ const activeHooks = computed(() => webhooks.value.filter((w) => w.active).length
           <UiInput
             v-model="configKey"
             :type="configShowKey ? 'text' : 'password'"
-            placeholder="Yangi kalitni kiriting"
+            :placeholder="t('cfg.enterNewKey')"
             class="min-w-0 flex-1"
           />
           <button
             type="button"
             class="grid size-11 shrink-0 place-items-center rounded-field text-ink-500 ring-1 ring-inset ring-ink-200 transition-colors hover:text-brand-600 hover:ring-brand-300"
-            :aria-label="configShowKey ? 'Kalitni yashirish' : 'Kalitni ko‘rsatish'"
+            :aria-label="configShowKey ? t('cfg.hideKey') : t('cfg.showKey')"
             @click="configShowKey = !configShowKey"
           >
             <UiIcon :name="configShowKey ? 'x' : 'eye'" :size="18" />
@@ -1003,10 +1088,10 @@ const activeHooks = computed(() => webhooks.value.filter((w) => w.active).length
       </UiField>
 
       <div class="grid gap-4 sm:grid-cols-2">
-        <UiField label="Timeout" required hint="Soniyalarda (5–180)">
+        <UiField label="Timeout" required :hint="t('cfg.hintSeconds')">
           <UiInput v-model="configTimeout" type="number" />
         </UiField>
-        <UiField label="Qayta urinish soni" required hint="0 dan 9 gacha">
+        <UiField :label="t('cfg.retriesCount')" required :hint="t('cfg.hintZeroToNine')">
           <UiInput v-model="configRetries" type="number" />
         </UiField>
       </div>
@@ -1015,75 +1100,77 @@ const activeHooks = computed(() => webhooks.value.filter((w) => w.active).length
     </div>
 
     <template #footer>
-      <UiButton variant="ghost" @click="configOpen = false">Bekor qilish</UiButton>
+      <UiButton variant="ghost" @click="configOpen = false">{{ t('common.cancel') }}</UiButton>
       <UiButton @click="saveConfig">
         <UiIcon name="check" :size="16" />
-        Saqlash
+        {{ t('common.save') }}
       </UiButton>
     </template>
   </UiModal>
 
   <UiModal
     v-model="toggleOpen"
-    :title="toggleTarget?.enabled ? 'Integratsiyani o‘chirib qo‘yish' : 'Integratsiyani yoqish'"
+    :title="toggleTarget?.enabled ? t('cfg.disableIntegration') : t('cfg.enableIntegration')"
     size="sm"
   >
     <p class="text-[14px] leading-relaxed text-ink-700">
       <template v-if="toggleTarget?.enabled">
-        «{{ toggleTarget?.name }}» kanali o‘chiriladi: ushbu xizmat orqali ma’lumot almashinuvi
-        to‘xtaydi va holat «Ulanmagan» ga o‘tadi.
+        {{ t('cfg.disableIntegrationText', { name: intName(toggleTarget) }) }}
       </template>
       <template v-else>
-        «{{ toggleTarget?.name }}» kanali yoqiladi. Yoqilgandan so‘ng ulanishni tekshirib,
-        holatni tasdiqlang.
+        {{ t('cfg.enableIntegrationText', { name: intName(toggleTarget) }) }}
       </template>
     </p>
 
     <template #footer>
-      <UiButton variant="ghost" @click="toggleOpen = false">Bekor qilish</UiButton>
+      <UiButton variant="ghost" @click="toggleOpen = false">{{ t('common.cancel') }}</UiButton>
       <UiButton :variant="toggleTarget?.enabled ? 'danger' : 'success'" @click="confirmToggle">
-        {{ toggleTarget?.enabled ? 'O‘chirib qo‘yish' : 'Yoqish' }}
+        {{ toggleTarget?.enabled ? t('cfg.turnOff') : t('cfg.turnOn') }}
       </UiButton>
     </template>
   </UiModal>
 
   <UiModal
     v-model="newKeyOpen"
-    title="Yangi API kaliti"
-    subtitle="Kalit qiymati faqat bir marta ko‘rsatiladi"
+    :title="t('cfg.newApiKey')"
+    :subtitle="t('cfg.keyShownOnce')"
   >
     <div class="space-y-4">
-      <UiField label="Kalit nomi" required :error="newKeyError">
-        <UiInput v-model="newKeyName" placeholder="Qaysi tizim uchun ishlatilishini yozing" />
+      <UiField :label="t('cfg.keyName')" required :error="newKeyError">
+        <UiInput v-model="newKeyName" :placeholder="t('cfg.keyNamePlaceholder')" />
       </UiField>
-      <UiField label="Amal doirasi" required>
+      <UiField :label="field('scope')" required>
         <UiSelect v-model="newKeyScope" :options="SCOPE_OPTIONS" />
       </UiField>
-      <p class="rounded-field bg-surface-sunken px-3.5 py-3 text-[13px] text-ink-600">
-        Kalit prefiksi <b class="text-ink-900">mk_live</b> bo‘ladi va reyestrda faqat niqoblangan
-        ko‘rinishda saqlanadi.
-      </p>
+      <i18n-t
+        keypath="cfg.keyPrefixNote"
+        tag="p"
+        scope="global"
+        class="rounded-field bg-surface-sunken px-3.5 py-3 text-[13px] text-ink-600"
+      >
+        <template #prefix><b class="text-ink-900">mk_live</b></template>
+      </i18n-t>
     </div>
 
     <template #footer>
-      <UiButton variant="ghost" @click="newKeyOpen = false">Bekor qilish</UiButton>
+      <UiButton variant="ghost" @click="newKeyOpen = false">{{ t('common.cancel') }}</UiButton>
       <UiButton @click="createKey">
         <UiIcon name="key" :size="16" />
-        Kalitni yaratish
+        {{ t('cfg.createKey') }}
       </UiButton>
     </template>
   </UiModal>
 
   <UiModal
     v-model="issuedOpen"
-    title="Kalit yaratildi"
-    subtitle="Qiymat faqat hozir ko‘rsatiladi, xavfsiz joyga ko‘chirib oling"
+    :title="t('cfg.keyCreated')"
+    :subtitle="t('cfg.keyCopyNow')"
     size="sm"
   >
     <div class="space-y-4">
-      <p class="text-[13px] text-ink-600">
-        «<b class="text-ink-900">{{ issuedName }}</b>» kaliti faol holatda reyestrga qo‘shildi.
-      </p>
+      <i18n-t keypath="cfg.keyAdded" tag="p" scope="global" class="text-[13px] text-ink-600">
+        <template #name><b class="text-ink-900">{{ issuedName }}</b></template>
+      </i18n-t>
 
       <div class="flex items-center gap-2">
         <span
@@ -1093,30 +1180,28 @@ const activeHooks = computed(() => webhooks.value.filter((w) => w.active).length
         </span>
         <UiButton variant="secondary" @click="copyIssued">
           <UiIcon :name="copied ? 'check' : 'doc'" :size="16" />
-          {{ copied ? 'Nusxalandi' : 'Nusxalash' }}
+          {{ copied ? t('common.copied') : t('common.copy') }}
         </UiButton>
       </div>
 
       <p class="flex items-start gap-2 rounded-field bg-warn-50 px-3.5 py-3 text-[13px] text-warn-700">
         <UiIcon name="warning" :size="16" class="mt-0.5 shrink-0" />
-        Oyna yopilgach kalit qiymati qayta ko‘rsatilmaydi. Yo‘qotilgan kalitni bekor qilib, yangisini
-        yaratish kerak bo‘ladi.
+        {{ t('cfg.keyLostNote') }}
       </p>
     </div>
 
     <template #footer>
-      <UiButton @click="issuedOpen = false">Tushunarli</UiButton>
+      <UiButton @click="issuedOpen = false">{{ t('tour.done') }}</UiButton>
     </template>
   </UiModal>
 
-  <UiModal v-model="revokeOpen" title="Kalitni bekor qilish" size="sm">
+  <UiModal v-model="revokeOpen" :title="t('cfg.revokeKey')" size="sm">
     <p class="text-[14px] leading-relaxed text-ink-700">
-      «{{ revokeTarget?.name }}» kaliti bekor qilinadi va u orqali kelayotgan barcha so‘rovlar rad
-      etiladi. Amalni qaytarib bo‘lmaydi.
+      {{ t('cfg.revokeKeyText', { name: revokeTarget ? keyName(revokeTarget) : '' }) }}
     </p>
     <template #footer>
-      <UiButton variant="ghost" @click="revokeOpen = false">Bekor qilish</UiButton>
-      <UiButton variant="danger" @click="confirmRevoke">Kalitni bekor qilish</UiButton>
+      <UiButton variant="ghost" @click="revokeOpen = false">{{ t('common.cancel') }}</UiButton>
+      <UiButton variant="danger" @click="confirmRevoke">{{ t('cfg.revokeKey') }}</UiButton>
     </template>
   </UiModal>
 </template>

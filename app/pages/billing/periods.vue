@@ -13,7 +13,7 @@ import {
 import { METERS } from '~/data/operations'
 import { UNITS, type Unit } from '~/data/units'
 import { TONE_BADGE } from '~/constants/statuses'
-import { num, percent, sum, sumShort, todayIso } from '~/utils/format'
+import { num, percent, todayIso } from '~/utils/format'
 
 /**
  * Hisob-faktura chiqarish va davrni yopish moliyaviy amal. Bo'limni ko'rish
@@ -24,7 +24,9 @@ import { num, percent, sum, sumShort, todayIso } from '~/utils/format'
 const auth = useAuthStore()
 const canIssue = computed(() => auth.can('invoice.create'))
 
-const { field, moduleCaption, moduleTitle, sectionLabel } = useAppLabels()
+const { money, moneyShort, field, moduleCaption, moduleTitle, monthName, sectionLabel } =
+  useAppLabels()
+const { t } = useI18n()
 
 const MONTHS = [
   'Yanvar',
@@ -183,9 +185,9 @@ const periods = computed<PeriodRow[]>(() =>
 )
 
 const stateTabs = computed(() => [
-  { value: 'all', label: 'Barchasi', count: periods.value.length },
-  { value: 'open', label: 'Ochiq', count: periods.value.filter((p) => !p.closed).length },
-  { value: 'closed', label: 'Yopilgan', count: periods.value.filter((p) => p.closed).length },
+  { value: 'all', label: t('tab.all'), count: periods.value.length },
+  { value: 'open', label: t('tab.open'), count: periods.value.filter((p) => !p.closed).length },
+  { value: 'closed', label: t('tab.closed'), count: periods.value.filter((p) => p.closed).length },
 ])
 
 /** Jadvalda eng yangi davr yuqorida turadi */
@@ -199,11 +201,21 @@ const filtered = computed(() =>
 
 const columns = computed(() => [
   { key: 'label', label: field('period', 'Davr') },
-  { key: 'contracts', label: 'Shartnomalar soni', align: 'right' as const, numeric: true },
-  { key: 'invoices', label: 'Hisob-faktura soni', align: 'right' as const, numeric: true },
-  { key: 'total', label: 'Jami summa', align: 'right' as const, numeric: true },
+  {
+    key: 'contracts',
+    label: field('contractCount', 'Shartnomalar soni'),
+    align: 'right' as const,
+    numeric: true,
+  },
+  {
+    key: 'invoices',
+    label: field('invoiceCount', 'Hisob-faktura soni'),
+    align: 'right' as const,
+    numeric: true,
+  },
+  { key: 'total', label: field('totalAmount', 'Jami summa'), align: 'right' as const, numeric: true },
   { key: 'state', label: field('status', 'Holat') },
-  { key: 'actions', label: 'Amallar', align: 'right' as const },
+  { key: 'actions', label: field('actions', 'Amallar'), align: 'right' as const },
 ])
 
 const rows = computed(() =>
@@ -225,10 +237,12 @@ const generatedCount = computed(() => periods.value.reduce((s, p) => s + p.invoi
 
 /** Diagrammada oxirgi 12 davr: undan uzunda ustunlar o‘qilmay qoladi */
 const chartPeriods = computed(() => periods.value.slice(-12))
-const chartLabels = computed(() => chartPeriods.value.map((p) => p.label.split(' ')[0] ?? p.label))
+const chartLabels = computed(() =>
+  chartPeriods.value.map((p) => monthName(Number(p.key.slice(5)))),
+)
 const chartSeries = computed(() => [
   {
-    label: 'Hisoblangan summa',
+    label: t('bil.chargedAmount'),
     tone: 'brand' as const,
     values: chartPeriods.value.map((p) => Math.round(p.total / 1_000_000)),
   },
@@ -343,11 +357,15 @@ function applyConfirm() {
     const created = generate(p.key)
     const amount = created.reduce((s, i) => s + i.total, 0)
     banner.value = created.length
-      ? `${p.label} davri uchun ${num(created.length)} ta hisob-faktura shakllantirildi, jami ${sum(amount)}.`
-      : `${p.label} davrida yangi hujjat yaratilmadi: barcha faol shartnomalar bo‘yicha hisob-faktura allaqachon mavjud.`
+      ? t('bil.generatedBanner', {
+          period: p.label,
+          n: num(created.length),
+          amount: money(amount),
+        })
+      : t('bil.nothingGeneratedBanner', { period: p.label })
   } else {
     if (!closedKeys.value.includes(p.key)) closedKeys.value = [...closedKeys.value, p.key]
-    banner.value = `${p.label} davri yopildi. Ushbu davrga yangi hisob-faktura qo‘shilmaydi.`
+    banner.value = t('bil.periodClosedBanner', { period: p.label })
   }
 
   confirmOpen.value = false
@@ -369,12 +387,16 @@ const nextKey = shiftKey(CURRENT_KEY, 1)
 const newYear = ref(nextKey.slice(0, 4))
 const newMonth = ref(MONTHS[Number(nextKey.slice(5)) - 1] ?? MONTHS[0]!)
 
-const yearOptions = [0, 1].map((offset) => {
-  const year = Number(CURRENT_KEY.slice(0, 4)) + offset
-  return { value: String(year), label: `${year}-yil` }
-})
+const yearOptions = computed(() =>
+  [0, 1].map((offset) => {
+    const year = Number(CURRENT_KEY.slice(0, 4)) + offset
+    return { value: String(year), label: t('bil.yearLabel', { year: String(year) }) }
+  }),
+)
 
-const monthOptions = MONTHS.map((m) => ({ value: m, label: m }))
+const monthOptions = computed(() =>
+  MONTHS.map((m, i) => ({ value: m, label: monthName(i + 1) })),
+)
 
 const newKey = computed(() => keyOfLabel(`${newMonth.value} ${newYear.value}`))
 const duplicate = computed(() => periodKeys.value.includes(newKey.value))
@@ -382,7 +404,7 @@ const duplicate = computed(() => periodKeys.value.includes(newKey.value))
 function createPeriod() {
   if (duplicate.value || !newKey.value) return
   extraKeys.value = [...extraKeys.value, newKey.value]
-  banner.value = `${labelOfKey(newKey.value)} hisob davri ochildi.`
+  banner.value = t('bil.periodOpenedBanner', { period: labelOfKey(newKey.value) })
   createOpen.value = false
 }
 </script>
@@ -399,11 +421,11 @@ function createPeriod() {
     <template #actions>
       <UiButton variant="secondary" size="sm" to="/billing/invoices">
         <UiIcon name="doc" :size="16" />
-        Hisob-fakturalar
+        {{ moduleTitle('invoices', 'Hisob-fakturalar') }}
       </UiButton>
       <UiButton v-if="canIssue" size="sm" @click="createOpen = true">
         <UiIcon name="plus" :size="16" />
-        Yangi davr
+        {{ t('bil.newPeriod') }}
       </UiButton>
     </template>
   </AppTopbar>
@@ -418,7 +440,7 @@ function createPeriod() {
       <button
         type="button"
         class="rounded-lg p-1 text-ok-700 transition-colors hover:bg-ok-100"
-        aria-label="Xabarni yopish"
+        :aria-label="t('common.dismissMessage')"
         @click="banner = ''"
       >
         <UiIcon name="x" :size="16" />
@@ -427,63 +449,79 @@ function createPeriod() {
 
     <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <UiKpi
-        label="Jami davrlar"
+        :label="t('kpi.totalPeriods')"
         :value="num(periods.length)"
-        unit="ta"
+        :unit="t('common.count')"
         icon="calendar"
         tone="brand"
       />
-      <UiKpi label="Ochiq davrlar" :value="num(openCount)" unit="ta" icon="clock" tone="warn" />
-      <UiKpi label="Yopilgan davrlar" :value="num(closedCount)" unit="ta" icon="check" tone="ok" />
       <UiKpi
-        label="Hisoblangan summa"
-        :value="sumShort(totalCharged)"
+        :label="t('kpi.openPeriods')"
+        :value="num(openCount)"
+        :unit="t('common.count')"
+        icon="clock"
+        tone="warn"
+      />
+      <UiKpi
+        :label="t('kpi.closedPeriods')"
+        :value="num(closedCount)"
+        :unit="t('common.count')"
+        icon="check"
+        tone="ok"
+      />
+      <UiKpi
+        :label="t('bil.chargedAmount')"
+        :value="moneyShort(totalCharged)"
         icon="wallet"
         tone="violet"
       />
     </section>
 
     <UiCard
-      title="Hisob davrlari reyestri"
-      subtitle="Davr bo‘yicha shartnomalar, hisob-fakturalar va holat"
+      :title="t('bil.periodsRegistry')"
+      :subtitle="t('bil.periodsRegistryCaption')"
       flush
       :padded="false"
     >
       <div class="flex flex-wrap items-center justify-between gap-3 px-5 pb-4">
         <UiTabs v-model="stateFilter" :tabs="stateTabs" />
         <p class="text-[13px] text-ink-500">
-          Shakllantirilgan hisob-fakturalar:
-          <b class="tabular text-ink-800">{{ num(generatedCount) }} ta</b>
+          {{ t('bil.generatedInvoices') }}
+          <b class="tabular text-ink-800">
+            {{ t('common.countPcs', { n: num(generatedCount) }) }}
+          </b>
         </p>
       </div>
 
       <UiTable
         :columns="columns"
         :rows="rows"
-        empty="Ushbu holatdagi davr topilmadi"
+        :empty="t('empty.noPeriods')"
         @row-click="openDetail"
       >
         <template #cell-label="{ row }">
           <span class="font-semibold text-ink-900">{{ row.label }}</span>
         </template>
-        <template #cell-contracts="{ row }">{{ num(Number(row.contracts)) }} ta</template>
+        <template #cell-contracts="{ row }">
+          {{ t('common.countPcs', { n: num(Number(row.contracts)) }) }}
+        </template>
         <template #cell-invoices="{ row }">
           <span :class="Number(row.invoices) ? 'text-ink-900' : 'text-ink-400'">
-            {{ num(Number(row.invoices)) }} ta
+            {{ t('common.countPcs', { n: num(Number(row.invoices)) }) }}
           </span>
         </template>
-        <template #cell-total="{ row }">{{ sum(Number(row.total)) }}</template>
+        <template #cell-total="{ row }">{{ money(Number(row.total)) }}</template>
         <template #cell-state="{ row }">
           <span
             class="inline-flex items-center gap-1.5 rounded-pill px-2.5 py-1 text-xs font-semibold ring-1 ring-inset"
             :class="row.closed ? TONE_BADGE.neutral : TONE_BADGE.ok"
           >
             <UiIcon :name="row.closed ? 'lock' : 'check'" :size="12" />
-            {{ row.closed ? 'Yopilgan' : 'Ochiq' }}
+            {{ row.closed ? t('bil.stateClosed') : t('bil.stateOpen') }}
           </span>
         </template>
         <template #cell-actions="{ row }">
-          <span v-if="!canIssue" class="text-[12px] text-ink-500">Faqat kuzatuv</span>
+          <span v-if="!canIssue" class="text-[12px] text-ink-500">{{ t('bil.viewOnly') }}</span>
           <span v-else class="inline-flex items-center justify-end gap-2">
             <UiButton
               variant="secondary"
@@ -492,7 +530,7 @@ function createPeriod() {
               @click.stop="askGenerate(String(row.key))"
             >
               <UiIcon name="refresh" :size="15" />
-              Hisob-faktura shakllantirish
+              {{ t('bil.generateInvoices') }}
             </UiButton>
             <UiButton
               variant="subtle"
@@ -501,7 +539,7 @@ function createPeriod() {
               @click.stop="askClose(String(row.key))"
             >
               <UiIcon name="lock" :size="15" />
-              Davrni yopish
+              {{ t('bil.closePeriod') }}
             </UiButton>
           </span>
         </template>
@@ -509,90 +547,92 @@ function createPeriod() {
 
       <div class="border-t border-ink-100 px-5 py-3.5">
         <p class="text-[13px] text-ink-500">
-          Jami: <b class="text-ink-800">{{ rows.length }} ta</b> davr · umumiy summa
-          <b class="tabular text-ink-800">{{ sum(totalCharged) }}</b>
+          {{ t('common.totalColon') }}
+          <b class="text-ink-800">{{ t('common.countPcs', { n: rows.length }) }}</b>
+          {{ t('bil.periodsWord') }} · {{ t('bil.overallSum') }}
+          <b class="tabular text-ink-800">{{ money(totalCharged) }}</b>
         </p>
       </div>
     </UiCard>
 
-    <UiCard title="Davrlar bo‘yicha hisoblangan summa" subtitle="Oylar kesimida, mln so‘m">
+    <UiCard :title="t('bil.chargedByPeriod')" :subtitle="t('bil.chargedByPeriodCaption')">
       <UiBars
         :labels="chartLabels"
         :series="chartSeries"
         :height="200"
-        unit="qiymatlar mln so‘mda"
+        :unit="t('bil.valuesInMln')"
       />
     </UiCard>
 
     <UiModal
       v-model="confirmOpen"
       size="sm"
-      :title="confirmMode === 'generate' ? 'Hisob-faktura shakllantirish' : 'Davrni yopish'"
-      :subtitle="target ? `${target.label} hisob davri` : ''"
+      :title="confirmMode === 'generate' ? t('bil.generateInvoices') : t('bil.closePeriod')"
+      :subtitle="target ? t('bil.periodSubtitle', { period: target.label }) : ''"
     >
       <div v-if="target" class="space-y-4">
         <p class="text-[14px] leading-relaxed text-ink-700">
           <template v-if="confirmMode === 'generate'">
-            Ushbu davrda amalda bo‘lgan <b>{{ num(target.contracts) }} ta</b> faol ijara shartnomasi
-            bo‘yicha hujjat tekshiriladi. Hisob-fakturasi yo‘q
-            <b>{{ num(target.pending) }} ta</b> shartnomaga ijara haqi va tarif jadvali asosida yangi
-            hisob-faktura yaratiladi.
+            {{ t('bil.generateHint1') }}
+            <b>{{ t('common.countPcs', { n: num(target.contracts) }) }}</b>
+            {{ t('bil.generateHint2') }}
+            <b>{{ t('common.countPcs', { n: num(target.pending) }) }}</b>
+            {{ t('bil.generateHint3') }}
           </template>
           <template v-else>
-            Davr yopilgandan so‘ng unga yangi hisob-faktura qo‘shib bo‘lmaydi, summalar
-            hisobotlarga yakuniy sifatida uzatiladi.
+            {{ t('bil.closePeriodHint') }}
           </template>
         </p>
 
         <dl class="divide-y divide-ink-100 rounded-field bg-surface-sunken px-4">
           <div class="flex items-baseline justify-between gap-4 py-2.5">
-            <dt class="text-[13px] text-ink-500">Faol shartnomalar</dt>
+            <dt class="text-[13px] text-ink-500">{{ t('kpi.activeContracts') }}</dt>
             <dd class="tabular text-[14px] font-semibold text-ink-900">
-              {{ num(target.contracts) }} ta
+              {{ t('common.countPcs', { n: num(target.contracts) }) }}
             </dd>
           </div>
           <div class="flex items-baseline justify-between gap-4 py-2.5">
-            <dt class="text-[13px] text-ink-500">Joriy hisob-faktura soni</dt>
+            <dt class="text-[13px] text-ink-500">{{ t('bil.currentInvoiceCount') }}</dt>
             <dd class="tabular text-[14px] font-semibold text-ink-900">
-              {{ num(target.invoices) }} ta
+              {{ t('common.countPcs', { n: num(target.invoices) }) }}
             </dd>
           </div>
           <div
             v-if="confirmMode === 'generate'"
             class="flex items-baseline justify-between gap-4 py-2.5"
           >
-            <dt class="text-[13px] text-ink-500">Shakllantiriladi</dt>
+            <dt class="text-[13px] text-ink-500">{{ t('bil.willGenerate') }}</dt>
             <dd
               class="tabular text-[14px] font-semibold"
               :class="target.pending ? 'text-brand-600' : 'text-ink-400'"
             >
-              {{ num(target.pending) }} ta
+              {{ t('common.countPcs', { n: num(target.pending) }) }}
             </dd>
           </div>
           <div class="flex items-baseline justify-between gap-4 py-2.5">
-            <dt class="text-[13px] text-ink-500">Joriy summa</dt>
-            <dd class="tabular text-[14px] font-semibold text-ink-900">{{ sum(target.total) }}</dd>
+            <dt class="text-[13px] text-ink-500">{{ t('bil.currentAmount') }}</dt>
+            <dd class="tabular text-[14px] font-semibold text-ink-900">{{ money(target.total) }}</dd>
           </div>
         </dl>
       </div>
 
       <template #footer>
-        <UiButton variant="ghost" @click="confirmOpen = false">Bekor qilish</UiButton>
+        <UiButton variant="ghost" @click="confirmOpen = false">{{ t('common.cancel') }}</UiButton>
         <UiButton
           :variant="confirmMode === 'generate' ? 'primary' : 'danger'"
           :disabled="confirmMode === 'generate' && !target?.pending"
           @click="applyConfirm"
         >
           <UiIcon name="check" :size="16" />
-          {{ confirmMode === 'generate' ? 'Generatsiya qilish' : 'Davrni yopish' }}
+          {{ confirmMode === 'generate' ? t('bil.generate') : t('bil.closePeriod') }}
         </UiButton>
       </template>
     </UiModal>
 
     <UiModal
       v-model="detailOpen"
-      :title="detail ? detail.label : 'Hisob davri'"
-      subtitle="Davr ko‘rsatkichlari"
+      :title="detail ? detail.label : field('billingPeriod', 'Hisob davri')"
+      :subtitle="t('bil.periodMetrics')"
     >
       <div v-if="detail" class="space-y-5">
         <div class="flex items-center gap-3">
@@ -601,39 +641,41 @@ function createPeriod() {
             :class="detail.closed ? TONE_BADGE.neutral : TONE_BADGE.ok"
           >
             <UiIcon :name="detail.closed ? 'lock' : 'check'" :size="12" />
-            {{ detail.closed ? 'Yopilgan' : 'Ochiq' }}
+            {{ detail.closed ? t('bil.stateClosed') : t('bil.stateOpen') }}
           </span>
           <span class="text-[13px] text-ink-500">
-            Bajarilish:
+            {{ t('bil.completion') }}
             {{ percent(detail.contracts ? (detail.invoices / detail.contracts) * 100 : 0) }}
           </span>
         </div>
 
         <dl class="grid gap-4 sm:grid-cols-3">
           <div class="rounded-field bg-surface-sunken p-3.5">
-            <dt class="text-[12px] text-ink-500">Faol shartnomalar</dt>
+            <dt class="text-[12px] text-ink-500">{{ t('kpi.activeContracts') }}</dt>
             <dd class="tabular mt-1 text-[16px] font-bold text-ink-900">
-              {{ num(detail.contracts) }} ta
+              {{ t('common.countPcs', { n: num(detail.contracts) }) }}
             </dd>
           </div>
           <div class="rounded-field bg-surface-sunken p-3.5">
-            <dt class="text-[12px] text-ink-500">Hisob-fakturalar</dt>
+            <dt class="text-[12px] text-ink-500">
+              {{ moduleTitle('invoices', 'Hisob-fakturalar') }}
+            </dt>
             <dd class="tabular mt-1 text-[16px] font-bold text-ink-900">
-              {{ num(detail.invoices) }} ta
+              {{ t('common.countPcs', { n: num(detail.invoices) }) }}
             </dd>
           </div>
           <div class="rounded-field bg-surface-sunken p-3.5">
-            <dt class="text-[12px] text-ink-500">Jami summa</dt>
-            <dd class="tabular mt-1 text-[16px] font-bold text-ink-900">{{ sum(detail.total) }}</dd>
+            <dt class="text-[12px] text-ink-500">{{ field('totalAmount', 'Jami summa') }}</dt>
+            <dd class="tabular mt-1 text-[16px] font-bold text-ink-900">{{ money(detail.total) }}</dd>
           </div>
         </dl>
       </div>
 
       <template #footer>
-        <UiButton variant="ghost" @click="detailOpen = false">Yopish</UiButton>
+        <UiButton variant="ghost" @click="detailOpen = false">{{ t('common.close') }}</UiButton>
         <UiButton :to="`/billing/invoices?period=${detail ? detail.label : ''}`">
           <UiIcon name="doc" :size="16" />
-          Hisob-fakturalarni ko‘rish
+          {{ t('bil.viewInvoices') }}
         </UiButton>
       </template>
     </UiModal>
@@ -641,27 +683,27 @@ function createPeriod() {
     <UiModal
       v-model="createOpen"
       size="sm"
-      title="Yangi hisob davri"
-      subtitle="Yil va oyni tanlang, davr ochiq holatda yaratiladi"
+      :title="t('bil.newBillingPeriod')"
+      :subtitle="t('bil.newPeriodCaption')"
     >
       <div class="grid gap-4 sm:grid-cols-2">
-        <UiField label="Yil" required>
+        <UiField :label="t('filter.year')" required>
           <UiSelect v-model="newYear" :options="yearOptions" />
         </UiField>
         <UiField
-          label="Oy"
+          :label="t('filter.month')"
           required
-          :error="duplicate ? 'Bu davr allaqachon ochilgan' : undefined"
+          :error="duplicate ? t('bil.periodExists') : undefined"
         >
           <UiSelect v-model="newMonth" :options="monthOptions" />
         </UiField>
       </div>
 
       <template #footer>
-        <UiButton variant="ghost" @click="createOpen = false">Bekor qilish</UiButton>
+        <UiButton variant="ghost" @click="createOpen = false">{{ t('common.cancel') }}</UiButton>
         <UiButton :disabled="duplicate" @click="createPeriod">
           <UiIcon name="plus" :size="16" />
-          Davrni ochish
+          {{ t('bil.openPeriod') }}
         </UiButton>
       </template>
     </UiModal>

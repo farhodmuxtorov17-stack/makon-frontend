@@ -1,15 +1,13 @@
 <script setup lang="ts">
-import { LEASE_STATUS } from '~/constants/statuses'
 import { LEASE_FLOW, type LeaseStatus } from '~/stores/lease'
 
 const props = defineProps<{ status: LeaseStatus }>()
 
-const SHORT: Record<string, string> = {
-  YANGI: 'Yangi ariza',
-  SHARTNOMA_TAYYOR: 'Shartnoma tayyor',
-  DIDOX_YUBORILDI: 'Didox’ga yuborildi',
-  DIDOX_IMZOLANDI: 'Didox’da imzolandi',
-  FAOL: 'Ariza yopildi',
+const { t, statusLabel } = useAppLabels()
+
+/** Pog‘onada joy tor: bu holatlarning nomi qisqartirilgan shaklda chiqadi */
+const SHORT_KEY: Record<string, string> = {
+  SHARTNOMA_TAYYOR: 'ui.shortContractReady',
 }
 
 const rejected = computed(() => props.status === 'RAD_ETILDI')
@@ -19,13 +17,16 @@ const current = computed(() =>
 )
 
 const steps = computed(() =>
-  LEASE_FLOW.map((s, i) => ({
-    key: s,
-    label: SHORT[s] ?? LEASE_STATUS[s]?.label ?? s,
-    full: LEASE_STATUS[s]?.label ?? s,
-    done: !rejected.value && i < current.value,
-    active: !rejected.value && i === current.value,
-  })),
+  LEASE_FLOW.map((s, i) => {
+    const full = statusLabel('lease', s)
+    return {
+      key: s,
+      label: SHORT_KEY[s] ? t(SHORT_KEY[s]!) : full,
+      full,
+      done: !rejected.value && i < current.value,
+      active: !rejected.value && i === current.value,
+    }
+  }),
 )
 </script>
 
@@ -64,7 +65,7 @@ const steps = computed(() =>
       class="mt-3 inline-flex items-center gap-2 rounded-field bg-danger-50 px-3 py-2 text-[13px] font-semibold text-danger-700 ring-1 ring-inset ring-danger-100"
     >
       <UiIcon name="x" :size="15" />
-      Ariza rad etilgan: sikl to‘xtatildi
+      {{ t('ui.leaseRejectedNote') }}
     </p>
   </div>
 </template>

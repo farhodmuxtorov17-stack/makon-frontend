@@ -6,6 +6,8 @@ import { dateShort, timeOf } from '~/utils/format'
 const props = defineProps<{ item: LeaseCase; canCheck: boolean }>()
 const emit = defineEmits<{ check: [] }>()
 
+const { t, field, didoxLabel } = useAppLabels()
+
 const ticket = computed(() => props.item.didox)
 
 const signed = computed(() => ticket.value?.state === 'Imzolangan')
@@ -45,7 +47,7 @@ function downloadSigned() {
           </span>
           <div class="min-w-0">
             <p class="text-[12px] font-semibold uppercase tracking-wide text-ink-500">
-              Didox: tashqi imzolash xizmati
+              {{ t('ui.didoxService') }}
             </p>
             <p class="tabular mt-0.5 text-[16px] font-bold text-ink-900">{{ ticket.docNumber }}</p>
           </div>
@@ -55,23 +57,23 @@ function downloadSigned() {
           :class="STATE_CLASS[ticket.state]"
         >
           <UiIcon :name="STATE_ICON[ticket.state] ?? 'clock'" :size="14" />
-          {{ ticket.state }}
+          {{ didoxLabel(ticket.state) }}
         </span>
       </div>
 
       <dl class="mt-4 grid gap-x-6 sm:grid-cols-2">
         <div
           v-for="r in [
-            { l: 'Hujjat raqami', v: ticket.docNumber },
-            { l: 'Yuborilgan vaqti', v: `${dateShort(ticket.sentAt)} ${timeOf(ticket.sentAt)}` },
-            { l: 'Qabul qiluvchi', v: ticket.recipient },
-            { l: 'Qabul qiluvchi STIR', v: ticket.recipientTin },
-            { l: 'Yuborgan xodim', v: ticket.sentBy },
+            { l: field('documentNo'), v: ticket.docNumber },
+            { l: t('ui.sentAt'), v: `${dateShort(ticket.sentAt)} ${timeOf(ticket.sentAt)}` },
+            { l: field('recipient'), v: ticket.recipient },
+            { l: t('ui.recipientTin'), v: ticket.recipientTin },
+            { l: t('ui.sentBy'), v: ticket.sentBy },
             {
-              l: 'Oxirgi tekshiruv',
+              l: t('ui.lastCheck'),
               v: ticket.lastCheckedAt
                 ? `${dateShort(ticket.lastCheckedAt)} ${timeOf(ticket.lastCheckedAt)}`
-                : 'Tekshirilmagan',
+                : t('ui.notChecked'),
             },
           ]"
           :key="r.l"
@@ -84,14 +86,13 @@ function downloadSigned() {
 
       <p class="mt-4 flex items-start gap-2 rounded-field bg-white px-3.5 py-2.5 text-[13px] leading-relaxed text-ink-600 ring-1 ring-inset ring-ink-200">
         <UiIcon name="info" :size="15" class="mt-px shrink-0 text-brand-600" />
-        Imzolash Didox tomonida bajariladi, imzolovchini Didox o‘zi xabardor qiladi. MAKON
-        faqat hujjat holatini kuzatadi va imzolangan nusxani qabul qiladi.
+        {{ t('ui.didoxNote') }}
       </p>
 
       <div class="mt-4 flex flex-wrap gap-2.5">
         <UiButton v-if="canCheck && !signed" size="sm" @click="emit('check')">
           <UiIcon name="refresh" :size="15" />
-          Didox holatini tekshirish
+          {{ t('ui.checkDidoxState') }}
         </UiButton>
         <UiButton
           v-if="signed"
@@ -100,7 +101,7 @@ function downloadSigned() {
           @click="downloadSigned"
         >
           <UiIcon name="download" :size="15" />
-          Imzolangan hujjatni yuklab olish
+          {{ t('ui.downloadSigned') }}
         </UiButton>
       </div>
 
@@ -109,14 +110,14 @@ function downloadSigned() {
         class="mt-3 flex items-center gap-2 rounded-field bg-ok-50 px-3.5 py-2.5 text-[13px] font-semibold text-ok-700 ring-1 ring-inset ring-ok-100"
       >
         <UiIcon name="check" :size="15" />
-        {{ downloaded }} yuklab olindi, endi uni tizimga qaytadan yuklang
+        {{ t('ui.signedDownloadedHint', { file: downloaded }) }}
       </p>
     </div>
 
     <!-- Holat tarixi -->
     <div>
       <p class="mb-2.5 text-[12px] font-semibold uppercase tracking-wide text-ink-500">
-        Holat o‘zgarishi tarixi
+        {{ t('ui.stateHistory') }}
       </p>
       <ol class="relative space-y-4 pl-8">
         <span class="absolute bottom-2 left-[13px] top-2 w-px bg-ink-200" aria-hidden="true" />
@@ -129,7 +130,7 @@ function downloadSigned() {
           >
             <UiIcon :name="STATE_ICON[h.state] ?? 'clock'" :size="14" />
           </span>
-          <p class="text-[14px] font-semibold text-ink-900">{{ h.state }}</p>
+          <p class="text-[14px] font-semibold text-ink-900">{{ didoxLabel(h.state) }}</p>
           <p class="tabular mt-0.5 text-[12px] text-ink-500">
             {{ dateShort(h.at) }} {{ timeOf(h.at) }}
           </p>
@@ -142,8 +143,8 @@ function downloadSigned() {
   <UiEmpty
     v-else
     icon="external"
-    title="Hujjat Didox’ga yuborilmagan"
-    description="Shartnoma tayyor bo‘lgach, operator uni Didox orqali imzolashga yuboradi."
+    :title="t('ui.didoxEmptyTitle')"
+    :description="t('ui.didoxEmptyText')"
     compact
   />
 </template>

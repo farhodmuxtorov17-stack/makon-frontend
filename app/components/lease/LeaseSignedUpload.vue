@@ -10,6 +10,8 @@ const emit = defineEmits<{
   remove: []
 }>()
 
+const { t } = useI18n()
+
 const ACCEPTED = ['pdf', 'docx', 'doc']
 
 const input = ref<HTMLInputElement | null>(null)
@@ -30,11 +32,11 @@ async function onChange(event: Event) {
 
   const extension = (file.name.split('.').pop() ?? '').toLowerCase()
   if (!ACCEPTED.includes(extension)) {
-    error.value = `«.${extension || '-'}» formati qabul qilinmaydi. Didox’dan olingan imzolangan hujjatni PDF yoki DOCX ko‘rinishida yuklang.`
+    error.value = t('ui.uploadBadFormat', { ext: extension || '-' })
     return
   }
   if (file.size === 0) {
-    error.value = 'Tanlangan fayl bo‘sh, hujjatni qaytadan yuklab oling.'
+    error.value = t('ui.uploadEmptyFile')
     return
   }
 
@@ -94,7 +96,7 @@ async function copyHash() {
           v-if="!readonly"
           type="button"
           class="grid size-10 shrink-0 place-items-center rounded-field text-ink-500 transition-colors duration-150 hover:bg-white hover:text-danger-600"
-          aria-label="Yuklangan hujjatni olib tashlash"
+          :aria-label="t('ui.removeUploaded')"
           @click="emit('remove')"
         >
           <UiIcon name="trash" :size="17" />
@@ -103,7 +105,7 @@ async function copyHash() {
 
       <div class="mt-3 flex flex-wrap items-center gap-2 border-t border-ok-100 pt-3">
         <span class="text-[12px] font-semibold uppercase tracking-wide text-ink-500">
-          Fayl SHA-256
+          {{ t('ui.fileSha256') }}
         </span>
         <code class="tabular min-w-0 truncate rounded-[6px] bg-white px-2 py-1 text-[12px] text-ink-700">
           {{ document.hash.slice(0, 24) }}…{{ document.hash.slice(-8) }}
@@ -111,11 +113,11 @@ async function copyHash() {
         <button
           type="button"
           class="inline-flex min-h-9 items-center gap-1.5 rounded-field px-2.5 text-[12px] font-semibold text-brand-600 transition-colors duration-150 hover:bg-white"
-          aria-label="Nazorat yig‘indisidan nusxa olish"
+          :aria-label="t('ui.copyChecksum')"
           @click="copyHash"
         >
           <UiIcon :name="copied ? 'check' : 'clipboard'" :size="14" />
-          {{ copied ? 'Nusxalandi' : 'Nusxa olish' }}
+          {{ copied ? t('common.copied') : t('ui.copyShort') }}
         </button>
       </div>
     </div>
@@ -141,11 +143,10 @@ async function copyHash() {
         </span>
         <span class="min-w-0">
           <span class="block text-[14px] font-semibold text-ink-900">
-            {{ busy ? 'Fayl o‘qilmoqda…' : 'Imzolangan hujjatni tanlash' }}
+            {{ busy ? t('ui.readingFile') : t('ui.pickSigned') }}
           </span>
           <span class="mt-0.5 block text-[12px] leading-relaxed text-ink-500">
-            Didox’dan yuklab olingan PDF yoki DOCX fayl. Tizim fayldan SHA-256 nazorat
-            yig‘indisini hisoblaydi.
+            {{ t('ui.pickSignedHint') }}
           </span>
         </span>
       </button>
@@ -155,7 +156,7 @@ async function copyHash() {
         type="file"
         accept=".pdf,.docx,.doc,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         class="sr-only"
-        aria-label="Imzolangan hujjat fayli"
+        :aria-label="t('ui.signedFileAria')"
         @change="onChange"
       />
 
@@ -172,8 +173,8 @@ async function copyHash() {
     <UiEmpty
       v-else
       icon="doc"
-      title="Imzolangan hujjat yuklanmagan"
-      description="Didox holati «Imzolangan» bo‘lgach, operator imzolangan nusxani tizimga yuklaydi."
+      :title="t('ui.signedEmptyTitle')"
+      :description="t('ui.signedEmptyText')"
       compact
     />
   </div>

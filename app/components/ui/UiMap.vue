@@ -52,6 +52,8 @@ const emit = defineEmits<{
   markerHover: [id: string | null]
 }>()
 
+const { t } = useI18n()
+
 const TILE = 256
 
 /** Yuklab olingan plitkalar qamrovi, markaz shu chegaradan chiqmaydi */
@@ -537,7 +539,12 @@ function hideTile(e: Event) {
               ? 'scale-110 drop-shadow-[0_8px_14px_rgba(19,28,43,0.32)]'
               : 'drop-shadow-[0_4px_9px_rgba(19,28,43,0.26)]'
           "
-          :aria-label="`${g.items.length} ta obyekt shu atrofda. ${g.open ? 'Guruhni yig‘ish' : 'Guruhni ochish'}`"
+          :aria-label="
+            t('ui.clusterAria', {
+              count: g.items.length,
+              action: g.open ? t('ui.clusterCollapse') : t('ui.clusterExpand'),
+            })
+          "
           :aria-expanded="g.open"
           @click="openGroup(g)"
         >
@@ -690,7 +697,7 @@ function hideTile(e: Event) {
             :to="m.to"
             class="mt-2 inline-flex items-center gap-1 text-[13px] font-semibold text-brand-600 hover:text-brand-700"
           >
-            Obyektni ochish
+            {{ t('ui.openObject') }}
             <UiIcon name="chevronRight" :size="14" />
           </NuxtLink>
         </div>
@@ -715,7 +722,7 @@ function hideTile(e: Event) {
       <button
         type="button"
         class="grid size-11 place-items-center rounded-field bg-surface md:size-9 text-ink-700 shadow-card ring-1 ring-ink-200 transition-colors hover:bg-brand-50 hover:text-brand-600 disabled:opacity-40"
-        aria-label="Kattalashtirish"
+        :aria-label="t('ui.enlarge')"
         :disabled="zoom >= maxZoom"
         @click="setZoom(zoom + 1)"
       >
@@ -724,7 +731,7 @@ function hideTile(e: Event) {
       <button
         type="button"
         class="grid size-11 place-items-center rounded-field bg-surface md:size-9 text-ink-700 shadow-card ring-1 ring-ink-200 transition-colors hover:bg-brand-50 hover:text-brand-600 disabled:opacity-40"
-        aria-label="Kichraytirish"
+        :aria-label="t('ui.reduce')"
         :disabled="zoom <= minZoom"
         @click="setZoom(zoom - 1)"
       >
@@ -733,7 +740,7 @@ function hideTile(e: Event) {
       <button
         type="button"
         class="grid size-11 place-items-center rounded-field bg-surface md:size-9 text-ink-700 shadow-card ring-1 ring-ink-200 transition-colors hover:bg-brand-50 hover:text-brand-600"
-        aria-label="Barcha obyektlarni ko‘rsatish"
+        :aria-label="t('ui.showAllObjects')"
         @click="fit"
       >
         <UiIcon name="target" :size="18" />
