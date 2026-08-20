@@ -310,6 +310,8 @@ function submitCreate() {
     vacantUnits: units,
     gla,
     vacantArea: gla,
+    // Yangi obyektda hali shartnoma yo'q, shuning uchun egallangan maydon nol
+    occupiedArea: 0,
     occupancy: 0,
     monthlyRevenue: 0,
     debt: 0,

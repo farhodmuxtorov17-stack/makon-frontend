@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { BUILDINGS, PORTFOLIO_TOTALS, trendDelta, trendSpark } from '~/data/buildings'
-import { agingOf } from '~/data/business'
+import { INVOICES, agingOf } from '~/data/business'
 import { csvBlob, docxBlob, fileSlug, saveBlob } from '~/utils/docx'
 import { num, percent, sumShort, dateShort, todayIso, monthShift } from '~/utils/format'
 
@@ -155,20 +155,49 @@ const active = computed(() =>
   mode.value === 'single' ? (filtered.value.length ? [singleBuilding.value] : []) : filtered.value,
 )
 
+/**
+ * Davr filtri haqiqatan ishlaydi.
+ *
+ * Ilgari sana oralig'i faqat sarlavha va fayl nomiga tushardi: 2024-yil
+ * yanvar tanlansa ham ekranda o'sha 37.58 mlrd turaverardi, ya'ni kompaniya
+ * mavjud bo'lmagan davr uchun tushum ko'rsatilardi.
+ *
+ * Endi hisob-fakturadan chiqadigan ko'rsatkichlar tanlangan oraliqdagi
+ * hujjatlar bo'yicha hisoblanadi. Bandlik va maydon esa vaqt qatori emas,
+ * ular joriy holat, shuning uchun ular davr bilan o'zgarmaydi va ekranda
+ * shunday deb belgilanadi.
+ */
+const periodInvoices = computed(() => {
+  const names = new Set(active.value.map((b) => b.name))
+  return INVOICES.filter(
+    (inv) =>
+      names.has(inv.buildingName) &&
+      inv.issuedAt >= fromDate.value &&
+      inv.issuedAt <= toDate.value,
+  )
+})
+
 const totals = computed(() => {
   const list = active.value
   const gla = list.reduce((s, b) => s + b.gla, 0)
   const vacantArea = list.reduce((s, b) => s + b.vacantArea, 0)
-  const revenue = list.reduce((s, b) => s + b.monthlyRevenue, 0)
-  const debt = list.reduce((s, b) => s + b.debt, 0)
+  const occupiedArea = list.reduce((s, b) => s + b.occupiedArea, 0)
+
+  const period = periodInvoices.value
+  const billed = period.reduce((s, inv) => s + inv.total, 0)
+  const paid = period.reduce((s, inv) => s + inv.paid, 0)
+
   return {
     count: list.length,
     gla,
     vacantArea,
-    revenue,
-    debt,
-    occupied: gla - vacantArea,
-    occupancy: gla ? Math.round(((gla - vacantArea) / gla) * 100) : 0,
+    // Davr bo'yicha chiqarilgan summa; hujjat bo'lmasa nol ko'rsatiladi
+    revenue: billed,
+    debt: billed - paid,
+    invoices: period.length,
+    collection: billed ? Math.round((paid / billed) * 100) : 0,
+    occupied: occupiedArea,
+    occupancy: gla ? Math.round((occupiedArea / gla) * 100) : 0,
     sla: gla ? Math.round(list.reduce((s, b) => s + b.sla * b.gla, 0) / gla) : 0,
   }
 })

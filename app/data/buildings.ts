@@ -27,7 +27,9 @@ export interface Building {
   gla: number
   /** Bo‘sh unitlar maydoni, m² */
   vacantArea: number
-  /** Bandlik, %: maydon bo‘yicha (GLA dan bo‘sh maydon chegirilgani) */
+  /** Shartnoma bo‘yicha egallangan maydon, m² */
+  occupiedArea: number
+  /** Bandlik, %: egallangan maydonning umumiy maydondagi ulushi */
   occupancy: number
   monthlyRevenue: number
   /** Qarzdorlik: to‘lanmagan hisob-faktura qoldiqlari, INVOICES reyestridan */
@@ -61,6 +63,7 @@ export type DerivedBuildingKey =
   | 'vacantUnits'
   | 'gla'
   | 'vacantArea'
+  | 'occupiedArea'
   | 'occupancy'
   | 'debt'
   | 'serviceRequests'
@@ -179,6 +182,7 @@ function withRegistryStats(seed: BuildingSeed): Building {
   derive('vacantUnits', () => stats.value.vacantUnits)
   derive('gla', () => stats.value.gla)
   derive('vacantArea', () => stats.value.vacantArea)
+  derive('occupiedArea', () => stats.value.occupiedArea)
   derive('occupancy', () => stats.value.occupancy)
   derive('debt', () => debt.value)
   derive('serviceRequests', () => requests.value)
