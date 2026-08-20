@@ -607,33 +607,6 @@ function submitPdf() {
 
         <div class="min-w-0 space-y-5 xl:col-span-2">
           <UiCard
-            :title="t('obj.amenities')"
-            :subtitle="t('obj.amenitiesCaption')"
-          >
-            <div class="flex flex-wrap gap-2">
-              <span
-                v-for="a in building.amenities"
-                :key="a"
-                class="inline-flex items-center gap-2 rounded-pill bg-ok-50 px-3 py-1.5 text-[13px] font-medium text-ok-700 ring-1 ring-inset ring-ok-100"
-              >
-                <UiIcon name="check" :size="14" />
-                {{ a }}
-              </span>
-            </div>
-
-            <div class="mt-4 flex flex-wrap gap-2 border-t border-ink-100 pt-4">
-              <span
-                v-for="e in building.equipment"
-                :key="e"
-                class="inline-flex items-center gap-2 rounded-pill bg-ink-100 px-3 py-1.5 text-[13px] font-medium text-ink-700"
-              >
-                <UiIcon name="wrench" :size="14" />
-                {{ e }}
-              </span>
-            </div>
-          </UiCard>
-
-          <UiCard
             :title="field('floors')"
             :subtitle="t('obj.floorsCaption')"
             flush
