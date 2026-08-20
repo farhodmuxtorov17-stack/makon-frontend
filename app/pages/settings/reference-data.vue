@@ -629,7 +629,6 @@ function openAction(key: string) {
       n: draftRecords.value.length,
     });
     actionInfo.confirmLabel = t("common.exportAction");
-  } else {
   }
   actionOpen.value = true;
 }

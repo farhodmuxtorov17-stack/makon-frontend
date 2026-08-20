@@ -44,12 +44,6 @@ const visible = computed(() =>
 )
 
 /**
- * Panelda barcha 22 obyekt kartochkasi chiqarilardi va sahifa ikki yarim
- * ekranga cho'zilardi. Rahbarga diqqat talab qiladigan bir nechtasi kerak,
- * to'liq ro'yxat esa obyektlar reyestrida. Saralash: eng past bandlik va eng
- * katta qarzdorlik yuqorida.
- */
-/**
  * Rahbar panelida obyektning uch o'lchamli ko'rinishi. Ilgari 3D faqat
  * obyekt kartochkasi ichida edi va rahbar uni umuman ko'rmasdi. Bu yerda
  * portfeldagi istalgan obyektni tanlab, uchastkani darhol ko'rish mumkin.

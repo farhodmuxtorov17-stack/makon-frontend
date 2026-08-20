@@ -20,10 +20,6 @@ const { t } = useI18n()
 const { roleLabel } = useAppLabels()
 
 /**
- * Xodim hisoblarini super rahbar yaratadi va rolni hisobga biriktiradi,
- * shuning uchun kirish oynasida rol tanlanmaydi.
- */
-/**
  * Namoyish hisoblari. Parol shu yerda ochiq turadi, chunki bu frontend
  * prototipi: haqiqiy tekshiruv backend tomonida bo‘ladi. Muhimi, parol
  * TEKSHIRILADI: ilgari uzunligi yetarli bo‘lgan istalgan matn bilan

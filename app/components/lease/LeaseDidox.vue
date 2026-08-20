@@ -79,12 +79,6 @@ function downloadSigned() {
             { l: field('recipient'), v: ticket.recipient },
             { l: t('ui.recipientTin'), v: ticket.recipientTin },
             { l: t('ui.sentBy'), v: ticket.sentBy },
-            {
-              l: t('ui.lastCheck'),
-              v: ticket.lastCheckedAt
-                ? `${dateShort(ticket.lastCheckedAt)} ${timeOf(ticket.lastCheckedAt)}`
-                : t('ui.notChecked'),
-            },
           ]"
           :key="r.l"
           class="flex items-baseline justify-between gap-3 border-b border-ink-100 py-2.5 last:border-0"

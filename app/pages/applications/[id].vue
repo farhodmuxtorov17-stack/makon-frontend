@@ -710,8 +710,17 @@ const tourId = computed(
             </div>
             <div>
               <dt class="text-[12px] text-ink-500">STIR</dt>
-              <dd class="tabular mt-0.5 text-sm font-semibold text-ink-900">
-                {{ item.org.tin }}
+              <!--
+                Ochiq ariza formasi beshta maydondan iborat: STIR, e-pochta va
+                yuridik manzil unda so'ralmaydi. Operator ularni telefon
+                suhbatida aniqlaydi, shuning uchun bo'sh joy o'rniga shu haqda
+                yoziladi.
+              -->
+              <dd
+                class="mt-0.5 text-sm font-semibold"
+                :class="item.org.tin ? 'tabular text-ink-900' : 'text-ink-400'"
+              >
+                {{ item.org.tin || t("app2.clarifyByOperator") }}
               </dd>
             </div>
             <div>
@@ -748,8 +757,11 @@ const tourId = computed(
               <dt class="text-[12px] text-ink-500">
                 {{ t("app2.legalAddress") }}
               </dt>
-              <dd class="mt-0.5 text-sm font-semibold text-ink-900">
-                {{ item.org.address }}
+              <dd
+                class="mt-0.5 text-sm font-semibold"
+                :class="item.org.address ? 'text-ink-900' : 'text-ink-400'"
+              >
+                {{ item.org.address || t("app2.clarifyByOperator") }}
               </dd>
             </div>
             <div v-if="item.request.note" class="sm:col-span-2">
@@ -820,8 +832,10 @@ const tourId = computed(
                   </span>
                 </span>
               </a>
-              <a
-                :href="`mailto:${item.org.email}`"
+              <!-- E-pochta bo'lmasa havola emas, oddiy yozuv -->
+              <component
+                :is="item.org.email ? 'a' : 'div'"
+                :href="item.org.email ? `mailto:${item.org.email}` : undefined"
                 class="flex items-center gap-2.5 rounded-field transition-colors duration-150 hover:bg-white"
               >
                 <span
@@ -834,12 +848,13 @@ const tourId = computed(
                     t("common.email")
                   }}</span>
                   <span
-                    class="block truncate text-[13px] font-semibold text-brand-700"
+                    class="block truncate text-[13px] font-semibold"
+                    :class="item.org.email ? 'text-brand-700' : 'text-ink-400'"
                   >
-                    {{ item.org.email }}
+                    {{ item.org.email || t("app2.clarifyByOperator") }}
                   </span>
                 </span>
-              </a>
+              </component>
             </div>
 
             <UiButton

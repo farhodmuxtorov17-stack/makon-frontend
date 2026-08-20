@@ -73,10 +73,6 @@ export const ROLE_META: Record<Role, RoleMeta> = {
   },
 }
 
-/**
- * Amal huquqlari: marshrutga kirish huquqidan alohida. Hujjatdagi «Cheklov»
- * ustuni aynan shu jadval orqali kuchga kiradi.
- */
 /*
  * Huquqlar ijara jarayonining haqiqiy egalariga berilgan.
  *

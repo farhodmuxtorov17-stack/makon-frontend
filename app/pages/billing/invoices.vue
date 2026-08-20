@@ -287,11 +287,6 @@ function acceptPayment() {
 const createOpen = ref(false)
 
 /**
- * Hisob davri qo‘lda yozilmaydi: joriy oydan boshlab ochiq davrlar taklif
- * qilinadi. Yopilgan davr ro‘yxatga tushmaydi, chunki unga yangi hujjat
- * qo‘shib bo‘lmaydi.
- */
-/**
  * Hisob-faktura qo'lda yozilmaydi.
  *
  * Ilgari bu forma bo'sh maydonlardan iborat edi: buxgalter ijarachi nomini,

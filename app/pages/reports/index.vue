@@ -247,10 +247,12 @@ const periodInvoices = computed(() => {
   );
 });
 
+/** Maydon yig'indilarida suzuvchi nuqta qoldig'i ko'rinmasin */
+const round1 = (value: number) => Math.round(value * 10) / 10;
+
 const totals = computed(() => {
   const list = active.value;
   const gla = list.reduce((s, b) => s + b.gla, 0);
-  const vacantArea = list.reduce((s, b) => s + b.vacantArea, 0);
   const occupiedArea = list.reduce((s, b) => s + b.occupiedArea, 0);
 
   const period = periodInvoices.value;
@@ -259,14 +261,28 @@ const totals = computed(() => {
 
   return {
     count: list.length,
-    gla,
-    vacantArea,
+    gla: round1(gla),
+    /*
+     * Band bo'lmagan maydon: GLA dan shartnoma bo'yicha egallangani ayirilgani.
+     * Ilgari bu yerda faqat «bo'sh» statusidagi unitlar sanalardi, rezerv,
+     * ta'mir va e'lon qilinmagan unitlar esa na bandga, na bo'shga tushardi:
+     * ekranda 133 489 m² GLA turgani holda band va bo'sh maydon yig'indisi
+     * 106 482 m² chiqardi. Endi o'lchov GLA ning to'ldiruvchisi, shuning
+     * uchun band va band bo'lmagan maydon yig'indisi doim GLA ga teng va
+     * bandlik foizi ham shu ikki raqamdan kelib chiqadi.
+     */
+    unoccupied: round1(gla - occupiedArea),
+    /*
+     * Oylik ijara tushumi: reyestrdagi ijaradagi unitlarning oylik narxi.
+     * Jadval qatorlari ham, jam qatori ham aynan shu manbadan o'qiydi.
+     */
+    rentRoll: list.reduce((s, b) => s + b.monthlyRevenue, 0),
     // Davr bo'yicha chiqarilgan summa; hujjat bo'lmasa nol ko'rsatiladi
-    revenue: billed,
+    billed,
     debt: billed - paid,
     invoices: period.length,
     collection: billed ? Math.round((paid / billed) * 100) : 0,
-    occupied: occupiedArea,
+    occupied: round1(occupiedArea),
     occupancy: gla ? Math.round((occupiedArea / gla) * 100) : 0,
     sla: gla
       ? Math.round(list.reduce((s, b) => s + b.sla * b.gla, 0) / gla)
@@ -328,24 +344,37 @@ function ramp(base: number, start: number, end: number, digits = 2) {
   );
 }
 
-const occupancySeries = computed(() => [
-  {
-    label: t("usr.repOccupiedAreaSeries"),
-    tone: "ok" as const,
-    values: ramp(totals.value.occupied, 0.965, 1, 0),
-  },
-  {
-    label: t("usr.repVacantAreaSeries"),
-    tone: "violet" as const,
-    values: ramp(totals.value.vacantArea, 1.14, 1, 0),
-  },
-]);
+/*
+ * Ustunlar GLA gacha to'ldiriladi: band bo'lmagan maydon har oyda band
+ * maydonning to'ldiruvchisi sifatida olinadi, shuning uchun taxlangan
+ * ustun balandligi har oyda aynan «Jami GLA» ni beradi.
+ */
+const occupancySeries = computed(() => {
+  const occupied = ramp(totals.value.occupied, 0.965, 1, 0);
+  return [
+    {
+      label: t("usr.repOccupiedAreaSeries"),
+      tone: "ok" as const,
+      values: occupied,
+    },
+    {
+      label: t("usr.repVacantAreaSeries"),
+      tone: "violet" as const,
+      values: occupied.map((v) => round1(totals.value.gla - v)),
+    },
+  ];
+});
 
+/*
+ * Grafik hisob-fakturalardan chiqadi va tanlangan davrga bog'liq, shuning
+ * uchun sarlavhasi ham «hisoblangan summa» deb yoziladi. O'lchov birligi
+ * mln so'm: registrdagi summalar mlrd shkalasida nol bo'lib ko'rinardi.
+ */
 const revenueSeries = computed(() => [
   {
     label: t("usr.repRevenueSeries"),
     tone: "brand" as const,
-    values: ramp(totals.value.revenue / 1_000_000_000, 0.87, 1),
+    values: ramp(totals.value.billed / 1_000_000, 0.87, 1, 1),
   },
 ]);
 
@@ -414,8 +443,8 @@ const utilitySeries = computed(() =>
 );
 
 const compareSeries = computed(() => {
-  const collection = totals.value.revenue
-    ? Math.max(100 - (totals.value.debt / totals.value.revenue) * 100, 0)
+  const collection = totals.value.billed
+    ? Math.max(100 - (totals.value.debt / totals.value.billed) * 100, 0)
     : 0;
   return [
     {
@@ -457,7 +486,7 @@ const tableColumns = computed(() => [
     numeric: true,
   },
   {
-    key: "vacantArea",
+    key: "unoccupied",
     label: t("usr.repVacantAreaSeries"),
     align: "right" as const,
     numeric: true,
@@ -465,6 +494,21 @@ const tableColumns = computed(() => [
   { key: "sla", label: t("field.sla"), align: "right" as const, numeric: true },
 ]);
 
+/*
+ * Jadvalning har bir ustuni bitta o'lchovda yuritiladi: qator qanday manbadan
+ * o'qisa, jam qatori ham o'sha manbadan o'qiydi.
+ *
+ * Ilgari «Ijara tushumi» ustunida ikki xil o'lchov aralashib ketgan edi:
+ * qatorlar obyektning oylik tushumini ko'rsatardi, jam qatori esa tanlangan
+ * davr hisob-fakturalaridan hisoblanardi. Registrda hozircha ikkita
+ * obyektning hujjati bor, shuning uchun jam 187.8 mln bo'lib chiqar va
+ * qatorlarning deyarli har biridan kichik turardi.
+ *
+ * Endi ustun reyestrdan olinadigan oylik ijara tushumini ko'rsatadi: bu
+ * ko'rsatkich har bir obyekt uchun to'liq, obyekt kartochkasidagi raqam
+ * bilan bir xil va jam aniq qatorlar yig'indisiga teng. Davrga bog'liq
+ * hisob-faktura ko'rsatkichlari KPI qatorida alohida turadi.
+ */
 const tableRows = computed(() => {
   const rows = active.value.map((b) => ({
     id: b.id,
@@ -473,7 +517,7 @@ const tableRows = computed(() => {
     gla: b.gla,
     occupancy: b.occupancy,
     revenue: b.monthlyRevenue,
-    vacantArea: b.vacantArea,
+    unoccupied: round1(b.gla - b.occupiedArea),
     sla: b.sla,
     total: false,
   }));
@@ -487,11 +531,11 @@ const tableRows = computed(() => {
         mode.value === "single"
           ? t("usr.repObjectTotal")
           : t("usr.repTotalAverage"),
-      district: `${t("usr.repObjectCount", { count: sum.count })} • ${periodLabel.value}`,
+      district: t("usr.repObjectCount", { count: sum.count }),
       gla: sum.gla,
       occupancy: sum.occupancy,
-      revenue: sum.revenue,
-      vacantArea: sum.vacantArea,
+      revenue: sum.rentRoll,
+      unoccupied: sum.unoccupied,
       sla: sum.sla,
       total: true,
     },
@@ -577,7 +621,7 @@ function exportTable(): Array<Array<string | number>> {
       r.gla,
       r.occupancy,
       r.revenue,
-      r.vacantArea,
+      r.unoccupied,
       r.sla,
     ]),
   ];
@@ -591,8 +635,10 @@ function exportDocument() {
     { text: t("usr.repKeyMetrics"), style: "heading" },
     { text: t("usr.repDocGla", { value: num(sum.gla) }) },
     { text: t("usr.repDocOccupancy", { value: percent(sum.occupancy) }) },
-    { text: t("usr.repDocVacant", { value: num(sum.vacantArea) }) },
-    { text: t("usr.repDocRevenue", { value: sumShort(sum.revenue) }) },
+    { text: t("usr.repDocVacant", { value: num(sum.unoccupied) }) },
+    // Obyektlar ro'yxatidagi tushum qatorlari shu jamga yig'iladi
+    { text: t("usr.repDocRevenue", { value: sumShort(sum.rentRoll) }) },
+    { text: t("usr.repDocBilled", { value: sumShort(sum.billed) }) },
     { text: t("usr.repDocDebt", { value: sumShort(sum.debt) }) },
     { text: t("usr.repDocSla", { value: percent(sum.sla) }) },
     { text: t("usr.repObjectBreakdown"), style: "heading" },
@@ -817,22 +863,22 @@ function confirmExport() {
         :spark="trendSpark('occupancy', totals.occupancy)"
       />
       <UiKpi
-        :label="t('kpi.vacantArea')"
-        :value="num(totals.vacantArea)"
+        :label="t('usr.repUnoccupiedKpi')"
+        :value="num(totals.unoccupied)"
         :unit="t('unitOf.sqm')"
         :delta="trendDelta('vacantArea')"
         invert
         icon="cube"
         tone="violet"
-        :spark="trendSpark('vacantArea', totals.vacantArea / 1000)"
+        :spark="trendSpark('vacantArea', totals.unoccupied / 1000)"
       />
       <UiKpi
-        :label="t('kpi.revenueTotal')"
-        :value="moneyShort(totals.revenue)"
+        :label="t('usr.repBilledKpi')"
+        :value="moneyShort(totals.billed)"
         :delta="trendDelta('revenue')"
         icon="wallet"
         tone="brand"
-        :spark="trendSpark('revenue', totals.revenue / 1_000_000_000)"
+        :spark="trendSpark('revenue', totals.billed / 1_000_000)"
       />
       <UiKpi
         :label="t('kpi.debt')"
@@ -877,7 +923,7 @@ function confirmExport() {
     <UiCard
       v-show="tab === 'umumiy'"
       :title="t('usr.repByObjects')"
-      :subtitle="t('usr.repByObjectsCaption', { period: periodLabel })"
+      :subtitle="t('usr.repByObjectsCaption')"
       flush
     >
       <template #actions>
@@ -943,9 +989,9 @@ function confirmExport() {
           }}</span>
         </template>
 
-        <template #cell-vacantArea="{ row }">
+        <template #cell-unoccupied="{ row }">
           <span :class="row.total ? 'font-bold text-ink-900' : ''">{{
-            num(row.vacantArea)
+            num(row.unoccupied)
           }}</span>
         </template>
 
@@ -994,7 +1040,7 @@ function confirmExport() {
           :labels="months"
           :series="revenueSeries"
           :height="220"
-          :unit="billionUnit"
+          :unit="millionUnit"
         />
       </UiCard>
 

@@ -366,7 +366,7 @@ const lastFour = computed(() => form.phone.slice(-4));
         <p
           class="text-[11px] font-semibold uppercase tracking-wide text-brand-600"
         >
-          {{ t("apply.step1Eyebrow") }}
+          {{ t("apply.formEyebrow") }}
         </p>
         <h1
           class="mt-2 font-display text-[28px] font-extrabold leading-tight text-ink-900 sm:text-[28px]"
@@ -546,7 +546,6 @@ const lastFour = computed(() => form.phone.slice(-4));
             >
               <UiField
                 :label="field('vacantUnit')"
-                required
                 for="ariza-unit"
                 :error="errorOf('unitId')"
               >

@@ -8,8 +8,14 @@ import { buildFloorPlan } from "~/utils/floorPlan";
 const route = useRoute();
 const auth = useAuthStore();
 const { t } = useI18n();
-const { unitUsageLabel, field, statusLabel, moduleTitle, priceUnitLabel } =
-  useAppLabels();
+const {
+  unitUsageLabel,
+  field,
+  statusLabel,
+  moduleTitle,
+  priceUnitLabel,
+  offerLabel,
+} = useAppLabels();
 const { action: leadAction, label: leadLabel, staffHint } = useLeadAction();
 
 const id = computed(() => String(route.params.id));
@@ -1121,7 +1127,7 @@ function goApply() {
                 <dd
                   class="min-w-0 flex-1 text-[13px] font-semibold text-ink-900"
                 >
-                  {{ selected.offer }}
+                  {{ offerLabel(selected.offer) }}
                 </dd>
               </div>
             </dl>
@@ -1272,7 +1278,7 @@ function goApply() {
                 {{ field("offerShort") }}
               </dt>
               <dd class="text-[13px] font-semibold text-ink-900">
-                {{ selected.offer }}
+                {{ offerLabel(selected.offer) }}
               </dd>
             </div>
             <div

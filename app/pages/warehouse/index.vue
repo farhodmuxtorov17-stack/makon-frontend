@@ -39,9 +39,18 @@ const auth = useAuthStore()
 
 const { money, moneyShort, t, field, moduleTitle } = useAppLabels()
 
+/**
+ * Ombor qoldig‘ining yagona manbasi: reyestr, harakatlar va
+ * inventarizatsiya ekranlari shu ro‘yxatdan o‘qiydi, shuning uchun kirim
+ * yoki chiqimdan keyin qoldiq uch ekranda ham bir xil bo‘ladi.
+ */
+const allStock = useState<StockItem[]>('stock-items', () =>
+  STOCK_ITEMS.map((i) => ({ ...i })),
+)
+
 /** Ombor mudiriga faqat biriktirilgan ombor ko‘rinadi */
-const items = ref<StockItem[]>(
-  STOCK_ITEMS.filter((i) => auth.inWarehouseScope(i.warehouse)).map((i) => ({ ...i })),
+const items = computed(() =>
+  allStock.value.filter((i) => auth.inWarehouseScope(i.warehouse)),
 )
 
 const warehouses = computed(() => [...new Set(items.value.map((i) => i.warehouse))])
@@ -171,8 +180,6 @@ const summary = computed(() => [
   },
 ])
 
-const scopedStock = STOCK_ITEMS.filter((i) => auth.inWarehouseScope(i.warehouse))
-
 /** Berish amali faqat ombor mas’ulida */
 const canIssue = computed(() => auth.can('warehouse.issue'))
 
@@ -199,7 +206,7 @@ function warehouseOfRequest(r: MaterialRequestEntry): string {
     const item = stockByCode(line.code)
     if (item && auth.inWarehouseScope(item.warehouse)) return item.warehouse
   }
-  return scopedStock[0]?.warehouse ?? 'Markaziy ombor'
+  return items.value[0]?.warehouse ?? 'Markaziy ombor'
 }
 
 function actOfRequest(r: MaterialRequestEntry): IssueAct {
@@ -320,9 +327,9 @@ function downloadAct() {
 }
 
 const receiveOpen = ref(false)
-const receiveItem = ref(items.value[0]?.id ?? STOCK_ITEMS[0]!.id)
+const receiveItem = ref(items.value[0]?.id ?? allStock.value[0]!.id)
 const receiveQty = ref(10)
-const receiveWarehouse = ref(items.value[0]?.warehouse ?? STOCK_ITEMS[0]!.warehouse)
+const receiveWarehouse = ref(items.value[0]?.warehouse ?? allStock.value[0]!.warehouse)
 const receiveNote = ref('')
 const receiveError = ref('')
 
@@ -351,7 +358,7 @@ function saveReceive() {
 const issueOpen = ref(false)
 const issueRecipient = ref('')
 const issueRequest = ref(SERVICE_REQUESTS[1]!.code)
-const issueWarehouse = ref(items.value[0]?.warehouse ?? STOCK_ITEMS[0]!.warehouse)
+const issueWarehouse = ref(items.value[0]?.warehouse ?? allStock.value[0]!.warehouse)
 const issueNote = ref('')
 const issueError = ref('')
 const issueQty = ref<Record<string, number>>({})

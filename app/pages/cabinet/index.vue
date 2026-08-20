@@ -338,18 +338,11 @@ const documents = computed<CabinetDocLink[]>(() => {
 // ---------------------------------------------------------------------------
 // Hisoblagichlar: qisqa ko‘rinish, to‘liq ro‘yxat «Hisoblagichlar» bo‘limida
 
-const MONTH_LAST_READ = (() => {
-  const d = new Date()
-  if (d.getDate() < 18) d.setMonth(d.getMonth() - 1)
-  d.setDate(18)
-  return toIso(d)
-})()
-
-const meters = computed(() => [
-  { id: 'mt-suv', label: t('meterType.water'), unit: 'm³', icon: 'meter', tone: 'brand', last: 125.4, previous: 118.2 },
-  { id: 'mt-elektr', label: t('meterType.electricity'), unit: 'kVt-soat', icon: 'sparkle', tone: 'warn', last: 1245.6, previous: 1198.3 },
-  { id: 'mt-issiqlik', label: t('meterType.heating'), unit: 'Gkal', icon: 'refresh', tone: 'danger', last: 63.2, previous: 58.1 },
-])
+/**
+ * Ro‘yxat «Hisoblagichlar» sahifasi bilan bitta umumiy manbadan olinadi:
+ * u yerda kiritilgan ko‘rsatkich shu yerda ham darhol ko‘rinadi.
+ */
+const { meters, typeLabel, consumption } = useCabinetMeters()
 
 const METER_TONE: Record<string, string> = {
   brand: 'bg-brand-50 text-brand-600',
@@ -814,20 +807,22 @@ const tourId = computed(() => `cabinet:${auth.role ?? 'guest'}`)
                 <UiIcon :name="m.icon" :size="18" />
               </span>
               <span class="min-w-0 flex-1">
-                <span class="block text-[12px] text-ink-500">{{ m.label }} ({{ m.unit }})</span>
+                <span class="block text-[12px] text-ink-500">
+                  {{ typeLabel(m.type) }} ({{ m.unit }})
+                </span>
                 <span class="tabular block text-[16px] font-bold text-ink-900">
-                  {{ num(m.last, 2) }} {{ m.unit }}
+                  {{ num(m.lastReading, 2) }} {{ m.unit }}
                 </span>
                 <span class="tabular block text-[12px] text-ink-500">
-                  {{ t('cab.previousValue', { value: `${num(m.previous, 2)} ${m.unit}` }) }}
+                  {{ t('cab.previousValue', { value: `${num(m.previousReading, 2)} ${m.unit}` }) }}
                 </span>
               </span>
               <span class="shrink-0 text-right">
                 <span class="tabular block text-[13px] font-bold text-brand-600">
-                  +{{ num(m.last - m.previous, 2) }}
+                  +{{ num(consumption(m), 2) }}
                 </span>
                 <span class="tabular block text-[12px] text-ink-500">
-                  {{ dateShort(MONTH_LAST_READ) }}
+                  {{ dateShort(m.readAt) }}
                 </span>
               </span>
             </NuxtLink>

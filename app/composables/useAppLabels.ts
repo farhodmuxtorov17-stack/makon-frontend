@@ -244,26 +244,36 @@ export function useAppLabels() {
    * «kVt-soat» rus tilida «кВт·ч», «A klass» esa «класс A».
    */
   const UNIT_KEY: Record<string, string> = {
-    'kVt-soat': 'measure.kwh',
-    'ming m³': 'measure.thousandM3',
-    Gkal: 'measure.gcal',
-    dona: 'measure.piece',
-    litr: 'measure.litre',
-    metr: 'measure.metre',
-    qop: 'measure.sack',
-    ballon: 'measure.cylinder',
-    tuba: 'measure.tube',
-    'to‘plam': 'measure.set',
-  }
+    "kVt-soat": "measure.kwh",
+    "ming m³": "measure.thousandM3",
+    Gkal: "measure.gcal",
+    dona: "measure.piece",
+    litr: "measure.litre",
+    metr: "measure.metre",
+    qop: "measure.sack",
+    ballon: "measure.cylinder",
+    tuba: "measure.tube",
+    "to‘plam": "measure.set",
+  };
 
   function measureLabel(unit: string) {
-    const key = UNIT_KEY[unit]
-    return key ? t(key) : unit
+    const key = UNIT_KEY[unit];
+    return key ? t(key) : unit;
+  }
+
+  /**
+   * Unit taklif turi ma’lumotda «Ijara» yoki «Sotuv» deb saqlanadi.
+   * Ekranda tarjimasi ko‘rsatiladi, reyestrdagi qiymat esa o‘zgarmaydi.
+   */
+  function offerLabel(value: string) {
+    if (value === "Sotuv") return t("landing.offerSale");
+    if (value === "Ijara") return t("landing.offerRent");
+    return value;
   }
 
   function buildingClassLabel(value: string) {
-    const letter = value.replace(/\s*klass\s*/i, '').trim()
-    return letter ? t('field.classOf', { letter }) : value
+    const letter = value.replace(/\s*klass\s*/i, "").trim();
+    return letter ? t("field.classOf", { letter }) : value;
   }
 
   /**
@@ -382,6 +392,7 @@ export function useAppLabels() {
     requestTypeLabel,
     measureLabel,
     buildingClassLabel,
+    offerLabel,
     unitOf,
     floorLabel,
     monthName,

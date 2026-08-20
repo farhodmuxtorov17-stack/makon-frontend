@@ -44,9 +44,18 @@ const { money, moneyShort, t, field, moduleTitle } = useAppLabels()
 const CURRENT_DAY = '2025-05-18'
 const canWrite = computed(() => auth.can('warehouse.issue'))
 
+/**
+ * Ombor qoldig‘ining yagona manbasi: reyestr, harakatlar va
+ * inventarizatsiya ekranlari shu ro‘yxatdan o‘qiydi, shuning uchun kirim
+ * yoki chiqimdan keyin qoldiq uch ekranda ham bir xil bo‘ladi.
+ */
+const allStock = useState<StockItem[]>('stock-items', () =>
+  STOCK_ITEMS.map((i) => ({ ...i })),
+)
+
 /** Ombor mudiriga faqat biriktirilgan ombor ko‘rinadi */
-const stock = ref<StockItem[]>(
-  STOCK_ITEMS.filter((i) => auth.inWarehouseScope(i.warehouse)).map((i) => ({ ...i })),
+const stock = computed(() =>
+  allStock.value.filter((i) => auth.inWarehouseScope(i.warehouse)),
 )
 const warehouses = computed(() => [...new Set(stock.value.map((i) => i.warehouse))])
 
@@ -57,7 +66,7 @@ const OWNERS = computed(() => [
 ])
 
 function lineOf(itemId: string, counted: number): ActLine {
-  const item = STOCK_ITEMS.find((i) => i.id === itemId) ?? STOCK_ITEMS[0]!
+  const item = allStock.value.find((i) => i.id === itemId) ?? allStock.value[0]!
   return {
     itemId: item.id,
     code: item.code,
@@ -158,7 +167,7 @@ const resultBanner = ref<InventoryAct | null>(null)
 
 const startOpen = ref(false)
 const startName = ref('')
-const startWarehouse = ref(stock.value[0]?.warehouse ?? STOCK_ITEMS[0]!.warehouse)
+const startWarehouse = ref(stock.value[0]?.warehouse ?? allStock.value[0]!.warehouse)
 const startDate = ref(CURRENT_DAY)
 const startOwner = ref(OWNERS.value[0]!.value)
 const startError = ref('')

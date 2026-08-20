@@ -50,9 +50,18 @@ const CURRENT_DAY = '2025-05-18'
 const PERIOD_START = '2025-05-01'
 const OPERATOR = 'Anvar Qodirov'
 
+/**
+ * Ombor qoldig‘ining yagona manbasi: reyestr, harakatlar va
+ * inventarizatsiya ekranlari shu ro‘yxatdan o‘qiydi, shuning uchun kirim
+ * yoki chiqimdan keyin qoldiq uch ekranda ham bir xil bo‘ladi.
+ */
+const allStock = useState<StockItem[]>('stock-items', () =>
+  STOCK_ITEMS.map((i) => ({ ...i })),
+)
+
 /** Ombor mudiriga faqat biriktirilgan ombor ko‘rinadi */
-const stock = ref<StockItem[]>(
-  STOCK_ITEMS.filter((i) => auth.inWarehouseScope(i.warehouse)).map((i) => ({ ...i })),
+const stock = computed(() =>
+  allStock.value.filter((i) => auth.inWarehouseScope(i.warehouse)),
 )
 
 const warehouses = computed(() => [...new Set(stock.value.map((i) => i.warehouse))])
@@ -241,7 +250,7 @@ const SEED_MOVEMENTS: SeedMovement[] = [
 ]
 
 function buildMovement(s: SeedMovement, index: number): Movement {
-  const item = STOCK_ITEMS.find((i) => i.id === s.itemId) ?? STOCK_ITEMS[0]!
+  const item = allStock.value.find((i) => i.id === s.itemId) ?? allStock.value[0]!
   return {
     id: `mv-${String(index + 1).padStart(3, '0')}`,
     doc: s.doc,
@@ -436,8 +445,8 @@ function sendToPrinter() {
 }
 
 const receiveOpen = ref(false)
-const receiveWarehouse = ref(stock.value[0]?.warehouse ?? STOCK_ITEMS[0]!.warehouse)
-const receiveItem = ref(stock.value[0]?.id ?? STOCK_ITEMS[0]!.id)
+const receiveWarehouse = ref(stock.value[0]?.warehouse ?? allStock.value[0]!.warehouse)
+const receiveItem = ref(stock.value[0]?.id ?? allStock.value[0]!.id)
 const receiveQty = ref(10)
 const receiveParty = ref('')
 const receiveDoc = ref('')
@@ -505,8 +514,8 @@ function saveReceive() {
 }
 
 const issueOpen = ref(false)
-const issueWarehouse = ref(stock.value[0]?.warehouse ?? STOCK_ITEMS[0]!.warehouse)
-const issueItem = ref(stock.value[0]?.id ?? STOCK_ITEMS[0]!.id)
+const issueWarehouse = ref(stock.value[0]?.warehouse ?? allStock.value[0]!.warehouse)
+const issueItem = ref(stock.value[0]?.id ?? allStock.value[0]!.id)
 const issueQty = ref(5)
 const issueRecipient = ref('')
 const issueBasis = ref(SERVICE_REQUESTS[1]!.code)

@@ -1,11 +1,22 @@
-import { defineStore } from 'pinia'
-import { BUILDINGS, buildingById } from '~/data/buildings'
-import { UNITS, unitById } from '~/data/units'
-import { agingKeyOf, statusOf, CONTRACTS, INVOICES, type Invoice } from '~/data/business'
-import { formatStir, organizationByStir, stirDigits, LANDLORD_STIR } from '~/data/organizations'
-import { UNIT_STATUS } from '~/constants/statuses'
-import { num, todayIso } from '~/utils/format'
-import { docxBlob, type DocxLine } from '~/utils/docx'
+import { defineStore } from "pinia";
+import { BUILDINGS, buildingById } from "~/data/buildings";
+import { UNITS, unitById } from "~/data/units";
+import {
+  agingKeyOf,
+  statusOf,
+  CONTRACTS,
+  INVOICES,
+  type Invoice,
+} from "~/data/business";
+import {
+  formatStir,
+  organizationByStir,
+  stirDigits,
+  LANDLORD_STIR,
+} from "~/data/organizations";
+import { UNIT_STATUS } from "~/constants/statuses";
+import { num, todayIso } from "~/utils/format";
+import { docxBlob, type DocxLine } from "~/utils/docx";
 
 /**
  * Ijara sikli: bitta umumiy haqiqat manbasi.
@@ -36,154 +47,148 @@ import { docxBlob, type DocxLine } from '~/utils/docx'
  * ko‘chiradi.
  */
 export type LegacyLeaseStatus =
-  | 'OPERATSIYA_TASDIQLADI'
-  | 'MOLIYA_TASDIQLADI'
-  | 'QORALAMA_TAYYOR'
+  "OPERATSIYA_TASDIQLADI" | "MOLIYA_TASDIQLADI" | "QORALAMA_TAYYOR";
 
 export type LeaseStatus =
-  | 'YANGI'
-  | 'SHARTNOMA_TAYYOR'
-  | 'DIDOX_YUBORILDI'
-  | 'DIDOX_IMZOLANDI'
-  | 'FAOL'
-  | 'RAD_ETILDI'
-  | LegacyLeaseStatus
+  | "YANGI"
+  | "SHARTNOMA_TAYYOR"
+  | "DIDOX_YUBORILDI"
+  | "DIDOX_IMZOLANDI"
+  | "FAOL"
+  | "RAD_ETILDI"
+  | LegacyLeaseStatus;
 
 /** Muvaffaqiyatli oqim tartibi, bosqich indeksini hisoblash uchun */
 export const LEASE_FLOW: LeaseStatus[] = [
-  'YANGI',
-  'SHARTNOMA_TAYYOR',
-  'DIDOX_YUBORILDI',
-  'DIDOX_IMZOLANDI',
-  'FAOL',
-]
+  "YANGI",
+  "SHARTNOMA_TAYYOR",
+  "DIDOX_YUBORILDI",
+  "DIDOX_IMZOLANDI",
+  "FAOL",
+];
 
 /** Saqlangan eski yozuv qaysi yangi bosqichga to‘g‘ri keladi */
 const LEGACY_STATUS: Record<LegacyLeaseStatus, LeaseStatus> = {
   // Shartlar kelishilgan, lekin tasdiq bosilmagan: ariza yangiligicha qoladi.
-  OPERATSIYA_TASDIQLADI: 'YANGI',
-  MOLIYA_TASDIQLADI: 'SHARTNOMA_TAYYOR',
-  QORALAMA_TAYYOR: 'SHARTNOMA_TAYYOR',
-}
+  OPERATSIYA_TASDIQLADI: "YANGI",
+  MOLIYA_TASDIQLADI: "SHARTNOMA_TAYYOR",
+  QORALAMA_TAYYOR: "SHARTNOMA_TAYYOR",
+};
 
-export type Periodicity = 'Oylik' | 'Choraklik' | 'Yillik'
+export type Periodicity = "Oylik" | "Choraklik" | "Yillik";
 
 export const PERIODICITY_MONTHS: Record<Periodicity, number> = {
   Oylik: 1,
   Choraklik: 3,
   Yillik: 12,
-}
+};
 
 /** Didox tomonidagi holat, tizim uni faqat kuzatadi */
-export type DidoxState = 'Yuborilgan' | 'Ko‘rib chiqilmoqda' | 'Imzolangan'
-
-export const DIDOX_FLOW: DidoxState[] = ['Yuborilgan', 'Ko‘rib chiqilmoqda', 'Imzolangan']
+export type DidoxState = "Yuborilgan" | "Ko‘rib chiqilmoqda" | "Imzolangan";
 
 export interface LeaseOrg {
-  name: string
-  tin: string
-  director: string
-  phone: string
-  email: string
-  address: string
+  name: string;
+  tin: string;
+  director: string;
+  phone: string;
+  email: string;
+  address: string;
 }
 
 export interface LeaseRequest {
-  type: 'Ijaraga olish' | 'Sotib olish'
+  type: "Ijaraga olish" | "Sotib olish";
   /** Ijarachi taklif qilgan oylik narx, so‘m */
-  offerPrice: number
-  startDate: string
+  offerPrice: number;
+  startDate: string;
   /** Muddat, oy */
-  term: number
-  note: string
-  submittedAt: string
+  term: number;
+  note: string;
+  submittedAt: string;
 }
 
 export interface LeaseOffer {
   /** Oylik ijara narxi, so‘m */
-  monthlyRent: number
+  monthlyRent: number;
   /** Kafolat depoziti, so‘m */
-  deposit: number
+  deposit: number;
   /** Servis to‘lovi, so‘m / m² / oy */
-  servicePerSqm: number
-  periodicity: Periodicity
+  servicePerSqm: number;
+  periodicity: Periodicity;
   /** Telefon suhbatida kelishilgan qo‘shimcha shart yoki izoh */
-  adjustmentReason: string
+  adjustmentReason: string;
 }
 
 export interface SchedulePeriod {
-  id: string
-  kind: 'DEPOSIT' | 'RENT'
-  label: string
-  dueAt: string
-  months: number
-  rent: number
-  service: number
-  total: number
-  status: 'PLANNED' | 'ISSUED' | 'PAID'
+  id: string;
+  kind: "DEPOSIT" | "RENT";
+  label: string;
+  dueAt: string;
+  months: number;
+  rent: number;
+  service: number;
+  total: number;
+  status: "PLANNED" | "ISSUED" | "PAID";
   /** Davr uchun chiqarilgan hisob-faktura raqami, chiqarilmagan davrda bo‘sh */
-  invoiceCode?: string
+  invoiceCode?: string;
 }
 
 export interface ContractParty {
-  role: string
-  name: string
-  tin: string
-  director: string
-  phone: string
-  email: string
-  address: string
+  role: string;
+  name: string;
+  tin: string;
+  director: string;
+  phone: string;
+  email: string;
+  address: string;
   /** Bank nomi va filiali, tashkilotlar reyestridan olinadi */
-  bank: string
+  bank: string;
   /** Hisob raqami */
-  account: string
+  account: string;
   /** Bank kodi; reyestrda topilmasa bo‘sh qoladi */
-  mfo: string
+  mfo: string;
 }
 
 export interface ContractDoc {
-  code: string
-  composedAt: string
-  startsAt: string
-  endsAt: string
-  landlord: ContractParty
-  tenant: ContractParty
-  object: Array<{ label: string; value: string }>
-  terms: Array<{ label: string; value: string }>
-  clauses: Array<{ title: string; text: string }>
-  schedule: SchedulePeriod[]
+  code: string;
+  composedAt: string;
+  startsAt: string;
+  endsAt: string;
+  landlord: ContractParty;
+  tenant: ContractParty;
+  object: Array<{ label: string; value: string }>;
+  terms: Array<{ label: string; value: string }>;
+  clauses: Array<{ title: string; text: string }>;
+  schedule: SchedulePeriod[];
 }
 
 export interface DidoxTicket {
   /** Didox tizimidagi hujjat raqami */
-  docNumber: string
-  sentAt: string
-  sentBy: string
-  recipient: string
-  recipientTin: string
-  state: DidoxState
-  lastCheckedAt: string | null
+  docNumber: string;
+  sentAt: string;
+  sentBy: string;
+  recipient: string;
+  recipientTin: string;
+  state: DidoxState;
   /**
    * Oxirgi holat o‘zgarishi vaqti, millisekundda. Didox tomonida holat
    * darhol o‘zgarmaydi, shuning uchun ketma-ket bosilgan tekshiruv
    * o‘zgarishsiz natija qaytaradi.
    */
-  stateAt: number
-  history: Array<{ state: DidoxState; at: string; note: string }>
+  stateAt: number;
+  history: Array<{ state: DidoxState; at: string; note: string }>;
 }
 
 /** Didox tomonida holat o‘zgarishi uchun kutiladigan eng qisqa vaqt */
-const DIDOX_STEP_MS = 15000
 
 export interface SignedDocument {
-  fileName: string
-  size: number
-  mime: string
-  extension: string
-  uploadedAt: string
-  uploadedBy: string
+  fileName: string;
+  size: number;
+  mime: string;
+  extension: string;
+  uploadedAt: string;
+  uploadedBy: string;
   /** Yuklangan faylning haqiqiy SHA-256 nazorat yig‘indisi */
-  hash: string
+  hash: string;
 }
 
 /**
@@ -192,142 +197,142 @@ export interface SignedDocument {
  * kabinetda o‘zgartiradi.
  */
 export interface TenantAccess {
-  login: string
-  password: string
-  issuedAt: string
+  login: string;
+  password: string;
+  issuedAt: string;
 }
 
 export interface AuditEntry {
-  at: string
-  actor: string
-  roleLabel: string
-  action: string
-  detail: string
+  at: string;
+  actor: string;
+  roleLabel: string;
+  action: string;
+  detail: string;
 }
 
 export interface ActivationChange {
-  icon: string
-  label: string
-  detail: string
+  icon: string;
+  label: string;
+  detail: string;
 }
 
 export interface LeaseCase {
-  id: string
-  code: string
-  status: LeaseStatus
-  unitId: string
-  unitCode: string
-  area: number
-  floor: number
-  usage: string
-  buildingId: string
-  buildingName: string
-  buildingAddress: string
-  org: LeaseOrg
-  request: LeaseRequest
-  offer: LeaseOffer | null
-  schedule: SchedulePeriod[]
-  contract: ContractDoc | null
-  didox: DidoxTicket | null
-  signedDocument: SignedDocument | null
-  audit: AuditEntry[]
-  contactedAt: string | null
-  rejectReason: string
+  id: string;
+  code: string;
+  status: LeaseStatus;
+  unitId: string;
+  unitCode: string;
+  area: number;
+  floor: number;
+  usage: string;
+  buildingId: string;
+  buildingName: string;
+  buildingAddress: string;
+  org: LeaseOrg;
+  request: LeaseRequest;
+  offer: LeaseOffer | null;
+  schedule: SchedulePeriod[];
+  contract: ContractDoc | null;
+  didox: DidoxTicket | null;
+  signedDocument: SignedDocument | null;
+  audit: AuditEntry[];
+  contactedAt: string | null;
+  rejectReason: string;
   /** Ariza hisobsiz, ochiq forma orqali yuborilgan */
-  guest: boolean
+  guest: boolean;
   /** Ariza yuborgan shaxs ismi, tashkilot rahbaridan farq qilishi mumkin */
-  contactName: string
+  contactName: string;
   /** Operator kabinet ochishni taklif qilgan vaqt */
   /** Ariza yopilganda berilgan kabinet kaliti */
-  access: TenantAccess | null
+  access: TenantAccess | null;
   /** Operator shartnomaga kiritgan tahrirlar soni */
-  contractEdits: number
+  contractEdits: number;
   activation: {
-    at: string
-    invoiceCode: string
-    contractId: string
-    changes: ActivationChange[]
-  } | null
+    at: string;
+    invoiceCode: string;
+    contractId: string;
+    changes: ActivationChange[];
+  } | null;
 }
 
 // ---------------------------------------------------------------------------
 // Sana yordamchilari
 
 const MONTHS = [
-  'Yanvar',
-  'Fevral',
-  'Mart',
-  'Aprel',
-  'May',
-  'Iyun',
-  'Iyul',
-  'Avgust',
-  'Sentabr',
-  'Oktabr',
-  'Noyabr',
-  'Dekabr',
-]
+  "Yanvar",
+  "Fevral",
+  "Mart",
+  "Aprel",
+  "May",
+  "Iyun",
+  "Iyul",
+  "Avgust",
+  "Sentabr",
+  "Oktabr",
+  "Noyabr",
+  "Dekabr",
+];
 
 function pad(n: number) {
-  return String(n).padStart(2, '0')
+  return String(n).padStart(2, "0");
 }
 
 function toIso(d: Date) {
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
 function parseIso(iso: string) {
-  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso.trim())
-  if (!m) return new Date()
-  return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]))
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso.trim());
+  if (!m) return new Date();
+  return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
 }
 
 export function addMonths(iso: string, months: number) {
-  const d = parseIso(iso)
-  const day = d.getDate()
-  d.setDate(1)
-  d.setMonth(d.getMonth() + months)
-  const last = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate()
-  d.setDate(Math.min(day, last))
-  return toIso(d)
+  const d = parseIso(iso);
+  const day = d.getDate();
+  d.setDate(1);
+  d.setMonth(d.getMonth() + months);
+  const last = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+  d.setDate(Math.min(day, last));
+  return toIso(d);
 }
 
 function addDays(iso: string, days: number) {
-  const d = parseIso(iso)
-  d.setDate(d.getDate() + days)
-  return toIso(d)
+  const d = parseIso(iso);
+  d.setDate(d.getDate() + days);
+  return toIso(d);
 }
 
 /** "2026-08-16" → "16.08.2026" */
 function dmy(iso: string) {
-  const d = parseIso(iso)
-  return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()}`
+  const d = parseIso(iso);
+  return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()}`;
 }
 
 function monthLabel(iso: string) {
-  const d = parseIso(iso)
-  return `${MONTHS[d.getMonth()] ?? ''} ${d.getFullYear()}`
+  const d = parseIso(iso);
+  return `${MONTHS[d.getMonth()] ?? ""} ${d.getFullYear()}`;
 }
 
 function now() {
-  const d = new Date()
-  return `${toIso(d)} ${pad(d.getHours())}:${pad(d.getMinutes())}`
+  const d = new Date();
+  return `${toIso(d)} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 function today() {
-  return toIso(new Date())
+  return toIso(new Date());
 }
 
 /** Boshlanish sanasi standarti: keyingi oyning birinchi kuni */
 function firstOfNextMonth() {
-  const d = new Date()
-  d.setDate(1)
-  d.setMonth(d.getMonth() + 1)
-  return toIso(d)
+  const d = new Date();
+  d.setDate(1);
+  d.setMonth(d.getMonth() + 1);
+  return toIso(d);
 }
 
 function money(value: number) {
-  return `${num(Math.round(value))} so‘m`
+  return `${num(Math.round(value))} so‘m`;
 }
 
 // ---------------------------------------------------------------------------
@@ -337,12 +342,12 @@ function money(value: number) {
 function asciiName(value: string) {
   return value
     .toLowerCase()
-    .replace(/[‘’'`ʻʼ]/g, '')
-    .replace(/o‘|o'/g, 'o')
-    .replace(/g‘|g'/g, 'g')
-    .replace(/[^a-z\s]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
+    .replace(/[‘’'`ʻʼ]/g, "")
+    .replace(/o‘|o'/g, "o")
+    .replace(/g‘|g'/g, "g")
+    .replace(/[^a-z\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 /**
@@ -351,39 +356,42 @@ function asciiName(value: string) {
  * shuning uchun ikkita ijarachi bitta loginni olmaydi.
  */
 function buildLogin(director: string, orgName: string, taken: Set<string>) {
-  const parts = asciiName(director).split(' ').filter(Boolean)
-  const first = parts[0] ?? ''
-  const last = parts[1] ?? asciiName(orgName).split(' ')[0] ?? 'ijarachi'
-  const base = first ? `${first.slice(0, 1)}.${last}` : last
-  let login = base
-  let n = 1
+  const parts = asciiName(director).split(" ").filter(Boolean);
+  const first = parts[0] ?? "";
+  const last = parts[1] ?? asciiName(orgName).split(" ")[0] ?? "ijarachi";
+  const base = first ? `${first.slice(0, 1)}.${last}` : last;
+  let login = base;
+  let n = 1;
   while (taken.has(login)) {
-    n += 1
-    login = `${base}${n}`
+    n += 1;
+    login = `${base}${n}`;
   }
-  return login
+  return login;
 }
 
-const PASSWORD_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789'
+const PASSWORD_ALPHABET =
+  "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
 
 /** Tasodifiy sonlar brauzer kriptografiyasidan olinadi */
 function randomBytes(length: number) {
-  const out = new Uint8Array(length)
-  const source = typeof globalThis !== 'undefined' ? globalThis.crypto : undefined
+  const out = new Uint8Array(length);
+  const source =
+    typeof globalThis !== "undefined" ? globalThis.crypto : undefined;
   if (source?.getRandomValues) {
-    source.getRandomValues(out)
-    return out
+    source.getRandomValues(out);
+    return out;
   }
-  for (let i = 0; i < length; i += 1) out[i] = Math.floor(Math.random() * 256)
-  return out
+  for (let i = 0; i < length; i += 1) out[i] = Math.floor(Math.random() * 256);
+  return out;
 }
 
 /** O‘qishga qulay, adashtiruvchi belgilarsiz parol */
 function buildPassword() {
-  const bytes = randomBytes(10)
-  let value = ''
-  for (const b of bytes) value += PASSWORD_ALPHABET[b % PASSWORD_ALPHABET.length]
-  return `${value.slice(0, 4)}-${value.slice(4, 7)}-${value.slice(7)}`
+  const bytes = randomBytes(10);
+  let value = "";
+  for (const b of bytes)
+    value += PASSWORD_ALPHABET[b % PASSWORD_ALPHABET.length];
+  return `${value.slice(0, 4)}-${value.slice(4, 7)}-${value.slice(7)}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -395,22 +403,24 @@ function buildPassword() {
  * reyestri bir xil yilni va bir-birini bosmaydigan raqamlarni beradi.
  */
 function nextCode(prefix: string, used: Array<string | undefined>): string {
-  let max = 0
+  let max = 0;
   for (const code of used) {
-    const m = /(\d+)$/.exec(String(code ?? ''))
-    if (m) max = Math.max(max, Number(m[1]))
+    const m = /(\d+)$/.exec(String(code ?? ""));
+    if (m) max = Math.max(max, Number(m[1]));
   }
-  return `${prefix}-${todayIso().slice(0, 4)}-${String(max + 1).padStart(4, '0')}`
+  return `${prefix}-${todayIso().slice(0, 4)}-${String(max + 1).padStart(4, "0")}`;
 }
 
 /** Reyestrdagi va hali faollashmagan qoralamalardagi kodlardan keyingi raqam */
-export function nextContractCode(extra: Array<string | undefined> = []): string {
-  return nextCode('MKON', [...CONTRACTS.map((c) => c.code), ...extra])
+export function nextContractCode(
+  extra: Array<string | undefined> = [],
+): string {
+  return nextCode("MKON", [...CONTRACTS.map((c) => c.code), ...extra]);
 }
 
 /** Hisob-faktura raqami: billing reyestridagi eng katta raqamdan keyingisi */
 export function nextInvoiceCode(extra: Array<string | undefined> = []): string {
-  return nextCode('INV', [...INVOICES.map((i) => i.code), ...extra])
+  return nextCode("INV", [...INVOICES.map((i) => i.code), ...extra]);
 }
 
 // ---------------------------------------------------------------------------
@@ -422,27 +432,27 @@ export function nextInvoiceCode(extra: Array<string | undefined> = []): string {
  * bo‘sh qoladi va shartnomada «tomon tomonidan to‘ldiriladi» deb ko‘rsatiladi.
  */
 const BANK_MFO: Record<string, string> = {
-  'Agrobank ATB, Yashnobod filiali': '00987',
-  'Aloqabank ATB, Mirobod filiali': '00401',
-  'Asakabank ATB, Toshkent viloyat filiali': '00419',
-  'Davr Bank ATB, Yunusobod filiali': '01088',
-  'Hamkorbank ATB, Mirobod filiali': '00083',
-  'Hamkorbank ATB, Sergeli filiali': '00085',
-  'InFinBank ATB, Mirobod filiali': '00434',
-  'Ipoteka Bank ATIB, Mirobod filiali': '00443',
-  'Ipoteka Bank ATIB, Toshkent shahar filiali': '00445',
-  'Kapitalbank ATB, Chilonzor filiali': '00974',
-  'Kapitalbank ATB, Olmazor filiali': '00976',
-  'Trastbank ATB, Uchtepa filiali': '00491',
-  'Turonbank ATB, Zangiota filiali': '00358',
-  'Universal Bank ATB, Mirzo Ulug‘bek filiali': '01041',
-  'Xalq banki ATB, Shayxontohur filiali': '00279',
-}
+  "Agrobank ATB, Yashnobod filiali": "00987",
+  "Aloqabank ATB, Mirobod filiali": "00401",
+  "Asakabank ATB, Toshkent viloyat filiali": "00419",
+  "Davr Bank ATB, Yunusobod filiali": "01088",
+  "Hamkorbank ATB, Mirobod filiali": "00083",
+  "Hamkorbank ATB, Sergeli filiali": "00085",
+  "InFinBank ATB, Mirobod filiali": "00434",
+  "Ipoteka Bank ATIB, Mirobod filiali": "00443",
+  "Ipoteka Bank ATIB, Toshkent shahar filiali": "00445",
+  "Kapitalbank ATB, Chilonzor filiali": "00974",
+  "Kapitalbank ATB, Olmazor filiali": "00976",
+  "Trastbank ATB, Uchtepa filiali": "00491",
+  "Turonbank ATB, Zangiota filiali": "00358",
+  "Universal Bank ATB, Mirzo Ulug‘bek filiali": "01041",
+  "Xalq banki ATB, Shayxontohur filiali": "00279",
+};
 
 /** Shartnoma tomoni: bank rekvizitlari tashkilotlar reyestridan qo‘shiladi */
 function partyOf(role: string, org: LeaseOrg): ContractParty {
-  const record = organizationByStir(stirDigits(org.tin))
-  const bank = record?.bank ?? ''
+  const record = organizationByStir(stirDigits(org.tin));
+  const bank = record?.bank ?? "";
   return {
     role,
     name: org.name,
@@ -452,91 +462,95 @@ function partyOf(role: string, org: LeaseOrg): ContractParty {
     email: org.email,
     address: org.address,
     bank,
-    account: record?.account ?? '',
-    mfo: bank ? (BANK_MFO[bank] ?? '') : '',
-  }
+    account: record?.account ?? "",
+    mfo: bank ? (BANK_MFO[bank] ?? "") : "",
+  };
 }
 
-const LANDLORD_ORG = organizationByStir(LANDLORD_STIR)
+const LANDLORD_ORG = organizationByStir(LANDLORD_STIR);
 
-const LANDLORD: ContractParty = partyOf('Ijaraga beruvchi', {
-  name: LANDLORD_ORG?.name ?? 'Makon Property Group MCHJ',
+const LANDLORD: ContractParty = partyOf("Ijaraga beruvchi", {
+  name: LANDLORD_ORG?.name ?? "Makon Property Group MCHJ",
   tin: formatStir(LANDLORD_STIR),
-  director: LANDLORD_ORG?.director ?? 'Azizbek Karimov',
-  phone: LANDLORD_ORG?.phone ?? '+998 78 150 00 00',
-  email: LANDLORD_ORG?.email ?? 'info@makon.uz',
-  address: LANDLORD_ORG?.address ?? 'Toshkent shahri, Mirobod tumani, Amir Temur ko‘chasi 88',
-})
+  director: LANDLORD_ORG?.director ?? "Azizbek Karimov",
+  phone: LANDLORD_ORG?.phone ?? "+998 78 150 00 00",
+  email: LANDLORD_ORG?.email ?? "info@makon.uz",
+  address:
+    LANDLORD_ORG?.address ??
+    "Toshkent shahri, Mirobod tumani, Amir Temur ko‘chasi 88",
+});
 
 /** Aktivlashtirish natijasi ish vaqtida bir marta qo‘llanadi (qayta yuklashda ham) */
-const appliedWorld = new Set<string>()
+const appliedWorld = new Set<string>();
 
 // ---------------------------------------------------------------------------
 // Hisob-kitob
 
 export function serviceTotalOf(offer: LeaseOffer, area: number) {
-  return Math.round(offer.servicePerSqm * area)
+  return Math.round(offer.servicePerSqm * area);
 }
 
 export function buildSchedule(
   offer: LeaseOffer,
-  request: Pick<LeaseRequest, 'startDate' | 'term'>,
+  request: Pick<LeaseRequest, "startDate" | "term">,
   area: number,
 ): SchedulePeriod[] {
-  const rows: SchedulePeriod[] = []
-  const service = serviceTotalOf(offer, area)
-  const step = PERIODICITY_MONTHS[offer.periodicity] ?? 1
-  const term = Math.max(1, Math.round(request.term))
+  const rows: SchedulePeriod[] = [];
+  const service = serviceTotalOf(offer, area);
+  const step = PERIODICITY_MONTHS[offer.periodicity] ?? 1;
+  const term = Math.max(1, Math.round(request.term));
 
   if (offer.deposit > 0) {
     rows.push({
-      id: 'dep',
-      kind: 'DEPOSIT',
-      label: 'Kafolat depoziti',
+      id: "dep",
+      kind: "DEPOSIT",
+      label: "Kafolat depoziti",
       dueAt: request.startDate,
       months: 0,
       rent: 0,
       service: 0,
       total: Math.round(offer.deposit),
-      status: 'PLANNED',
-    })
+      status: "PLANNED",
+    });
   }
 
-  let i = 0
-  let no = 1
+  let i = 0;
+  let no = 1;
   while (i < term) {
-    const months = Math.min(step, term - i)
-    const from = addMonths(request.startDate, i)
-    const to = addDays(addMonths(request.startDate, i + months), -1)
-    const rent = Math.round(offer.monthlyRent * months)
-    const serviceSum = service * months
+    const months = Math.min(step, term - i);
+    const from = addMonths(request.startDate, i);
+    const to = addDays(addMonths(request.startDate, i + months), -1);
+    const rent = Math.round(offer.monthlyRent * months);
+    const serviceSum = service * months;
     rows.push({
       id: `p${no}`,
-      kind: 'RENT',
+      kind: "RENT",
       label: months === 1 ? monthLabel(from) : `${dmy(from)} – ${dmy(to)}`,
       dueAt: from,
       months,
       rent,
       service: serviceSum,
       total: rent + serviceSum,
-      status: 'PLANNED',
-    })
-    i += months
-    no += 1
+      status: "PLANNED",
+    });
+    i += months;
+    no += 1;
   }
 
-  return rows
+  return rows;
 }
 
 export function scheduleTotals(schedule: SchedulePeriod[]) {
-  const rent = schedule.filter((r) => r.kind === 'RENT')
+  const rent = schedule.filter((r) => r.kind === "RENT");
   return {
-    deposit: schedule.filter((r) => r.kind === 'DEPOSIT').reduce((s, r) => s + r.total, 0),
+    deposit: schedule
+      .filter((r) => r.kind === "DEPOSIT")
+      .reduce((s, r) => s + r.total, 0),
     rent: rent.reduce((s, r) => s + r.rent, 0),
     service: rent.reduce((s, r) => s + r.service, 0),
     total: rent.reduce((s, r) => s + r.total, 0),
     periods: rent.length,
-  }
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -544,310 +558,345 @@ export function scheduleTotals(schedule: SchedulePeriod[]) {
 
 function contractLines(doc: ContractDoc): DocxLine[] {
   const lines: DocxLine[] = [
-    { text: `IJARA SHARTNOMASI № ${doc.code}`, style: 'title' },
-    { text: `Toshkent shahri · ${dmy(doc.composedAt)}`, style: 'subtitle' },
-    { text: '1. TOMONLAR', style: 'heading' },
-  ]
+    { text: `IJARA SHARTNOMASI № ${doc.code}`, style: "title" },
+    { text: `Toshkent shahri · ${dmy(doc.composedAt)}`, style: "subtitle" },
+    { text: "1. TOMONLAR", style: "heading" },
+  ];
 
   for (const p of [doc.landlord, doc.tenant]) {
-    lines.push({ text: `${p.role}: ${p.name}`, style: 'body' })
-    lines.push({ text: `STIR: ${p.tin} · Vakil: ${p.director}`, style: 'small' })
-    lines.push({ text: `Telefon: ${p.phone} · E-pochta: ${p.email}`, style: 'small' })
-    lines.push({ text: `Manzil: ${p.address}`, style: 'small' })
+    lines.push({ text: `${p.role}: ${p.name}`, style: "body" });
+    lines.push({
+      text: `STIR: ${p.tin} · Vakil: ${p.director}`,
+      style: "small",
+    });
+    lines.push({
+      text: `Telefon: ${p.phone} · E-pochta: ${p.email}`,
+      style: "small",
+    });
+    lines.push({ text: `Manzil: ${p.address}`, style: "small" });
   }
 
-  lines.push({ text: '2. IJARA OBYEKTI', style: 'heading' })
-  for (const r of doc.object) lines.push({ text: `${r.label}: ${r.value}` })
+  lines.push({ text: "2. IJARA OBYEKTI", style: "heading" });
+  for (const r of doc.object) lines.push({ text: `${r.label}: ${r.value}` });
 
-  lines.push({ text: '3. MOLIYAVIY SHARTLAR', style: 'heading' })
-  for (const r of doc.terms) lines.push({ text: `${r.label}: ${r.value}` })
+  lines.push({ text: "3. MOLIYAVIY SHARTLAR", style: "heading" });
+  for (const r of doc.terms) lines.push({ text: `${r.label}: ${r.value}` });
 
-  lines.push({ text: '4. TO‘LOV GRAFIGI', style: 'heading' })
+  lines.push({ text: "4. TO‘LOV GRAFIGI", style: "heading" });
   for (const r of doc.schedule) {
-    lines.push({ text: `${dmy(r.dueAt)}, ${r.label}: ${money(r.total)}`, style: 'small' })
+    lines.push({
+      text: `${dmy(r.dueAt)}, ${r.label}: ${money(r.total)}`,
+      style: "small",
+    });
   }
 
-  lines.push({ text: '5. SHARTNOMA BANDLARI', style: 'heading' })
+  lines.push({ text: "5. SHARTNOMA BANDLARI", style: "heading" });
   doc.clauses.forEach((c, i) => {
-    lines.push({ text: `5.${i + 1}. ${c.title}` })
-    lines.push({ text: c.text, style: 'small' })
-  })
+    lines.push({ text: `5.${i + 1}. ${c.title}` });
+    lines.push({ text: c.text, style: "small" });
+  });
 
-  lines.push({ text: '6. TOMONLARNING REKVIZITLARI VA IMZOLARI', style: 'heading' })
+  lines.push({
+    text: "6. TOMONLARNING REKVIZITLARI VA IMZOLARI",
+    style: "heading",
+  });
   for (const p of [doc.landlord, doc.tenant]) {
-    lines.push({ text: `${p.role}: ${p.name}` })
-    lines.push({ text: `STIR: ${p.tin}`, style: 'small' })
-    lines.push({ text: `Yuridik manzil: ${p.address}`, style: 'small' })
+    lines.push({ text: `${p.role}: ${p.name}` });
+    lines.push({ text: `STIR: ${p.tin}`, style: "small" });
+    lines.push({ text: `Yuridik manzil: ${p.address}`, style: "small" });
     lines.push({
-      text: p.bank ? `Bank: ${p.bank}` : 'Bank: shartnoma imzolashda tomon tomonidan to‘ldiriladi',
-      style: 'small',
-    })
+      text: p.bank
+        ? `Bank: ${p.bank}`
+        : "Bank: shartnoma imzolashda tomon tomonidan to‘ldiriladi",
+      style: "small",
+    });
     lines.push({
-      text: `Hisob raqami (h/r): ${p.account || 'to‘ldiriladi'} · MFO: ${p.mfo || 'to‘ldiriladi'}`,
-      style: 'small',
-    })
-    lines.push({ text: `Telefon: ${p.phone} · E-pochta: ${p.email}`, style: 'small' })
-    lines.push({ text: `${p.director}  _______________________  M.O‘.`, style: 'small' })
+      text: `Hisob raqami (h/r): ${p.account || "to‘ldiriladi"} · MFO: ${p.mfo || "to‘ldiriladi"}`,
+      style: "small",
+    });
+    lines.push({
+      text: `Telefon: ${p.phone} · E-pochta: ${p.email}`,
+      style: "small",
+    });
+    lines.push({
+      text: `${p.director}  _______________________  M.O‘.`,
+      style: "small",
+    });
   }
 
-  return lines
+  return lines;
 }
 
 /** Shartnoma qoralamasi: haqiqiy Word fayli */
 export function contractDocx(doc: ContractDoc): Blob {
-  return docxBlob(contractLines(doc))
+  return docxBlob(contractLines(doc));
 }
 
 /** Didox’dan qaytgan imzolangan nusxa, imzo paneli qo‘shilgan hujjat */
-export function signedContractDocx(doc: ContractDoc, ticket: DidoxTicket): Blob {
-  const lines = contractLines(doc)
-  lines.push({ text: 'DIDOX RAQAMLI IMZO QAYDNOMASI', style: 'heading' })
-  lines.push({ text: `Didox hujjat raqami: ${ticket.docNumber}` })
-  lines.push({ text: `Yuborilgan: ${ticket.sentAt}`, style: 'small' })
+export function signedContractDocx(
+  doc: ContractDoc,
+  ticket: DidoxTicket,
+): Blob {
+  const lines = contractLines(doc);
+  lines.push({ text: "DIDOX RAQAMLI IMZO QAYDNOMASI", style: "heading" });
+  lines.push({ text: `Didox hujjat raqami: ${ticket.docNumber}` });
+  lines.push({ text: `Yuborilgan: ${ticket.sentAt}`, style: "small" });
   for (const h of ticket.history) {
-    lines.push({ text: `${h.at}, ${h.state}. ${h.note}`, style: 'small' })
+    lines.push({ text: `${h.at}, ${h.state}. ${h.note}`, style: "small" });
   }
   lines.push({
     text: `Imzolovchi tomonlar: ${doc.landlord.name} (STIR ${doc.landlord.tin}) va ${doc.tenant.name} (STIR ${doc.tenant.tin}).`,
-    style: 'small',
-  })
+    style: "small",
+  });
   lines.push({
-    text: 'Imzolar Didox platformasida qo‘yilgan. Ushbu nusxa MAKON tizimiga yuklash uchun mo‘ljallangan.',
-    style: 'small',
-  })
-  return docxBlob(lines)
+    text: "Imzolar Didox platformasida qo‘yilgan. Ushbu nusxa MAKON tizimiga yuklash uchun mo‘ljallangan.",
+    style: "small",
+  });
+  return docxBlob(lines);
 }
 
 // ---------------------------------------------------------------------------
 // Boshlang‘ich yozuvlar: reyestrda allaqachon mavjud arizalar
 
 interface SeedInput {
-  id: string
-  code: string
-  unitId: string
-  org: LeaseOrg
-  status: LeaseStatus
-  submittedAt: string
-  startDate: string
-  term: number
-  offerPrice: number
-  note: string
-  rejectReason?: string
-  offer?: Partial<LeaseOffer>
+  id: string;
+  code: string;
+  unitId: string;
+  org: LeaseOrg;
+  status: LeaseStatus;
+  submittedAt: string;
+  startDate: string;
+  term: number;
+  offerPrice: number;
+  note: string;
+  rejectReason?: string;
+  offer?: Partial<LeaseOffer>;
   /** Operator telefon orqali bog‘langan sana va vaqti */
-  contactedAt?: string
+  contactedAt?: string;
 }
 
 /** Arizalar bilan ishlaydigan operator, boshlang‘ich yozuvlarda mas’ul shaxs */
-const SEED_OPERATOR = 'Malika Yusupova'
+const SEED_OPERATOR = "Malika Yusupova";
 
 const ORG_URBAN: LeaseOrg = {
-  name: 'Urban Office MCHJ',
-  tin: '307 219 645',
-  director: 'Dilshod Ergashev',
-  phone: '+998 90 567 89 01',
-  email: 'd.ergashev@urbanoffice.uz',
-  address: 'Toshkent shahri, Yunusobod tumani, Abdulla Qodiriy ko‘chasi 10',
-}
+  name: "Urban Office MCHJ",
+  tin: "307 219 645",
+  director: "Dilshod Ergashev",
+  phone: "+998 90 567 89 01",
+  email: "d.ergashev@urbanoffice.uz",
+  address: "Toshkent shahri, Yunusobod tumani, Abdulla Qodiriy ko‘chasi 10",
+};
 
 const SEEDS: SeedInput[] = [
   {
-    id: 'a-0156',
-    code: 'ARZ-2026-0156',
-    unitId: 'u-704',
+    id: "a-0156",
+    code: "ARZ-2026-0156",
+    unitId: "u-704",
     org: {
-      name: 'Modul Tech MCHJ',
-      tin: '306 118 402',
-      director: 'Bekzod Sultonov',
-      phone: '+998 90 512 30 40',
-      email: 'info@modultech.uz',
-      address: 'Toshkent shahri, Mirobod tumani, Shahrisabz ko‘chasi 14',
+      name: "Modul Tech MCHJ",
+      tin: "306 118 402",
+      director: "Bekzod Sultonov",
+      phone: "+998 90 512 30 40",
+      email: "info@modultech.uz",
+      address: "Toshkent shahri, Mirobod tumani, Shahrisabz ko‘chasi 14",
     },
-    status: 'YANGI',
-    submittedAt: '2026-08-12 10:30',
-    startDate: '2026-09-01',
+    status: "YANGI",
+    submittedAt: "2026-08-12 10:30",
+    startDate: "2026-09-01",
     term: 36,
     offerPrice: 10900000,
-    note: 'Uch yillik muddatga ijaraga olmoqchimiz, dastlabki ko‘rikni tashkil qilishingizni so‘raymiz.',
+    note: "Uch yillik muddatga ijaraga olmoqchimiz, dastlabki ko‘rikni tashkil qilishingizni so‘raymiz.",
   },
   {
-    id: 'a-0155',
-    code: 'ARZ-2026-0155',
-    unitId: 'u-301',
+    id: "a-0155",
+    code: "ARZ-2026-0155",
+    unitId: "u-301",
     org: {
-      name: 'Tech Solutions UZB MChJ',
-      tin: '304 552 118',
-      director: 'Sanjar Aliyev',
-      phone: '+998 90 771 22 33',
-      email: 's.aliyev@techsolutions.uz',
-      address: 'Toshkent shahri, Chilonzor tumani, Bunyodkor shoh ko‘chasi 3',
+      name: "Tech Solutions UZB MChJ",
+      tin: "304 552 118",
+      director: "Sanjar Aliyev",
+      phone: "+998 90 771 22 33",
+      email: "s.aliyev@techsolutions.uz",
+      address: "Toshkent shahri, Chilonzor tumani, Bunyodkor shoh ko‘chasi 3",
     },
-    status: 'YANGI',
-    submittedAt: '2026-08-11 14:05',
-    contactedAt: '2026-08-12 09:40',
-    startDate: '2026-09-01',
+    status: "YANGI",
+    submittedAt: "2026-08-11 14:05",
+    contactedAt: "2026-08-12 09:40",
+    startDate: "2026-09-01",
     term: 24,
     offerPrice: 18500000,
-    note: 'Savdo nuqtasi ochish rejalashtirilgan. To‘lov shartlarini muhokama qilishni so‘raymiz.',
-    offer: { monthlyRent: 18500000, deposit: 37000000, servicePerSqm: 21000, periodicity: 'Oylik' },
+    note: "Savdo nuqtasi ochish rejalashtirilgan. To‘lov shartlarini muhokama qilishni so‘raymiz.",
+    offer: {
+      monthlyRent: 18500000,
+      deposit: 37000000,
+      servicePerSqm: 21000,
+      periodicity: "Oylik",
+    },
   },
   {
-    id: 'a-0154',
-    code: 'ARZ-2026-0154',
-    unitId: 'u-b14',
+    id: "a-0154",
+    code: "ARZ-2026-0154",
+    unitId: "u-b14",
     org: {
-      name: 'Mega Invest Group',
-      tin: '302 640 973',
-      director: 'Aziz Nazarov',
-      phone: '+998 90 882 44 55',
-      email: 'a.nazarov@megainvest.uz',
-      address: 'Toshkent viloyati, Yuqori Chirchiq tumani, Sanoat ko‘chasi 12',
+      name: "Mega Invest Group",
+      tin: "302 640 973",
+      director: "Aziz Nazarov",
+      phone: "+998 90 882 44 55",
+      email: "a.nazarov@megainvest.uz",
+      address: "Toshkent viloyati, Yuqori Chirchiq tumani, Sanoat ko‘chasi 12",
     },
-    status: 'YANGI',
-    submittedAt: '2026-08-10 09:20',
-    startDate: '2026-10-01',
+    status: "YANGI",
+    submittedAt: "2026-08-10 09:20",
+    startDate: "2026-10-01",
     term: 60,
     offerPrice: 31000000,
-    note: 'Logistika markazi uchun ombor maydoni kerak.',
+    note: "Logistika markazi uchun ombor maydoni kerak.",
   },
   {
-    id: 'a-0153',
-    code: 'ARZ-2026-0153',
-    unitId: 'u-706',
+    id: "a-0153",
+    code: "ARZ-2026-0153",
+    unitId: "u-706",
     org: {
-      name: 'Creative Agency',
-      tin: '303 981 264',
-      director: 'Kamola Yusupova',
-      phone: '+998 90 993 66 77',
-      email: 'k.yusupova@creative.uz',
-      address: 'Toshkent shahri, Mirobod tumani, Amir Temur ko‘chasi 88',
+      name: "Creative Agency",
+      tin: "303 981 264",
+      director: "Kamola Yusupova",
+      phone: "+998 90 993 66 77",
+      email: "k.yusupova@creative.uz",
+      address: "Toshkent shahri, Mirobod tumani, Amir Temur ko‘chasi 88",
     },
-    status: 'SHARTNOMA_TAYYOR',
-    submittedAt: '2026-08-06 16:40',
-    contactedAt: '2026-08-07 10:15',
-    startDate: '2026-09-01',
+    status: "SHARTNOMA_TAYYOR",
+    submittedAt: "2026-08-06 16:40",
+    contactedAt: "2026-08-07 10:15",
+    startDate: "2026-09-01",
     term: 12,
     offerPrice: 11200000,
-    note: 'Joriy ofisdan kengaytirish maqsadida qo‘shimcha maydon.',
+    note: "Joriy ofisdan kengaytirish maqsadida qo‘shimcha maydon.",
     offer: {
       monthlyRent: 11200000,
       deposit: 22400000,
       servicePerSqm: 18000,
-      periodicity: 'Choraklik',
+      periodicity: "Choraklik",
     },
   },
   {
-    id: 'a-0152',
-    code: 'ARZ-2026-0152',
-    unitId: 'u-402',
+    id: "a-0152",
+    code: "ARZ-2026-0152",
+    unitId: "u-402",
     org: {
-      name: 'Alpha Solutions',
-      tin: '309 447 130',
-      director: 'Rustam Qodirov',
-      phone: '+998 90 445 88 99',
-      email: 'r.qodirov@alpha.uz',
-      address: 'Toshkent shahri, Yunusobod tumani, Abdulla Qodiriy ko‘chasi 10',
+      name: "Alpha Solutions",
+      tin: "309 447 130",
+      director: "Rustam Qodirov",
+      phone: "+998 90 445 88 99",
+      email: "r.qodirov@alpha.uz",
+      address: "Toshkent shahri, Yunusobod tumani, Abdulla Qodiriy ko‘chasi 10",
     },
-    status: 'RAD_ETILDI',
-    submittedAt: '2026-08-04 11:15',
-    startDate: '2026-09-01',
+    status: "RAD_ETILDI",
+    submittedAt: "2026-08-04 11:15",
+    startDate: "2026-09-01",
     term: 24,
     offerPrice: 13400000,
-    note: 'Vakillik ofisi uchun maydon so‘raladi.',
-    rejectReason: 'Talab qilingan muddat bo‘sh maydon rejasiga to‘g‘ri kelmadi.',
+    note: "Vakillik ofisi uchun maydon so‘raladi.",
+    rejectReason:
+      "Talab qilingan muddat bo‘sh maydon rejasiga to‘g‘ri kelmadi.",
   },
   {
-    id: 'a-0151',
-    code: 'ARZ-2026-0151',
-    unitId: 'u-702',
+    id: "a-0151",
+    code: "ARZ-2026-0151",
+    unitId: "u-702",
     org: ORG_URBAN,
-    status: 'YANGI',
-    submittedAt: '2026-08-09 12:40',
-    contactedAt: '2026-08-10 11:05',
-    startDate: '2026-09-01',
+    status: "YANGI",
+    submittedAt: "2026-08-09 12:40",
+    contactedAt: "2026-08-10 11:05",
+    startDate: "2026-09-01",
     term: 24,
     offerPrice: 11800000,
-    note: 'Qo‘shni maydonni qo‘shimcha ish o‘rinlari uchun ijaraga olish rejalashtirilgan.',
-    offer: { monthlyRent: 11800000, deposit: 23600000, servicePerSqm: 18000, periodicity: 'Oylik' },
+    note: "Qo‘shni maydonni qo‘shimcha ish o‘rinlari uchun ijaraga olish rejalashtirilgan.",
+    offer: {
+      monthlyRent: 11800000,
+      deposit: 23600000,
+      servicePerSqm: 18000,
+      periodicity: "Oylik",
+    },
   },
   {
-    id: 'a-0142',
-    code: 'ARZ-2026-0142',
-    unitId: 'u-505',
+    id: "a-0142",
+    code: "ARZ-2026-0142",
+    unitId: "u-505",
     org: ORG_URBAN,
-    status: 'RAD_ETILDI',
-    submittedAt: '2026-07-15 09:30',
-    startDate: '2026-08-01',
+    status: "RAD_ETILDI",
+    submittedAt: "2026-07-15 09:30",
+    startDate: "2026-08-01",
     term: 12,
     offerPrice: 74445000,
-    note: 'Katta ochiq maydon so‘ralgan.',
-    rejectReason: 'So‘ralgan muddat bino bo‘sh maydon rejasiga to‘g‘ri kelmadi.',
+    note: "Katta ochiq maydon so‘ralgan.",
+    rejectReason:
+      "So‘ralgan muddat bino bo‘sh maydon rejasiga to‘g‘ri kelmadi.",
   },
-]
+];
 
 function seedCase(seed: SeedInput): LeaseCase | null {
-  const unit = unitById(seed.unitId)
-  if (!unit) return null
-  const building = buildingById(unit.buildingId)
-  if (!building) return null
+  const unit = unitById(seed.unitId);
+  if (!unit) return null;
+  const building = buildingById(unit.buildingId);
+  if (!building) return null;
 
   const request: LeaseRequest = {
-    type: 'Ijaraga olish',
+    type: "Ijaraga olish",
     offerPrice: seed.offerPrice,
     startDate: seed.startDate,
     term: seed.term,
     note: seed.note,
     submittedAt: seed.submittedAt,
-  }
+  };
 
   const offer: LeaseOffer | null = seed.offer
     ? {
         monthlyRent: seed.offer.monthlyRent ?? seed.offerPrice,
         deposit: seed.offer.deposit ?? 0,
         servicePerSqm: seed.offer.servicePerSqm ?? 0,
-        periodicity: seed.offer.periodicity ?? 'Oylik',
-        adjustmentReason: '',
+        periodicity: seed.offer.periodicity ?? "Oylik",
+        adjustmentReason: "",
       }
-    : null
+    : null;
 
   const audit: AuditEntry[] = [
     {
       at: seed.submittedAt,
       actor: seed.org.director,
-      roleLabel: 'Ijarachi',
-      action: 'Ariza yuborildi',
+      roleLabel: "Ijarachi",
+      action: "Ariza yuborildi",
       detail: `${unit.code} uniti bo‘yicha ${seed.term} oylik ijara so‘rovi`,
     },
-  ]
+  ];
 
   if (seed.contactedAt) {
     audit.push({
       at: seed.contactedAt,
       actor: SEED_OPERATOR,
-      roleLabel: 'Operator',
-      action: 'Bog‘lanildi',
+      roleLabel: "Operator",
+      action: "Bog‘lanildi",
       detail: `${seed.org.director} bilan ${seed.org.phone} raqami orqali gaplashildi, shartlar kelishildi`,
-    })
+    });
   }
 
-  if (seed.status === 'SHARTNOMA_TAYYOR') {
+  if (seed.status === "SHARTNOMA_TAYYOR") {
     audit.push({
       at: `${addDays(seed.submittedAt.slice(0, 10), 2)} 09:15`,
       actor: SEED_OPERATOR,
-      roleLabel: 'Operator',
-      action: 'Ariza tasdiqlandi',
-      detail: 'Kelishilgan shartlar kiritildi va to‘lov grafigi hisoblandi',
-    })
+      roleLabel: "Operator",
+      action: "Ariza tasdiqlandi",
+      detail: "Kelishilgan shartlar kiritildi va to‘lov grafigi hisoblandi",
+    });
   }
 
-  if (seed.status === 'RAD_ETILDI') {
+  if (seed.status === "RAD_ETILDI") {
     audit.push({
       at: `${addDays(seed.submittedAt.slice(0, 10), 2)} 11:20`,
       actor: SEED_OPERATOR,
-      roleLabel: 'Operator',
-      action: 'Ariza rad etildi',
-      detail: seed.rejectReason ?? '',
-    })
+      roleLabel: "Operator",
+      action: "Ariza rad etildi",
+      detail: seed.rejectReason ?? "",
+    });
   }
 
   return {
@@ -871,18 +920,18 @@ function seedCase(seed: SeedInput): LeaseCase | null {
     signedDocument: null,
     audit,
     contactedAt: seed.contactedAt ?? null,
-    rejectReason: seed.rejectReason ?? '',
+    rejectReason: seed.rejectReason ?? "",
     guest: false,
     contactName: seed.org.director,
     access: null,
     contractEdits: 0,
     activation: null,
-  }
+  };
 }
 
 // ---------------------------------------------------------------------------
 
-export const useLeaseStore = defineStore('lease', {
+export const useLeaseStore = defineStore("lease", {
   state: () => ({
     cases: [] as LeaseCase[],
     seeded: false,
@@ -900,43 +949,51 @@ export const useLeaseStore = defineStore('lease', {
 
     /** Ariza raqami bo‘yicha, kuzatuv sahifasi shu orqali topadi */
     byCode: (s) => (code: string) => {
-      const key = String(code ?? '').trim().toUpperCase()
-      return s.cases.find((c) => c.code.toUpperCase() === key) ?? null
+      const key = String(code ?? "")
+        .trim()
+        .toUpperCase();
+      return s.cases.find((c) => c.code.toUpperCase() === key) ?? null;
     },
 
     /** Hisobsiz yuborilgan, hali kabinetga bog‘lanmagan arizalar */
     guestCases: (s) => s.cases.filter((c) => c.guest),
 
     /** Qaror kutayotgan yozuvlar */
-    pending: (s) => s.cases.filter((c) => c.status !== 'FAOL' && c.status !== 'RAD_ETILDI'),
+    pending: (s) =>
+      s.cases.filter((c) => c.status !== "FAOL" && c.status !== "RAD_ETILDI"),
 
     /** Ijarachi kabineti faqat o‘z tashkiloti yozuvlarini ko‘radi */
-    forOrganization: (s) => (name: string) => s.cases.filter((c) => c.org.name === name),
+    forOrganization: (s) => (name: string) =>
+      s.cases.filter((c) => c.org.name === name),
 
-    activeCases: (s) => s.cases.filter((c) => c.status === 'FAOL'),
+    activeCases: (s) => s.cases.filter((c) => c.status === "FAOL"),
 
     /** Maydoni hali kelishilmagan arizalar: operator qo‘ng‘iroqda aniqlaydi */
-    awaitingUnit: (s) => s.cases.filter((c) => !c.unitId && c.status === 'YANGI'),
+    awaitingUnit: (s) =>
+      s.cases.filter((c) => !c.unitId && c.status === "YANGI"),
   },
 
   actions: {
     /** Boshlang‘ich yozuvlar bir marta yoziladi */
     seed() {
-      if (this.seeded) return
-      this.cases = SEEDS.map(seedCase).filter((c): c is LeaseCase => c !== null)
-      this.seeded = true
+      if (this.seeded) return;
+      this.cases = SEEDS.map(seedCase).filter(
+        (c): c is LeaseCase => c !== null,
+      );
+      this.seeded = true;
       /*
        * Tasdiqlangan bosqichdagi yozuv uchun shartnoma matni ham tuziladi:
        * jarayonda tasdiq bilan shartnoma bir vaqtda paydo bo‘ladi, boshlang‘ich
        * yozuv ham shu qoidaga bo‘ysunadi va reyestrga hujjatsiz ariza tushmaydi.
        */
       for (const item of this.cases) {
-        if (item.status === 'SHARTNOMA_TAYYOR' && !item.contract) this.composeContract(item.id)
+        if (item.status === "SHARTNOMA_TAYYOR" && !item.contract)
+          this.composeContract(item.id);
       }
     },
 
-    log(item: LeaseCase, entry: Omit<AuditEntry, 'at'>) {
-      item.audit.push({ at: now(), ...entry })
+    log(item: LeaseCase, entry: Omit<AuditEntry, "at">) {
+      item.audit.push({ at: now(), ...entry });
     },
 
     /**
@@ -948,23 +1005,23 @@ export const useLeaseStore = defineStore('lease', {
      * hech qanday maydon tanlamaydi.
      */
     createCase(input: {
-      unitId?: string | null
-      org: LeaseOrg
-      offerPrice: number
+      unitId?: string | null;
+      org: LeaseOrg;
+      offerPrice: number;
       /** Berilmasa keyingi oyning birinchi kuni olinadi */
-      startDate?: string
-      term: number
-      note: string
-      type?: LeaseRequest['type']
+      startDate?: string;
+      term: number;
+      note: string;
+      type?: LeaseRequest["type"];
       /** Ariza ochiq forma orqali, hisobsiz yuborilgan */
-      guest?: boolean
+      guest?: boolean;
       /** Ariza yuborgan shaxs ismi */
-      contactName?: string
+      contactName?: string;
     }): LeaseCase | null {
-      const unit = input.unitId ? unitById(input.unitId) : undefined
-      if (input.unitId && !unit) return null
-      const building = unit ? buildingById(unit.buildingId) : undefined
-      if (unit && !building) return null
+      const unit = input.unitId ? unitById(input.unitId) : undefined;
+      if (input.unitId && !unit) return null;
+      const building = unit ? buildingById(unit.buildingId) : undefined;
+      if (unit && !building) return null;
 
       /*
        * So‘rov turi unitning taklif turidan aniqlanadi: faqat sotuvga
@@ -972,26 +1029,31 @@ export const useLeaseStore = defineStore('lease', {
        * so‘rovi oxirida ijara shartnomasi tuzilib qolar edi. Maydon
        * tanlanmagan arizada tur so‘rovning o‘zidan olinadi.
        */
-      const type: LeaseRequest['type'] =
-        input.type === 'Sotib olish' || unit?.offer === 'Sotuv' ? 'Sotib olish' : 'Ijaraga olish'
+      const type: LeaseRequest["type"] =
+        input.type === "Sotib olish" || unit?.offer === "Sotuv"
+          ? "Sotib olish"
+          : "Ijaraga olish";
 
-      const code = nextCode('ARZ', this.cases.map((c) => c.code))
-      const stamp = now()
+      const code = nextCode(
+        "ARZ",
+        this.cases.map((c) => c.code),
+      );
+      const stamp = now();
 
       const item: LeaseCase = {
         id: `a-${code.slice(-4)}`,
         code,
-        status: 'YANGI',
-        unitId: unit?.id ?? '',
-        unitCode: unit?.code ?? '',
+        status: "YANGI",
+        unitId: unit?.id ?? "",
+        unitCode: unit?.code ?? "",
         area: unit?.area ?? 0,
         floor: unit?.floor ?? 0,
-        usage: unit?.usage ?? '',
-        buildingId: building?.id ?? '',
-        buildingName: building?.name ?? '',
+        usage: unit?.usage ?? "",
+        buildingId: building?.id ?? "",
+        buildingName: building?.name ?? "",
         buildingAddress: building
           ? `${building.city}, ${building.district}, ${building.street}`
-          : '',
+          : "",
         org: { ...input.org },
         request: {
           type,
@@ -1008,43 +1070,48 @@ export const useLeaseStore = defineStore('lease', {
         signedDocument: null,
         audit: [],
         contactedAt: null,
-        rejectReason: '',
+        rejectReason: "",
         guest: input.guest === true,
         contactName: input.contactName?.trim() || input.org.director,
-            access: null,
+        access: null,
         contractEdits: 0,
         activation: null,
-      }
+      };
 
       const terms =
-        type === 'Sotib olish'
+        type === "Sotib olish"
           ? `sotib olish taklifi ${money(input.offerPrice)}`
-          : `${input.term} oy · ${money(input.offerPrice)}`
+          : `${input.term} oy · ${money(input.offerPrice)}`;
 
       const place =
-        unit && building ? `${building.name} · Unit ${unit.code}` : 'Maydon operator bilan kelishiladi'
+        unit && building
+          ? `${building.name} · Unit ${unit.code}`
+          : "Maydon operator bilan kelishiladi";
 
       this.log(item, {
         actor: item.contactName,
-        roleLabel: item.guest ? 'Mijoz, hisobsiz' : 'Ijarachi',
-        action: type === 'Sotib olish' ? 'Sotib olish so‘rovi yuborildi' : 'Ariza yuborildi',
-        detail: `${place} · ${terms}${item.guest ? ' · telefon raqami tasdiqlangan' : ''}`,
-      })
+        roleLabel: item.guest ? "Mijoz, hisobsiz" : "Ijarachi",
+        action:
+          type === "Sotib olish"
+            ? "Sotib olish so‘rovi yuborildi"
+            : "Ariza yuborildi",
+        detail: `${place} · ${terms}${item.guest ? " · telefon raqami tasdiqlangan" : ""}`,
+      });
 
-      this.cases.unshift(item)
-      return item
+      this.cases.unshift(item);
+      return item;
     },
 
     markContacted(id: string, actor: string, roleLabel: string) {
-      const item = this.byId(id)
-      if (!item || item.contactedAt) return
-      item.contactedAt = now()
+      const item = this.byId(id);
+      if (!item || item.contactedAt) return;
+      item.contactedAt = now();
       this.log(item, {
         actor,
         roleLabel,
-        action: 'Bog‘lanildi',
+        action: "Bog‘lanildi",
         detail: `${item.org.director} bilan ${item.org.phone} raqami orqali gaplashildi`,
-      })
+      });
     },
 
     /**
@@ -1055,39 +1122,40 @@ export const useLeaseStore = defineStore('lease', {
      * uchun tizim mijoz o‘rniga hech qanday maydon tanlagan bo‘lib ko‘rinmaydi.
      */
     assignUnit(id: string, actor: string, roleLabel: string, unitId: string) {
-      const item = this.byId(id)
-      if (!item || item.unitId || item.status !== 'YANGI') return
-      const unit = unitById(unitId)
-      if (!unit) return
-      const building = buildingById(unit.buildingId)
-      if (!building) return
+      const item = this.byId(id);
+      if (!item || item.unitId || item.status !== "YANGI") return;
+      const unit = unitById(unitId);
+      if (!unit) return;
+      const building = buildingById(unit.buildingId);
+      if (!building) return;
 
-      item.unitId = unit.id
-      item.unitCode = unit.code
-      item.area = unit.area
-      item.floor = unit.floor
-      item.usage = unit.usage
-      item.buildingId = building.id
-      item.buildingName = building.name
-      item.buildingAddress = `${building.city}, ${building.district}, ${building.street}`
+      item.unitId = unit.id;
+      item.unitCode = unit.code;
+      item.area = unit.area;
+      item.floor = unit.floor;
+      item.usage = unit.usage;
+      item.buildingId = building.id;
+      item.buildingName = building.name;
+      item.buildingAddress = `${building.city}, ${building.district}, ${building.street}`;
 
       /* Maydon maydoni o‘zgargani uchun servis to‘lovi va grafik qayta hisoblanadi */
-      if (item.offer) item.schedule = buildSchedule(item.offer, item.request, item.area)
+      if (item.offer)
+        item.schedule = buildSchedule(item.offer, item.request, item.area);
 
       this.log(item, {
         actor,
         roleLabel,
-        action: 'Maydon belgilandi',
+        action: "Maydon belgilandi",
         detail: `${building.name} · Unit ${unit.code} · ${unit.area.toFixed(2)} m² · ${unit.usage}`,
-      })
+      });
     },
 
     /** Kelishilgan shartlar saqlanadi va to‘lov grafigi qayta hisoblanadi */
     saveOffer(id: string, offer: LeaseOffer) {
-      const item = this.byId(id)
-      if (!item) return
-      item.offer = { ...offer }
-      item.schedule = buildSchedule(item.offer, item.request, item.area)
+      const item = this.byId(id);
+      if (!item) return;
+      item.offer = { ...offer };
+      item.schedule = buildSchedule(item.offer, item.request, item.area);
     },
 
     /**
@@ -1097,46 +1165,52 @@ export const useLeaseStore = defineStore('lease', {
      * zahoti tuziladi: oraliq moliya tasdig‘i yo‘q, shuning uchun ariza
      * to‘g‘ridan-to‘g‘ri «Shartnoma tayyorlandi» bosqichiga o‘tadi.
      */
-    approveApplication(id: string, actor: string, roleLabel: string, offer: LeaseOffer) {
-      const item = this.byId(id)
-      if (!item || item.status !== 'YANGI') return
+    approveApplication(
+      id: string,
+      actor: string,
+      roleLabel: string,
+      offer: LeaseOffer,
+    ) {
+      const item = this.byId(id);
+      if (!item || item.status !== "YANGI") return;
       /* Ijara oqimi faqat ijara so‘rovi uchun: sotuv alohida rasmiylashtiriladi */
-      if (item.request.type !== 'Ijaraga olish') return
+      if (item.request.type !== "Ijaraga olish") return;
       /* Maydonsiz shartnoma tuzilmaydi: avval operator maydonni belgilaydi */
-      if (!item.unitId) return
+      if (!item.unitId) return;
 
-      this.saveOffer(id, offer)
-      const totals = scheduleTotals(item.schedule)
+      this.saveOffer(id, offer);
+      const totals = scheduleTotals(item.schedule);
 
-      const agreed = offer.adjustmentReason.trim()
+      const agreed = offer.adjustmentReason.trim();
       this.log(item, {
         actor,
         roleLabel,
-        action: 'Ariza tasdiqlandi',
+        action: "Ariza tasdiqlandi",
         detail: agreed
           ? `Oylik ijara ${money(offer.monthlyRent)}, depozit ${money(offer.deposit)}, ${totals.periods} ta to‘lov davri. Kelishuv izohi: ${agreed}`
           : `Oylik ijara ${money(offer.monthlyRent)}, depozit ${money(offer.deposit)}, ${totals.periods} ta to‘lov davri`,
-      })
+      });
 
-      this.composeContract(id)
+      this.composeContract(id);
     },
 
     /** Tasdiq bosilgan zahoti tizim ijara shartnomasini tuzadi */
     composeContract(id: string) {
-      const item = this.byId(id)
-      if (!item || !item.offer) return
-      if (item.request.type !== 'Ijaraga olish') return
+      const item = this.byId(id);
+      if (!item || !item.offer) return;
+      if (item.request.type !== "Ijaraga olish") return;
 
       /*
        * Qayta ishlashdan keyin shartnoma qayta tuzilsa, avvalgi kod saqlanadi:
        * bitta ariza bo‘yicha reyestrda ikkita raqam paydo bo‘lmaydi.
        */
       const code =
-        item.contract?.code ?? nextContractCode(this.cases.map((c) => c.contract?.code))
-      const startsAt = item.request.startDate
-      const endsAt = addDays(addMonths(startsAt, item.request.term), -1)
-      const service = serviceTotalOf(item.offer, item.area)
-      const totals = scheduleTotals(item.schedule)
+        item.contract?.code ??
+        nextContractCode(this.cases.map((c) => c.contract?.code));
+      const startsAt = item.request.startDate;
+      const endsAt = addDays(addMonths(startsAt, item.request.term), -1);
+      const service = serviceTotalOf(item.offer, item.area);
+      const totals = scheduleTotals(item.schedule);
 
       const doc: ContractDoc = {
         code,
@@ -1144,52 +1218,55 @@ export const useLeaseStore = defineStore('lease', {
         startsAt,
         endsAt,
         landlord: LANDLORD,
-        tenant: partyOf('Ijarachi', item.org),
+        tenant: partyOf("Ijarachi", item.org),
         object: [
-          { label: 'Obyekt', value: item.buildingName },
-          { label: 'Manzil', value: item.buildingAddress },
-          { label: 'Unit raqami', value: item.unitCode },
-          { label: 'Qavat', value: `${item.floor}-qavat` },
-          { label: 'Maydon', value: `${item.area.toFixed(2)} m²` },
-          { label: 'Foydalanish turi', value: item.usage },
+          { label: "Obyekt", value: item.buildingName },
+          { label: "Manzil", value: item.buildingAddress },
+          { label: "Unit raqami", value: item.unitCode },
+          { label: "Qavat", value: `${item.floor}-qavat` },
+          { label: "Maydon", value: `${item.area.toFixed(2)} m²` },
+          { label: "Foydalanish turi", value: item.usage },
         ],
         terms: [
-          { label: 'Oylik ijara narxi', value: money(item.offer.monthlyRent) },
-          { label: 'Kafolat depoziti', value: money(item.offer.deposit) },
+          { label: "Oylik ijara narxi", value: money(item.offer.monthlyRent) },
+          { label: "Kafolat depoziti", value: money(item.offer.deposit) },
           {
-            label: 'Servis to‘lovi',
+            label: "Servis to‘lovi",
             value: `${money(item.offer.servicePerSqm)} / m² / oy, jami ${money(service)}`,
           },
-          { label: 'To‘lov davriyligi', value: item.offer.periodicity },
-          { label: 'Muddat', value: `${item.request.term} oy` },
-          { label: 'Boshlanish sanasi', value: dmy(startsAt) },
-          { label: 'Tugash sanasi', value: dmy(endsAt) },
-          { label: 'Shartnoma bo‘yicha jami summa', value: money(totals.total) },
+          { label: "To‘lov davriyligi", value: item.offer.periodicity },
+          { label: "Muddat", value: `${item.request.term} oy` },
+          { label: "Boshlanish sanasi", value: dmy(startsAt) },
+          { label: "Tugash sanasi", value: dmy(endsAt) },
+          {
+            label: "Shartnoma bo‘yicha jami summa",
+            value: money(totals.total),
+          },
         ],
         clauses: [
           {
-            title: 'Shartnoma predmeti',
+            title: "Shartnoma predmeti",
             text: `Ijaraga beruvchi ${item.buildingName} binosidagi ${item.unitCode}-unitni (${item.area.toFixed(2)} m²) Ijarachiga vaqtinchalik egalik va foydalanishga topshiradi, Ijarachi esa belgilangan to‘lovlarni o‘z vaqtida amalga oshiradi.`,
           },
           {
-            title: 'To‘lov tartibi',
+            title: "To‘lov tartibi",
             text: `To‘lovlar ${item.offer.periodicity.toLowerCase()} tartibda, har bir davr boshlanishidan oldin ilova qilingan grafik bo‘yicha amalga oshiriladi. Servis to‘lovi maydonga nisbatan hisoblanadi va ijara to‘lovi bilan birga undiriladi.`,
           },
           {
-            title: 'Kafolat depoziti',
+            title: "Kafolat depoziti",
             text: `Ijarachi shartnoma imzolangan sanadan boshlab 5 bank kuni ichida ${money(item.offer.deposit)} miqdorida kafolat depozitini o‘tkazadi. Depozit shartnoma tugagach, qarzdorlik bo‘lmasa, to‘liq qaytariladi.`,
           },
           {
-            title: 'Tomonlar majburiyatlari',
-            text: 'Ijaraga beruvchi muhandislik tizimlarining ishlashini va umumiy maydonlarga xizmat ko‘rsatishni ta’minlaydi. Ijarachi maydondan maqsadli foydalanadi, yong‘in va sanitariya talablariga rioya qiladi.',
+            title: "Tomonlar majburiyatlari",
+            text: "Ijaraga beruvchi muhandislik tizimlarining ishlashini va umumiy maydonlarga xizmat ko‘rsatishni ta’minlaydi. Ijarachi maydondan maqsadli foydalanadi, yong‘in va sanitariya talablariga rioya qiladi.",
           },
           {
-            title: 'Amal qilish muddati',
+            title: "Amal qilish muddati",
             text: `Shartnoma ${dmy(startsAt)} dan ${dmy(endsAt)} gacha amal qiladi. Muddat tugashidan 30 kun oldin tomonlar uzaytirish yuzasidan qaror qabul qiladi.`,
           },
           {
-            title: 'Imzolash tartibi',
-            text: 'Shartnoma Didox platformasi orqali imzolanadi. Imzolangan nusxa MAKON tizimiga yuklanadi va uning SHA-256 nazorat yig‘indisi hujjat butunligini tasdiqlaydi.',
+            title: "Imzolash tartibi",
+            text: "Shartnoma Didox platformasi orqali imzolanadi. Imzolangan nusxa MAKON tizimiga yuklanadi va uning SHA-256 nazorat yig‘indisi hujjat butunligini tasdiqlaydi.",
           },
         ],
         /*
@@ -1197,16 +1274,16 @@ export const useLeaseStore = defineStore('lease', {
          * shartnoma hujjatidagi jadval ham o‘sha zahoti yangilanadi.
          */
         schedule: item.schedule,
-      }
+      };
 
-      item.contract = doc
-      item.status = 'SHARTNOMA_TAYYOR'
+      item.contract = doc;
+      item.status = "SHARTNOMA_TAYYOR";
       this.log(item, {
-        actor: 'Tizim',
-        roleLabel: 'Avtomatik',
-        action: 'Ijara shartnomasi tuzildi',
+        actor: "Tizim",
+        roleLabel: "Avtomatik",
+        action: "Ijara shartnomasi tuzildi",
         detail: `${code}: ${item.request.term} oy, ${money(totals.total)} (DOCX)`,
-      })
+      });
     },
 
     /**
@@ -1220,43 +1297,45 @@ export const useLeaseStore = defineStore('lease', {
       roleLabel: string,
       clauses: Array<{ title: string; text: string }>,
     ) {
-      const item = this.byId(id)
-      if (!item || !item.contract || item.status !== 'SHARTNOMA_TAYYOR') return
+      const item = this.byId(id);
+      if (!item || !item.contract || item.status !== "SHARTNOMA_TAYYOR") return;
 
-      const before = item.contract.clauses
+      const before = item.contract.clauses;
       const cleaned = clauses
         .map((c) => ({ title: c.title.trim(), text: c.text.trim() }))
-        .filter((c) => c.title && c.text)
-      if (!cleaned.length) return
+        .filter((c) => c.title && c.text);
+      if (!cleaned.length) return;
 
-      const added = Math.max(0, cleaned.length - before.length)
+      const added = Math.max(0, cleaned.length - before.length);
       const changed = cleaned.filter(
-        (c, i) => before[i] && (before[i]!.title !== c.title || before[i]!.text !== c.text),
-      ).length
-      if (!added && !changed) return
+        (c, i) =>
+          before[i] &&
+          (before[i]!.title !== c.title || before[i]!.text !== c.text),
+      ).length;
+      if (!added && !changed) return;
 
-      item.contract.clauses = cleaned
-      item.contractEdits += 1
+      item.contract.clauses = cleaned;
+      item.contractEdits += 1;
 
-      const parts: string[] = []
-      if (changed) parts.push(`${changed} ta band tahrirlandi`)
-      if (added) parts.push(`${added} ta qo‘shimcha shart kiritildi`)
+      const parts: string[] = [];
+      if (changed) parts.push(`${changed} ta band tahrirlandi`);
+      if (added) parts.push(`${added} ta qo‘shimcha shart kiritildi`);
 
       this.log(item, {
         actor,
         roleLabel,
-        action: 'Shartnoma tahrirlandi',
-        detail: `${item.contract.code}: ${parts.join(', ')}`,
-      })
+        action: "Shartnoma tahrirlandi",
+        detail: `${item.contract.code}: ${parts.join(", ")}`,
+      });
     },
 
     /** Hujjat Didox orqali imzolashga yuboriladi */
     sendToDidox(id: string, actor: string, roleLabel: string) {
-      const item = this.byId(id)
-      if (!item || !item.contract || item.status !== 'SHARTNOMA_TAYYOR') return
+      const item = this.byId(id);
+      if (!item || !item.contract || item.status !== "SHARTNOMA_TAYYOR") return;
 
-      this.didoxSequence += 1
-      const stamp = now()
+      this.didoxSequence += 1;
+      const stamp = now();
 
       item.didox = {
         docNumber: `DX-${todayIso().slice(0, 4)}-${this.didoxSequence}`,
@@ -1264,92 +1343,24 @@ export const useLeaseStore = defineStore('lease', {
         sentBy: actor,
         recipient: item.org.name,
         recipientTin: item.org.tin,
-        state: 'Yuborilgan',
-        lastCheckedAt: null,
+        state: "Yuborilgan",
         stateAt: Date.now(),
         history: [
           {
-            state: 'Yuborilgan',
+            state: "Yuborilgan",
             at: stamp,
             note: `Hujjat ${item.org.name} tashkilotiga imzolash uchun yuborildi`,
           },
         ],
-      }
+      };
 
-      item.status = 'DIDOX_YUBORILDI'
+      item.status = "DIDOX_YUBORILDI";
       this.log(item, {
         actor,
         roleLabel,
-        action: 'Didox orqali yuborildi',
+        action: "Didox orqali yuborildi",
         detail: `${item.contract.code} · Didox hujjat raqami ${item.didox.docNumber}`,
-      })
-    },
-
-    /**
-     * Didox tomonidagi holat tekshiriladi.
-     *
-     * Natija qaytariladi, shuning uchun sahifa haqiqatda nima bo‘lganini
-     * aytadi: holat o‘zgardimi yoki o‘zgarishsiz qoldimi. Ariza statusi ham
-     * har safar ticket holatidan qayta hisoblanadi.
-     */
-    checkDidox(
-      id: string,
-      actor: string,
-      roleLabel: string,
-    ): { changed: boolean; state: DidoxState } | null {
-      const item = this.byId(id)
-      if (!item || !item.didox) return null
-      const ticket = item.didox
-      const stamp = now()
-      ticket.lastCheckedAt = stamp
-
-      const i = DIDOX_FLOW.indexOf(ticket.state)
-      const next = DIDOX_FLOW[i + 1]
-
-      /*
-       * Holat oxirgi o‘zgarishdan keyin darhol siljimaydi: tashqi xizmatda
-       * hujjat ustida ish vaqt oladi. Shuning uchun ketma-ket bosilgan
-       * tekshiruv o‘zgarishsiz natija qaytaradi va sahifa aynan shuni yozadi.
-       */
-      const settled = Date.now() - (ticket.stateAt ?? 0) < DIDOX_STEP_MS
-
-      if (!next || settled) {
-        this.syncDidoxStatus(item)
-        this.log(item, {
-          actor,
-          roleLabel,
-          action: 'Didox holati tekshirildi',
-          detail: `${ticket.docNumber}, holat o‘zgarmadi: ${ticket.state}`,
-        })
-        return { changed: false, state: ticket.state }
-      }
-
-      const note =
-        next === 'Ko‘rib chiqilmoqda'
-          ? `${item.org.name} hujjatni ochdi va ko‘rib chiqmoqda`
-          : `Hujjat ikkala tomon tomonidan imzolandi va Didox’da yakunlandi`
-
-      ticket.state = next
-      ticket.stateAt = Date.now()
-      ticket.history.push({ state: next, at: stamp, note })
-
-      this.log(item, {
-        actor,
-        roleLabel,
-        action: 'Didox holati tekshirildi',
-        detail: `${ticket.docNumber}, yangi holat: ${next}`,
-      })
-
-      this.syncDidoxStatus(item)
-      return { changed: true, state: next }
-    },
-
-    /** Ariza bosqichi Didox ticketidagi holatga moslashtiriladi */
-    syncDidoxStatus(item: LeaseCase) {
-      if (!item.didox) return
-      if (item.status === 'FAOL' || item.status === 'RAD_ETILDI') return
-      if (item.didox.state === 'Imzolangan') item.status = 'DIDOX_IMZOLANDI'
-      else if (item.status === 'DIDOX_IMZOLANDI') item.status = 'DIDOX_YUBORILDI'
+      });
     },
 
     /** Didox’dan olingan imzolangan fayl ariza kartochkasiga yuklanadi */
@@ -1357,13 +1368,17 @@ export const useLeaseStore = defineStore('lease', {
       id: string,
       actor: string,
       roleLabel: string,
-      file: Omit<SignedDocument, 'uploadedAt' | 'uploadedBy'>,
+      file: Omit<SignedDocument, "uploadedAt" | "uploadedBy">,
     ) {
-      const item = this.byId(id)
-      if (!item) return
-      if (item.status !== 'DIDOX_YUBORILDI' && item.status !== 'DIDOX_IMZOLANDI') return
+      const item = this.byId(id);
+      if (!item) return;
+      if (
+        item.status !== "DIDOX_YUBORILDI" &&
+        item.status !== "DIDOX_IMZOLANDI"
+      )
+        return;
 
-      item.signedDocument = { ...file, uploadedAt: now(), uploadedBy: actor }
+      item.signedDocument = { ...file, uploadedAt: now(), uploadedBy: actor };
 
       /*
        * Imzolangan faylning yuklanishi imzo dalilidir.
@@ -1374,43 +1389,48 @@ export const useLeaseStore = defineStore('lease', {
        * yuklanganda siljiydi.
        */
       if (item.didox) {
-        item.didox.state = 'Imzolangan'
-        item.didox.stateAt = Date.now()
+        item.didox.state = "Imzolangan";
+        item.didox.stateAt = Date.now();
         item.didox.history.push({
-          state: 'Imzolangan',
+          state: "Imzolangan",
           at: now(),
           note: `Imzolangan hujjat operator tomonidan yuklandi: ${file.fileName}`,
-        })
+        });
       }
-      item.status = 'DIDOX_IMZOLANDI'
+      item.status = "DIDOX_IMZOLANDI";
 
       this.log(item, {
         actor,
         roleLabel,
-        action: 'Imzolangan hujjat yuklandi',
+        action: "Imzolangan hujjat yuklandi",
         detail: `${file.fileName} · SHA-256: ${file.hash.slice(0, 16)}…`,
-      })
+      });
     },
 
     removeSignedDocument(id: string, actor: string, roleLabel: string) {
-      const item = this.byId(id)
-      if (!item || !item.signedDocument || item.status === 'FAOL') return
-      const name = item.signedDocument.fileName
-      item.signedDocument = null
+      const item = this.byId(id);
+      if (!item || !item.signedDocument || item.status === "FAOL") return;
+      const name = item.signedDocument.fileName;
+      item.signedDocument = null;
       this.log(item, {
         actor,
         roleLabel,
-        action: 'Yuklangan hujjat olib tashlandi',
+        action: "Yuklangan hujjat olib tashlandi",
         detail: name,
-      })
+      });
     },
 
     reject(id: string, actor: string, roleLabel: string, reason: string) {
-      const item = this.byId(id)
-      if (!item) return
-      item.status = 'RAD_ETILDI'
-      item.rejectReason = reason
-      this.log(item, { actor, roleLabel, action: 'Ariza rad etildi', detail: reason })
+      const item = this.byId(id);
+      if (!item) return;
+      item.status = "RAD_ETILDI";
+      item.rejectReason = reason;
+      this.log(item, {
+        actor,
+        roleLabel,
+        action: "Ariza rad etildi",
+        detail: reason,
+      });
     },
 
     /**
@@ -1421,30 +1441,35 @@ export const useLeaseStore = defineStore('lease', {
      * bosqichidan qaytarilgan ariza shartlarni qayta kelishishga, ya’ni
      * boshiga tushadi.
      */
-    returnForRework(id: string, actor: string, roleLabel: string, reason: string) {
-      const item = this.byId(id)
-      if (!item) return
+    returnForRework(
+      id: string,
+      actor: string,
+      roleLabel: string,
+      reason: string,
+    ) {
+      const item = this.byId(id);
+      if (!item) return;
 
       const RETURN_TO: Partial<Record<LeaseStatus, LeaseStatus>> = {
-        SHARTNOMA_TAYYOR: 'YANGI',
-        DIDOX_YUBORILDI: 'SHARTNOMA_TAYYOR',
-        DIDOX_IMZOLANDI: 'SHARTNOMA_TAYYOR',
-      }
+        SHARTNOMA_TAYYOR: "YANGI",
+        DIDOX_YUBORILDI: "SHARTNOMA_TAYYOR",
+        DIDOX_IMZOLANDI: "SHARTNOMA_TAYYOR",
+      };
 
-      const cancelled = item.didox
-      if (cancelled) item.didox = null
-      if (item.signedDocument) item.signedDocument = null
+      const cancelled = item.didox;
+      if (cancelled) item.didox = null;
+      if (item.signedDocument) item.signedDocument = null;
 
-      item.status = RETURN_TO[item.status] ?? 'YANGI'
+      item.status = RETURN_TO[item.status] ?? "YANGI";
 
       this.log(item, {
         actor,
         roleLabel,
-        action: 'Qayta ishlashga yuborildi',
+        action: "Qayta ishlashga yuborildi",
         detail: cancelled
           ? `${reason} · Didox hujjati ${cancelled.docNumber} bekor qilindi`
           : reason,
-      })
+      });
     },
 
     /**
@@ -1454,26 +1479,27 @@ export const useLeaseStore = defineStore('lease', {
      * chiqariladi va ijarachi kabineti uchun login bilan parol beriladi.
      */
     closeCase(id: string, actor: string, roleLabel: string) {
-      const item = this.byId(id)
-      if (!item || !item.contract || !item.offer) return null
-      if (item.status !== 'DIDOX_IMZOLANDI' || !item.signedDocument) return null
+      const item = this.byId(id);
+      if (!item || !item.contract || !item.offer) return null;
+      if (item.status !== "DIDOX_IMZOLANDI" || !item.signedDocument)
+        return null;
 
-      const building = buildingById(item.buildingId)
-      const totals = scheduleTotals(item.schedule)
+      const building = buildingById(item.buildingId);
+      const totals = scheduleTotals(item.schedule);
       /* Birinchi hisob-faktura grafikning birinchi qatoriga chiqariladi */
-      const first = item.schedule[0] ?? null
+      const first = item.schedule[0] ?? null;
 
-      const contractId = `c-${item.contract.code.slice(-4)}`
+      const contractId = `c-${item.contract.code.slice(-4)}`;
       const invoiceCode = nextInvoiceCode(
         this.cases.flatMap((c) => c.schedule.map((r) => r.invoiceCode)),
-      )
+      );
 
       if (first) {
-        first.status = 'ISSUED'
-        first.invoiceCode = invoiceCode
+        first.status = "ISSUED";
+        first.invoiceCode = invoiceCode;
       }
 
-      const rest = item.schedule.filter((r) => r.status === 'PLANNED').length
+      const rest = item.schedule.filter((r) => r.status === "PLANNED").length;
 
       /*
        * Kabinet kaliti shu yerda beriladi: ariza yopilishi bilan ijarachida
@@ -1484,65 +1510,67 @@ export const useLeaseStore = defineStore('lease', {
         login: buildLogin(
           item.org.director,
           item.org.name,
-          new Set(this.cases.map((c) => c.access?.login).filter(Boolean) as string[]),
+          new Set(
+            this.cases.map((c) => c.access?.login).filter(Boolean) as string[],
+          ),
         ),
         password: buildPassword(),
         issuedAt: now(),
-      }
-      item.access = access
+      };
+      item.access = access;
 
       const changes: ActivationChange[] = [
         {
-          icon: 'building',
-          label: `Unit holati «${UNIT_STATUS.RENTED?.label ?? 'Ijarada'}» ga o‘tdi`,
+          icon: "building",
+          label: `Unit holati «${UNIT_STATUS.RENTED?.label ?? "Ijarada"}» ga o‘tdi`,
           detail: `${item.buildingName} · Unit ${item.unitCode}, ${item.org.name} nomiga rasmiylashtirildi`,
         },
         {
-          icon: 'eye',
-          label: 'Unit ommaviy katalogdan olib tashlandi',
-          detail: 'Bo‘sh joylar katalogida va xaritada endi ko‘rinmaydi',
+          icon: "eye",
+          label: "Unit ommaviy katalogdan olib tashlandi",
+          detail: "Bo‘sh joylar katalogida va xaritada endi ko‘rinmaydi",
         },
         {
-          icon: 'chart',
-          label: 'Bino statistikasi qayta hisoblandi',
-          detail: '',
+          icon: "chart",
+          label: "Bino statistikasi qayta hisoblandi",
+          detail: "",
         },
         {
-          icon: 'contract',
+          icon: "contract",
           label: `Shartnoma ${item.contract.code} faollashtirildi`,
           detail: `Ijarachi kabinetiga shartnoma, unit va to‘lov grafigi qo‘shildi (${totals.periods} ta davr)`,
         },
         {
-          icon: 'wallet',
+          icon: "wallet",
           label: `Birinchi hisob-faktura ${invoiceCode} yaratildi`,
           detail: first
             ? `${first.label} · ${money(first.total)} · to‘lov muddati ${dmy(first.dueAt)}. Qolgan ${rest} ta davr muddati kelganda chiqariladi`
-            : '',
+            : "",
         },
         {
-          icon: 'user',
-          label: 'Ijarachi kabineti uchun login va parol berildi',
+          icon: "user",
+          label: "Ijarachi kabineti uchun login va parol berildi",
           detail: `Login ${access.login}. Parol ariza kartochkasida ko‘rsatilgan, uni ijarachiga yetkazing.`,
         },
-      ]
+      ];
 
-      item.status = 'FAOL'
-      item.activation = { at: now(), invoiceCode, contractId, changes }
+      item.status = "FAOL";
+      item.activation = { at: now(), invoiceCode, contractId, changes };
 
       this.log(item, {
         actor,
         roleLabel,
-        action: 'Ariza yopildi',
+        action: "Ariza yopildi",
         detail: `Unit band qilindi, ${invoiceCode} hisob-fakturasi chiqarildi, ijarachiga ${access.login} logini berildi`,
-      })
+      });
 
-      this.applyCase(item)
+      this.applyCase(item);
 
       if (building) {
-        changes[2]!.detail = `Bandlik ${building.occupancy}% · bo‘sh maydon ${num(Math.round(building.vacantArea))} m² · bo‘sh unitlar ${building.vacantUnits} ta`
+        changes[2]!.detail = `Bandlik ${building.occupancy}% · bo‘sh maydon ${num(Math.round(building.vacantArea))} m² · bo‘sh unitlar ${building.vacantUnits} ta`;
       }
 
-      return item.activation
+      return item.activation;
     },
 
     /**
@@ -1551,90 +1579,100 @@ export const useLeaseStore = defineStore('lease', {
      * bajariladi, shuning uchun ko‘rsatkichlar ikki marta hisoblanmaydi.
      */
     applyCase(item: LeaseCase) {
-      const doc = item.contract
-      const activation = item.activation
-      if (!doc || !activation) return
-      if (appliedWorld.has(item.id)) return
-      appliedWorld.add(item.id)
+      const doc = item.contract;
+      const activation = item.activation;
+      if (!doc || !activation) return;
+      if (appliedWorld.has(item.id)) return;
+      appliedWorld.add(item.id);
 
-      const unit = UNITS.find((u) => u.id === item.unitId)
-      if (unit && unit.status !== 'RENTED') {
-        unit.status = 'RENTED'
-        unit.tenant = item.org.name
-        unit.contractCode = doc.code
+      const unit = UNITS.find((u) => u.id === item.unitId);
+      if (unit && unit.status !== "RENTED") {
+        unit.status = "RENTED";
+        unit.tenant = item.org.name;
+        unit.contractCode = doc.code;
 
-        const building = BUILDINGS.find((b) => b.id === item.buildingId)
+        const building = BUILDINGS.find((b) => b.id === item.buildingId);
         if (building) {
-          building.vacantUnits = Math.max(0, building.vacantUnits - 1)
-          building.occupiedUnits += 1
-          building.vacantArea = Math.max(0, Math.round(building.vacantArea - unit.area))
+          building.vacantUnits = Math.max(0, building.vacantUnits - 1);
+          building.occupiedUnits += 1;
+          building.vacantArea = Math.max(
+            0,
+            Math.round(building.vacantArea - unit.area),
+          );
           building.occupancy = building.gla
-            ? Math.round(((building.gla - building.vacantArea) / building.gla) * 100)
-            : building.occupancy
+            ? Math.round(
+                ((building.gla - building.vacantArea) / building.gla) * 100,
+              )
+            : building.occupancy;
         }
       }
 
-      const totals = scheduleTotals(item.schedule)
-      const contractId = activation.contractId
+      const totals = scheduleTotals(item.schedule);
+      const contractId = activation.contractId;
 
       if (!CONTRACTS.some((c) => c.id === contractId || c.code === doc.code)) {
         /* Bosqichlar reyestr kutgan to‘rt nom bilan yoziladi, sana va mas’ul audit jurnalidan */
-        const stageOf = (action: string) => item.audit.find((a) => a.action === action)
-        const composed = stageOf('Ijara shartnomasi tuzildi')
-        const agreed = stageOf('Ariza tasdiqlandi')
-        const signed = stageOf('Imzolangan hujjat yuklandi')
+        const stageOf = (action: string) =>
+          item.audit.find((a) => a.action === action);
+        const composed = stageOf("Ijara shartnomasi tuzildi");
+        const agreed = stageOf("Ariza tasdiqlandi");
+        const signed = stageOf("Imzolangan hujjat yuklandi");
 
         CONTRACTS.unshift({
           id: contractId,
           code: doc.code,
-          type: 'Ijara',
+          type: "Ijara",
           tenant: item.org.name,
           buildingId: item.buildingId,
           buildingName: item.buildingName,
           unitCode: `Unit ${item.unitCode}`,
           startsAt: doc.startsAt,
           endsAt: doc.endsAt,
-          status: 'ACTIVE',
+          status: "ACTIVE",
           amount: totals.total,
-          paymentTerm: `${item.offer?.periodicity ?? 'Oylik'} oldindan to‘lov`,
+          paymentTerm: `${item.offer?.periodicity ?? "Oylik"} oldindan to‘lov`,
           documents: [
             {
               name: item.signedDocument?.fileName ?? `${doc.code}.docx`,
-              size: item.signedDocument ? `${Math.round(item.signedDocument.size / 1024)} KB` : '-',
-              type: item.signedDocument?.extension === 'pdf' ? 'pdf' : 'docx',
+              size: item.signedDocument
+                ? `${Math.round(item.signedDocument.size / 1024)} KB`
+                : "-",
+              type: item.signedDocument?.extension === "pdf" ? "pdf" : "docx",
             },
-            { name: 'To‘lov jadvali.xlsx', size: '-', type: 'xlsx' },
+            { name: "To‘lov jadvali.xlsx", size: "-", type: "xlsx" },
           ],
           timeline: [
             {
-              label: 'Yaratildi',
+              label: "Yaratildi",
               date: (composed?.at ?? doc.composedAt).slice(0, 10),
-              actor: composed?.actor ?? 'Tizim',
+              actor: composed?.actor ?? "Tizim",
               done: true,
             },
             {
-              label: 'Kelishildi',
+              label: "Kelishildi",
               date: (agreed?.at ?? doc.composedAt).slice(0, 10),
-              actor: agreed?.actor ?? 'Tizim',
+              actor: agreed?.actor ?? "Tizim",
               done: true,
             },
             {
-              label: 'Imzolandi',
+              label: "Imzolandi",
               date: (signed?.at ?? activation.at).slice(0, 10),
-              actor: signed?.actor ?? item.didox?.sentBy ?? 'Didox',
+              actor: signed?.actor ?? item.didox?.sentBy ?? "Didox",
               done: true,
             },
             {
-              label: 'Faollashdi',
+              label: "Faollashdi",
               date: activation.at.slice(0, 10),
-              actor: item.audit.find((a) => a.action === 'Ariza yopildi')?.actor ?? 'Tizim',
+              actor:
+                item.audit.find((a) => a.action === "Ariza yopildi")?.actor ??
+                "Tizim",
               done: true,
             },
           ],
-        })
+        });
       }
 
-      this.syncInvoices(item)
+      this.syncInvoices(item);
     },
 
     /**
@@ -1643,12 +1681,12 @@ export const useLeaseStore = defineStore('lease', {
      * yuklanganda grafik va hisob-fakturalar bir xil qoladi.
      */
     syncInvoices(item: LeaseCase) {
-      const activation = item.activation
-      if (!activation) return
+      const activation = item.activation;
+      if (!activation) return;
 
       for (const row of item.schedule) {
-        if (!row.invoiceCode || row.status === 'PLANNED') continue
-        if (INVOICES.some((i) => i.code === row.invoiceCode)) continue
+        if (!row.invoiceCode || row.status === "PLANNED") continue;
+        if (INVOICES.some((i) => i.code === row.invoiceCode)) continue;
 
         const base = {
           id: `i-${row.invoiceCode.slice(-4)}`,
@@ -1661,11 +1699,15 @@ export const useLeaseStore = defineStore('lease', {
           issuedAt: activation.at.slice(0, 10),
           dueAt: row.dueAt,
           total: row.total,
-          paid: row.status === 'PAID' ? row.total : 0,
-          status: 'ISSUED' as Invoice['status'],
-        }
+          paid: row.status === "PAID" ? row.total : 0,
+          status: "ISSUED" as Invoice["status"],
+        };
 
-        INVOICES.unshift({ ...base, status: statusOf(base), agingBucket: agingKeyOf(base) })
+        INVOICES.unshift({
+          ...base,
+          status: statusOf(base),
+          agingBucket: agingKeyOf(base),
+        });
       }
     },
 
@@ -1673,59 +1715,65 @@ export const useLeaseStore = defineStore('lease', {
      * Grafikdagi navbatdagi davr uchun hisob-faktura chiqaradi: faollashtirish
      * paytida birinchi davr, keyingilari muddati kelganda shu amal orqali.
      */
-    issueInvoice(id: string, actor: string, roleLabel: string, periodId?: string): string {
-      const item = this.byId(id)
-      if (!item || item.status !== 'FAOL' || !item.activation) return ''
+    issueInvoice(
+      id: string,
+      actor: string,
+      roleLabel: string,
+      periodId?: string,
+    ): string {
+      const item = this.byId(id);
+      if (!item || item.status !== "FAOL" || !item.activation) return "";
 
       const row = periodId
-        ? item.schedule.find((r) => r.id === periodId && r.status === 'PLANNED')
-        : item.schedule.find((r) => r.status === 'PLANNED')
-      if (!row) return ''
+        ? item.schedule.find((r) => r.id === periodId && r.status === "PLANNED")
+        : item.schedule.find((r) => r.status === "PLANNED");
+      if (!row) return "";
 
       row.invoiceCode = nextInvoiceCode(
         this.cases.flatMap((c) => c.schedule.map((r) => r.invoiceCode)),
-      )
-      row.status = 'ISSUED'
-      this.syncInvoices(item)
+      );
+      row.status = "ISSUED";
+      this.syncInvoices(item);
 
       this.log(item, {
         actor,
         roleLabel,
-        action: 'Hisob-faktura chiqarildi',
+        action: "Hisob-faktura chiqarildi",
         detail: `${row.invoiceCode} · ${row.label} · ${money(row.total)} · to‘lov muddati ${dmy(row.dueAt)}`,
-      })
+      });
 
-      return row.invoiceCode
+      return row.invoiceCode;
     },
 
     /** Saqlangan holat qayta tiklangandan keyin reyestrni moslashtiradi */
     syncWorld() {
-      this.seed()
+      this.seed();
       for (const item of this.cases) {
         // Eskiroq saqlangan yozuvlarda yangi maydonlar bo‘lmasligi mumkin.
-        if (typeof item.guest !== 'boolean') item.guest = false
-        if (typeof item.contactName !== 'string' || !item.contactName) {
-          item.contactName = item.org.director
+        if (typeof item.guest !== "boolean") item.guest = false;
+        if (typeof item.contactName !== "string" || !item.contactName) {
+          item.contactName = item.org.director;
         }
-        if (item.access === undefined) item.access = null
-        if (typeof item.contractEdits !== 'number') item.contractEdits = 0
-        if (item.didox && typeof item.didox.stateAt !== 'number') item.didox.stateAt = 0
+        if (item.access === undefined) item.access = null;
+        if (typeof item.contractEdits !== "number") item.contractEdits = 0;
+        if (item.didox && typeof item.didox.stateAt !== "number")
+          item.didox.stateAt = 0;
 
         /*
          * Oldingi oqimdagi bosqichlar yangi bosqichlarga ko‘chiriladi: saqlangan
          * ariza eski holatda qolib, hech qaysi tugmaga tushmay qotib qolmaydi.
          */
-        const legacy = LEGACY_STATUS[item.status as LegacyLeaseStatus]
-        if (legacy) item.status = item.contract ? 'SHARTNOMA_TAYYOR' : legacy
+        const legacy = LEGACY_STATUS[item.status as LegacyLeaseStatus];
+        if (legacy) item.status = item.contract ? "SHARTNOMA_TAYYOR" : legacy;
 
         /*
          * Saqlangan holatda hujjat grafigi alohida massiv bo‘lib tiklanadi.
          * Havola qayta bog‘lanadi, aks holda shartnoma hujjatidagi davr
          * holati ariza sahifasidagi holatdan orqada qolib ketadi.
          */
-        if (item.contract) item.contract.schedule = item.schedule
+        if (item.contract) item.contract.schedule = item.schedule;
 
-        if (item.status === 'FAOL') this.applyCase(item)
+        if (item.status === "FAOL") this.applyCase(item);
       }
     },
   },
@@ -1737,6 +1785,6 @@ export const useLeaseStore = defineStore('lease', {
   persist: {
     storage: piniaPluginPersistedstate.localStorage(),
   },
-})
+});
 
-export { dmy as leaseDate, money as leaseMoney, monthLabel as leaseMonth }
+export { dmy as leaseDate, money as leaseMoney, monthLabel as leaseMonth };

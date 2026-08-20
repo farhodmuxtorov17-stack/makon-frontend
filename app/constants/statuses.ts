@@ -55,10 +55,6 @@ export const UNIT_STATUS_COLOR: Record<string, string> = {
   ARCHIVED: '#8494AC',
 }
 
-/**
- * Bandlik shkalasi: uchta ekranda bir xil chegara va bir xil yozuv.
- * Rang qoidasi `>= 90` yashil, `>= 84` ko‘k, qolgani sariq.
- */
 /*
  * Bandlik shkalasi reyestrdagi haqiqiy taqsimotga tayanadi: 22 obyektda
  * qiymatlar 29% dan 95% gacha, o'rtasi 64% atrofida.

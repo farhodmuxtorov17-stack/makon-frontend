@@ -69,6 +69,7 @@ const {
   moduleTitle,
   tr,
   priceUnitLabel,
+  offerLabel,
 } = useAppLabels();
 const { action: leadAction, label: leadLabel, staffHint } = useLeadAction();
 
@@ -703,7 +704,7 @@ function goApply() {
                 >
                   {{ unitUsageLabel(currentUnit.usage) }} ·
                   {{ t("obj.roomsOf", { n: currentUnit.rooms }) }} ·
-                  {{ currentUnit.offer }}
+                  {{ offerLabel(currentUnit.offer) }}
                 </dd>
               </div>
               <div v-if="showFinance" class="flex items-start gap-4 py-2.5">
