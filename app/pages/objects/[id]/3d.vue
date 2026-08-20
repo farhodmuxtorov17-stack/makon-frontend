@@ -289,19 +289,23 @@ function contractLabel(unit: Unit) {
   return t("obj.contractUnknown");
 }
 
-const applyOpen = ref(false);
-
-/** Bo‘sh unitga ariza yuborish, rolga qarab yo‘naltiradi */
+/**
+ * Bo'sh unit bo'yicha harakat rolga qarab hal qilinadi.
+ *
+ * Xodim o'z obyektiga o'zi ariza yubormaydi. Operator esa qo'ng'iroq qilgan
+ * mijoz nomidan arizani arizalar navbatida ochadi, shuning uchun u shu
+ * modulga o'tkaziladi. Ilgari tugma bosilganda «ichki rol ariza yarata
+ * olmaydi» degan oyna chiqar va boshqa hech qanday yo'l ko'rsatilmasdi.
+ */
 function goApply() {
   const unit = currentUnit.value;
   if (!unit || unit.status !== "VACANT") return;
   // Kirmagan mehmon hisob ochmasdan ariza qoldiradi
   if (!auth.isAuthenticated) return navigateTo(`/ariza?unit=${unit.id}`);
-  if (auth.role !== "TENANT_OWNER") {
-    applyOpen.value = true;
-    return;
-  }
-  return navigateTo(`/cabinet/apply?unit=${unit.id}`);
+  if (auth.role === "TENANT_OWNER")
+    return navigateTo(`/cabinet/apply?unit=${unit.id}`);
+  if (leadAction.value === "createForClient")
+    return navigateTo("/applications");
 }
 </script>
 
@@ -796,15 +800,4 @@ function goApply() {
       </section>
     </main>
   </template>
-
-  <UiModal v-model="applyOpen" :title="t('apply.cta')" size="sm">
-    <p class="text-[14px] leading-relaxed text-ink-600">
-      {{ t("obj.applyStaffText") }}
-    </p>
-    <template #footer>
-      <UiButton variant="secondary" @click="applyOpen = false">{{
-        t("common.close")
-      }}</UiButton>
-    </template>
-  </UiModal>
 </template>

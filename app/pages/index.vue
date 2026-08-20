@@ -447,30 +447,6 @@ const STEPS = [
               </button>
             </div>
 
-            <!--
-              Haqiqiy qavat rejasi: tashrifchi maydon qaysi qavatda va qaysi
-              burchakda ekanini darhol ko'radi. Chizma tizimdagi bilan bitta
-              generatordan chiqadi, shuning uchun bu bezak emas.
-            -->
-            <div class="border-t border-ink-100 bg-surface-sunken px-4 py-3">
-              <p
-                class="mb-1.5 flex items-center justify-between text-[11px] font-semibold uppercase tracking-wide text-ink-500"
-              >
-                <span>{{
-                  t("landing.planLabel", { floor: l.unit.floor })
-                }}</span>
-                <span class="tabular font-bold text-brand-600">{{
-                  l.unit.code
-                }}</span>
-              </p>
-              <UiFloorMini
-                :building-id="l.building.id"
-                :building-type="l.building.type"
-                :floor="l.unit.floor"
-                :unit-id="l.unit.id"
-              />
-            </div>
-
             <div class="flex flex-1 flex-col p-5">
               <p
                 class="tabular text-[22px] font-extrabold leading-none tracking-[-0.01em] text-ink-900"

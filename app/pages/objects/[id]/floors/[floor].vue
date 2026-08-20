@@ -1,73 +1,74 @@
 <script setup lang="ts">
-import { buildingById } from '~/data/buildings'
-import { unitsOfFloor, type Unit } from '~/data/units'
-import { UNIT_STATUS_COLOR } from '~/constants/statuses'
-import { area, num, percent } from '~/utils/format'
-import { buildFloorPlan } from '~/utils/floorPlan'
+import { buildingById } from "~/data/buildings";
+import { unitsOfFloor, type Unit } from "~/data/units";
+import { UNIT_STATUS_COLOR } from "~/constants/statuses";
+import { area, num, percent } from "~/utils/format";
+import { buildFloorPlan } from "~/utils/floorPlan";
 
-const route = useRoute()
-const auth = useAuthStore()
-const { t } = useI18n()
-const { unitUsageLabel, field, statusLabel, moduleTitle, priceUnitLabel } = useAppLabels()
-const { action: leadAction, label: leadLabel, staffHint } = useLeadAction()
+const route = useRoute();
+const auth = useAuthStore();
+const { t } = useI18n();
+const { unitUsageLabel, field, statusLabel, moduleTitle, priceUnitLabel } =
+  useAppLabels();
+const { action: leadAction, label: leadLabel, staffHint } = useLeadAction();
 
-const id = computed(() => String(route.params.id))
-const floorNo = computed(() => Number(route.params.floor))
+const id = computed(() => String(route.params.id));
+const floorNo = computed(() => Number(route.params.floor));
 /** Biriktirilmagan obyekt qavat rejasi havolasi orqali ham ochilmaydi */
 const building = computed(() => {
-  const b = buildingById(id.value)
-  return b && auth.inScope(b.id) ? b : undefined
-})
+  const b = buildingById(id.value);
+  return b && auth.inScope(b.id) ? b : undefined;
+});
 
 /** Ijarachi va narx ma’lumoti faqat ijara oqimida ishlaydigan rollarga ochiq */
 const showFinance = computed(
-  () => auth.can('application.decide') || auth.can('invoice.create') || auth.can('contract.manage'),
-)
+  () =>
+    auth.can("application.decide") ||
+    auth.can("invoice.create") ||
+    auth.can("contract.manage"),
+);
 
-/** Arizalar moduli hamma rolga ochiq emas, havola shunga qarab ko‘rsatiladi */
-const canOpenApplications = computed(() =>
-  auth.canRoute('/applications'),
-)
-const units = computed(() => (building.value ? unitsOfFloor(building.value.id, floorNo.value) : []))
+const units = computed(() =>
+  building.value ? unitsOfFloor(building.value.id, floorNo.value) : [],
+);
 
-const selectedId = ref(String(route.query.unit ?? ''))
-const zoom = ref(1)
-const fitMode = ref(false)
-const activeStatuses = ref<string[]>([])
-const viewOpen = ref(false)
-const applyOpen = ref(false)
+const selectedId = ref(String(route.query.unit ?? ""));
+const zoom = ref(1);
+const fitMode = ref(false);
+const activeStatuses = ref<string[]>([]);
+const viewOpen = ref(false);
 
 /**
  * Reja ranglari umumiy jadvaldan olinadi. Ilgari bu sahifada o‘z jadvali
  * bor edi va «Sotilgan» binafsha, «Ta’mirda» qizil chiqardi: katalogda esa
  * «Sotilgan» qizil. Bitta rang ikki ekranda ikki xil statusni bildirardi.
  */
-const STATUS_FILL = UNIT_STATUS_COLOR
+const STATUS_FILL = UNIT_STATUS_COLOR;
 
-const LEGEND = ['VACANT', 'RESERVED', 'RENTED', 'SOLD', 'MAINTENANCE']
+const LEGEND = ["VACANT", "RESERVED", "RENTED", "SOLD", "MAINTENANCE"];
 
 /**
  * Polygon nuqtasi ikkita normallashtirilgan koordinatadan iborat. Ma’lumotda
  * koordinata yetishmasa nuqta reja chegarasiga (0) qo‘yiladi.
  */
 function pointOf(point: number[]): [number, number] {
-  const [x, y] = point
-  return [typeof x === 'number' ? x : 0, typeof y === 'number' ? y : 0]
+  const [x, y] = point;
+  return [typeof x === "number" ? x : 0, typeof y === "number" ? y : 0];
 }
 
 const selected = computed<Unit | undefined>(
   () => units.value.find((u) => u.id === selectedId.value) ?? units.value[0],
-)
+);
 
 watch(
   () => `${id.value}:${floorNo.value}`,
   () => {
-    selectedId.value = ''
-    zoom.value = 1
-    fitMode.value = false
-    activeStatuses.value = []
+    selectedId.value = "";
+    zoom.value = 1;
+    fitMode.value = false;
+    activeStatuses.value = [];
   },
-)
+);
 
 /**
  * Yer osti qavatlari manfiy raqam bilan belgilanadi (-1, -2). Ilgari 2D da
@@ -76,49 +77,49 @@ watch(
  */
 function floorName(floor: number) {
   return floor < 0
-    ? t('obj.undergroundFloorNo', { floor: -floor })
-    : t('unitOf.floorNo', { floor })
+    ? t("obj.undergroundFloorNo", { floor: -floor })
+    : t("unitOf.floorNo", { floor });
 }
 
-const floorTitle = computed(() => floorName(floorNo.value))
+const floorTitle = computed(() => floorName(floorNo.value));
 
 const floorOptions = computed(() => {
-  const b = building.value
-  if (!b) return []
-  const levels = Array.from({ length: b.floors }, (_, i) => b.floors - i)
-  for (let k = 1; k <= b.undergroundFloors; k++) levels.push(-k)
+  const b = building.value;
+  if (!b) return [];
+  const levels = Array.from({ length: b.floors }, (_, i) => b.floors - i);
+  for (let k = 1; k <= b.undergroundFloors; k++) levels.push(-k);
 
   return levels.map((floor) => {
-    const count = unitsOfFloor(b.id, floor).length
-    const name = floorName(floor)
+    const count = unitsOfFloor(b.id, floor).length;
+    const name = floorName(floor);
     // Reja kiritilmagan qavat yashirilmaydi, lekin ochiq aytiladi
     return {
       value: String(floor),
       label: count
-        ? t('obj.floorOptionUnits', { name, count })
-        : t('obj.floorOptionNoPlan', { name }),
-    }
-  })
-})
+        ? t("obj.floorOptionUnits", { name, count })
+        : t("obj.floorOptionNoPlan", { name }),
+    };
+  });
+});
 
 const floorValue = computed({
   get: () => String(floorNo.value),
   set: (value: string) => {
-    navigateTo(`/objects/${id.value}/floors/${value}`)
+    navigateTo(`/objects/${id.value}/floors/${value}`);
   },
-})
+});
 
 const floorsWithPlan = computed(() => {
-  const b = building.value
-  if (!b) return []
+  const b = building.value;
+  if (!b) return [];
   const levels = [
     ...Array.from({ length: b.undergroundFloors }, (_, i) => -(i + 1)),
     ...Array.from({ length: b.floors }, (_, i) => i + 1),
-  ]
+  ];
   return levels
     .map((floor) => ({ floor, count: unitsOfFloor(b.id, floor).length }))
-    .filter((f) => f.count > 0)
-})
+    .filter((f) => f.count > 0);
+});
 
 /**
  * Qavatning arxitektura qatlami: tashqi devor, koridor, xizmat yadrosi,
@@ -128,216 +129,226 @@ const floorsWithPlan = computed(() => {
 const plan = computed(() =>
   buildFloorPlan({
     units: units.value.map((u) => ({ id: u.id, code: u.code, area: u.area })),
-    buildingType: building.value?.type ?? 'Biznes markaz',
+    buildingType: building.value?.type ?? "Biznes markaz",
     floor: floorNo.value,
     underground: floorNo.value < 0,
   }),
-)
+);
 
 /** Eshik burilishi: yoy va eshik qanoti */
-function doorPath(d: (typeof plan.value.units)[number]['door']) {
-  const w = d.width
-  const sign = d.facing === 'down' || d.facing === 'right' ? 1 : -1
-  if (d.facing === 'down' || d.facing === 'up') {
-    const x2 = d.x + w * d.hinge
+function doorPath(d: (typeof plan.value.units)[number]["door"]) {
+  const w = d.width;
+  const sign = d.facing === "down" || d.facing === "right" ? 1 : -1;
+  if (d.facing === "down" || d.facing === "up") {
+    const x2 = d.x + w * d.hinge;
     return {
       leaf: `M ${d.x} ${d.y} L ${d.x} ${d.y + w * sign}`,
       arc: `M ${d.x} ${d.y + w * sign} A ${w} ${w} 0 0 ${d.hinge * sign > 0 ? 0 : 1} ${x2} ${d.y}`,
       gap: `M ${d.x} ${d.y} L ${x2} ${d.y}`,
-    }
+    };
   }
-  const y2 = d.y + w * d.hinge
+  const y2 = d.y + w * d.hinge;
   return {
     leaf: `M ${d.x} ${d.y} L ${d.x + w * sign} ${d.y}`,
     arc: `M ${d.x + w * sign} ${d.y} A ${w} ${w} 0 0 ${d.hinge * sign > 0 ? 1 : 0} ${d.x} ${y2}`,
     gap: `M ${d.x} ${d.y} L ${d.x} ${y2}`,
-  }
+  };
 }
 
 const shapes = computed(() => {
-  const p = plan.value
-  const doors = new Map(p.units.map((u) => [u.id, u.door]))
+  const p = plan.value;
+  const doors = new Map(p.units.map((u) => [u.id, u.door]));
   return units.value.map((u) => {
     // Saqlangan shakl 0–1 da, reja esa metrda: kontent operatori chizgan
     // o‘zgarish ham shu yerda ko‘rinadi
     const points = u.polygon.map((point) => {
-      const [x, y] = pointOf(point)
-      return [x * p.width, y * p.height] as [number, number]
-    })
-    const door = doors.get(u.id)
+      const [x, y] = pointOf(point);
+      return [x * p.width, y * p.height] as [number, number];
+    });
+    const door = doors.get(u.id);
     return {
       id: u.id,
       code: u.code,
       status: u.status,
       areaLabel: area(u.area),
-      fill: STATUS_FILL[u.status] ?? '#CBD4E3',
-      points: points.map((q) => `${q[0].toFixed(2)},${q[1].toFixed(2)}`).join(' '),
+      fill: STATUS_FILL[u.status] ?? "#CBD4E3",
+      points: points
+        .map((q) => `${q[0].toFixed(2)},${q[1].toFixed(2)}`)
+        .join(" "),
       cx: points.reduce((s, q) => s + q[0], 0) / points.length,
       cy: points.reduce((s, q) => s + q[1], 0) / points.length,
       door: door ? doorPath(door) : null,
-    }
-  })
-})
-
+    };
+  });
+});
 
 /** Chizmadagi harfli o‘qlar */
-const AXIS_LETTERS = ['A', 'B', 'V', 'G', 'D', 'E', 'J', 'Z', 'I', 'K', 'L', 'M', 'N', 'O', 'P']
+const AXIS_LETTERS = [
+  "A",
+  "B",
+  "V",
+  "G",
+  "D",
+  "E",
+  "J",
+  "Z",
+  "I",
+  "K",
+  "L",
+  "M",
+  "N",
+  "O",
+  "P",
+];
 
 /** Har bir bo‘lim (o‘qlar orasidagi masofa) uchun o‘lcham yozuvi */
 const bayLabels = computed(() => {
-  const p = plan.value
+  const p = plan.value;
   const mk = (list: number[]) =>
     list.slice(1).map((v, i) => ({
       at: (v + list[i]!) / 2,
       text: (v - list[i]!).toFixed(1),
-    }))
-  return { x: mk(p.axes.xs), y: mk(p.axes.ys) }
-})
+    }));
+  return { x: mk(p.axes.xs), y: mk(p.axes.ys) };
+});
 
 /**
  * Masshtab chizg‘ichi: qavat kengligiga qarab yumaloq o‘lcham tanlanadi,
  * shunda chizmadan masofani ko‘z bilan ham baholash mumkin.
  */
 const scaleBar = computed(() => {
-  const target = plan.value.width / 5
-  const step = [1, 2, 5, 10, 20, 50].find((v) => v >= target) ?? 50
-  return { metres: step, label: `${step} ${t('unitOf.metre')}` }
-})
+  const target = plan.value.width / 5;
+  const step = [1, 2, 5, 10, 20, 50].find((v) => v >= target) ?? 50;
+  return { metres: step, label: `${step} ${t("unitOf.metre")}` };
+});
 
 /** Reja ostidagi o‘lcham zanjiri: qavatning tashqi eni va bo‘yi */
 const planLabel = computed(() => {
-  const p = plan.value
+  const p = plan.value;
   return {
-    width: `${p.width.toFixed(1)} ${t('unitOf.metre')}`,
-    height: `${p.height.toFixed(1)} ${t('unitOf.metre')}`,
-    gross: `${num(Math.round(p.grossArea))} ${t('unitOf.sqm')}`,
+    width: `${p.width.toFixed(1)} ${t("unitOf.metre")}`,
+    height: `${p.height.toFixed(1)} ${t("unitOf.metre")}`,
+    gross: `${num(Math.round(p.grossArea))} ${t("unitOf.sqm")}`,
     efficiency: `${Math.round(p.efficiency * 100)}%`,
-  }
-})
+  };
+});
 
 /** Tanlangan unitning reja shakli, modal ichidagi belgini joylash uchun */
 const selectedShape = computed(() => {
-  const unit = selected.value
-  if (!unit) return null
-  return shapes.value.find((s) => s.id === unit.id) ?? null
-})
+  const unit = selected.value;
+  if (!unit) return null;
+  return shapes.value.find((s) => s.id === unit.id) ?? null;
+});
 
 /** Faqat unitlar ko‘rinadigan chegara, metrda */
 const bounds = computed(() => {
-  const p = plan.value
-  const points = units.value.flatMap((u) => u.polygon)
-  if (!points.length) return { x: 0, y: 0, w: p.width, h: p.height }
-  const xs = points.map((q) => q[0]! * p.width)
-  const ys = points.map((q) => q[1]! * p.height)
-  const pad = Math.max(p.width, p.height) * 0.04
-  const minX = Math.min(...xs) - pad
-  const maxX = Math.max(...xs) + pad
-  const minY = Math.min(...ys) - pad
-  const maxY = Math.max(...ys) + pad
-  return { x: minX, y: minY, w: maxX - minX, h: maxY - minY }
-})
+  const p = plan.value;
+  const points = units.value.flatMap((u) => u.polygon);
+  if (!points.length) return { x: 0, y: 0, w: p.width, h: p.height };
+  const xs = points.map((q) => q[0]! * p.width);
+  const ys = points.map((q) => q[1]! * p.height);
+  const pad = Math.max(p.width, p.height) * 0.04;
+  const minX = Math.min(...xs) - pad;
+  const maxX = Math.max(...xs) + pad;
+  const minY = Math.min(...ys) - pad;
+  const maxY = Math.max(...ys) + pad;
+  return { x: minX, y: minY, w: maxX - minX, h: maxY - minY };
+});
 
 /** O‘lcham chizig‘i va shimol ko‘rsatkichi uchun reja atrofida joy qoldiriladi */
-const margin = computed(() => Math.max(plan.value.width, plan.value.height) * 0.09)
+const margin = computed(
+  () => Math.max(plan.value.width, plan.value.height) * 0.09,
+);
 
 const viewBox = computed(() => {
-  const p = plan.value
-  const m = margin.value
+  const p = plan.value;
+  const m = margin.value;
   const base = fitMode.value
     ? bounds.value
-    : { x: -m, y: -m, w: p.width + m * 2, h: p.height + m * 2 }
-  const w = base.w / zoom.value
-  const h = base.h / zoom.value
-  const cx = base.x + base.w / 2
-  const cy = base.y + base.h / 2
-  return `${(cx - w / 2).toFixed(2)} ${(cy - h / 2).toFixed(2)} ${w.toFixed(2)} ${h.toFixed(2)}`
-})
+    : { x: -m, y: -m, w: p.width + m * 2, h: p.height + m * 2 };
+  const w = base.w / zoom.value;
+  const h = base.h / zoom.value;
+  const cx = base.x + base.w / 2;
+  const cy = base.y + base.h / 2;
+  return `${(cx - w / 2).toFixed(2)} ${(cy - h / 2).toFixed(2)} ${w.toFixed(2)} ${h.toFixed(2)}`;
+});
 
 /** Chiziq qalinligi va shrift kattaligi qavat o‘lchamiga moslashadi */
-const scale = computed(() => Math.max(plan.value.width, plan.value.height) / 100)
+const scale = computed(
+  () => Math.max(plan.value.width, plan.value.height) / 100,
+);
 
 const stats = computed(() => {
-  const total = units.value.reduce((s, u) => s + u.area, 0)
+  const total = units.value.reduce((s, u) => s + u.area, 0);
   const vacant = units.value
-    .filter((u) => u.status === 'VACANT')
-    .reduce((s, u) => s + u.area, 0)
+    .filter((u) => u.status === "VACANT")
+    .reduce((s, u) => s + u.area, 0);
   return {
     total,
     vacant,
     occupied: total - vacant,
     occupancy: total ? Math.round(((total - vacant) / total) * 100) : 0,
-  }
-})
+  };
+});
 
 function legendCount(status: string) {
-  return units.value.filter((u) => u.status === status).length
+  return units.value.filter((u) => u.status === status).length;
 }
 
 function isDimmed(status: string) {
-  return activeStatuses.value.length > 0 && !activeStatuses.value.includes(status)
+  return (
+    activeStatuses.value.length > 0 && !activeStatuses.value.includes(status)
+  );
 }
 
 function toggleStatus(status: string) {
-  const next = new Set(activeStatuses.value)
-  next.has(status) ? next.delete(status) : next.add(status)
-  activeStatuses.value = Array.from(next)
+  const next = new Set(activeStatuses.value);
+  next.has(status) ? next.delete(status) : next.add(status);
+  activeStatuses.value = Array.from(next);
 }
 
 function zoomIn() {
-  zoom.value = Math.round(Math.min(3, zoom.value + 0.25) * 100) / 100
+  zoom.value = Math.round(Math.min(3, zoom.value + 0.25) * 100) / 100;
 }
 
 function zoomOut() {
-  zoom.value = Math.round(Math.max(0.5, zoom.value - 0.25) * 100) / 100
+  zoom.value = Math.round(Math.max(0.5, zoom.value - 0.25) * 100) / 100;
 }
 
 function fitPlan() {
-  fitMode.value = true
-  zoom.value = 1
+  fitMode.value = true;
+  zoom.value = 1;
 }
 
 function resetPlan() {
-  fitMode.value = false
-  zoom.value = 1
-  activeStatuses.value = []
-  selectedId.value = units.value[0]?.id ?? ''
+  fitMode.value = false;
+  zoom.value = 1;
+  activeStatuses.value = [];
+  selectedId.value = units.value[0]?.id ?? "";
 }
 
 function contractLabel(unit: Unit) {
-  if (unit.contractCode) return t('obj.contractSigned', { code: unit.contractCode })
-  if (unit.status === 'RESERVED') return t('obj.contractReserved')
-  if (unit.status === 'MAINTENANCE') return t('obj.contractMaintenance')
-  if (unit.status === 'VACANT') return t('obj.contractNone')
-  return t('obj.contractUnknown')
+  if (unit.contractCode)
+    return t("obj.contractSigned", { code: unit.contractCode });
+  if (unit.status === "RESERVED") return t("obj.contractReserved");
+  if (unit.status === "MAINTENANCE") return t("obj.contractMaintenance");
+  if (unit.status === "VACANT") return t("obj.contractNone");
+  return t("obj.contractUnknown");
 }
 
-/** Ariza oynasi sarlavhasida narx faqat moliya huquqi bilan ko‘rinadi */
-const applySubtitle = computed(() => {
-  const u = selected.value
-  if (!u) return ''
-  const base = `${area(u.area)} · ${unitUsageLabel(u.usage)}`
-  return showFinance.value ? `${base} · ${num(u.price)} ${u.priceUnit}` : base
-})
-
 /**
- * Bo‘sh unit uchun ijara sikli. Tizimga kirmagan foydalanuvchi ochiq ariza
- * formasiga, ijarachi kabinetdagi ariza formasiga yo‘naltiriladi; ish maydoni
- * rollari uchun ariza qaysi kabinetdan yuborilishi tushuntiriladi.
+ * Bo‘sh unit uchun harakat rolga qarab: mehmon ochiq ariza formasiga,
+ * ijarachi kabinetdagi formaga, Operator esa arizalar navbatiga o‘tadi.
  */
 function goApply() {
-  const unit = selected.value
-  if (!unit || unit.status !== 'VACANT') return
-  const next = `/cabinet/apply?unit=${unit.id}`
-  if (!auth.isAuthenticated) {
-    viewOpen.value = false
-    return navigateTo(`/ariza?unit=${unit.id}`)
-  }
-  if (auth.role !== 'TENANT_OWNER') {
-    applyOpen.value = true
-    return
-  }
-  viewOpen.value = false
-  return navigateTo(next)
+  const unit = selected.value;
+  if (!unit || unit.status !== "VACANT") return;
+  viewOpen.value = false;
+  if (!auth.isAuthenticated) return navigateTo(`/ariza?unit=${unit.id}`);
+  if (auth.role === "TENANT_OWNER")
+    return navigateTo(`/cabinet/apply?unit=${unit.id}`);
+  if (leadAction.value === "createForClient")
+    return navigateTo("/applications");
 }
 </script>
 
@@ -353,16 +364,20 @@ function goApply() {
     <main class="scroll-slim flex-1 overflow-y-auto p-4 sm:p-6">
       <UiCard>
         <div class="flex flex-col items-center gap-4 py-12 text-center">
-          <span class="grid size-14 place-items-center rounded-full bg-warn-50 text-warn-600">
+          <span
+            class="grid size-14 place-items-center rounded-full bg-warn-50 text-warn-600"
+          >
             <UiIcon name="warning" :size="26" />
           </span>
-          <p class="text-[16px] font-bold text-ink-900">{{ t('obj.missingShort') }}</p>
+          <p class="text-[16px] font-bold text-ink-900">
+            {{ t("obj.missingShort") }}
+          </p>
           <p class="max-w-sm text-[13px] leading-relaxed text-ink-500">
-            {{ t('obj.missingHint') }}
+            {{ t("obj.missingHint") }}
           </p>
           <UiButton to="/objects">
             <UiIcon name="chevronLeft" :size="16" />
-            {{ t('obj.title') }}
+            {{ t("obj.title") }}
           </UiButton>
         </div>
       </UiCard>
@@ -380,30 +395,46 @@ function goApply() {
       ]"
     >
       <template #actions>
-        <UiButton variant="secondary" size="sm" :to="`/objects/${building.id}/3d`">
+        <UiButton
+          variant="secondary"
+          size="sm"
+          :to="`/objects/${building.id}/3d`"
+        >
           <UiIcon name="cube" :size="16" />
-          {{ t('obj.navigator3d') }}
+          {{ t("obj.navigator3d") }}
         </UiButton>
         <UiButton variant="secondary" size="sm" :to="`/objects/${building.id}`">
           <UiIcon name="doc" :size="16" />
-          {{ t('obj.passport') }}
+          {{ t("obj.passport") }}
         </UiButton>
       </template>
     </AppTopbar>
 
-    <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-4 sm:p-4 sm:p-6">
+    <main
+      class="scroll-slim flex-1 space-y-5 overflow-y-auto p-4 sm:p-4 sm:p-6"
+    >
       <section class="grid gap-5 xl:grid-cols-[minmax(0,1fr)_368px]">
         <div class="min-w-0 space-y-5">
           <UiCard
             :title="t('obj.floorPlanOf', { floor: floorTitle })"
-            :subtitle="t('obj.floorPlanUnits', { n: units.length, area: area(stats.total) })"
+            :subtitle="
+              t('obj.floorPlanUnits', {
+                n: units.length,
+                area: area(stats.total),
+              })
+            "
             flush
             :padded="false"
           >
             <template #actions>
               <div class="flex items-center gap-2">
                 <UiIcon name="layers" :size="16" class="text-brand-500" />
-                <UiSelect v-model="floorValue" :options="floorOptions" size="sm" class="w-52" />
+                <UiSelect
+                  v-model="floorValue"
+                  :options="floorOptions"
+                  size="sm"
+                  class="w-52"
+                />
               </div>
             </template>
 
@@ -430,7 +461,12 @@ function goApply() {
                     :disabled="zoom <= 0.5"
                     @click="zoomOut"
                   >
-                    <svg class="size-[18px]" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                    <svg
+                      class="size-[18px]"
+                      viewBox="0 0 20 20"
+                      fill="none"
+                      aria-hidden="true"
+                    >
                       <path
                         d="M4.5 10h11"
                         stroke="currentColor"
@@ -446,7 +482,12 @@ function goApply() {
                     :aria-label="t('obj.fitPlan')"
                     @click="fitPlan"
                   >
-                    <svg class="size-[18px]" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                    <svg
+                      class="size-[18px]"
+                      viewBox="0 0 20 20"
+                      fill="none"
+                      aria-hidden="true"
+                    >
                       <path
                         d="M3 7.5V4a1 1 0 0 1 1-1h3.5M17 7.5V4a1 1 0 0 0-1-1h-3.5M3 12.5V16a1 1 0 0 0 1 1h3.5M17 12.5V16a1 1 0 0 1-1 1h-3.5"
                         stroke="currentColor"
@@ -504,7 +545,13 @@ function goApply() {
                   </defs>
 
                   <!-- Qavat plitasi -->
-                  <rect x="0" y="0" :width="plan.width" :height="plan.height" fill="#FFFFFF" />
+                  <rect
+                    x="0"
+                    y="0"
+                    :width="plan.width"
+                    :height="plan.height"
+                    fill="#FFFFFF"
+                  />
 
                   <!-- Koridor: chizmada och kulrang tekislik -->
                   <rect
@@ -519,13 +566,17 @@ function goApply() {
                   <text
                     v-if="plan.corridors[0] && plan.corridors[0].w > scale * 14"
                     :x="plan.corridors[0].x + plan.corridors[0].w / 2"
-                    :y="plan.corridors[0].y + plan.corridors[0].h / 2 + scale * 0.55"
+                    :y="
+                      plan.corridors[0].y +
+                      plan.corridors[0].h / 2 +
+                      scale * 0.55
+                    "
                     text-anchor="middle"
                     :font-size="scale * 1.5"
                     fill="#8494AC"
                     letter-spacing="0.3"
                   >
-                    {{ t('obj.corridor') }}
+                    {{ t("obj.corridor") }}
                   </text>
 
                   <!-- Xizmat yadrosi shtrixlanadi -->
@@ -592,7 +643,13 @@ function goApply() {
 
                   <!-- Deraza: devordagi bo‘shliq va uch ingichka chiziq -->
                   <g v-for="(o, i) in plan.openings" :key="`op-${i}`">
-                    <rect :x="o.x" :y="o.y" :width="o.w" :height="o.h" fill="#FFFFFF" />
+                    <rect
+                      :x="o.x"
+                      :y="o.y"
+                      :width="o.w"
+                      :height="o.h"
+                      fill="#FFFFFF"
+                    />
                     <template v-if="o.w > o.h">
                       <line
                         v-for="k in 3"
@@ -622,14 +679,22 @@ function goApply() {
                   <!-- Eshik: devordagi tirqish, qanot va burilish yoyi -->
                   <g v-for="s in shapes" :key="`d-${s.id}`">
                     <template v-if="s.door">
-                      <path :d="s.door.gap" stroke="#FFFFFF" :stroke-width="plan.wallInner * 2.6" />
+                      <path
+                        :d="s.door.gap"
+                        stroke="#FFFFFF"
+                        :stroke-width="plan.wallInner * 2.6"
+                      />
                       <path
                         :d="s.door.arc"
                         fill="none"
                         stroke="#8494AC"
                         :stroke-width="scale * 0.12"
                       />
-                      <path :d="s.door.leaf" stroke="#354152" :stroke-width="scale * 0.2" />
+                      <path
+                        :d="s.door.leaf"
+                        stroke="#354152"
+                        :stroke-width="scale * 0.2"
+                      />
                     </template>
                   </g>
 
@@ -670,7 +735,11 @@ function goApply() {
                   </g>
 
                   <!-- Koordinata o‘qlari: raqamli va harfli -->
-                  <g stroke="#C7D0DE" :stroke-width="scale * 0.07" stroke-dasharray="1.2 0.8">
+                  <g
+                    stroke="#C7D0DE"
+                    :stroke-width="scale * 0.07"
+                    stroke-dasharray="1.2 0.8"
+                  >
                     <line
                       v-for="(x, i) in plan.axes.xs"
                       :key="`ax-${i}`"
@@ -794,7 +863,9 @@ function goApply() {
                   </text>
 
                   <!-- Shimol ko‘rsatkichi va masshtab chizg‘ichi -->
-                  <g :transform="`translate(${plan.width - scale * 4} ${-margin * 0.5})`">
+                  <g
+                    :transform="`translate(${plan.width - scale * 4} ${-margin * 0.5})`"
+                  >
                     <circle
                       cx="0"
                       cy="0"
@@ -815,7 +886,7 @@ function goApply() {
                       fill="#54617A"
                       font-weight="700"
                     >
-                      {{ t('obj.north') }}
+                      {{ t("obj.north") }}
                     </text>
                   </g>
                   <g :transform="`translate(0 ${plan.height + margin * 0.92})`">
@@ -847,19 +918,27 @@ function goApply() {
                   </g>
                 </svg>
 
-                <div v-else class="flex flex-col items-center gap-4 px-6 py-24 text-center">
-                  <span class="grid size-14 place-items-center rounded-full bg-ink-100 text-ink-500">
+                <div
+                  v-else
+                  class="flex flex-col items-center gap-4 px-6 py-24 text-center"
+                >
+                  <span
+                    class="grid size-14 place-items-center rounded-full bg-ink-100 text-ink-500"
+                  >
                     <UiIcon name="layers" :size="24" />
                   </span>
                   <div>
                     <p class="text-[14px] font-bold text-ink-900">
-                      {{ t('obj.floorNoPlanTitle') }}
+                      {{ t("obj.floorNoPlanTitle") }}
                     </p>
                     <p class="mt-1 text-[13px] text-ink-500">
-                      {{ t('obj.floorNoPlanText') }}
+                      {{ t("obj.floorNoPlanText") }}
                     </p>
                   </div>
-                  <div v-if="floorsWithPlan.length" class="flex flex-wrap justify-center gap-2">
+                  <div
+                    v-if="floorsWithPlan.length"
+                    class="flex flex-wrap justify-center gap-2"
+                  >
                     <UiButton
                       v-for="f in floorsWithPlan"
                       :key="f.floor"
@@ -867,8 +946,8 @@ function goApply() {
                       size="sm"
                       :to="`/objects/${building.id}/floors/${f.floor}`"
                     >
-                      {{ t('unitOf.floorNo', { floor: f.floor }) }} ·
-                      {{ t('obj.unitsOf', { n: f.count }) }}
+                      {{ t("unitOf.floorNo", { floor: f.floor }) }} ·
+                      {{ t("obj.unitsOf", { n: f.count }) }}
                     </UiButton>
                   </div>
                 </div>
@@ -887,13 +966,19 @@ function goApply() {
                   "
                   @click="toggleStatus(l)"
                 >
-                  <span class="size-2.5 rounded-full" :style="{ background: STATUS_FILL[l] }" />
-                  {{ statusLabel('unit', l) }}
+                  <span
+                    class="size-2.5 rounded-full"
+                    :style="{ background: STATUS_FILL[l] }"
+                  />
+                  {{ statusLabel("unit", l) }}
                   <span class="tabular opacity-70">{{ legendCount(l) }}</span>
                 </button>
 
-                <span v-if="activeStatuses.length" class="text-[12px] text-ink-500">
-                  {{ t('obj.legendFilterHint') }}
+                <span
+                  v-if="activeStatuses.length"
+                  class="text-[12px] text-ink-500"
+                >
+                  {{ t("obj.legendFilterHint") }}
                 </span>
               </div>
             </div>
@@ -940,45 +1025,65 @@ function goApply() {
 
             <dl class="mt-4 divide-y divide-ink-100">
               <div class="flex items-start gap-4 py-2.5">
-                <dt class="flex w-[128px] shrink-0 items-center gap-2 text-[13px] text-ink-500">
+                <dt
+                  class="flex w-[128px] shrink-0 items-center gap-2 text-[13px] text-ink-500"
+                >
                   <UiIcon name="layers" :size="15" />
-                  {{ field('area') }}
+                  {{ field("area") }}
                 </dt>
-                <dd class="tabular min-w-0 flex-1 text-[13px] font-bold text-ink-900">
+                <dd
+                  class="tabular min-w-0 flex-1 text-[13px] font-bold text-ink-900"
+                >
                   {{ area(selected.area) }}
                 </dd>
               </div>
               <div class="flex items-start gap-4 py-2.5">
-                <dt class="flex w-[128px] shrink-0 items-center gap-2 text-[13px] text-ink-500">
+                <dt
+                  class="flex w-[128px] shrink-0 items-center gap-2 text-[13px] text-ink-500"
+                >
                   <UiIcon name="box" :size="15" />
-                  {{ field('type') }}
+                  {{ field("type") }}
                 </dt>
-                <dd class="min-w-0 flex-1 text-[13px] font-semibold text-ink-900">
-                  {{ unitUsageLabel(selected.usage) }} · {{ t('obj.roomsOf', { n: selected.rooms }) }}
+                <dd
+                  class="min-w-0 flex-1 text-[13px] font-semibold text-ink-900"
+                >
+                  {{ unitUsageLabel(selected.usage) }} ·
+                  {{ t("obj.roomsOf", { n: selected.rooms }) }}
                 </dd>
               </div>
               <div v-if="showFinance" class="flex items-start gap-4 py-2.5">
-                <dt class="flex w-[128px] shrink-0 items-center gap-2 text-[13px] text-ink-500">
+                <dt
+                  class="flex w-[128px] shrink-0 items-center gap-2 text-[13px] text-ink-500"
+                >
                   <UiIcon name="user" :size="15" />
-                  {{ field('tenantBuyer') }}
+                  {{ field("tenantBuyer") }}
                 </dt>
-                <dd class="min-w-0 flex-1 text-[13px] font-semibold text-ink-900">
-                  {{ selected.tenant ?? '-' }}
+                <dd
+                  class="min-w-0 flex-1 text-[13px] font-semibold text-ink-900"
+                >
+                  {{ selected.tenant ?? "-" }}
                 </dd>
               </div>
               <div v-if="showFinance" class="flex items-start gap-4 py-2.5">
-                <dt class="flex w-[128px] shrink-0 items-center gap-2 text-[13px] text-ink-500">
+                <dt
+                  class="flex w-[128px] shrink-0 items-center gap-2 text-[13px] text-ink-500"
+                >
                   <UiIcon name="wallet" :size="15" />
-                  {{ field('price') }}
+                  {{ field("price") }}
                 </dt>
-                <dd class="tabular min-w-0 flex-1 text-[13px] font-bold text-brand-600">
-                  {{ num(selected.price) }} {{ priceUnitLabel(selected.priceUnit) }}
+                <dd
+                  class="tabular min-w-0 flex-1 text-[13px] font-bold text-brand-600"
+                >
+                  {{ num(selected.price) }}
+                  {{ priceUnitLabel(selected.priceUnit) }}
                 </dd>
               </div>
               <div class="flex items-start gap-4 py-2.5">
-                <dt class="flex w-[128px] shrink-0 items-center gap-2 text-[13px] text-ink-500">
+                <dt
+                  class="flex w-[128px] shrink-0 items-center gap-2 text-[13px] text-ink-500"
+                >
                   <UiIcon name="wrench" :size="15" />
-                  {{ field('equipment') }}
+                  {{ field("equipment") }}
                 </dt>
                 <dd class="min-w-0 flex-1">
                   <span class="flex flex-wrap gap-1.5">
@@ -993,44 +1098,60 @@ function goApply() {
                 </dd>
               </div>
               <div v-if="showFinance" class="flex items-start gap-4 py-2.5">
-                <dt class="flex w-[128px] shrink-0 items-center gap-2 text-[13px] text-ink-500">
+                <dt
+                  class="flex w-[128px] shrink-0 items-center gap-2 text-[13px] text-ink-500"
+                >
                   <UiIcon name="clipboard" :size="15" />
-                  {{ t('obj.contractStatus') }}
+                  {{ t("obj.contractStatus") }}
                 </dt>
                 <dd
                   class="min-w-0 flex-1 text-[13px] font-semibold"
-                  :class="selected.contractCode ? 'text-ok-600' : 'text-ink-700'"
+                  :class="
+                    selected.contractCode ? 'text-ok-600' : 'text-ink-700'
+                  "
                 >
                   {{ contractLabel(selected) }}
                 </dd>
               </div>
               <div class="flex items-start gap-4 py-2.5">
-                <dt class="flex w-[128px] shrink-0 items-center gap-2 text-[13px] text-ink-500">
+                <dt
+                  class="flex w-[128px] shrink-0 items-center gap-2 text-[13px] text-ink-500"
+                >
                   <UiIcon name="doc" :size="15" />
-                  {{ field('offer') }}
+                  {{ field("offer") }}
                 </dt>
-                <dd class="min-w-0 flex-1 text-[13px] font-semibold text-ink-900">
+                <dd
+                  class="min-w-0 flex-1 text-[13px] font-semibold text-ink-900"
+                >
                   {{ selected.offer }}
                 </dd>
               </div>
             </dl>
 
-            <div class="mt-5 grid gap-3" :class="selected.status === 'VACANT' ? 'grid-cols-2' : ''">
+            <div
+              class="mt-5 grid gap-3"
+              :class="selected.status === 'VACANT' ? 'grid-cols-2' : ''"
+            >
               <UiButton variant="secondary" @click="viewOpen = true">
                 <UiIcon name="eye" :size="16" />
-                {{ t('common.view') }}
+                {{ t("common.view") }}
               </UiButton>
               <UiButton
                 v-if="selected.status === 'VACANT' && leadAction !== 'none'"
                 @click="goApply"
               >
                 <UiIcon name="key" :size="16" />
-                {{ t('apply.cta') }}
+                {{ t("apply.cta") }}
               </UiButton>
             </div>
 
-            <div v-if="units.length > 1" class="mt-5 border-t border-ink-100 pt-4">
-              <p class="mb-2 text-[12px] font-semibold text-ink-500">{{ t('obj.floorUnits') }}</p>
+            <div
+              v-if="units.length > 1"
+              class="mt-5 border-t border-ink-100 pt-4"
+            >
+              <p class="mb-2 text-[12px] font-semibold text-ink-500">
+                {{ t("obj.floorUnits") }}
+              </p>
               <div class="flex flex-wrap gap-1.5">
                 <button
                   v-for="u in units"
@@ -1050,13 +1171,19 @@ function goApply() {
             </div>
           </UiCard>
 
-          <UiCard v-else :title="t('obj.unitCard')" :subtitle="t('obj.pickUnitInfo')">
+          <UiCard
+            v-else
+            :title="t('obj.unitCard')"
+            :subtitle="t('obj.pickUnitInfo')"
+          >
             <div class="flex flex-col items-center gap-3 py-10 text-center">
-              <span class="grid size-12 place-items-center rounded-full bg-ink-100 text-ink-500">
+              <span
+                class="grid size-12 place-items-center rounded-full bg-ink-100 text-ink-500"
+              >
                 <UiIcon name="box" :size="22" />
               </span>
               <p class="text-[13px] text-ink-500">
-                {{ t('obj.noUnitsFloorText') }}
+                {{ t("obj.noUnitsFloorText") }}
               </p>
             </div>
           </UiCard>
@@ -1071,9 +1198,25 @@ function goApply() {
         size="lg"
       >
         <div class="grid gap-5 sm:grid-cols-2">
-          <div class="rounded-field bg-surface-sunken p-3 ring-1 ring-inset ring-ink-100">
-            <svg viewBox="0 0 100 100" class="h-[210px] w-full" role="img" :aria-label="field('location')">
-              <rect x="1.5" y="3" width="97" height="94" rx="1.2" fill="#FFFFFF" stroke="#E2E8F2" stroke-width="0.7" />
+          <div
+            class="rounded-field bg-surface-sunken p-3 ring-1 ring-inset ring-ink-100"
+          >
+            <svg
+              viewBox="0 0 100 100"
+              class="h-[210px] w-full"
+              role="img"
+              :aria-label="field('location')"
+            >
+              <rect
+                x="1.5"
+                y="3"
+                width="97"
+                height="94"
+                rx="1.2"
+                fill="#FFFFFF"
+                stroke="#E2E8F2"
+                stroke-width="0.7"
+              />
               <polygon
                 v-for="s in shapes"
                 :key="s.id"
@@ -1095,44 +1238,74 @@ function goApply() {
               </text>
             </svg>
             <p class="mt-2 text-center text-[12px] text-ink-500">
-              {{ t('obj.locationOf', { floor: floorTitle, name: building.name }) }}
+              {{
+                t("obj.locationOf", { floor: floorTitle, name: building.name })
+              }}
             </p>
           </div>
 
           <dl class="divide-y divide-ink-100">
             <div class="flex items-center justify-between gap-4 py-2.5">
-              <dt class="text-[13px] text-ink-500">{{ field('status') }}</dt>
-              <dd><UiStatus kind="unit" :value="selected.status" size="sm" /></dd>
-            </div>
-            <div class="flex items-center justify-between gap-4 py-2.5">
-              <dt class="text-[13px] text-ink-500">{{ field('area') }}</dt>
-              <dd class="tabular text-[13px] font-bold text-ink-900">{{ area(selected.area) }}</dd>
-            </div>
-            <div class="flex items-center justify-between gap-4 py-2.5">
-              <dt class="text-[13px] text-ink-500">{{ field('rooms') }}</dt>
-              <dd class="tabular text-[13px] font-semibold text-ink-900">{{ selected.rooms }}</dd>
-            </div>
-            <div class="flex items-center justify-between gap-4 py-2.5">
-              <dt class="text-[13px] text-ink-500">{{ field('type') }}</dt>
-              <dd class="text-[13px] font-semibold text-ink-900">{{ unitUsageLabel(selected.usage) }}</dd>
-            </div>
-            <div class="flex items-center justify-between gap-4 py-2.5">
-              <dt class="text-[13px] text-ink-500">{{ field('offerShort') }}</dt>
-              <dd class="text-[13px] font-semibold text-ink-900">{{ selected.offer }}</dd>
-            </div>
-            <div v-if="showFinance" class="flex items-center justify-between gap-4 py-2.5">
-              <dt class="text-[13px] text-ink-500">{{ field('price') }}</dt>
-              <dd class="tabular text-[13px] font-bold text-brand-600">
-                {{ num(selected.price) }} {{ priceUnitLabel(selected.priceUnit) }}
+              <dt class="text-[13px] text-ink-500">{{ field("status") }}</dt>
+              <dd>
+                <UiStatus kind="unit" :value="selected.status" size="sm" />
               </dd>
             </div>
-            <div v-if="showFinance" class="flex items-center justify-between gap-4 py-2.5">
-              <dt class="text-[13px] text-ink-500">{{ field('tenantBuyer') }}</dt>
-              <dd class="text-[13px] font-semibold text-ink-900">{{ selected.tenant ?? '-' }}</dd>
+            <div class="flex items-center justify-between gap-4 py-2.5">
+              <dt class="text-[13px] text-ink-500">{{ field("area") }}</dt>
+              <dd class="tabular text-[13px] font-bold text-ink-900">
+                {{ area(selected.area) }}
+              </dd>
             </div>
-            <div v-if="showFinance" class="flex items-start justify-between gap-4 py-2.5">
-              <dt class="text-[13px] text-ink-500">{{ field('contract') }}</dt>
-              <dd class="max-w-[60%] text-right text-[13px] font-semibold text-ink-900">
+            <div class="flex items-center justify-between gap-4 py-2.5">
+              <dt class="text-[13px] text-ink-500">{{ field("rooms") }}</dt>
+              <dd class="tabular text-[13px] font-semibold text-ink-900">
+                {{ selected.rooms }}
+              </dd>
+            </div>
+            <div class="flex items-center justify-between gap-4 py-2.5">
+              <dt class="text-[13px] text-ink-500">{{ field("type") }}</dt>
+              <dd class="text-[13px] font-semibold text-ink-900">
+                {{ unitUsageLabel(selected.usage) }}
+              </dd>
+            </div>
+            <div class="flex items-center justify-between gap-4 py-2.5">
+              <dt class="text-[13px] text-ink-500">
+                {{ field("offerShort") }}
+              </dt>
+              <dd class="text-[13px] font-semibold text-ink-900">
+                {{ selected.offer }}
+              </dd>
+            </div>
+            <div
+              v-if="showFinance"
+              class="flex items-center justify-between gap-4 py-2.5"
+            >
+              <dt class="text-[13px] text-ink-500">{{ field("price") }}</dt>
+              <dd class="tabular text-[13px] font-bold text-brand-600">
+                {{ num(selected.price) }}
+                {{ priceUnitLabel(selected.priceUnit) }}
+              </dd>
+            </div>
+            <div
+              v-if="showFinance"
+              class="flex items-center justify-between gap-4 py-2.5"
+            >
+              <dt class="text-[13px] text-ink-500">
+                {{ field("tenantBuyer") }}
+              </dt>
+              <dd class="text-[13px] font-semibold text-ink-900">
+                {{ selected.tenant ?? "-" }}
+              </dd>
+            </div>
+            <div
+              v-if="showFinance"
+              class="flex items-start justify-between gap-4 py-2.5"
+            >
+              <dt class="text-[13px] text-ink-500">{{ field("contract") }}</dt>
+              <dd
+                class="max-w-[60%] text-right text-[13px] font-semibold text-ink-900"
+              >
                 {{ contractLabel(selected) }}
               </dd>
             </div>
@@ -1140,7 +1313,9 @@ function goApply() {
         </div>
 
         <div class="mt-5 border-t border-ink-100 pt-4">
-          <p class="mb-2 text-[13px] font-semibold text-ink-700">{{ field('equipment') }}</p>
+          <p class="mb-2 text-[13px] font-semibold text-ink-700">
+            {{ field("equipment") }}
+          </p>
           <div class="flex flex-wrap gap-2">
             <span
               v-for="e in selected.equipment"
@@ -1154,55 +1329,15 @@ function goApply() {
         </div>
 
         <template #footer>
-          <UiButton variant="ghost" @click="viewOpen = false">{{ t('common.close') }}</UiButton>
+          <UiButton variant="ghost" @click="viewOpen = false">{{
+            t("common.close")
+          }}</UiButton>
           <UiButton
-                v-if="selected.status === 'VACANT' && leadAction !== 'none'"
-                @click="goApply"
-              >
-            <UiIcon name="key" :size="16" />
-            {{ t('apply.cta') }}
-          </UiButton>
-        </template>
-      </UiModal>
-
-      <UiModal
-        v-if="selected"
-        v-model="applyOpen"
-        :title="t('obj.applyForUnit', { code: selected.code })"
-        :subtitle="applySubtitle"
-      >
-        <div class="flex gap-3 rounded-field bg-brand-50 p-4 ring-1 ring-inset ring-brand-100">
-          <UiIcon name="info" :size="20" class="mt-0.5 shrink-0 text-brand-600" />
-          <p class="text-[14px] leading-relaxed text-ink-700">
-            {{ t('obj.applyFlowText') }}
-          </p>
-        </div>
-
-        <ol class="mt-4 space-y-3">
-          <li
-            v-for="(s, i) in [
-              t('obj.applyStep1'),
-              t('obj.applyStep2'),
-              t('obj.applyStep3'),
-              t('obj.applyStep4'),
-            ]"
-            :key="s"
-            class="flex gap-3"
+            v-if="selected.status === 'VACANT' && leadAction !== 'none'"
+            @click="goApply"
           >
-            <span
-              class="tabular grid size-6 shrink-0 place-items-center rounded-full bg-brand-500 text-[11px] font-bold text-white"
-            >
-              {{ i + 1 }}
-            </span>
-            <span class="text-[13px] leading-relaxed text-ink-700">{{ s }}</span>
-          </li>
-        </ol>
-
-        <template #footer>
-          <UiButton variant="ghost" @click="applyOpen = false">{{ t('common.close') }}</UiButton>
-          <UiButton v-if="canOpenApplications" variant="secondary" to="/applications">
-            <UiIcon name="clipboard" :size="16" />
-            {{ t('obj.applicationsQueue') }}
+            <UiIcon name="key" :size="16" />
+            {{ t("apply.cta") }}
           </UiButton>
         </template>
       </UiModal>

@@ -14,6 +14,7 @@ export type LeadAction = 'apply' | 'createForClient' | 'none'
 
 export function useLeadAction() {
   const auth = useAuthStore()
+  const { t } = useI18n()
 
   /** Xodim: ijaraga beruvchi tomonida ishlaydigan rol */
   const isStaff = computed(
@@ -27,15 +28,11 @@ export function useLeadAction() {
   })
 
   const label = computed(() =>
-    action.value === 'createForClient' ? 'Mijoz nomidan ariza ochish' : 'Ariza yuborish',
+    action.value === 'createForClient' ? t('obj.createForClient') : t('apply.cta'),
   )
 
   /** Xodimga tugma o'rniga ko'rsatiladigan izoh */
-  const staffHint = computed(() =>
-    action.value === 'none'
-      ? 'Ariza potensial ijarachi tomonidan yuboriladi, uni Operator qabul qiladi'
-      : '',
-  )
+  const staffHint = computed(() => (action.value === 'none' ? t('obj.leadStaffHint') : ''))
 
   return { action, label, isStaff, staffHint }
 }

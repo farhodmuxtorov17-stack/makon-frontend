@@ -463,8 +463,7 @@
     "ctaPhotoAlt": "Urban Office ofis binosi",
     "ctaCatalog": "Bo‘sh maydonlar katalogi",
     "mapOpen": "Xaritani ochish",
-    "mapOpenHint": "{count} ta obyekt xaritada belgilangan. Kerakli hududni tanlab, bo‘sh maydonlarni ko‘ring.",
-    "planLabel": "Qavat rejasi: {floor}-qavat"
+    "mapOpenHint": "{count} ta obyekt xaritada belgilangan. Kerakli hududni tanlab, bo‘sh maydonlarni ko‘ring."
   },
   "apply": {
     "cta": "Ariza yuborish",
@@ -2875,7 +2874,6 @@
     "unitCard": "Unit kartasi",
     "pickUnitDetail": "Tafsilot uchun unit tanlang",
     "pickUnitText": "Hajmli ko‘rinishda yoki yuqoridagi ro‘yxatda unitni bosing, uning konturi ajratiladi va shu yerda kartasi ochiladi.",
-    "applyStaffText": "Ariza faqat ijarachi profilidan yuboriladi. Ichki rol bilan kirgan foydalanuvchi ariza yarata olmaydi, bu ijarachi tomonidagi amal.",
     "vacantSqm": "Bo‘sh, m²",
     "undergroundPlus": "+{n} yer osti",
     "noUnderground": "yer osti yo‘q",
@@ -2910,13 +2908,8 @@
     "noUnitsFloorText": "Ushbu qavatda unit yozuvlari yo‘q. Boshqa qavatni tanlang.",
     "unitDetail": "Unit {code}, batafsil",
     "locationOf": "Joylashuv: {floor}, {name}",
-    "applyForUnit": "Ariza yuborish: Unit {code}",
-    "applyFlowText": "Ijaraga olish arizasini tashkilot vakili o‘zining shaxsiy kabinetidan yuboradi. Ariza kelib tushishi bilan u sizning arizalar navbatingizda paydo bo‘ladi va kommersiya taklifini shu yerda tuzasiz.",
-    "applyStep1": "Ijarachi katalogdan unitni tanlab ariza yuboradi",
-    "applyStep2": "Bino rahbari kommersiya taklifi va to‘lov grafigini tasdiqlaydi",
-    "applyStep3": "Buxgalter moliyaviy shartlarni tasdiqlaydi, tizim qoralama tuzadi",
-    "applyStep4": "Didox orqali ikki tomon imzolaydi va shartnoma aktivlashtiriladi",
-    "applicationsQueue": "Arizalar navbati"
+    "createForClient": "Mijoz nomidan ariza ochish",
+    "leadStaffHint": "Arizani ijarachi yuboradi, uni Operator qabul qiladi"
   },
   "app2": {
     "queueTitle": "Arizalar navbati",
@@ -3342,7 +3335,7 @@
     "offerModalCaption": "Ariza rasmiy hujjat hisoblanadi va tizimda qayd etib boriladi",
     "offerModalText": "Joriy hisob ish maydoni roliga tegishli. Ijaraga olish arizasini tashkilot vakili o‘zining shaxsiy kabinetidan yuboradi, ariza avtomatik ravishda tanlangan unitga biriktiriladi.",
     "offerStep1": "Tashkilot rekvizitlari profildan avtomatik to‘ldiriladi",
-    "offerStep2": "Bino rahbari kommersiya taklifini tuzadi, buxgalter moliyani tasdiqlaydi",
+    "offerStep2": "Operator siz bilan bog‘lanib, kelishilgan shartlarni tasdiqlaydi",
     "offerStep3": "Shartnoma Didox orqali imzolanadi va kabinetda kuzatiladi",
     "notFoundText": "So‘ralgan obyekt katalogdan olib tashlangan yoki havola noto‘g‘ri. Barcha mavjud obyektlar va bo‘sh joylarni katalogdan ko‘rishingiz mumkin.",
     "toCatalog": "Katalogga o‘tish"
@@ -3380,7 +3373,7 @@
     "faq03q": "Servis arizasini qanday yuborish kerak?",
     "faq03a": "Bosh sahifadagi «Yangi ariza yaratish» tugmasini bosing, kategoriya va prioritetni tanlab muammoni tavsiflang. Ariza bino xizmatiga yuboriladi va holati kabinetda kuzatiladi.",
     "faq04q": "Yangi ijarachi qo‘shish tartibi qanday?",
-    "faq04a": "Ariza qabul qilinadi, operatsiya uni tasdiqlaydi, buxgalter esa moliyaviy shartlarni tasdiqlaydi. So‘ng shartnoma qoralamasi avtomatik tuziladi va Didox orqali imzoga yuboriladi. Didox holati tekshirilib, imzolangan hujjat tizimga yuklanadi: shartnoma faollashadi va unit «Ijarada» holatiga o‘tadi. Har bir bosqich ariza kartochkasida qayd etiladi.",
+    "faq04a": "Ariza qabul qilinadi, Operator siz bilan bog‘lanib kelishilgan shartlarni kiritadi va arizani tasdiqlaydi. Tasdiq bosilishi bilan tizim shartnomani tuzadi va Didox orqali imzoga yuboradi. Imzolangan hujjat yuklangach ariza yopiladi va kabinet uchun login beriladi.",
     "faq05q": "Obyekt uchun xizmatlar buyurtma qilish qanday ishlaydi?",
     "faq05a": "Servis arizasi yaratiladi, mas’ul xodim biriktiriladi va material so‘rovi tasdiqlanadi. Ish yakunlangach ijarachi tasdiqlashi uchun ariza yuboriladi.",
     "faq06q": "Hisob-faktura qanday shakllantiriladi?",
