@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { BUILDINGS } from '~/data/buildings'
 import { SERVICE_STATUS } from '~/constants/statuses'
 import {
   MATERIAL_REQUESTS,
@@ -40,7 +41,16 @@ const evidence = useState<Record<string, number>>('work-order-evidence', () =>
 )
 const notes = useState<Record<string, string[]>>('work-order-notes', () => ({}))
 
-const order = computed(() => requests.value.find((r) => r.id === String(route.params.id)))
+/**
+ * Bino doirasi bu yerda ham tekshiriladi, aks holda topshiriqni havola
+ * orqali doiradan tashqarida ham ochish mumkin edi.
+ */
+const order = computed(() => {
+  const found = requests.value.find((r) => r.id === String(route.params.id))
+  if (!found) return undefined
+  const site = BUILDINGS.find((b) => b.name === found.buildingName)
+  return site && !auth.inScope(site.id) ? undefined : found
+})
 
 /** Chek-list bandlari topshiriq kategoriyasidan quriladi */
 const checklist = computed(() => (order.value ? checklistFor(order.value) : []))

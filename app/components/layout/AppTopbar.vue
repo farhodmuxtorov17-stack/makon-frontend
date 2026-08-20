@@ -95,29 +95,14 @@ function closeRate() {
 
 // --- Bildirishnomalar ------------------------------------------------------
 
-const notifications = useState<AppNotification[]>('header-notifications', () =>
-  NOTIFICATIONS.map((n) => ({ ...n })),
-)
-
-/**
- * Moliyaviy xabarlar boshqa ijarachining nomi va hisob-fakturasini o‘z ichiga
- * oladi, shuning uchun ular faqat billing moduli ochiq bo‘lgan rollarga
- * (SUPER_HEAD va ACCOUNTANT) ko‘rsatiladi; TENANT_OWNER, BUILDING_MANAGER,
- * FACILITY, WAREHOUSE_OPERATOR va CONTENT_OPERATOR ularni ko‘rmaydi.
+/*
+ * Ro'yxat va filtr `useNotifications` ichida: moliyaviy xabar boshqa
+ * ijarachining nomi va hisob-fakturasini o'z ichiga oladi, shuning uchun
+ * u faqat billing moduli ochiq rollarga ko'rinadi. Qoida bitta joyda
+ * turadi, aks holda qo'ng'iroq filtrlaydi-yu sahifa ochiq ko'rsatadi.
  */
-const CATEGORY_MODULE: Partial<Record<AppNotification['category'], string>> = {
-  'To‘lovlar': '/billing',
-}
+const { items: visible, unread, markRead, markAllRead } = useNotifications()
 
-const visible = computed(() =>
-  notifications.value.filter((n) => {
-    const module = CATEGORY_MODULE[n.category]
-    if (!module) return true
-    return auth.canRoute(module)
-  }),
-)
-
-const unread = computed(() => visible.value.filter((n) => !n.read).length)
 const recent = computed(() => visible.value.slice(0, 5))
 
 const NOTIFICATION_TONE: Record<string, string> = {
@@ -128,17 +113,8 @@ const NOTIFICATION_TONE: Record<string, string> = {
   Tizim: 'bg-ink-100 text-ink-600',
 }
 
-function markAllRead() {
-  const shown = new Set(visible.value.map((n) => n.id))
-  notifications.value = notifications.value.map((n) =>
-    shown.has(n.id) ? { ...n, read: true } : n,
-  )
-}
-
 function openNotification(item: AppNotification) {
-  notifications.value = notifications.value.map((n) =>
-    n.id === item.id ? { ...n, read: true } : n,
-  )
+  markRead(item.id)
   panel.value = null
 }
 

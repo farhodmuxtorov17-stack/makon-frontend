@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { BUILDINGS } from '~/data/buildings'
 import AppTopbar from '~/components/layout/AppTopbar.vue'
 import { CONTRACTS, INVOICES, type Contract } from '~/data/business'
 import { docxBlob, fileSize, saveBlob, type DocxLine } from '~/utils/docx'
@@ -8,7 +9,17 @@ const route = useRoute()
 const auth = useAuthStore()
 const registry = reactive(CONTRACTS)
 
-const contract = computed(() => registry.find((c) => c.id === String(route.params.id)) ?? null)
+/**
+ * Bino doirasi kartochkada ham tekshiriladi. Ilgari faqat ro'yxat
+ * filtrlanardi va bino rahbari to'g'ridan-to'g'ri havola orqali boshqa
+ * obyektning shartnoma shartlarini, ijarachisini va summasini o'qiy olardi.
+ */
+const contract = computed(() => {
+  const found = registry.find((c) => c.id === String(route.params.id)) ?? null
+  if (!found) return null
+  const site = BUILDINGS.find((b) => b.name === found.buildingName)
+  return site && !auth.inScope(site.id) ? null : found
+})
 
 const banner = ref('')
 const approveOpen = ref(false)

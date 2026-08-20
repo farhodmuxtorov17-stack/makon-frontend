@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { BUILDINGS } from '~/data/buildings'
 import {
   MATERIAL_REQUESTS,
   SERVICE_REQUESTS,
@@ -48,7 +49,16 @@ const requests = useState<ServiceRequest[]>('service-requests', () =>
   SERVICE_REQUESTS.map((r) => ({ ...r })),
 )
 
-const request = computed(() => requests.value.find((r) => r.id === String(route.params.id)))
+/**
+ * Bino doirasi kartochkada ham tekshiriladi: ro'yxat filtrlangani bilan
+ * to'g'ridan-to'g'ri havola boshqa obyektning arizasini ochib berardi.
+ */
+const request = computed(() => {
+  const found = requests.value.find((r) => r.id === String(route.params.id))
+  if (!found) return undefined
+  const site = BUILDINGS.find((b) => b.name === found.buildingName)
+  return site && !auth.inScope(site.id) ? undefined : found
+})
 
 /**
  * Chek-list holati ariza id si bo‘yicha saqlanadi va ish topshiriqlari
