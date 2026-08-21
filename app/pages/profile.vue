@@ -225,7 +225,7 @@ function toggleNotification(id: string) {
       v-if="savedMessage"
       class="flex items-center gap-3 rounded-card bg-ok-50 px-5 py-3.5 ring-1 ring-ok-100"
     >
-      <span class="grid size-9 shrink-0 place-items-center rounded-[10px] bg-ok-500 text-white">
+      <span class="grid size-9 shrink-0 place-items-center rounded-field bg-ok-500 text-white">
         <UiIcon name="check" :size="18" />
       </span>
       <p class="min-w-0 flex-1 text-[14px] text-ok-700">{{ savedMessage }}</p>
@@ -281,7 +281,7 @@ function toggleNotification(id: string) {
         </dl>
 
         <UiButton variant="secondary" size="sm" class="mt-4" block to="/help">
-          <UiIcon name="help" :size="15" />
+          <UiIcon name="help" :size="16" />
           {{ t('nav.help') }}
         </UiButton>
       </UiCard>
@@ -347,8 +347,8 @@ function toggleNotification(id: string) {
       <UiCard :title="t('usr.security')" :subtitle="t('usr.securityCaption')" flush>
         <div class="px-5 pb-4">
           <div class="flex items-center gap-3.5 rounded-field p-4 ring-1 ring-ink-200">
-            <span class="grid size-10 shrink-0 place-items-center rounded-[10px] bg-brand-50 text-brand-600">
-              <UiIcon name="lock" :size="19" />
+            <span class="grid size-10 shrink-0 place-items-center rounded-field bg-brand-50 text-brand-600">
+              <UiIcon name="lock" :size="20" />
             </span>
             <span class="min-w-0 flex-1">
               <span class="block text-[14px] font-semibold text-ink-900">
@@ -368,7 +368,7 @@ function toggleNotification(id: string) {
           <p class="mb-2 text-[13px] font-semibold text-ink-700">{{ t('usr.activeSessions') }}</p>
           <ul class="divide-y divide-ink-100 rounded-field ring-1 ring-ink-200">
             <li v-for="s in sessions" :key="s.id" class="flex items-center gap-3.5 px-4 py-3">
-              <span class="grid size-10 shrink-0 place-items-center rounded-[10px] bg-ink-100 text-ink-600">
+              <span class="grid size-10 shrink-0 place-items-center rounded-field bg-ink-100 text-ink-600">
                 <UiIcon name="shield" :size="18" />
               </span>
               <span class="min-w-0 flex-1">
@@ -471,7 +471,7 @@ function toggleNotification(id: string) {
       </UiField>
 
       <p class="flex items-start gap-2 rounded-field bg-brand-50 px-3.5 py-2.5 text-[12px] text-brand-700">
-        <UiIcon name="info" :size="15" class="mt-0.5 shrink-0" />
+        <UiIcon name="info" :size="16" class="mt-0.5 shrink-0" />
         {{ t('usr.passwordNote', { section: t('usr.security') }) }}
       </p>
     </div>

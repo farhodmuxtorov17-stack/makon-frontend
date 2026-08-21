@@ -560,7 +560,7 @@ const tourId = computed(
         :aria-label="t('common.closeNotice')"
         @click="notice = ''"
       >
-        <UiIcon name="x" :size="15" />
+        <UiIcon name="x" :size="16" />
       </button>
     </div>
 
@@ -589,7 +589,7 @@ const tourId = computed(
             size="sm"
             @click="contractOpen = true"
           >
-            <UiIcon name="doc" :size="15" />
+            <UiIcon name="doc" :size="16" />
             {{ t("app2.viewContract") }}
           </UiButton>
 
@@ -599,12 +599,12 @@ const tourId = computed(
             size="sm"
             @click="openContractEditor"
           >
-            <UiIcon name="edit" :size="15" />
+            <UiIcon name="edit" :size="16" />
             {{ t("app2.editContract") }}
           </UiButton>
 
           <UiButton v-if="canSendDidox" size="sm" @click="sendDidox">
-            <UiIcon name="send" :size="15" />
+            <UiIcon name="send" :size="16" />
             {{ t("app2.sendDidox") }}
           </UiButton>
 
@@ -615,7 +615,7 @@ const tourId = computed(
             :disabled="formInvalid"
             @click="approve"
           >
-            <UiIcon name="check" :size="15" />
+            <UiIcon name="check" :size="16" />
             {{ t("common.confirm") }}
           </UiButton>
 
@@ -625,7 +625,7 @@ const tourId = computed(
             size="sm"
             @click="reworkOpen = true"
           >
-            <UiIcon name="refresh" :size="15" />
+            <UiIcon name="refresh" :size="16" />
             {{ t("app2.sendRework") }}
           </UiButton>
 
@@ -635,7 +635,7 @@ const tourId = computed(
             size="sm"
             @click="rejectOpen = true"
           >
-            <UiIcon name="x" :size="15" />
+            <UiIcon name="x" :size="16" />
             {{ t("common.reject") }}
           </UiButton>
 
@@ -643,7 +643,7 @@ const tourId = computed(
             v-if="readOnly"
             class="inline-flex items-center gap-2 rounded-pill bg-ink-100 px-3 py-1.5 text-[12px] font-semibold text-ink-600"
           >
-            <UiIcon name="eye" :size="15" />
+            <UiIcon name="eye" :size="16" />
             {{ t("app2.watchOnly") }}
           </span>
         </div>
@@ -657,7 +657,7 @@ const tourId = computed(
         v-if="needsUnit && item.status === 'YANGI'"
         class="mt-4 flex items-start gap-2 rounded-field bg-warn-50 px-3.5 py-2.5 text-[13px] leading-relaxed text-warn-700 ring-1 ring-inset ring-warn-100"
       >
-        <UiIcon name="info" :size="15" class="mt-px shrink-0" />
+        <UiIcon name="info" :size="16" class="mt-px shrink-0" />
         <span>{{ t("app2.unitPendingHint") }}</span>
       </p>
 
@@ -670,7 +670,7 @@ const tourId = computed(
         v-if="isPurchase && item.status === 'YANGI'"
         class="mt-4 flex items-start gap-2 rounded-field bg-info-50 px-3.5 py-2.5 text-[13px] leading-relaxed text-info-700 ring-1 ring-inset ring-info-100"
       >
-        <UiIcon name="info" :size="15" class="mt-px shrink-0" />
+        <UiIcon name="info" :size="16" class="mt-px shrink-0" />
         <span>{{ t("app2.purchaseHint") }}</span>
       </p>
 
@@ -678,7 +678,7 @@ const tourId = computed(
         v-if="item.status === 'RAD_ETILDI' && item.rejectReason"
         class="mt-4 flex items-start gap-2 rounded-field bg-danger-50 px-3.5 py-2.5 text-[13px] leading-relaxed text-danger-700 ring-1 ring-inset ring-danger-100"
       >
-        <UiIcon name="warning" :size="15" class="mt-px shrink-0" />
+        <UiIcon name="warning" :size="16" class="mt-px shrink-0" />
         {{ t("app2.rejectReasonPrefix", { reason: item.rejectReason }) }}
       </p>
     </UiCard>
@@ -797,7 +797,7 @@ const tourId = computed(
             <div class="mt-3 grid gap-3 sm:grid-cols-3">
               <div class="flex items-center gap-2.5">
                 <span
-                  class="grid size-9 shrink-0 place-items-center rounded-[10px] bg-white text-brand-600 ring-1 ring-ink-200"
+                  class="grid size-9 shrink-0 place-items-center rounded-field bg-white text-brand-600 ring-1 ring-ink-200"
                 >
                   <UiIcon name="user" :size="16" />
                 </span>
@@ -817,7 +817,7 @@ const tourId = computed(
                 class="flex items-center gap-2.5 rounded-field transition-colors duration-150 hover:bg-white"
               >
                 <span
-                  class="grid size-9 shrink-0 place-items-center rounded-[10px] bg-white text-brand-600 ring-1 ring-ink-200"
+                  class="grid size-9 shrink-0 place-items-center rounded-field bg-white text-brand-600 ring-1 ring-ink-200"
                 >
                   <UiIcon name="phone" :size="16" />
                 </span>
@@ -839,7 +839,7 @@ const tourId = computed(
                 class="flex items-center gap-2.5 rounded-field transition-colors duration-150 hover:bg-white"
               >
                 <span
-                  class="grid size-9 shrink-0 place-items-center rounded-[10px] bg-white text-brand-600 ring-1 ring-ink-200"
+                  class="grid size-9 shrink-0 place-items-center rounded-field bg-white text-brand-600 ring-1 ring-ink-200"
                 >
                   <UiIcon name="send" :size="16" />
                 </span>
@@ -864,7 +864,7 @@ const tourId = computed(
               class="mt-3"
               @click="markContacted"
             >
-              <UiIcon name="check" :size="15" />
+              <UiIcon name="check" :size="16" />
               {{ t("app2.markContacted") }}
             </UiButton>
           </div>
@@ -877,7 +877,7 @@ const tourId = computed(
             <p
               class="flex items-start gap-2 text-[13px] font-semibold text-warn-700"
             >
-              <UiIcon name="info" :size="15" class="mt-px shrink-0" />
+              <UiIcon name="info" :size="16" class="mt-px shrink-0" />
               {{ t("app2.guestTitle") }}
             </p>
             <p class="mt-1.5 text-[13px] leading-relaxed text-ink-600">
@@ -1025,7 +1025,7 @@ const tourId = computed(
 
           <div v-if="item.status !== 'FAOL'" class="mt-4">
             <UiButton :disabled="!canClose" @click="closeCase">
-              <UiIcon name="check" :size="17" />
+              <UiIcon name="check" :size="16" />
               {{ t("app2.closeCase") }}
             </UiButton>
             <p class="mt-2 text-[13px] leading-relaxed text-ink-500">
@@ -1036,7 +1036,7 @@ const tourId = computed(
               v-if="closeBlockers.length"
               class="mt-2.5 flex items-start gap-2 rounded-field bg-warn-50 px-3.5 py-2.5 text-[13px] leading-relaxed text-warn-700 ring-1 ring-inset ring-warn-100"
             >
-              <UiIcon name="warning" :size="15" class="mt-px shrink-0" />
+              <UiIcon name="warning" :size="16" class="mt-px shrink-0" />
               <span>
                 {{ t("app2.closeBlockers") }}
                 <b>{{ closeBlockers.join("; ") }}</b>
@@ -1066,7 +1066,7 @@ const tourId = computed(
               </p>
               <div class="mt-1.5 flex items-center gap-2">
                 <code
-                  class="tabular min-w-0 flex-1 truncate rounded-[6px] bg-white px-2.5 py-1.5 text-[14px] font-bold text-ink-900 ring-1 ring-inset ring-ink-200"
+                  class="tabular min-w-0 flex-1 truncate rounded-[8px] bg-white px-2.5 py-1.5 text-[14px] font-bold text-ink-900 ring-1 ring-inset ring-ink-200"
                 >
                   {{ row.value }}
                 </code>
@@ -1093,7 +1093,7 @@ const tourId = computed(
           <p
             class="mt-3.5 flex items-start gap-2 rounded-field bg-brand-50 px-3.5 py-2.5 text-[13px] leading-relaxed text-brand-700 ring-1 ring-inset ring-brand-200"
           >
-            <UiIcon name="info" :size="15" class="mt-px shrink-0" />
+            <UiIcon name="info" :size="16" class="mt-px shrink-0" />
             <span>
               {{
                 t("app2.accessIssued", {
@@ -1132,7 +1132,7 @@ const tourId = computed(
             <p
               class="flex items-start gap-2 rounded-field bg-warn-50 px-3.5 py-2.5 text-[13px] leading-relaxed text-warn-700 ring-1 ring-inset ring-warn-100"
             >
-              <UiIcon name="info" :size="15" class="mt-px shrink-0" />
+              <UiIcon name="info" :size="16" class="mt-px shrink-0" />
               {{ t("app2.unitPanelHint") }}
             </p>
 
@@ -1187,7 +1187,7 @@ const tourId = computed(
               v-else
               class="mt-4 flex items-center justify-center gap-2 rounded-field bg-ink-100 px-3 py-2.5 text-[13px] font-semibold text-ink-600"
             >
-              <UiIcon name="eye" :size="15" />
+              <UiIcon name="eye" :size="16" />
               {{ t("app2.assignByOperator") }}
             </p>
           </template>
@@ -1280,7 +1280,7 @@ const tourId = computed(
               class="mt-4"
               :to="`/objects/${item.buildingId}/floors/${item.floor}?unit=${item.unitId}`"
             >
-              <UiIcon name="layers" :size="15" />
+              <UiIcon name="layers" :size="16" />
               {{ t("app2.viewOnPlan") }}
             </UiButton>
           </template>
@@ -1342,7 +1342,7 @@ const tourId = computed(
       </div>
 
       <UiButton variant="secondary" size="sm" class="mt-4" @click="addClause">
-        <UiIcon name="plus" :size="15" />
+        <UiIcon name="plus" :size="16" />
         {{ t("app2.addClause") }}
       </UiButton>
 

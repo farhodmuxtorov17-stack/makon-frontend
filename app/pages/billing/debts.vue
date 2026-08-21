@@ -455,7 +455,7 @@ const agingSlices = computed(() =>
                 @click="openHistory({ tenant: d.tenant })"
               >
                 <span
-                  class="grid size-10 shrink-0 place-items-center rounded-[10px] bg-danger-50 text-danger-600"
+                  class="grid size-10 shrink-0 place-items-center rounded-field bg-danger-50 text-danger-600"
                 >
                   <UiIcon name="warning" :size="18" />
                 </span>
@@ -556,7 +556,7 @@ const agingSlices = computed(() =>
           @click="runExport('DOCX')"
         >
           <span
-            class="grid size-10 shrink-0 place-items-center rounded-[10px] bg-danger-50 text-danger-600"
+            class="grid size-10 shrink-0 place-items-center rounded-field bg-danger-50 text-danger-600"
           >
             <UiIcon name="doc" :size="18" />
           </span>
@@ -577,7 +577,7 @@ const agingSlices = computed(() =>
           @click="runExport('CSV')"
         >
           <span
-            class="grid size-10 shrink-0 place-items-center rounded-[10px] bg-ok-50 text-ok-600"
+            class="grid size-10 shrink-0 place-items-center rounded-field bg-ok-50 text-ok-600"
           >
             <UiIcon name="layers" :size="18" />
           </span>

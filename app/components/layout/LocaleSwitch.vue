@@ -69,7 +69,7 @@ function choose(code: LocaleCode) {
       :aria-label="t('shell.localeAria', { label: current.label })"
       @click="open = !open"
     >
-      <UiIcon name="globe" :size="17" class="text-ink-500" />
+      <UiIcon name="globe" :size="16" class="text-ink-500" />
       {{ current.short }}
       <UiIcon
         name="chevronDown"
@@ -100,13 +100,13 @@ function choose(code: LocaleCode) {
             @click="choose(l.code)"
           >
             <span
-              class="grid size-6 shrink-0 place-items-center rounded-[6px] text-[11px] font-bold"
+              class="grid size-6 shrink-0 place-items-center rounded-[8px] text-[11px] font-bold"
               :class="l.code === stored ? 'bg-brand-500 text-white' : 'bg-ink-100 text-ink-600'"
             >
               {{ l.short }}
             </span>
             <span class="flex-1 truncate">{{ l.label }}</span>
-            <UiIcon v-if="l.code === stored" name="check" :size="15" class="text-brand-600" />
+            <UiIcon v-if="l.code === stored" name="check" :size="16" class="text-brand-600" />
           </button>
         </li>
       </ul>

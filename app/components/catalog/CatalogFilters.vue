@@ -75,7 +75,7 @@ function toggleType(value: string) {
             :aria-label="t('cat.removeChip', { label: c.label })"
             @click="emit('clearChip', c.key)"
           >
-            <UiIcon name="x" :size="11" />
+            <UiIcon name="x" :size="12" />
           </button>
         </span>
       </div>
@@ -87,7 +87,7 @@ function toggleType(value: string) {
       :aria-label="t('cat.nameSearchAria')"
     >
       <template #prefix>
-        <UiIcon name="search" :size="17" />
+        <UiIcon name="search" :size="16" />
       </template>
     </UiInput>
 

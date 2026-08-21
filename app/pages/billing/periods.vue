@@ -608,7 +608,7 @@ function createPeriod() {
               :disabled="Boolean(row.closed)"
               @click.stop="askGenerate(String(row.key))"
             >
-              <UiIcon name="refresh" :size="15" />
+              <UiIcon name="refresh" :size="16" />
               {{ t("bil.generateInvoices") }}
             </UiButton>
             <UiButton
@@ -617,7 +617,7 @@ function createPeriod() {
               :disabled="Boolean(row.closed)"
               @click.stop="askClose(String(row.key))"
             >
-              <UiIcon name="lock" :size="15" />
+              <UiIcon name="lock" :size="16" />
               {{ t("bil.closePeriod") }}
             </UiButton>
           </span>

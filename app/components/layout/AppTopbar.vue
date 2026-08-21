@@ -168,7 +168,7 @@ function signOut() {
             <NuxtLink
               v-if="c.to"
               :to="c.to"
-              class="inline-flex min-h-6 items-center rounded-[6px] text-ink-500 transition-colors hover:text-brand-600"
+              class="inline-flex min-h-6 items-center rounded-[8px] text-ink-500 transition-colors hover:text-brand-600"
             >
               {{ c.label }}
             </NuxtLink>
@@ -216,7 +216,7 @@ function signOut() {
           <span class="sr-only">{{
             t("shell.weatherOf", { city: weather.city })
           }}</span>
-          <UiIcon :name="weather.icon" :size="19" :class="weatherTone" />
+          <UiIcon :name="weather.icon" :size="20" :class="weatherTone" />
           <span class="tabular text-[14px] font-semibold text-ink-800">
             {{ weather.tempC }}°
           </span>
@@ -310,7 +310,7 @@ function signOut() {
                       class="flex items-center justify-end gap-0.5 text-[11px] font-semibold"
                       :class="diffTone(r.diff)"
                     >
-                      <UiIcon :name="diffIcon(r.diff)" :size="11" />
+                      <UiIcon :name="diffIcon(r.diff)" :size="12" />
                       <span class="tabular">{{ signedDiff(r.diff) }}</span>
                     </span>
                   </span>
@@ -397,13 +397,13 @@ function signOut() {
                     @click="openNotification(n)"
                   >
                     <span
-                      class="grid size-9 shrink-0 place-items-center rounded-[10px]"
+                      class="grid size-9 shrink-0 place-items-center rounded-field"
                       :class="
                         NOTIFICATION_TONE[n.category] ??
                         'bg-ink-100 text-ink-600'
                       "
                     >
-                      <UiIcon :name="n.icon" :size="17" />
+                      <UiIcon :name="n.icon" :size="16" />
                     </span>
                     <span class="min-w-0 flex-1">
                       <span
@@ -459,7 +459,7 @@ function signOut() {
                   @click="panel = null"
                 >
                   {{ t("shell.notificationsAll") }}
-                  <UiIcon name="chevronRight" :size="13" />
+                  <UiIcon name="chevronRight" :size="14" />
                 </NuxtLink>
               </div>
             </div>

@@ -175,7 +175,7 @@ watch(open, (isOpen) => {
         class="flex flex-col items-center rounded-panel bg-surface-sunken px-6 py-8 text-center ring-1 ring-inset ring-ink-200"
       >
         <span class="grid size-12 place-items-center rounded-full bg-ok-50 text-ok-700">
-          <UiIcon name="check" :size="26" />
+          <UiIcon name="check" :size="24" />
         </span>
         <p class="mt-4 text-[12px] font-bold uppercase tracking-[0.08em] text-ink-500">
           {{ t('apply.doneNumber') }}
@@ -193,7 +193,7 @@ watch(open, (isOpen) => {
       <dl class="mt-5 space-y-3">
         <div class="flex gap-3">
           <dt class="shrink-0 pt-px text-ink-400">
-            <UiIcon name="contract" :size="17" />
+            <UiIcon name="contract" :size="16" />
           </dt>
           <dd class="text-[14px] leading-relaxed text-ink-700">
             {{
@@ -207,7 +207,7 @@ watch(open, (isOpen) => {
         </div>
         <div class="flex gap-3">
           <dt class="shrink-0 pt-px text-ink-400">
-            <UiIcon name="phone" :size="17" />
+            <UiIcon name="phone" :size="16" />
           </dt>
           <dd class="text-[14px] leading-relaxed text-ink-700">
             {{ t('apply.doneNext', { phone: phone }) }}
@@ -306,7 +306,7 @@ watch(open, (isOpen) => {
       <p
         class="mt-5 flex items-start gap-2.5 rounded-field bg-surface-sunken p-3.5 text-[13px] leading-relaxed text-ink-600 ring-1 ring-inset ring-ink-200"
       >
-        <UiIcon name="info" :size="15" class="mt-px shrink-0 text-ink-400" />
+        <UiIcon name="info" :size="16" class="mt-px shrink-0 text-ink-400" />
         {{ t('apply.legalNote') }}
       </p>
     </form>

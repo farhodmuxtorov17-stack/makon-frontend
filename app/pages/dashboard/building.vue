@@ -402,7 +402,7 @@ const tourId = computed(() => `building:${auth.role ?? "guest"}`);
               class="group flex items-center gap-3.5 px-5 py-3.5 transition-colors hover:bg-brand-50/40"
             >
               <span
-                class="grid size-10 shrink-0 place-items-center rounded-[10px]"
+                class="grid size-10 shrink-0 place-items-center rounded-field"
                 :class="PROBLEM_TONE[p.tone]"
               >
                 <UiIcon :name="p.icon" :size="18" />
@@ -533,7 +533,7 @@ const tourId = computed(() => `building:${auth.role ?? "guest"}`);
               class="group flex items-center gap-4 px-5 py-3.5 transition-colors hover:bg-brand-50/40"
             >
               <span
-                class="grid size-10 shrink-0 place-items-center rounded-[10px] bg-warn-50 text-warn-600"
+                class="grid size-10 shrink-0 place-items-center rounded-field bg-warn-50 text-warn-600"
               >
                 <UiIcon name="wrench" :size="18" />
               </span>
@@ -625,7 +625,7 @@ const tourId = computed(() => `building:${auth.role ?? "guest"}`);
           <li v-for="i in debtAlerts" :key="i.id" class="px-5 py-3.5">
             <NuxtLink :to="debtsTarget" class="group flex items-center gap-4">
               <span
-                class="grid size-10 shrink-0 place-items-center rounded-[10px] bg-danger-50 text-danger-600"
+                class="grid size-10 shrink-0 place-items-center rounded-field bg-danger-50 text-danger-600"
               >
                 <UiIcon name="warning" :size="18" />
               </span>
@@ -697,7 +697,7 @@ const tourId = computed(() => `building:${auth.role ?? "guest"}`);
               class="group flex items-center gap-4"
             >
               <span
-                class="grid size-10 shrink-0 place-items-center rounded-[10px] bg-warn-50 text-warn-600"
+                class="grid size-10 shrink-0 place-items-center rounded-field bg-warn-50 text-warn-600"
               >
                 <UiIcon name="clock" :size="18" />
               </span>

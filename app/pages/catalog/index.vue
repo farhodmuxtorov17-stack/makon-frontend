@@ -810,7 +810,7 @@ watch(
             <div class="flex shrink-0 items-center justify-between gap-2">
               <UiStatus kind="unit" :value="l.unit.status" size="sm" />
               <span
-                class="tabular shrink-0 rounded-[6px] bg-ink-100 px-1.5 text-[11px] font-bold leading-5 text-ink-700"
+                class="tabular shrink-0 rounded-[8px] bg-ink-100 px-1.5 text-[11px] font-bold leading-5 text-ink-700"
               >
                 {{ l.unit.code }}
               </span>
@@ -855,7 +855,7 @@ watch(
             <p
               class="mt-1 flex shrink-0 items-center gap-1.5 text-[12px] text-ink-500 md:text-[13px]"
             >
-              <UiIcon name="location" :size="13" class="shrink-0 text-ink-400" />
+              <UiIcon name="location" :size="14" class="shrink-0 text-ink-400" />
               <span class="truncate">
                 {{ l.building.district }}<span class="hidden md:inline">, {{ l.building.street }}</span>
               </span>

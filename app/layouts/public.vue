@@ -482,14 +482,14 @@ function openApply() {
                 class="inline-flex min-h-[44px] items-center gap-2 rounded-pill bg-brand-500 px-4 text-[13px] font-semibold text-white transition-colors duration-150 hover:bg-brand-600"
                 @click="openApply"
               >
-                <UiIcon name="send" :size="15" />
+                <UiIcon name="send" :size="16" />
                 {{ t("apply.cta") }}
               </button>
               <NuxtLink
                 to="/catalog"
                 class="inline-flex min-h-[44px] items-center gap-2 rounded-pill bg-white/10 px-4 text-[13px] font-semibold text-white transition-colors duration-150 hover:bg-white/20"
               >
-                <UiIcon name="search" :size="15" />
+                <UiIcon name="search" :size="16" />
                 {{ t("public.searchVacancy") }}
               </NuxtLink>
             </div>

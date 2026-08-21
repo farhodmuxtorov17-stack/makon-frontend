@@ -162,7 +162,7 @@ function saveReading() {
         v-if="savedMessage"
         class="flex items-center gap-3 rounded-card bg-ok-50 px-5 py-3.5 ring-1 ring-ok-100"
       >
-        <span class="grid size-9 shrink-0 place-items-center rounded-[10px] bg-ok-500 text-white">
+        <span class="grid size-9 shrink-0 place-items-center rounded-field bg-ok-500 text-white">
           <UiIcon name="check" :size="18" />
         </span>
         <p class="min-w-0 flex-1 text-[14px] text-ok-700">{{ savedMessage }}</p>
@@ -186,8 +186,8 @@ function saveReading() {
           @click="selectedId = m.id"
         >
           <div class="flex items-start justify-between gap-3">
-            <span class="grid size-10 place-items-center rounded-[10px]" :class="TONE_CLASS[m.tone]">
-              <UiIcon :name="m.icon" :size="19" />
+            <span class="grid size-10 place-items-center rounded-field" :class="TONE_CLASS[m.tone]">
+              <UiIcon :name="m.icon" :size="20" />
             </span>
             <span class="tabular rounded-pill bg-ok-50 px-2.5 py-1 text-[12px] font-bold text-ok-700">
               +{{ num(consumption(m), 2) }} {{ m.unit }}
@@ -217,7 +217,7 @@ function saveReading() {
         >
           <template #actions>
             <UiButton variant="secondary" size="sm" @click="openEntry(selected.id)">
-              <UiIcon name="edit" :size="15" />
+              <UiIcon name="edit" :size="16" />
               {{ t('cab.enterReading') }}
             </UiButton>
           </template>
@@ -295,7 +295,7 @@ function saveReading() {
                 :aria-label="t('cab.enterReadingAria', { code: row.code })"
                 @click.stop="openEntry(String(row.id))"
               >
-                <UiIcon name="edit" :size="17" />
+                <UiIcon name="edit" :size="16" />
               </button>
             </span>
           </template>

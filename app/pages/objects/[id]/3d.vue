@@ -324,7 +324,7 @@ function goApply() {
           <span
             class="grid size-14 place-items-center rounded-full bg-warn-50 text-warn-600"
           >
-            <UiIcon name="warning" :size="26" />
+            <UiIcon name="warning" :size="24" />
           </span>
           <p class="text-[16px] font-bold text-ink-900">
             {{ t("obj.missingShort") }}
@@ -399,7 +399,7 @@ function goApply() {
             <p
               class="mt-1.5 flex items-center gap-1.5 text-[13px] text-ink-500"
             >
-              <UiIcon name="location" :size="15" class="shrink-0" />
+              <UiIcon name="location" :size="16" class="shrink-0" />
               <span class="min-w-0 truncate">
                 {{ cityLabel(building.city) }},
                 {{ districtLabel(building.district) }},
@@ -433,7 +433,7 @@ function goApply() {
                     class="grid size-7 shrink-0 place-items-center rounded-[8px]"
                     :class="k.tone"
                   >
-                    <UiIcon :name="k.icon" :size="15" />
+                    <UiIcon :name="k.icon" :size="16" />
                   </span>
                 </span>
                 <p class="mt-2 truncate text-[12px] text-ink-500">
@@ -655,7 +655,7 @@ function goApply() {
               <span
                 class="grid size-12 place-items-center rounded-full bg-ink-100 text-ink-500"
               >
-                <UiIcon name="box" :size="22" />
+                <UiIcon name="box" :size="20" />
               </span>
               <p class="text-[13px] text-ink-500">
                 {{ t("obj.noUnitsLevel") }}
@@ -790,7 +790,7 @@ function goApply() {
               <span
                 class="grid size-12 place-items-center rounded-full bg-brand-50 text-brand-600"
               >
-                <UiIcon name="cube" :size="22" />
+                <UiIcon name="cube" :size="20" />
               </span>
               <p class="text-[13px] text-ink-500">
                 {{ t("obj.pickUnitText") }}

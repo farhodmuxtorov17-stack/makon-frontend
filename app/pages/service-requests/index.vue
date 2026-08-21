@@ -800,7 +800,7 @@ function submitRequest() {
         <template #actions>
           <UiButton variant="ghost" size="sm" to="/meters">
             {{ t('common.registry') }}
-            <UiIcon name="chevronRight" :size="15" />
+            <UiIcon name="chevronRight" :size="16" />
           </UiButton>
         </template>
 
@@ -808,7 +808,7 @@ function submitRequest() {
           <li v-for="(u, i) in UTILITY_SUMMARY" :key="u.label">
             <NuxtLink to="/meters" class="group flex items-center gap-3.5 px-5 py-3.5">
               <span
-                class="grid size-10 shrink-0 place-items-center rounded-[10px]"
+                class="grid size-10 shrink-0 place-items-center rounded-field"
                 :class="{
                   'bg-brand-50 text-brand-600': UTILITY_TONE[i] === 'brand',
                   'bg-warn-50 text-warn-600': UTILITY_TONE[i] === 'warn',
@@ -908,7 +908,7 @@ function submitRequest() {
               :aria-label="t('svc.removePhoto', { name: p.file.name })"
               @click="removePhoto(i)"
             >
-              <UiIcon name="x" :size="13" />
+              <UiIcon name="x" :size="14" />
             </button>
           </div>
 

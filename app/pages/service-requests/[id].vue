@@ -642,7 +642,7 @@ const info = computed(() => {
                 to="/facility/materials"
               >
                 {{ moduleTitle("materials") }}
-                <UiIcon name="chevronRight" :size="15" />
+                <UiIcon name="chevronRight" :size="16" />
               </UiButton>
             </template>
 
@@ -791,7 +791,7 @@ const info = computed(() => {
                 block
                 @click="pending = a"
               >
-                <UiIcon :name="a.icon" :size="17" />
+                <UiIcon :name="a.icon" :size="16" />
                 {{ t(a.labelKey) }}
               </UiButton>
             </div>
@@ -856,7 +856,7 @@ const info = computed(() => {
           {{ t("svc.notFoundHint") }}
         </p>
         <UiButton class="mt-5" to="/service-requests">
-          <UiIcon name="chevronLeft" :size="17" />
+          <UiIcon name="chevronLeft" :size="16" />
           {{ t("svc.backToQueueLong") }}
         </UiButton>
       </div>

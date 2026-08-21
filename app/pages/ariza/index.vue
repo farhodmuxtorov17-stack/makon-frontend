@@ -277,11 +277,11 @@ const lastFour = computed(() => form.phone.slice(-4));
       class="flex flex-wrap items-center gap-1.5 text-[13px] text-ink-500"
       :aria-label="t('common.breadcrumb')"
     >
-      <NuxtLink to="/" class="rounded-[6px] hover:text-brand-600">{{
+      <NuxtLink to="/" class="rounded-[8px] hover:text-brand-600">{{
         t("nav.cabinet")
       }}</NuxtLink>
       <span aria-hidden="true">/</span>
-      <NuxtLink to="/catalog" class="rounded-[6px] hover:text-brand-600">
+      <NuxtLink to="/catalog" class="rounded-[8px] hover:text-brand-600">
         {{ t("public.navCatalog") }}
       </NuxtLink>
       <span aria-hidden="true">/</span>
@@ -297,10 +297,10 @@ const lastFour = computed(() => form.phone.slice(-4));
           class="rounded-card bg-surface p-6 shadow-card ring-1 ring-ink-200/60 sm:p-8"
         >
           <span
-            class="grid size-14 place-items-center rounded-[16px] bg-ok-50 text-ok-600"
+            class="grid size-14 place-items-center rounded-card bg-ok-50 text-ok-600"
             aria-hidden="true"
           >
-            <UiIcon name="check" :size="28" />
+            <UiIcon name="check" :size="24" />
           </span>
 
           <h1
@@ -333,7 +333,7 @@ const lastFour = computed(() => form.phone.slice(-4));
 
           <div class="mt-5 flex flex-wrap gap-2.5">
             <UiButton :to="trackPath" size="lg">
-              <UiIcon name="search" :size="17" />
+              <UiIcon name="search" :size="16" />
               {{ t("apply.trackCta") }}
             </UiButton>
             <UiButton to="/catalog" variant="secondary" size="lg">
@@ -346,7 +346,7 @@ const lastFour = computed(() => form.phone.slice(-4));
           >
             <UiIcon
               name="info"
-              :size="17"
+              :size="16"
               class="mt-px shrink-0 text-ink-400"
             />
             <span class="min-w-0">
@@ -400,7 +400,7 @@ const lastFour = computed(() => form.phone.slice(-4));
               <p
                 class="flex items-start gap-2 rounded-field bg-brand-50 px-3.5 py-2.5 text-[13px] leading-relaxed text-brand-700 ring-1 ring-inset ring-brand-200"
               >
-                <UiIcon name="info" :size="15" class="mt-px shrink-0" />
+                <UiIcon name="info" :size="16" class="mt-px shrink-0" />
                 {{ t("apply.legalPersonNote") }}
               </p>
 
@@ -480,7 +480,7 @@ const lastFour = computed(() => form.phone.slice(-4));
                 <p
                   class="flex items-center gap-2 text-[13px] font-semibold text-ok-700"
                 >
-                  <UiIcon name="check" :size="15" class="shrink-0" />
+                  <UiIcon name="check" :size="16" class="shrink-0" />
                   {{ t("apply.orgFound") }}
                 </p>
                 <dl class="mt-2.5 grid gap-2 sm:grid-cols-2">
@@ -517,7 +517,7 @@ const lastFour = computed(() => form.phone.slice(-4));
               >
                 <UiIcon
                   name="info"
-                  :size="15"
+                  :size="16"
                   class="mt-px shrink-0 text-warn-600"
                 />
                 {{ t("apply.orgNotFound") }}
@@ -617,7 +617,7 @@ const lastFour = computed(() => form.phone.slice(-4));
                 v-if="sendError"
                 class="flex items-start gap-2 rounded-field bg-danger-50 px-3.5 py-2.5 text-[13px] text-danger-700 ring-1 ring-inset ring-danger-100"
               >
-                <UiIcon name="warning" :size="15" class="mt-px shrink-0" />
+                <UiIcon name="warning" :size="16" class="mt-px shrink-0" />
                 {{ t("apply.sendFailed") }}
               </p>
 
@@ -718,7 +718,7 @@ const lastFour = computed(() => form.phone.slice(-4));
                 block
                 class="mt-3"
               >
-                <UiIcon name="eye" :size="15" />
+                <UiIcon name="eye" :size="16" />
                 {{ t("apply.objectPage") }}
               </UiButton>
             </div>

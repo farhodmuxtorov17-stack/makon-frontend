@@ -488,7 +488,7 @@ function saveReading() {
             class="inline-flex items-center gap-1.5 rounded-pill px-2.5 py-1 text-xs font-semibold ring-1 ring-inset"
             :class="TYPE_TONE[row.type]"
           >
-            <UiIcon name="meter" :size="13" />
+            <UiIcon name="meter" :size="14" />
             {{ tr(TYPE_KEY[row.type], row.type) }}
           </span>
         </template>
@@ -597,7 +597,7 @@ function saveReading() {
           class="inline-flex items-center gap-1.5 rounded-pill px-2.5 py-1 text-xs font-semibold ring-1 ring-inset"
           :class="TYPE_TONE[detail.type]"
         >
-          <UiIcon name="meter" :size="13" />
+          <UiIcon name="meter" :size="14" />
           {{ tr(TYPE_KEY[detail.type], detail.type) }}
         </span>
         <span class="tabular text-[13px] text-ink-500">
@@ -843,7 +843,7 @@ function saveReading() {
               :aria-label="t('svc.removeShot', { name: p.file.name })"
               @click="removeEntryPhoto(i)"
             >
-              <UiIcon name="x" :size="13" />
+              <UiIcon name="x" :size="14" />
             </button>
           </div>
 

@@ -244,7 +244,7 @@ function submit() {
         >
           <template #actions>
             <UiButton variant="ghost" size="sm" to="/profile">
-              <UiIcon name="edit" :size="15" />
+              <UiIcon name="edit" :size="16" />
               {{ t('cab.editInProfile') }}
             </UiButton>
           </template>
@@ -260,9 +260,9 @@ function submit() {
                 class="flex items-center gap-3 text-[11px] font-semibold uppercase tracking-wide text-ink-500"
               >
                 <span
-                  class="grid size-8 shrink-0 place-items-center rounded-[9px] bg-white text-brand-600 ring-1 ring-ink-200"
+                  class="grid size-8 shrink-0 place-items-center rounded-field bg-white text-brand-600 ring-1 ring-ink-200"
                 >
-                  <UiIcon :name="r.icon" :size="15" />
+                  <UiIcon :name="r.icon" :size="16" />
                 </span>
                 {{ r.label }}
               </dt>

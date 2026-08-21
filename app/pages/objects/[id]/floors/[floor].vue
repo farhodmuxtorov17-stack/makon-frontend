@@ -371,7 +371,7 @@ function goApply() {
           <span
             class="grid size-14 place-items-center rounded-full bg-warn-50 text-warn-600"
           >
-            <UiIcon name="warning" :size="26" />
+            <UiIcon name="warning" :size="24" />
           </span>
           <p class="text-[16px] font-bold text-ink-900">
             {{ t("obj.missingShort") }}
@@ -506,7 +506,7 @@ function goApply() {
                     :aria-label="t('common.resetView')"
                     @click="resetPlan"
                   >
-                    <UiIcon name="refresh" :size="17" />
+                    <UiIcon name="refresh" :size="16" />
                   </button>
                 </div>
 
@@ -1032,7 +1032,7 @@ function goApply() {
                 <dt
                   class="flex w-[128px] shrink-0 items-center gap-2 text-[13px] text-ink-500"
                 >
-                  <UiIcon name="layers" :size="15" />
+                  <UiIcon name="layers" :size="16" />
                   {{ field("area") }}
                 </dt>
                 <dd
@@ -1045,7 +1045,7 @@ function goApply() {
                 <dt
                   class="flex w-[128px] shrink-0 items-center gap-2 text-[13px] text-ink-500"
                 >
-                  <UiIcon name="box" :size="15" />
+                  <UiIcon name="box" :size="16" />
                   {{ field("type") }}
                 </dt>
                 <dd
@@ -1059,7 +1059,7 @@ function goApply() {
                 <dt
                   class="flex w-[128px] shrink-0 items-center gap-2 text-[13px] text-ink-500"
                 >
-                  <UiIcon name="user" :size="15" />
+                  <UiIcon name="user" :size="16" />
                   {{ field("tenantBuyer") }}
                 </dt>
                 <dd
@@ -1072,7 +1072,7 @@ function goApply() {
                 <dt
                   class="flex w-[128px] shrink-0 items-center gap-2 text-[13px] text-ink-500"
                 >
-                  <UiIcon name="wallet" :size="15" />
+                  <UiIcon name="wallet" :size="16" />
                   {{ field("price") }}
                 </dt>
                 <dd
@@ -1086,7 +1086,7 @@ function goApply() {
                 <dt
                   class="flex w-[128px] shrink-0 items-center gap-2 text-[13px] text-ink-500"
                 >
-                  <UiIcon name="wrench" :size="15" />
+                  <UiIcon name="wrench" :size="16" />
                   {{ field("equipment") }}
                 </dt>
                 <dd class="min-w-0 flex-1">
@@ -1105,7 +1105,7 @@ function goApply() {
                 <dt
                   class="flex w-[128px] shrink-0 items-center gap-2 text-[13px] text-ink-500"
                 >
-                  <UiIcon name="clipboard" :size="15" />
+                  <UiIcon name="clipboard" :size="16" />
                   {{ t("obj.contractStatus") }}
                 </dt>
                 <dd
@@ -1121,7 +1121,7 @@ function goApply() {
                 <dt
                   class="flex w-[128px] shrink-0 items-center gap-2 text-[13px] text-ink-500"
                 >
-                  <UiIcon name="doc" :size="15" />
+                  <UiIcon name="doc" :size="16" />
                   {{ field("offer") }}
                 </dt>
                 <dd
@@ -1195,7 +1195,7 @@ function goApply() {
               <span
                 class="grid size-12 place-items-center rounded-full bg-ink-100 text-ink-500"
               >
-                <UiIcon name="box" :size="22" />
+                <UiIcon name="box" :size="20" />
               </span>
               <p class="text-[13px] text-ink-500">
                 {{ t("obj.noUnitsFloorText") }}

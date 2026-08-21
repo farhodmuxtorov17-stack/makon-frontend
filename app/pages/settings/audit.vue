@@ -640,12 +640,12 @@ function confirmExport() {
     <div
       class="flex items-start gap-2.5 rounded-card bg-brand-50 px-4 py-3 text-[13px] leading-relaxed text-brand-800"
     >
-      <UiIcon name="lock" :size="17" class="mt-0.5 shrink-0 text-brand-600" />
+      <UiIcon name="lock" :size="16" class="mt-0.5 shrink-0 text-brand-600" />
       <span>{{ t('cfg.auditAppendOnly') }}</span>
     </div>
 
     <p v-if="exportResult" class="flex items-center gap-2 rounded-card bg-ok-50 px-4 py-3 text-[13px] text-ok-700 ring-1 ring-ok-100">
-      <UiIcon name="check" :size="17" />
+      <UiIcon name="check" :size="16" />
       {{ exportResult }}
     </p>
 
@@ -657,7 +657,7 @@ function confirmExport() {
       <div class="grid gap-4 lg:grid-cols-3 2xl:grid-cols-4">
         <UiField :label="t('common.search')">
           <UiInput v-model="search" :placeholder="t('cfg.auditSearchPlaceholder')">
-            <template #prefix><UiIcon name="search" :size="17" /></template>
+            <template #prefix><UiIcon name="search" :size="16" /></template>
           </UiInput>
         </UiField>
         <UiField :label="field('user')">
@@ -732,7 +732,7 @@ function confirmExport() {
         </template>
 
         <template #cell-action="{ row }">
-          <span class="rounded-[6px] bg-ink-100 px-2 py-1 text-[12px] font-semibold text-ink-700">
+          <span class="rounded-[8px] bg-ink-100 px-2 py-1 text-[12px] font-semibold text-ink-700">
             {{ actionLabel(row.action) }}
           </span>
         </template>
@@ -752,7 +752,7 @@ function confirmExport() {
                 : 'bg-danger-50 text-danger-700 ring-danger-100'
             "
           >
-            <UiIcon :name="row.result === 'SUCCESS' ? 'check' : 'x'" :size="13" />
+            <UiIcon :name="row.result === 'SUCCESS' ? 'check' : 'x'" :size="14" />
             {{ resultLabel(row.result) }}
           </span>
         </template>
@@ -811,7 +811,7 @@ function confirmExport() {
                     : 'bg-danger-50 text-danger-700 ring-danger-100'
                 "
               >
-                <UiIcon :name="selected.result === 'SUCCESS' ? 'check' : 'x'" :size="13" />
+                <UiIcon :name="selected.result === 'SUCCESS' ? 'check' : 'x'" :size="14" />
                 {{ resultLabel(selected.result) }}
               </span>
             </dd>
@@ -841,14 +841,14 @@ function confirmExport() {
               <div class="grid gap-px bg-ink-100 sm:grid-cols-2">
                 <div class="bg-danger-50 px-4 py-3">
                   <p class="flex items-center gap-1.5 text-[12px] font-semibold text-danger-700">
-                    <UiIcon name="arrowDown" :size="13" />
+                    <UiIcon name="arrowDown" :size="14" />
                     {{ t('cfg.previousValue') }}
                   </p>
                   <p class="mt-1 text-[13px] text-ink-800">{{ say(d.before) }}</p>
                 </div>
                 <div class="bg-ok-50 px-4 py-3">
                   <p class="flex items-center gap-1.5 text-[12px] font-semibold text-ok-700">
-                    <UiIcon name="arrowUp" :size="13" />
+                    <UiIcon name="arrowUp" :size="14" />
                     {{ t('cfg.newValue') }}
                   </p>
                   <p class="mt-1 text-[13px] text-ink-800">{{ say(d.after) }}</p>
@@ -859,7 +859,7 @@ function confirmExport() {
         </div>
 
         <p class="mt-5 flex items-start gap-2 rounded-field bg-ink-50 px-3.5 py-3 text-[12px] text-ink-600">
-          <UiIcon name="lock" :size="15" class="mt-0.5 shrink-0" />
+          <UiIcon name="lock" :size="16" class="mt-0.5 shrink-0" />
           {{ t('cfg.auditImmutable') }}
         </p>
       </template>
@@ -898,7 +898,7 @@ function confirmExport() {
             "
             @click="exportFormat = f"
           >
-            <UiIcon :name="exportFormat === f ? 'check' : 'doc'" :size="15" />
+            <UiIcon :name="exportFormat === f ? 'check' : 'doc'" :size="16" />
             {{ f }}
           </button>
         </div>

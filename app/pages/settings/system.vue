@@ -391,7 +391,7 @@ const TONE_DOT: Record<string, string> = {
       <span
         class="hidden items-center gap-2 rounded-pill bg-ok-50 px-3 py-1.5 text-[13px] font-semibold text-ok-700 ring-1 ring-inset ring-ok-100 lg:inline-flex"
       >
-        <UiIcon name="shield" :size="15" />
+        <UiIcon name="shield" :size="16" />
         {{ t('cfg.securityLevelHigh') }}
       </span>
       <UiButton size="sm" :disabled="!dirty" @click="saveOpen = true">
@@ -424,7 +424,7 @@ const TONE_DOT: Record<string, string> = {
       class="flex flex-wrap items-center gap-3 rounded-card px-4 py-3 text-[13px] ring-1"
       :class="dirty ? 'bg-warn-50 text-warn-700 ring-warn-100' : 'bg-surface text-ink-600 ring-ink-200/60'"
     >
-      <UiIcon :name="dirty ? 'warning' : 'check'" :size="17" class="shrink-0" />
+      <UiIcon :name="dirty ? 'warning' : 'check'" :size="16" class="shrink-0" />
       <span class="min-w-0 flex-1">
         <template v-if="dirty">{{ t('cfg.unsavedChanges') }}</template>
         <template v-else>{{ t('cfg.allSaved', { at: say(savedAt) }) }}</template>
@@ -456,7 +456,7 @@ const TONE_DOT: Record<string, string> = {
               </div>
             </dl>
             <UiButton variant="secondary" size="sm" block class="mt-4" @click="openCompany">
-              <UiIcon name="edit" :size="15" />
+              <UiIcon name="edit" :size="16" />
               {{ t('cfg.editProfile') }}
             </UiButton>
           </UiCard>
@@ -469,8 +469,8 @@ const TONE_DOT: Record<string, string> = {
                   class="flex w-full items-center gap-3 rounded-field px-3 py-2.5 text-left ring-1 ring-inset ring-ink-200 transition-colors hover:ring-brand-300"
                   @click="toggleAccess(r.key)"
                 >
-                  <span class="grid size-9 shrink-0 place-items-center rounded-[10px] bg-brand-50 text-brand-600">
-                    <UiIcon :name="r.icon" :size="17" />
+                  <span class="grid size-9 shrink-0 place-items-center rounded-field bg-brand-50 text-brand-600">
+                    <UiIcon :name="r.icon" :size="16" />
                   </span>
                   <span class="min-w-0 flex-1">
                     <span class="block truncate text-[13px] font-semibold text-ink-900">{{ r.label }}</span>
@@ -540,11 +540,11 @@ const TONE_DOT: Record<string, string> = {
 
             <div class="mt-4 grid grid-cols-2 gap-2.5">
               <UiButton variant="secondary" size="sm" @click="backupOpen = true">
-                <UiIcon name="upload" :size="15" />
+                <UiIcon name="upload" :size="16" />
                 {{ t('cfg.createBackup') }}
               </UiButton>
               <UiButton variant="danger" size="sm" @click="openRestore">
-                <UiIcon name="refresh" :size="15" />
+                <UiIcon name="refresh" :size="16" />
                 {{ t('cfg.restore') }}
               </UiButton>
             </div>
@@ -634,7 +634,7 @@ const TONE_DOT: Record<string, string> = {
         <UiCard :title="t('cfg.securityStatus')" :subtitle="t('cfg.securityStatusCaption')">
           <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <div v-for="m in SECURITY_METRICS" :key="m.label" class="rounded-field p-4 ring-1 ring-ink-200">
-              <span class="grid size-9 place-items-center rounded-[10px]" :class="m.tone">
+              <span class="grid size-9 place-items-center rounded-field" :class="m.tone">
                 <UiIcon :name="m.icon" :size="18" />
               </span>
               <p class="tabular mt-3 text-[22px] font-bold leading-none text-ink-900">{{ m.value }}</p>
@@ -657,8 +657,8 @@ const TONE_DOT: Record<string, string> = {
         >
           <ul class="divide-y divide-ink-100">
             <li v-for="s in sessions" :key="s.id" class="flex items-center gap-3 px-5 py-3">
-              <span class="grid size-9 shrink-0 place-items-center rounded-[10px] bg-brand-50 text-brand-600">
-                <UiIcon name="globe" :size="17" />
+              <span class="grid size-9 shrink-0 place-items-center rounded-field bg-brand-50 text-brand-600">
+                <UiIcon name="globe" :size="16" />
               </span>
               <span class="min-w-0 flex-1">
                 <span class="block truncate text-[13px] font-semibold text-ink-900">
@@ -693,7 +693,7 @@ const TONE_DOT: Record<string, string> = {
               :disabled="sessions.length < 2"
               @click="closeAllOpen = true"
             >
-              <UiIcon name="logout" :size="15" />
+              <UiIcon name="logout" :size="16" />
               {{ t('cfg.endAllSessions') }}
             </UiButton>
           </div>

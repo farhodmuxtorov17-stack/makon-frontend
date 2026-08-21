@@ -1084,10 +1084,10 @@ onMounted(() => {
       >
         <div class="flex items-start justify-between gap-3">
           <span
-            class="grid size-10 place-items-center rounded-[10px]"
+            class="grid size-10 place-items-center rounded-field"
             :class="CATEGORY_TONE[c.value]"
           >
-            <UiIcon name="doc" :size="19" />
+            <UiIcon name="doc" :size="20" />
           </span>
           <span
             class="tabular text-[22px] font-bold leading-none text-ink-900"
@@ -1148,10 +1148,10 @@ onMounted(() => {
           <template #cell-name="{ row }">
             <span class="flex items-center gap-3">
               <span
-                class="grid size-9 shrink-0 place-items-center rounded-[10px]"
+                class="grid size-9 shrink-0 place-items-center rounded-field"
                 :class="CATEGORY_TONE[String(row.category)]"
               >
-                <UiIcon name="doc" :size="17" />
+                <UiIcon name="doc" :size="16" />
               </span>
               <span class="min-w-0">
                 <span
@@ -1194,7 +1194,7 @@ onMounted(() => {
                 :aria-label="t('cab.viewAria', { name: row.name })"
                 @click.stop="openPreview(docById(row.id))"
               >
-                <UiIcon name="eye" :size="17" />
+                <UiIcon name="eye" :size="16" />
               </button>
               <button
                 type="button"
@@ -1202,7 +1202,7 @@ onMounted(() => {
                 :aria-label="t('cab.downloadAria', { name: row.name })"
                 @click.stop="openDownload(docById(row.id))"
               >
-                <UiIcon name="download" :size="17" />
+                <UiIcon name="download" :size="16" />
               </button>
             </span>
           </template>

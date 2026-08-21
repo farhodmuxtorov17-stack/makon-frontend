@@ -365,7 +365,7 @@ function submitPdf() {
           <span
             class="grid size-14 place-items-center rounded-full bg-warn-50 text-warn-600"
           >
-            <UiIcon name="warning" :size="26" />
+            <UiIcon name="warning" :size="24" />
           </span>
           <div>
             <p class="text-[16px] font-bold text-ink-900">
@@ -407,7 +407,7 @@ function submitPdf() {
           v-else
           class="inline-flex items-center gap-2 rounded-pill bg-ink-100 px-3 py-1.5 text-[12px] font-semibold text-ink-600"
         >
-          <UiIcon name="eye" :size="15" />
+          <UiIcon name="eye" :size="16" />
           {{ t("common.readOnly") }}
         </span>
         <UiButton variant="secondary" size="sm" @click="pdfOpen = true">
@@ -434,7 +434,7 @@ function submitPdf() {
           :aria-label="t('common.dismissNotice')"
           @click="notice = ''"
         >
-          <UiIcon name="x" :size="15" />
+          <UiIcon name="x" :size="16" />
         </button>
       </div>
 
@@ -550,7 +550,7 @@ function submitPdf() {
                 v-for="g in building.gallery"
                 :key="g"
                 type="button"
-                class="overflow-hidden rounded-[9px] ring-2 transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500"
+                class="overflow-hidden rounded-field ring-2 transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500"
                 :class="
                   g === activePhoto
                     ? 'ring-brand-500'
@@ -604,7 +604,7 @@ function submitPdf() {
                 <span
                   class="grid size-9 shrink-0 place-items-center rounded-full bg-brand-50 text-brand-600"
                 >
-                  <UiIcon name="user" :size="17" />
+                  <UiIcon name="user" :size="16" />
                 </span>
                 <span class="min-w-0">
                   <span
@@ -635,7 +635,7 @@ function submitPdf() {
                 :to="`/objects/${building.id}/3d`"
               >
                 {{ t("obj.navigator3d") }}
-                <UiIcon name="chevronRight" :size="15" />
+                <UiIcon name="chevronRight" :size="16" />
               </UiButton>
             </template>
 
@@ -648,7 +648,7 @@ function submitPdf() {
                   class="group flex items-center gap-3 rounded-field px-3 py-2.5 ring-1 ring-ink-200 transition-all hover:shadow-card hover:ring-brand-300"
                 >
                   <span
-                    class="tabular grid size-9 shrink-0 place-items-center rounded-[9px] text-[13px] font-bold"
+                    class="tabular grid size-9 shrink-0 place-items-center rounded-field text-[13px] font-bold"
                     :class="
                       f.total
                         ? 'bg-brand-50 text-brand-700'
@@ -676,7 +676,7 @@ function submitPdf() {
                   </span>
                   <UiIcon
                     name="chevronRight"
-                    :size="15"
+                    :size="16"
                     class="shrink-0 text-ink-400"
                   />
                 </NuxtLink>
@@ -811,7 +811,7 @@ function submitPdf() {
             @click="togglePdfSection(s.key)"
           >
             <span
-              class="grid size-6 shrink-0 place-items-center rounded-[7px] ring-1 ring-inset"
+              class="grid size-6 shrink-0 place-items-center rounded-[8px] ring-1 ring-inset"
               :class="
                 pdfSections.includes(s.key)
                   ? 'bg-brand-500 text-white ring-brand-500'

@@ -17,7 +17,7 @@ const home = computed(() => auth.roleMeta?.home ?? '/')
         class="mx-auto grid size-16 place-items-center rounded-full"
         :class="isForbidden ? 'bg-warn-50 text-warn-600' : 'bg-brand-50 text-brand-600'"
       >
-        <UiIcon :name="isForbidden ? 'lock' : 'search'" :size="30" />
+        <UiIcon :name="isForbidden ? 'lock' : 'search'" :size="32" />
       </span>
 
       <p class="mt-5 font-display text-4xl font-extrabold text-ink-900">

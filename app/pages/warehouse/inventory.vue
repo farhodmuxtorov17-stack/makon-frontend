@@ -435,7 +435,7 @@ const actLineRows = computed(() =>
           : 'bg-warn-50 text-warn-700 ring-warn-100'
       "
     >
-      <UiIcon :name="resultBanner.valueDiff === 0 ? 'check' : 'warning'" :size="17" class="shrink-0" />
+      <UiIcon :name="resultBanner.valueDiff === 0 ? 'check' : 'warning'" :size="16" class="shrink-0" />
       <span class="min-w-0 flex-1">
         <b>{{ resultBanner.code }}</b>
         {{
@@ -461,7 +461,7 @@ const actLineRows = computed(() =>
             <span
               class="inline-flex items-center gap-1.5 rounded-pill bg-brand-50 px-2.5 py-1 text-xs font-semibold text-brand-700 ring-1 ring-inset ring-brand-200"
             >
-              <UiIcon name="clock" :size="13" />
+              <UiIcon name="clock" :size="14" />
               {{ t('whs.invInProgress') }}
             </span>
           </template>
@@ -509,7 +509,7 @@ const actLineRows = computed(() =>
             </div>
             <div class="flex items-baseline justify-between gap-3 border-b border-ink-100 pb-3">
               <dt class="flex items-center gap-1.5 text-[13px] text-ink-500">
-                <UiIcon name="arrowUp" :size="13" class="text-info-600" />
+                <UiIcon name="arrowUp" :size="14" class="text-info-600" />
                 {{ t('whs.diffSurplus') }}
               </dt>
               <dd class="tabular text-[14px] font-bold text-info-700">
@@ -518,7 +518,7 @@ const actLineRows = computed(() =>
             </div>
             <div class="flex items-baseline justify-between gap-3 border-b border-ink-100 pb-3">
               <dt class="flex items-center gap-1.5 text-[13px] text-ink-500">
-                <UiIcon name="arrowDown" :size="13" class="text-danger-600" />
+                <UiIcon name="arrowDown" :size="14" class="text-danger-600" />
                 {{ t('whs.diffShortage') }}
               </dt>
               <dd class="tabular text-[14px] font-bold text-danger-700">
@@ -555,11 +555,11 @@ const actLineRows = computed(() =>
               {{ t('common.finish') }}
             </UiButton>
             <UiButton variant="secondary" size="sm" block @click="fillFromStock">
-              <UiIcon name="download" :size="15" />
+              <UiIcon name="download" :size="16" />
               {{ t('whs.invFillFromBooks') }}
             </UiButton>
             <UiButton variant="ghost" size="sm" block @click="clearCounts">
-              <UiIcon name="refresh" :size="15" />
+              <UiIcon name="refresh" :size="16" />
               {{ t('common.reset') }}
             </UiButton>
           </div>
@@ -662,7 +662,7 @@ const actLineRows = computed(() =>
     >
       <div class="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
         <span class="grid size-14 shrink-0 place-items-center rounded-panel bg-brand-50 text-brand-600">
-          <UiIcon name="clipboard" :size="26" />
+          <UiIcon name="clipboard" :size="24" />
         </span>
         <p class="min-w-0 flex-1 text-[14px] leading-relaxed text-ink-600">
           {{ t('whs.invIntro') }}

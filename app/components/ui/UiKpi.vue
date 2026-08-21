@@ -132,7 +132,7 @@ const root = computed(() => (props.to ? NuxtLink : 'div'))
         <p class="text-[13px] font-medium leading-snug text-ink-500">{{ label }}</p>
         <span
           v-if="icon"
-          class="grid size-9 shrink-0 place-items-center rounded-[10px] ring-1 ring-inset ring-white/60"
+          class="grid size-9 shrink-0 place-items-center rounded-field ring-1 ring-inset ring-white/60"
           :style="iconStyle"
         >
           <UiIcon :name="icon" :size="18" />

@@ -470,7 +470,7 @@ const DOC_TONE: Record<string, string> = {
                 class="flex items-center gap-4 px-5 py-3.5"
               >
                 <span
-                  class="grid size-10 shrink-0 place-items-center rounded-[10px]"
+                  class="grid size-10 shrink-0 place-items-center rounded-field"
                   :class="DOC_TONE[d.type] ?? 'bg-ink-100 text-ink-600'"
                 >
                   <UiIcon name="doc" :size="18" />
@@ -490,7 +490,7 @@ const DOC_TONE: Record<string, string> = {
                   size="sm"
                   @click="openDocument(d)"
                 >
-                  <UiIcon name="download" :size="15" />
+                  <UiIcon name="download" :size="16" />
                   {{ t("common.download") }}
                 </UiButton>
               </li>
@@ -517,7 +517,7 @@ const DOC_TONE: Record<string, string> = {
                         : 'bg-ink-50 text-ink-400 ring-ink-200'
                     "
                   >
-                    <UiIcon :name="step.done ? 'check' : 'clock'" :size="17" />
+                    <UiIcon :name="step.done ? 'check' : 'clock'" :size="16" />
                   </span>
                   <span
                     v-if="i < contract.timeline.length - 1"
@@ -627,7 +627,7 @@ const DOC_TONE: Record<string, string> = {
               v-else
               class="mt-4 flex items-center justify-center gap-2 rounded-field bg-ink-100 px-3 py-2.5 text-[13px] font-semibold text-ink-600"
             >
-              <UiIcon name="eye" :size="15" />
+              <UiIcon name="eye" :size="16" />
               {{ t("ctr.readOnlyNote") }}
             </p>
 
@@ -835,7 +835,7 @@ const DOC_TONE: Record<string, string> = {
             class="grid size-12 shrink-0 place-items-center rounded-field"
             :class="DOC_TONE[activeDocument.type] ?? 'bg-ink-100 text-ink-600'"
           >
-            <UiIcon name="doc" :size="22" />
+            <UiIcon name="doc" :size="20" />
           </span>
           <div class="min-w-0">
             <p class="truncate text-[14px] font-bold text-ink-900">

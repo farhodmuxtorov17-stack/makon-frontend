@@ -498,7 +498,7 @@ const tourId = computed(() => `warehouse:${auth.role ?? 'guest'}`)
         class="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-field px-3 text-[13px] font-semibold text-brand-600 transition-colors hover:bg-ink-200"
       >
         {{ t('whs.blocksTitle') }}
-        <UiIcon name="chevronRight" :size="15" />
+        <UiIcon name="chevronRight" :size="16" />
       </NuxtLink>
     </div>
 
@@ -528,10 +528,10 @@ const tourId = computed(() => `warehouse:${auth.role ?? 'guest'}`)
             @click="toggleCategory(c.label)"
           >
             <span
-              class="mx-auto grid size-11 place-items-center rounded-[12px]"
+              class="mx-auto grid size-11 place-items-center rounded-card"
               :class="fCategory === c.label ? 'bg-brand-500 text-white' : 'bg-ink-100 text-ink-600'"
             >
-              <UiIcon :name="c.icon" :size="21" />
+              <UiIcon :name="c.icon" :size="20" />
             </span>
             <span class="mt-2.5 block truncate text-[13px] font-semibold text-ink-900">
               {{ c.label }}
@@ -834,8 +834,8 @@ const tourId = computed(() => `warehouse:${auth.role ?? 'guest'}`)
 
         <ul class="scroll-slim max-h-72 divide-y divide-ink-100 overflow-y-auto">
           <li v-for="i in issuePool" :key="i.id" class="flex items-center gap-3 px-4 py-3">
-            <span class="grid size-9 shrink-0 place-items-center rounded-[10px] bg-ink-100 text-ink-600">
-              <UiIcon name="cube" :size="17" />
+            <span class="grid size-9 shrink-0 place-items-center rounded-field bg-ink-100 text-ink-600">
+              <UiIcon name="cube" :size="16" />
             </span>
             <span class="min-w-0 flex-1">
               <span class="block truncate text-[14px] font-semibold text-ink-900">{{ i.name }}</span>

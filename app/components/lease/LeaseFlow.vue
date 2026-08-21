@@ -47,7 +47,7 @@ const steps = computed(() =>
           "
           :aria-label="s.full"
         >
-          <UiIcon v-if="s.done" name="check" :size="13" />
+          <UiIcon v-if="s.done" name="check" :size="14" />
           <template v-else>{{ i + 1 }}</template>
         </span>
         <span
@@ -64,7 +64,7 @@ const steps = computed(() =>
       v-if="rejected"
       class="mt-3 inline-flex items-center gap-2 rounded-field bg-danger-50 px-3 py-2 text-[13px] font-semibold text-danger-700 ring-1 ring-inset ring-danger-100"
     >
-      <UiIcon name="x" :size="15" />
+      <UiIcon name="x" :size="16" />
       {{ t('ui.leaseRejectedNote') }}
     </p>
   </div>

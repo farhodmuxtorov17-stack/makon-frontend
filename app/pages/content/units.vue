@@ -554,7 +554,7 @@ function toneOf(pct: number) {
         :aria-label="t('common.closeNotice')"
         @click="notice = ''"
       >
-        <UiIcon name="x" :size="15" />
+        <UiIcon name="x" :size="16" />
       </button>
     </div>
 
@@ -607,7 +607,7 @@ function toneOf(pct: number) {
           class="min-w-[190px] flex-1"
         >
           <template #prefix>
-            <UiIcon name="search" :size="17" />
+            <UiIcon name="search" :size="16" />
           </template>
         </UiInput>
 
@@ -628,7 +628,7 @@ function toneOf(pct: number) {
         />
 
         <UiButton variant="ghost" :disabled="!dirty" @click="resetFilters">
-          <UiIcon name="refresh" :size="15" />
+          <UiIcon name="refresh" :size="16" />
           {{ t("common.reset") }}
         </UiButton>
       </div>
@@ -643,7 +643,7 @@ function toneOf(pct: number) {
           :disabled="!filtered.length"
           @click="toggleAllVisible"
         >
-          <UiIcon :name="allVisibleSelected ? 'x' : 'check'" :size="15" />
+          <UiIcon :name="allVisibleSelected ? 'x' : 'check'" :size="16" />
           {{
             allVisibleSelected
               ? t("common.deselect")
@@ -661,7 +661,7 @@ function toneOf(pct: number) {
           class="ml-auto"
           @click="bulkOpen = true"
         >
-          <UiIcon name="check" :size="15" />
+          <UiIcon name="check" :size="16" />
           {{ t("cnt.markStatus") }}
         </UiButton>
       </div>
@@ -732,7 +732,7 @@ function toneOf(pct: number) {
                 : 'bg-warn-50 text-warn-700 ring-warn-100'
             "
           >
-            <UiIcon :name="row.hasPlan ? 'check' : 'clock'" :size="13" />
+            <UiIcon :name="row.hasPlan ? 'check' : 'clock'" :size="14" />
             {{ row.hasPlan ? t("common.present") : t("common.no") }}
           </span>
         </template>
@@ -775,7 +775,7 @@ function toneOf(pct: number) {
           {{ t("cnt.toFillSuffix") }}
         </p>
         <UiButton variant="secondary" size="sm" to="/content">
-          <UiIcon name="clipboard" :size="15" />
+          <UiIcon name="clipboard" :size="16" />
           {{ t("nav.contentQueue") }}
         </UiButton>
       </div>
@@ -1010,7 +1010,7 @@ function toneOf(pct: number) {
                         @keydown.enter.prevent="addEquipment()"
                       />
                       <UiButton variant="secondary" @click="addEquipment()">
-                        <UiIcon name="plus" :size="15" />
+                        <UiIcon name="plus" :size="16" />
                         {{ t("common.add") }}
                       </UiButton>
                     </div>
@@ -1056,7 +1056,7 @@ function toneOf(pct: number) {
                 >
                   <UiIcon name="layers" :size="16" />
                   {{ t("cnt.openInFloorPlan") }}
-                  <UiIcon name="chevronRight" :size="15" class="ml-auto" />
+                  <UiIcon name="chevronRight" :size="16" class="ml-auto" />
                 </NuxtLink>
               </div>
 
@@ -1065,7 +1065,7 @@ function toneOf(pct: number) {
                 class="flex items-center justify-end gap-3 border-t border-ink-200 bg-surface-sunken px-5 py-4"
               >
                 <UiButton variant="ghost" @click="fillForm">
-                  <UiIcon name="refresh" :size="15" />
+                  <UiIcon name="refresh" :size="16" />
                   {{ t("common.restore") }}
                 </UiButton>
                 <UiButton @click="saveUnit">

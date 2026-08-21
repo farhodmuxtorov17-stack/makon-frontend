@@ -1145,7 +1145,7 @@ function exportVacancy() {
         class="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-field px-3 text-[13px] font-semibold text-brand-700 transition-colors hover:bg-brand-100"
       >
         {{ t('whs.blGoToMaterial') }}
-        <UiIcon name="chevronRight" :size="15" />
+        <UiIcon name="chevronRight" :size="16" />
       </NuxtLink>
     </div>
 
@@ -1450,11 +1450,11 @@ function exportVacancy() {
                 :key="l.label"
                 class="flex items-center gap-1.5 text-[12px] text-ink-600"
               >
-                <span class="size-3 rounded-[3px]" :style="{ backgroundColor: l.color }" />
+                <span class="size-3 rounded-[4px]" :style="{ backgroundColor: l.color }" />
                 {{ l.label }}
               </li>
               <li class="flex items-center gap-1.5 text-[12px] text-ink-600">
-                <span class="h-3 w-2 rounded-[2px] bg-ink-700" />
+                <span class="h-3 w-2 rounded-[4px] bg-ink-700" />
                 {{ t('whs.blDock') }}
               </li>
             </ul>
@@ -1687,7 +1687,7 @@ function exportVacancy() {
               class="tabular inline-flex items-center gap-1.5 text-[13px] font-bold text-ink-900"
             >
               <span
-                class="size-2.5 shrink-0 rounded-[3px]"
+                class="size-2.5 shrink-0 rounded-[4px]"
                 :style="{ backgroundColor: UNIT_STATUS_COLOR[row.status] }"
               />
               {{ row.code }}

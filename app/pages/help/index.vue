@@ -593,7 +593,7 @@ const systemServices = computed(() =>
       v-if="createdCode"
       class="flex items-center gap-3 rounded-card bg-ok-50 px-5 py-3.5 ring-1 ring-ok-100"
     >
-      <span class="grid size-9 shrink-0 place-items-center rounded-[10px] bg-ok-500 text-white">
+      <span class="grid size-9 shrink-0 place-items-center rounded-field bg-ok-500 text-white">
         <UiIcon name="check" :size="18" />
       </span>
       <i18n-t
@@ -654,8 +654,8 @@ const systemServices = computed(() =>
               "
               @click="toggleRole(r.value)"
             >
-              <span class="grid size-10 place-items-center rounded-[10px]" :class="r.tone">
-                <UiIcon :name="r.icon" :size="19" />
+              <span class="grid size-10 place-items-center rounded-field" :class="r.tone">
+                <UiIcon :name="r.icon" :size="20" />
               </span>
               <span class="mt-3 block text-[14px] font-bold text-ink-900">
                 {{ roleName(r.value) }}
@@ -725,7 +725,7 @@ const systemServices = computed(() =>
           <UiCard :title="t('hlp.manualsTitle')" :subtitle="t('hlp.manualsCaption')" flush>
             <ul class="divide-y divide-ink-100">
               <li v-for="m in filteredManuals" :key="m.id" class="flex items-center gap-3.5 px-5 py-3.5">
-                <span class="grid size-10 shrink-0 place-items-center rounded-[10px] bg-danger-50 text-danger-600">
+                <span class="grid size-10 shrink-0 place-items-center rounded-field bg-danger-50 text-danger-600">
                   <UiIcon name="doc" :size="18" />
                 </span>
                 <span class="min-w-0 flex-1">
@@ -752,7 +752,7 @@ const systemServices = computed(() =>
         <UiCard :title="t('hlp.ticketsTitle')" :subtitle="t('hlp.ticketsCaption')" flush>
           <template #actions>
             <UiButton size="sm" @click="createOpen = true">
-              <UiIcon name="plus" :size="15" />
+              <UiIcon name="plus" :size="16" />
               {{ t('hlp.newTicketCreate') }}
             </UiButton>
           </template>
@@ -815,7 +815,7 @@ const systemServices = computed(() =>
                   class="grid size-6 shrink-0 place-items-center rounded-full text-[11px] font-bold"
                   :class="s.done ? 'bg-ok-500 text-white' : 'bg-ink-100 text-ink-500'"
                 >
-                  <UiIcon v-if="s.done" name="check" :size="13" />
+                  <UiIcon v-if="s.done" name="check" :size="14" />
                   <template v-else>{{ i + 1 }}</template>
                 </span>
                 <span
@@ -836,7 +836,7 @@ const systemServices = computed(() =>
             @click="openManual(generalManual)"
           >
             {{ t('hlp.onboardingContinue') }}
-            <UiIcon name="chevronRight" :size="15" />
+            <UiIcon name="chevronRight" :size="16" />
           </UiButton>
         </UiCard>
 
@@ -849,7 +849,7 @@ const systemServices = computed(() =>
               class="flex w-full items-center gap-3.5 rounded-field p-3.5 text-left ring-1 ring-ink-200 transition-all hover:shadow-card hover:ring-brand-300"
               @click="openSupport(c)"
             >
-              <span class="grid size-10 shrink-0 place-items-center rounded-[10px]" :class="c.tone">
+              <span class="grid size-10 shrink-0 place-items-center rounded-field" :class="c.tone">
                 <UiIcon :name="c.icon" :size="18" />
               </span>
               <span class="min-w-0 flex-1">
@@ -863,7 +863,7 @@ const systemServices = computed(() =>
 
         <UiCard :title="t('hlp.systemStatus')" :subtitle="t('hlp.statusCaption')">
           <div class="flex items-center gap-3 rounded-field bg-ok-50 px-4 py-3">
-            <span class="grid size-9 shrink-0 place-items-center rounded-[10px] bg-ok-500 text-white">
+            <span class="grid size-9 shrink-0 place-items-center rounded-field bg-ok-500 text-white">
               <UiIcon name="check" :size="18" />
             </span>
             <p class="min-w-0 flex-1 text-[13px] font-semibold text-ok-700">

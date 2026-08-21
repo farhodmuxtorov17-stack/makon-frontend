@@ -618,7 +618,7 @@ function saveIssue() {
         v-else
         class="inline-flex items-center gap-1.5 rounded-pill bg-ink-100 px-3 py-1.5 text-[13px] font-semibold text-ink-600 ring-1 ring-inset ring-ink-200"
       >
-        <UiIcon name="eye" :size="15" />
+        <UiIcon name="eye" :size="16" />
         {{ t('tour.warehouse.watch.title') }}
       </span>
     </template>
@@ -780,7 +780,7 @@ function saveIssue() {
             class="inline-flex items-center gap-1.5 rounded-pill px-2.5 py-1 text-xs font-semibold ring-1 ring-inset"
             :class="kindMeta(row.kind).badge"
           >
-            <UiIcon :name="kindMeta(row.kind).icon" :size="13" :class="kindMeta(row.kind).mark" />
+            <UiIcon :name="kindMeta(row.kind).icon" :size="14" :class="kindMeta(row.kind).mark" />
             {{ kindMeta(row.kind).label }}
           </span>
         </template>
@@ -953,7 +953,7 @@ function saveIssue() {
             >
               <UiIcon
                 :name="kindMeta(detail.kind).icon"
-                :size="13"
+                :size="14"
                 :class="kindMeta(detail.kind).mark"
               />
               {{ kindMeta(detail.kind).label }}

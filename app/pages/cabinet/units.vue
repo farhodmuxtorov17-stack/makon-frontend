@@ -325,11 +325,11 @@ const planOpen = ref(false)
       <template #actions>
         <div class="flex items-center gap-2">
           <UiButton variant="ghost" size="sm" @click="planOpen = true">
-            <UiIcon name="eye" :size="15" />
+            <UiIcon name="eye" :size="16" />
             {{ t('cab.enlargePlan') }}
           </UiButton>
           <UiButton variant="secondary" size="sm" to="/cabinet/meters">
-            <UiIcon name="meter" :size="15" />
+            <UiIcon name="meter" :size="16" />
             {{ t('nav.meters') }}
           </UiButton>
         </div>
@@ -454,7 +454,7 @@ const planOpen = ref(false)
                 {{ t('cab.contractCopyHint') }}
               </p>
               <UiButton variant="secondary" size="sm" class="mt-3" block to="/cabinet/documents">
-                <UiIcon name="doc" :size="15" />
+                <UiIcon name="doc" :size="16" />
                 {{ t('cab.openContractCopy') }}
               </UiButton>
             </div>
@@ -496,7 +496,7 @@ const planOpen = ref(false)
                 </div>
               </div>
               <UiButton variant="secondary" size="sm" class="mt-3" block to="/cabinet/invoices">
-                <UiIcon name="wallet" :size="15" />
+                <UiIcon name="wallet" :size="16" />
                 {{ t('cab.paymentHistory') }}
               </UiButton>
             </div>

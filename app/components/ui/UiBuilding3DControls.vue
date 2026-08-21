@@ -108,7 +108,7 @@ const sectionNote = computed(() => {
       @click="expanded = !expanded"
     >
       <span class="flex min-w-0 items-center gap-2">
-        <UiIcon name="tools" :size="17" class="shrink-0 text-brand-600" />
+        <UiIcon name="tools" :size="16" class="shrink-0 text-brand-600" />
         <span class="min-w-0 truncate text-[13px] font-bold text-ink-900">
           {{ t('nav.dashboardBuilding') }}
         </span>
@@ -258,7 +258,7 @@ const sectionNote = computed(() => {
                 :aria-pressed="state.night"
                 @click="emit('patch', { night: !state.night })"
               >
-                <UiIcon :name="state.night ? 'cloud' : 'sun'" :size="15" />
+                <UiIcon :name="state.night ? 'cloud' : 'sun'" :size="16" />
                 {{ state.night ? t('ui.night') : t('ui.day') }}
               </button>
 
@@ -267,7 +267,7 @@ const sectionNote = computed(() => {
                 class="inline-flex h-9 items-center gap-1.5 rounded-field bg-surface px-2.5 text-[12px] font-semibold text-ink-700 ring-1 ring-inset ring-ink-200 transition-colors hover:bg-ink-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500"
                 @click="emit('reset')"
               >
-                <UiIcon name="target" :size="15" />
+                <UiIcon name="target" :size="16" />
                 {{ t('ui.restoreView') }}
               </button>
             </div>
@@ -392,7 +392,7 @@ const sectionNote = computed(() => {
                   :aria-pressed="measureActive"
                   @click="emit('patch', { tool: measureActive ? 'none' : 'measure' })"
                 >
-                  <UiIcon name="size" :size="15" />
+                  <UiIcon name="size" :size="16" />
                   {{ measureActive ? t('ui.measureOn') : t('ui.measureTool') }}
                 </button>
                 <button
@@ -400,7 +400,7 @@ const sectionNote = computed(() => {
                   class="inline-flex h-9 items-center gap-1.5 rounded-field bg-surface px-2.5 text-[12px] font-semibold text-ink-700 ring-1 ring-inset ring-ink-200 transition-colors hover:bg-ink-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500"
                   @click="emit('clear-measure')"
                 >
-                  <UiIcon name="trash" :size="15" />
+                  <UiIcon name="trash" :size="16" />
                   {{ t('common.reset') }}
                 </button>
               </div>

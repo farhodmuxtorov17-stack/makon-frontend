@@ -152,7 +152,7 @@ function download() {
         v-if="downloaded"
         class="flex items-center gap-2 rounded-field bg-ok-50 px-3.5 py-2.5 text-[13px] font-semibold text-ok-700 ring-1 ring-inset ring-ok-100"
       >
-        <UiIcon name="check" :size="15" />
+        <UiIcon name="check" :size="16" />
         {{ t('ui.fileDownloaded', { file: downloaded }) }}
       </p>
     </div>

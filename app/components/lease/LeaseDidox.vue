@@ -46,7 +46,7 @@ function downloadSigned() {
           <span
             class="grid size-10 shrink-0 place-items-center rounded-field bg-brand-500 text-white"
           >
-            <UiIcon name="external" :size="19" />
+            <UiIcon name="external" :size="20" />
           </span>
           <div class="min-w-0">
             <p
@@ -95,7 +95,7 @@ function downloadSigned() {
       <p
         class="mt-4 flex items-start gap-2 rounded-field bg-white px-3.5 py-2.5 text-[13px] leading-relaxed text-ink-600 ring-1 ring-inset ring-ink-200"
       >
-        <UiIcon name="info" :size="15" class="mt-px shrink-0 text-brand-600" />
+        <UiIcon name="info" :size="16" class="mt-px shrink-0 text-brand-600" />
         {{ t("ui.didoxNote") }}
       </p>
 
@@ -106,7 +106,7 @@ function downloadSigned() {
           size="sm"
           @click="downloadSigned"
         >
-          <UiIcon name="download" :size="15" />
+          <UiIcon name="download" :size="16" />
           {{ t("ui.downloadSigned") }}
         </UiButton>
       </div>
@@ -115,7 +115,7 @@ function downloadSigned() {
         v-if="downloaded"
         class="mt-3 flex items-center gap-2 rounded-field bg-ok-50 px-3.5 py-2.5 text-[13px] font-semibold text-ok-700 ring-1 ring-inset ring-ok-100"
       >
-        <UiIcon name="check" :size="15" />
+        <UiIcon name="check" :size="16" />
         {{ t("ui.signedDownloadedHint", { file: downloaded }) }}
       </p>
     </div>

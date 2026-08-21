@@ -546,7 +546,7 @@ function downloadAct() {
                 :to="`/facility/work-orders/${selected.id}`"
               >
                 {{ t("wo.openStandalone") }}
-                <UiIcon name="external" :size="15" />
+                <UiIcon name="external" :size="16" />
               </UiButton>
             </div>
           </div>
@@ -859,7 +859,7 @@ function downloadAct() {
             @click="uploadOpen = true"
           >
             <span
-              class="grid size-11 shrink-0 place-items-center rounded-[10px] bg-white text-brand-600 shadow-card"
+              class="grid size-11 shrink-0 place-items-center rounded-field bg-white text-brand-600 shadow-card"
             >
               <UiIcon name="upload" :size="20" />
             </span>
@@ -875,7 +875,7 @@ function downloadAct() {
 
           <div class="flex flex-wrap items-center gap-3">
             <UiButton class="flex-1" @click="evidenceOpen = true">
-              <UiIcon name="plus" :size="17" />
+              <UiIcon name="plus" :size="16" />
               {{ t("wo.addEvidence") }}
             </UiButton>
             <UiButton
@@ -883,7 +883,7 @@ function downloadAct() {
               class="flex-1"
               @click="noteOpen = true"
             >
-              <UiIcon name="doc" :size="17" />
+              <UiIcon name="doc" :size="16" />
               {{ t("wo.addNote") }}
             </UiButton>
           </div>
@@ -916,7 +916,7 @@ function downloadAct() {
             <div
               v-for="n in Math.min(evidence[selected.id] ?? 0, 4)"
               :key="n"
-              class="relative overflow-hidden rounded-[10px] ring-1 ring-ink-200"
+              class="relative overflow-hidden rounded-field ring-1 ring-ink-200"
             >
               <svg
                 viewBox="0 0 64 64"
@@ -967,9 +967,9 @@ function downloadAct() {
               class="flex items-center gap-3"
             >
               <span
-                class="grid size-9 shrink-0 place-items-center rounded-[10px] bg-ink-100 text-ink-600"
+                class="grid size-9 shrink-0 place-items-center rounded-field bg-ink-100 text-ink-600"
               >
-                <UiIcon name="cube" :size="17" />
+                <UiIcon name="cube" :size="16" />
               </span>
               <span
                 class="min-w-0 flex-1 truncate text-[14px] font-medium text-ink-800"
@@ -997,7 +997,7 @@ function downloadAct() {
             to="/facility/materials"
           >
             {{ t("nav.materials") }}
-            <UiIcon name="chevronRight" :size="15" />
+            <UiIcon name="chevronRight" :size="16" />
           </UiButton>
         </UiCard>
 
@@ -1134,7 +1134,7 @@ function downloadAct() {
             :disabled="!actReady"
             @click="actOpen = true"
           >
-            <UiIcon name="doc" :size="17" />
+            <UiIcon name="doc" :size="16" />
             {{ t("wo.viewAct") }}
           </UiButton>
 
@@ -1257,7 +1257,7 @@ function downloadAct() {
           :aria-label="t('wo.removeEvidenceAria', { name: e.file.name })"
           @click="removeEvidence(i)"
         >
-          <UiIcon name="x" :size="13" />
+          <UiIcon name="x" :size="14" />
         </button>
       </div>
 

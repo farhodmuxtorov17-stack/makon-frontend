@@ -34,7 +34,7 @@ const { t, statusLabel } = useAppLabels()
         :key="c.label"
         class="flex items-start gap-3 rounded-field bg-white px-4 py-3 ring-1 ring-inset ring-ok-100"
       >
-        <span class="grid size-9 shrink-0 place-items-center rounded-[10px] bg-ok-50 text-ok-600">
+        <span class="grid size-9 shrink-0 place-items-center rounded-field bg-ok-50 text-ok-600">
           <UiIcon :name="c.icon" :size="18" />
         </span>
         <span class="min-w-0">

@@ -343,7 +343,7 @@ const tourId = computed(() => `executive:${auth.role ?? 'guest'}`)
           />
           <UiButton variant="ghost" size="sm" :to="`/objects/${view3dBuilding.id}/3d`">
             {{ t('svc.fullScreen') }}
-            <UiIcon name="chevronRight" :size="15" />
+            <UiIcon name="chevronRight" :size="16" />
           </UiButton>
         </template>
 
@@ -422,7 +422,7 @@ const tourId = computed(() => `executive:${auth.role ?? 'guest'}`)
       <template #actions>
         <UiButton variant="ghost" size="sm" to="/objects">
           {{ t('common.all') }}
-          <UiIcon name="chevronRight" :size="15" />
+          <UiIcon name="chevronRight" :size="16" />
         </UiButton>
       </template>
 
@@ -490,7 +490,7 @@ const tourId = computed(() => `executive:${auth.role ?? 'guest'}`)
           <li v-for="d in debtAlerts" :key="d.id" class="px-5 py-3.5">
             <NuxtLink to="/billing/debts" class="group flex items-center gap-4">
               <span
-                class="grid size-10 shrink-0 place-items-center rounded-[10px] bg-danger-50 text-danger-600"
+                class="grid size-10 shrink-0 place-items-center rounded-field bg-danger-50 text-danger-600"
               >
                 <UiIcon name="warning" :size="18" />
               </span>
@@ -534,7 +534,7 @@ const tourId = computed(() => `executive:${auth.role ?? 'guest'}`)
         <ul v-else class="divide-y divide-ink-100">
           <li v-for="c in pendingCases" :key="c.id" class="px-5 py-3.5">
             <NuxtLink :to="`/applications/${c.id}`" class="group flex items-center gap-4">
-              <span class="grid size-10 shrink-0 place-items-center rounded-[10px] bg-warn-50 text-warn-600">
+              <span class="grid size-10 shrink-0 place-items-center rounded-field bg-warn-50 text-warn-600">
                 <UiIcon name="clock" :size="18" />
               </span>
               <span class="min-w-0 flex-1">

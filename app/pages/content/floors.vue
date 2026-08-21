@@ -574,7 +574,7 @@ function selectRow(row: Unit) {
         :aria-label="t('common.closeNotice')"
         @click="notice = ''"
       >
-        <UiIcon name="x" :size="15" />
+        <UiIcon name="x" :size="16" />
       </button>
     </div>
 
@@ -617,7 +617,7 @@ function selectRow(row: Unit) {
               <UiIcon
                 v-if="f.value === floor"
                 name="chevronRight"
-                :size="15"
+                :size="16"
                 class="shrink-0 text-brand-600"
               />
             </button>
@@ -634,15 +634,15 @@ function selectRow(row: Unit) {
         >
           <div v-if="canEdit" class="flex flex-wrap items-center gap-2 px-4 pb-4 lg:px-5">
             <UiButton size="sm" @click="addPolygon">
-              <UiIcon name="plus" :size="15" />
+              <UiIcon name="plus" :size="16" />
               {{ t('cnt.addPolygon') }}
             </UiButton>
             <UiButton variant="secondary" size="sm" :disabled="!selected" @click="copyPolygon">
-              <UiIcon name="doc" :size="15" />
+              <UiIcon name="doc" :size="16" />
               {{ t('common.copy') }}
             </UiButton>
             <UiButton variant="danger" size="sm" :disabled="!selected" @click="removePolygon">
-              <UiIcon name="trash" :size="15" />
+              <UiIcon name="trash" :size="16" />
               {{ t('common.remove') }}
             </UiButton>
             <UiButton
@@ -651,7 +651,7 @@ function selectRow(row: Unit) {
               :disabled="!history.length"
               @click="undo"
             >
-              <UiIcon name="refresh" :size="15" />
+              <UiIcon name="refresh" :size="16" />
               {{ t('common.undo') }}
               <span v-if="history.length" class="tabular">({{ history.length }})</span>
             </UiButton>
@@ -714,7 +714,7 @@ function selectRow(row: Unit) {
                   :aria-label="t('cnt.resetView')"
                   @click="resetView"
                 >
-                  <UiIcon name="refresh" :size="17" />
+                  <UiIcon name="refresh" :size="16" />
                 </button>
               </div>
 
@@ -800,7 +800,7 @@ function selectRow(row: Unit) {
                   </p>
                 </div>
                 <UiButton v-if="canEdit" size="sm" @click="addPolygon">
-                  <UiIcon name="plus" :size="15" />
+                  <UiIcon name="plus" :size="16" />
                   {{ t('cnt.addPolygon') }}
                 </UiButton>
               </div>
@@ -893,7 +893,7 @@ function selectRow(row: Unit) {
                     : 'bg-warn-50 text-warn-700 ring-warn-100'
                 "
               >
-                <UiIcon :name="row.polygon.length >= 3 ? 'check' : 'clock'" :size="13" />
+                <UiIcon :name="row.polygon.length >= 3 ? 'check' : 'clock'" :size="14" />
                 {{ row.polygon.length >= 3 ? t('common.present') : t('common.no') }}
               </span>
             </template>
@@ -909,7 +909,7 @@ function selectRow(row: Unit) {
               >
                 <UiIcon
                   :name="row.usage && row.area > 0 && row.equipment.length ? 'check' : 'warning'"
-                  :size="13"
+                  :size="14"
                 />
                 {{
                   row.usage && row.area > 0 && row.equipment.length
@@ -997,7 +997,7 @@ function selectRow(row: Unit) {
                   @keydown.enter.prevent="addEquipment()"
                 />
                 <UiButton variant="secondary" @click="addEquipment()">
-                  <UiIcon name="plus" :size="15" />
+                  <UiIcon name="plus" :size="16" />
                   {{ t('common.add') }}
                 </UiButton>
               </div>
@@ -1021,7 +1021,7 @@ function selectRow(row: Unit) {
 
             <div class="mt-4 grid grid-cols-2 gap-3">
               <UiButton variant="ghost" @click="fillForm">
-                <UiIcon name="refresh" :size="15" />
+                <UiIcon name="refresh" :size="16" />
                 {{ t('common.restore') }}
               </UiButton>
               <UiButton @click="saveUnit">
@@ -1070,13 +1070,13 @@ function selectRow(row: Unit) {
         >
           <div class="flex flex-col items-center gap-3 py-10 text-center">
             <span class="grid size-12 place-items-center rounded-full bg-ink-100 text-ink-500">
-              <UiIcon name="box" :size="22" />
+              <UiIcon name="box" :size="20" />
             </span>
             <p class="text-[13px] text-ink-500">
               {{ t('cnt.noSelectedUnit') }}
             </p>
             <UiButton v-if="canEdit" variant="secondary" size="sm" @click="addPolygon">
-              <UiIcon name="plus" :size="15" />
+              <UiIcon name="plus" :size="16" />
               {{ t('cnt.addPolygon') }}
             </UiButton>
           </div>

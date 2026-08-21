@@ -3737,7 +3737,7 @@ function toggleLayer(key: keyof Layers) {
           <button
             type="button"
             :data-active="l.floor === floor"
-            class="flex h-[34px] shrink-0 items-center gap-1.5 rounded-[7px] px-1.5 transition-colors focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brand-500"
+            class="flex h-[34px] shrink-0 items-center gap-1.5 rounded-[8px] px-1.5 transition-colors focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brand-500"
             :class="
               l.floor === floor
                 ? 'bg-brand-500 text-white'
@@ -3909,7 +3909,7 @@ function toggleLayer(key: keyof Layers) {
         :aria-pressed="view.exploded"
         @click="view.exploded = !view.exploded"
       >
-        <UiIcon name="layers" :size="15" />
+        <UiIcon name="layers" :size="16" />
         {{ t('ui.explodeFloors') }}
       </button>
 

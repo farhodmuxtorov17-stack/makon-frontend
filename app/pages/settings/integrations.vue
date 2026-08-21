@@ -574,7 +574,7 @@ const activeHooks = computed(() => webhooks.value.filter((w) => w.active).length
       <span
         class="hidden items-center gap-2 rounded-pill bg-brand-50 px-3 py-1.5 text-[13px] font-semibold text-brand-700 ring-1 ring-inset ring-brand-200 lg:inline-flex"
       >
-        <UiIcon name="globe" :size="15" />
+        <UiIcon name="globe" :size="16" />
         {{ t('cfg.connectedOf', { n: connectedCount, total: integrations.length }) }}
       </span>
       <UiButton v-if="canAdmin" size="sm" @click="openNewKey">
@@ -607,7 +607,7 @@ const activeHooks = computed(() => webhooks.value.filter((w) => w.active).length
       v-if="!canAdmin"
       class="flex flex-wrap items-center gap-3 rounded-card bg-ink-50 px-4 py-3 text-[13px] text-ink-600 ring-1 ring-ink-200"
     >
-      <UiIcon name="lock" :size="17" class="shrink-0" />
+      <UiIcon name="lock" :size="16" class="shrink-0" />
       <span class="min-w-0 flex-1">{{ t('cfg.adminOnlyNote') }}</span>
     </div>
 
@@ -684,10 +684,10 @@ const activeHooks = computed(() => webhooks.value.filter((w) => w.active).length
 
         <div class="flex items-start gap-3">
           <span
-            class="grid size-10 shrink-0 place-items-center rounded-[12px]"
+            class="grid size-10 shrink-0 place-items-center rounded-card"
             :class="item.enabled ? 'bg-brand-50 text-brand-600' : 'bg-ink-100 text-ink-500'"
           >
-            <UiIcon :name="item.icon" :size="19" />
+            <UiIcon :name="item.icon" :size="20" />
           </span>
           <dl class="min-w-0 flex-1 space-y-2 text-[13px]">
             <div class="flex items-start justify-between gap-3">
@@ -765,7 +765,7 @@ const activeHooks = computed(() => webhooks.value.filter((w) => w.active).length
         >
           <UiIcon
             :name="checks[item.id]!.phase === 'fail' ? 'warning' : 'check'"
-            :size="15"
+            :size="16"
             class="mt-0.5 shrink-0"
           />
           {{ t(checks[item.id]!.message) }}
@@ -775,7 +775,7 @@ const activeHooks = computed(() => webhooks.value.filter((w) => w.active).length
           v-else-if="item.status === 'ERROR' && !checks[item.id] && item.failKey"
           class="mt-3 flex items-start gap-2 rounded-field bg-danger-50 px-3 py-2.5 text-[13px] text-danger-700"
         >
-          <UiIcon name="warning" :size="15" class="mt-0.5 shrink-0" />
+          <UiIcon name="warning" :size="16" class="mt-0.5 shrink-0" />
           {{ t(item.failKey) }}
         </p>
 
@@ -787,7 +787,7 @@ const activeHooks = computed(() => webhooks.value.filter((w) => w.active).length
             :disabled="!item.enabled || checks[item.id]?.phase === 'running'"
             @click="runCheck(item)"
           >
-            <UiIcon :name="checks[item.id]?.phase === 'running' ? 'refresh' : 'send'" :size="15" />
+            <UiIcon :name="checks[item.id]?.phase === 'running' ? 'refresh' : 'send'" :size="16" />
             {{
               checks[item.id]?.phase === 'running'
                 ? t('common.checking')
@@ -796,7 +796,7 @@ const activeHooks = computed(() => webhooks.value.filter((w) => w.active).length
           </UiButton>
 
           <UiButton variant="ghost" size="sm" block @click="openConfig(item)">
-            <UiIcon name="gear" :size="15" />
+            <UiIcon name="gear" :size="16" />
             {{ t('cfg.configure') }}
           </UiButton>
           <UiButton
@@ -805,7 +805,7 @@ const activeHooks = computed(() => webhooks.value.filter((w) => w.active).length
             block
             @click="askToggle(item)"
           >
-            <UiIcon :name="item.enabled ? 'x' : 'check'" :size="15" />
+            <UiIcon :name="item.enabled ? 'x' : 'check'" :size="16" />
             {{ item.enabled ? t('cfg.turnOff') : t('cfg.turnOn') }}
           </UiButton>
 
@@ -900,7 +900,7 @@ const activeHooks = computed(() => webhooks.value.filter((w) => w.active).length
             size="sm"
             @click="askRevoke(row.id)"
           >
-            <UiIcon name="trash" :size="15" />
+            <UiIcon name="trash" :size="16" />
             {{ t('cfg.revoke') }}
           </UiButton>
           <span v-else class="text-[12px] text-ink-400">-</span>
@@ -922,10 +922,10 @@ const activeHooks = computed(() => webhooks.value.filter((w) => w.active).length
         <li v-for="w in webhooks" :key="w.id" class="px-5 py-4">
           <div class="flex flex-wrap items-start gap-3">
             <span
-              class="grid size-9 shrink-0 place-items-center rounded-[10px]"
+              class="grid size-9 shrink-0 place-items-center rounded-field"
               :class="w.active ? 'bg-brand-50 text-brand-600' : 'bg-ink-100 text-ink-500'"
             >
-              <UiIcon name="send" :size="17" />
+              <UiIcon name="send" :size="16" />
             </span>
 
             <span class="min-w-0 flex-1">
@@ -973,7 +973,7 @@ const activeHooks = computed(() => webhooks.value.filter((w) => w.active).length
                 :disabled="probes[w.id]?.phase === 'sending'"
                 @click="probeWebhook(w)"
               >
-                <UiIcon name="send" :size="15" />
+                <UiIcon name="send" :size="16" />
                 {{
                   probes[w.id]?.phase === 'sending' ? t('cfg.sending') : t('cfg.sendTestRequest')
                 }}

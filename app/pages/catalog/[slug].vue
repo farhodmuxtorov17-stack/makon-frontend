@@ -384,7 +384,7 @@ function goApply(unitId?: string) {
           <p
             class="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[14px] text-ink-500"
           >
-            <UiIcon name="location" :size="15" class="text-ink-400" />
+            <UiIcon name="location" :size="16" class="text-ink-400" />
             {{ addressLabel(building) }}
             <span class="text-ink-300">·</span>
             {{ buildingTypeLabel(building.type) }}
@@ -474,7 +474,7 @@ function goApply(unitId?: string) {
                 v-for="(p, i) in photos"
                 :key="p.name"
                 type="button"
-                class="overflow-hidden rounded-[10px] ring-1 transition-all duration-150"
+                class="overflow-hidden rounded-field ring-1 transition-all duration-150"
                 :class="
                   mainView === i
                     ? 'ring-2 ring-brand-500'
@@ -495,7 +495,7 @@ function goApply(unitId?: string) {
 
               <button
                 type="button"
-                class="grid aspect-[4/3] place-items-center rounded-[10px] bg-ink-800 text-[13px] font-bold text-white transition-colors duration-150 hover:bg-ink-900"
+                class="grid aspect-[4/3] place-items-center rounded-field bg-ink-800 text-[13px] font-bold text-white transition-colors duration-150 hover:bg-ink-900"
                 @click="openPhoto(mainView)"
               >
                 {{ t("tab.all") }}
@@ -514,9 +514,9 @@ function goApply(unitId?: string) {
                 class="flex items-center gap-3 border-b border-ink-100 py-3 last:border-0 sm:[&:nth-last-child(2)]:border-0"
               >
                 <span
-                  class="grid size-9 shrink-0 place-items-center rounded-[10px] bg-brand-50 text-brand-600"
+                  class="grid size-9 shrink-0 place-items-center rounded-field bg-brand-50 text-brand-600"
                 >
-                  <UiIcon :name="r.icon" :size="17" />
+                  <UiIcon :name="r.icon" :size="16" />
                 </span>
                 <dt class="min-w-0 flex-1 text-[13px] text-ink-500">
                   {{ r.label }}
@@ -541,9 +541,9 @@ function goApply(unitId?: string) {
                 class="flex items-center gap-3 rounded-field bg-surface-sunken px-3.5 py-3"
               >
                 <span
-                  class="grid size-10 shrink-0 place-items-center rounded-[11px] bg-brand-50 text-brand-600"
+                  class="grid size-10 shrink-0 place-items-center rounded-field bg-brand-50 text-brand-600"
                 >
-                  <UiIcon :name="amenityIcon(a)" :size="19" />
+                  <UiIcon :name="amenityIcon(a)" :size="20" />
                 </span>
                 <span
                   class="text-[13px] font-semibold leading-snug text-ink-800"
@@ -575,7 +575,7 @@ function goApply(unitId?: string) {
                   :aria-label="t('cat.prevFloor')"
                   @click="stepFloor(-1)"
                 >
-                  <UiIcon name="chevronLeft" :size="17" />
+                  <UiIcon name="chevronLeft" :size="16" />
                 </button>
 
                 <div class="scroll-slim flex flex-1 gap-2 overflow-x-auto">
@@ -603,7 +603,7 @@ function goApply(unitId?: string) {
                   :aria-label="t('cat.nextFloor')"
                   @click="stepFloor(1)"
                 >
-                  <UiIcon name="chevronRight" :size="17" />
+                  <UiIcon name="chevronRight" :size="16" />
                 </button>
               </div>
 
@@ -760,7 +760,7 @@ function goApply(unitId?: string) {
                           @click="selectedId = u.id"
                         >
                           <span
-                            class="tabular shrink-0 rounded-[6px] bg-ink-100 px-1.5 text-[11px] font-bold leading-5 text-ink-700"
+                            class="tabular shrink-0 rounded-[8px] bg-ink-100 px-1.5 text-[11px] font-bold leading-5 text-ink-700"
                           >
                             {{ u.code }}
                           </span>
@@ -1039,7 +1039,7 @@ function goApply(unitId?: string) {
             v-for="(p, i) in photos"
             :key="`lb-${p.name}`"
             type="button"
-            class="overflow-hidden rounded-[10px] ring-1 transition-all duration-150"
+            class="overflow-hidden rounded-field ring-1 transition-all duration-150"
             :class="
               mainView === i
                 ? 'ring-2 ring-brand-500'
@@ -1077,7 +1077,7 @@ function goApply(unitId?: string) {
       <span
         class="mx-auto grid size-14 place-items-center rounded-full bg-ink-100 text-ink-400"
       >
-        <UiIcon name="building" :size="26" />
+        <UiIcon name="building" :size="24" />
       </span>
       <h1 class="mt-4 text-[18px] font-bold">{{ t("empty.noObjects") }}</h1>
       <p
@@ -1087,7 +1087,7 @@ function goApply(unitId?: string) {
       </p>
       <div class="mt-5 flex flex-wrap justify-center gap-3">
         <UiButton to="/catalog">
-          <UiIcon name="search" :size="17" />
+          <UiIcon name="search" :size="16" />
           {{ t("cat.toCatalog") }}
         </UiButton>
         <UiButton variant="secondary" to="/">{{ t("nav.cabinet") }}</UiButton>

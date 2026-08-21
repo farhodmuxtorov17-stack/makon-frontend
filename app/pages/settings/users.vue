@@ -346,15 +346,15 @@ function toggleStatus(id: string) {
       v-if="flash"
       class="flex items-start gap-2.5 rounded-card bg-ok-50 px-4 py-3 text-[13px] text-ok-700 ring-1 ring-ok-100"
     >
-      <UiIcon name="check" :size="17" class="mt-0.5 shrink-0" />
+      <UiIcon name="check" :size="16" class="mt-0.5 shrink-0" />
       <span class="min-w-0 flex-1">{{ flash }}</span>
       <button
         type="button"
-        class="shrink-0 rounded-[6px] p-1 text-ok-700 transition-colors hover:bg-ok-100"
+        class="shrink-0 rounded-[8px] p-1 text-ok-700 transition-colors hover:bg-ok-100"
         :aria-label="t('common.dismiss')"
         @click="flash = ''"
       >
-        <UiIcon name="x" :size="15" />
+        <UiIcon name="x" :size="16" />
       </button>
     </div>
 
@@ -369,7 +369,7 @@ function toggleStatus(id: string) {
         class="grid gap-3 px-5 pb-4 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_220px_200px]"
       >
         <UiInput v-model="search" :placeholder="t('cfg.userSearchPlaceholder')">
-          <template #prefix><UiIcon name="search" :size="17" /></template>
+          <template #prefix><UiIcon name="search" :size="16" /></template>
         </UiInput>
         <UiSelect v-model="roleFilter" :options="roleOptions" />
         <UiSelect v-model="statusFilter" :options="statusOptions" />
@@ -647,7 +647,7 @@ function toggleStatus(id: string) {
                   <p
                     class="mt-2 flex items-start gap-2 rounded-field bg-warn-50 px-3 py-2.5 text-[13px] leading-relaxed text-warn-700 ring-1 ring-inset ring-warn-100"
                   >
-                    <UiIcon name="lock" :size="15" class="mt-0.5 shrink-0" />
+                    <UiIcon name="lock" :size="16" class="mt-0.5 shrink-0" />
                     <span class="min-w-0">
                       <b class="font-semibold">{{ t("cfg.limitation") }}</b>
                       {{ roleLimitation(draft.role) }}

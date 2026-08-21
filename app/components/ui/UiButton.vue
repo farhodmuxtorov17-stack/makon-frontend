@@ -46,8 +46,8 @@ const SIZES: Record<Size, string> = {
   // Telefonda tegish nishoni 44px dan kichik bo‘lmaydi, katta ekranda o‘lcham
   // avvalgidek qoladi.
   sm: 'h-11 px-3.5 text-[13px] gap-1.5 rounded-[8px] md:h-9',
-  md: 'h-11 px-5 text-sm gap-2 rounded-[10px]',
-  lg: 'h-[52px] px-6 text-[16px] gap-2.5 rounded-xl',
+  md: 'h-11 px-5 text-sm gap-2 rounded-field',
+  lg: 'h-[52px] px-6 text-[16px] gap-2.5 rounded-card',
 }
 
 const classes = computed(() => [

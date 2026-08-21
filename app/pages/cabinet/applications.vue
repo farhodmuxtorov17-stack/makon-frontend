@@ -100,7 +100,7 @@ const STAGE_HINT = computed<Record<string, string>>(() => ({
       class="flex items-start gap-3 rounded-card bg-ok-50 px-4 py-3.5 ring-1 ring-inset ring-ok-100"
       role="status"
     >
-      <span class="grid size-9 shrink-0 place-items-center rounded-[10px] bg-ok-500 text-white">
+      <span class="grid size-9 shrink-0 place-items-center rounded-field bg-ok-500 text-white">
         <UiIcon name="check" :size="18" />
       </span>
       <p class="min-w-0 flex-1 text-[14px] text-ok-700">
@@ -247,7 +247,7 @@ const STAGE_HINT = computed<Record<string, string>>(() => ({
               size="sm"
               @click="contractOpen = true"
             >
-              <UiIcon name="doc" :size="15" />
+              <UiIcon name="doc" :size="16" />
               {{ t('cab.viewContract') }}
             </UiButton>
           </div>
@@ -274,7 +274,7 @@ const STAGE_HINT = computed<Record<string, string>>(() => ({
                     ? 'check'
                     : 'clock'
               "
-              :size="15"
+              :size="16"
               class="mt-px shrink-0"
             />
             <span>

@@ -138,7 +138,7 @@ onKeyStroke("Escape", () => (sheetOpen.value = false));
             class="relative grid h-7 w-12 place-items-center rounded-pill transition-colors"
             :class="isActive(item) ? 'bg-brand-50' : ''"
           >
-            <UiIcon :name="item.icon" :size="21" />
+            <UiIcon :name="item.icon" :size="20" />
             <span
               v-if="item.badge"
               class="tabular absolute -right-0.5 -top-1 grid min-w-4 place-items-center rounded-pill bg-danger-500 px-1 text-[11px] font-bold leading-4 text-white ring-2 ring-white"
@@ -166,7 +166,7 @@ onKeyStroke("Escape", () => (sheetOpen.value = false));
             class="relative grid h-7 w-12 place-items-center rounded-pill transition-colors"
             :class="extraActive ? 'bg-brand-50' : ''"
           >
-            <UiIcon name="dots" :size="21" />
+            <UiIcon name="dots" :size="20" />
             <span
               v-if="extraBadge"
               class="tabular absolute -right-0.5 -top-1 grid min-w-4 place-items-center rounded-pill bg-danger-500 px-1 text-[11px] font-bold leading-4 text-white ring-2 ring-white"
@@ -223,7 +223,7 @@ onKeyStroke("Escape", () => (sheetOpen.value = false));
                 :aria-label="t('common.close')"
                 @click="sheetOpen = false"
               >
-                <UiIcon name="x" :size="19" />
+                <UiIcon name="x" :size="20" />
               </button>
             </header>
 
@@ -249,7 +249,7 @@ onKeyStroke("Escape", () => (sheetOpen.value = false));
                           : 'bg-ink-100 text-ink-600'
                       "
                     >
-                      <UiIcon :name="item.icon" :size="19" />
+                      <UiIcon :name="item.icon" :size="20" />
                     </span>
                     <span class="min-w-0 flex-1 truncate">{{
                       navLabel(item)

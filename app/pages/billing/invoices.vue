@@ -771,7 +771,7 @@ const tariffTotal = TARIFF_LINES.reduce((s, t) => s + t.sum, 0);
               @click="status = p.status"
             >
               <span
-                class="grid size-10 shrink-0 place-items-center rounded-[10px]"
+                class="grid size-10 shrink-0 place-items-center rounded-field"
                 :class="{
                   'bg-ok-50 text-ok-600': p.tone === 'ok',
                   'bg-warn-50 text-warn-600': p.tone === 'warn',
@@ -999,7 +999,7 @@ const tariffTotal = TARIFF_LINES.reduce((s, t) => s + t.sum, 0);
               class="flex items-start gap-4 py-3"
             >
               <span
-                class="grid size-9 shrink-0 place-items-center rounded-[10px]"
+                class="grid size-9 shrink-0 place-items-center rounded-field"
                 :class="
                   p.kind === 'payment'
                     ? 'bg-ok-50 text-ok-600'
@@ -1008,7 +1008,7 @@ const tariffTotal = TARIFF_LINES.reduce((s, t) => s + t.sum, 0);
               >
                 <UiIcon
                   :name="p.kind === 'payment' ? 'check' : 'refresh'"
-                  :size="17"
+                  :size="16"
                 />
               </span>
               <span class="min-w-0 flex-1">

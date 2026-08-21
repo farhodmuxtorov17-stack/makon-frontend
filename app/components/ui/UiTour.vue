@@ -465,7 +465,7 @@ defineExpose({ start });
           >
             <div v-if="step?.after" class="flex gap-2.5">
               <dt class="mt-0.5 shrink-0 text-ok-600">
-                <UiIcon name="check" :size="15" />
+                <UiIcon name="check" :size="16" />
               </dt>
               <dd class="text-[12px] leading-relaxed text-ink-600">
                 <span class="font-semibold text-ink-800">{{
@@ -476,7 +476,7 @@ defineExpose({ start });
             </div>
             <div v-if="step?.next" class="flex gap-2.5">
               <dt class="mt-0.5 shrink-0 text-brand-600">
-                <UiIcon name="arrowRight" :size="15" />
+                <UiIcon name="arrowRight" :size="16" />
               </dt>
               <dd class="text-[12px] leading-relaxed text-ink-600">
                 <span class="font-semibold text-ink-800">{{

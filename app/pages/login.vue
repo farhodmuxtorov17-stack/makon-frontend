@@ -372,7 +372,7 @@ function submit() {
                   </label>
                   <button
                     type="button"
-                    class="-my-3.5 inline-flex min-h-[44px] items-center rounded-[6px] py-3.5 text-[13px] font-semibold text-brand-600 transition-colors hover:text-brand-700"
+                    class="-my-3.5 inline-flex min-h-[44px] items-center rounded-[8px] py-3.5 text-[13px] font-semibold text-brand-600 transition-colors hover:text-brand-700"
                     @click="resetOpen = true"
                   >
                     {{ t('login.forgotPassword') }}
@@ -527,7 +527,7 @@ function submit() {
                     stroke-linecap="round"
                   />
                 </svg>
-                <UiIcon v-else name="key" :size="17" />
+                <UiIcon v-else name="key" :size="16" />
                 {{ reading ? t('login.scanReading') : scanned ? t('login.scanAgain') : t('login.scan') }}
               </UiButton>
 
@@ -725,7 +725,7 @@ function submit() {
                 v-else
                 class="flex items-start gap-2 rounded-field bg-surface-sunken p-3.5 text-[13px] leading-relaxed text-ink-600 ring-1 ring-inset ring-ink-200"
               >
-                <UiIcon name="info" :size="15" class="mt-px shrink-0 text-ink-400" />
+                <UiIcon name="info" :size="16" class="mt-px shrink-0 text-ink-400" />
                 {{ t('login.certHint') }}
               </p>
             </div>
@@ -774,7 +774,7 @@ function submit() {
             class="flex items-center gap-3"
           >
             <span
-              class="grid size-9 shrink-0 place-items-center rounded-[10px] bg-white/15 text-white"
+              class="grid size-9 shrink-0 place-items-center rounded-field bg-white/15 text-white"
             >
               <UiIcon :name="f.icon" :size="18" />
             </span>
@@ -818,9 +818,9 @@ function submit() {
         class="mt-5 flex items-center gap-3.5 rounded-field bg-surface-sunken p-3.5 ring-1 ring-inset ring-ink-200"
       >
         <span
-          class="grid size-10 shrink-0 place-items-center rounded-[10px] bg-brand-50 text-brand-600"
+          class="grid size-10 shrink-0 place-items-center rounded-field bg-brand-50 text-brand-600"
         >
-          <UiIcon name="help" :size="19" />
+          <UiIcon name="help" :size="20" />
         </span>
         <span class="min-w-0 flex-1">
           <span class="block text-[13px] font-semibold text-ink-900">

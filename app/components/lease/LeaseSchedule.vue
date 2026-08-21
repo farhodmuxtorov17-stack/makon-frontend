@@ -137,7 +137,7 @@ const STATUS_CLASS: Record<string, string> = {
       class="mt-3 inline-flex min-h-10 items-center gap-1.5 rounded-field px-3 text-[13px] font-semibold text-brand-600 transition-colors duration-150 hover:bg-brand-50"
       @click="expanded = !expanded"
     >
-      <UiIcon :name="expanded ? 'chevronDown' : 'chevronRight'" :size="15" />
+      <UiIcon :name="expanded ? 'chevronDown' : 'chevronRight'" :size="16" />
       {{ expanded ? t('ui.collapse') : t('ui.showMorePeriods', { count: hidden }) }}
     </button>
   </div>

@@ -416,7 +416,7 @@ const tourId = computed(() => `cabinet:${auth.role ?? 'guest'}`)
       v-if="createdCode"
       class="flex items-center gap-3 rounded-card bg-ok-50 px-5 py-3.5 ring-1 ring-ok-100"
     >
-      <span class="grid size-9 shrink-0 place-items-center rounded-[10px] bg-ok-500 text-white">
+      <span class="grid size-9 shrink-0 place-items-center rounded-field bg-ok-500 text-white">
         <UiIcon name="check" :size="18" />
       </span>
       <p class="min-w-0 flex-1 text-[14px] text-ok-700">
@@ -448,7 +448,7 @@ const tourId = computed(() => `cabinet:${auth.role ?? 'guest'}`)
           <template #actions>
             <UiButton variant="ghost" size="sm" to="/cabinet/units">
               {{ t('common.all') }}
-              <UiIcon name="chevronRight" :size="15" />
+              <UiIcon name="chevronRight" :size="16" />
             </UiButton>
           </template>
 
@@ -544,7 +544,7 @@ const tourId = computed(() => `cabinet:${auth.role ?? 'guest'}`)
 
               <UiButton variant="secondary" size="sm" class="mt-3.5" block to="/cabinet/units">
                 {{ t('cab.unitDetails') }}
-                <UiIcon name="chevronRight" :size="15" />
+                <UiIcon name="chevronRight" :size="16" />
               </UiButton>
             </div>
           </div>
@@ -559,7 +559,7 @@ const tourId = computed(() => `cabinet:${auth.role ?? 'guest'}`)
           <template #actions>
             <UiButton variant="ghost" size="sm" to="/cabinet/invoices">
               {{ t('common.viewAll') }}
-              <UiIcon name="chevronRight" :size="15" />
+              <UiIcon name="chevronRight" :size="16" />
             </UiButton>
           </template>
 
@@ -568,7 +568,7 @@ const tourId = computed(() => `cabinet:${auth.role ?? 'guest'}`)
               v-if="overdueCount === 0"
               class="flex items-center gap-3 rounded-field bg-ok-50 px-4 py-3 ring-1 ring-ok-100"
             >
-              <span class="grid size-9 shrink-0 place-items-center rounded-[10px] bg-ok-500 text-white">
+              <span class="grid size-9 shrink-0 place-items-center rounded-field bg-ok-500 text-white">
                 <UiIcon name="check" :size="18" />
               </span>
               <p class="min-w-0 flex-1 text-[13px] font-semibold text-ok-700">
@@ -586,7 +586,7 @@ const tourId = computed(() => `cabinet:${auth.role ?? 'guest'}`)
               v-else
               class="flex items-center gap-3 rounded-field bg-danger-50 px-4 py-3 ring-1 ring-danger-100"
             >
-              <span class="grid size-9 shrink-0 place-items-center rounded-[10px] bg-danger-500 text-white">
+              <span class="grid size-9 shrink-0 place-items-center rounded-field bg-danger-500 text-white">
                 <UiIcon name="warning" :size="18" />
               </span>
               <p class="min-w-0 flex-1 text-[13px] font-semibold text-danger-700">
@@ -707,7 +707,7 @@ const tourId = computed(() => `cabinet:${auth.role ?? 'guest'}`)
                 class="flex w-full items-center gap-3.5 px-5 py-3.5 text-left transition-colors hover:bg-brand-50/50"
                 @click="openRequest(r)"
               >
-                <span class="grid size-10 shrink-0 place-items-center rounded-[10px] bg-brand-50 text-brand-600">
+                <span class="grid size-10 shrink-0 place-items-center rounded-field bg-brand-50 text-brand-600">
                   <UiIcon :name="CATEGORY_ICON[r.category] ?? 'wrench'" :size="18" />
                 </span>
                 <span class="min-w-0 flex-1">
@@ -729,7 +729,7 @@ const tourId = computed(() => `cabinet:${auth.role ?? 'guest'}`)
 
           <div class="flex flex-wrap gap-3 p-5 pt-4">
             <UiButton class="min-w-[196px] flex-1" @click="newRequestOpen = true">
-              <UiIcon name="plus" :size="17" />
+              <UiIcon name="plus" :size="16" />
               {{ t('cab.newServiceRequest') }}
             </UiButton>
             <button
@@ -754,13 +754,13 @@ const tourId = computed(() => `cabinet:${auth.role ?? 'guest'}`)
           <template #actions>
             <UiButton variant="ghost" size="sm" to="/cabinet/documents">
               {{ t('common.all') }}
-              <UiIcon name="chevronRight" :size="15" />
+              <UiIcon name="chevronRight" :size="16" />
             </UiButton>
           </template>
 
           <ul class="divide-y divide-ink-100">
             <li v-for="d in documents" :key="d.id" class="flex items-center gap-3.5 px-5 py-3.5">
-              <span class="grid size-10 shrink-0 place-items-center rounded-[10px] bg-danger-50 text-danger-600">
+              <span class="grid size-10 shrink-0 place-items-center rounded-field bg-danger-50 text-danger-600">
                 <UiIcon name="doc" :size="18" />
               </span>
               <span class="min-w-0 flex-1">
@@ -792,7 +792,7 @@ const tourId = computed(() => `cabinet:${auth.role ?? 'guest'}`)
           <template #actions>
             <UiButton variant="ghost" size="sm" to="/cabinet/meters">
               {{ t('common.all') }}
-              <UiIcon name="chevronRight" :size="15" />
+              <UiIcon name="chevronRight" :size="16" />
             </UiButton>
           </template>
 
@@ -803,7 +803,7 @@ const tourId = computed(() => `cabinet:${auth.role ?? 'guest'}`)
               to="/cabinet/meters"
               class="flex items-center gap-3.5 rounded-field p-3.5 ring-1 ring-ink-200 transition-all hover:shadow-card hover:ring-brand-300"
             >
-              <span class="grid size-10 shrink-0 place-items-center rounded-[10px]" :class="METER_TONE[m.tone]">
+              <span class="grid size-10 shrink-0 place-items-center rounded-field" :class="METER_TONE[m.tone]">
                 <UiIcon :name="m.icon" :size="18" />
               </span>
               <span class="min-w-0 flex-1">
@@ -896,7 +896,7 @@ const tourId = computed(() => `cabinet:${auth.role ?? 'guest'}`)
             :key="a"
             class="inline-flex items-center gap-1.5 rounded-pill bg-ink-100 px-2.5 py-1 text-[12px] font-medium text-ink-700"
           >
-            <UiIcon name="image" :size="13" />
+            <UiIcon name="image" :size="14" />
             {{ a }}
           </li>
         </ul>
@@ -916,7 +916,7 @@ const tourId = computed(() => `cabinet:${auth.role ?? 'guest'}`)
         v-if="canDecideRequest"
         class="flex items-start gap-2 rounded-field bg-info-50 px-3.5 py-2.5 text-[13px] leading-snug text-info-700"
       >
-        <UiIcon name="info" :size="15" class="mt-px shrink-0" />
+        <UiIcon name="info" :size="16" class="mt-px shrink-0" />
         <span class="min-w-0">{{ t('cab.confirmWorkHint') }}</span>
       </p>
     </div>

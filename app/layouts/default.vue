@@ -35,7 +35,7 @@ function goBack() {
           :aria-label="t('common.backAria')"
           @click="goBack"
         >
-          <UiIcon name="chevronLeft" :size="21" />
+          <UiIcon name="chevronLeft" :size="20" />
         </button>
 
         <NuxtLink :to="home" class="flex h-11 min-w-0 items-center rounded-lg px-2">

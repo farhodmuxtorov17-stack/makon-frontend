@@ -165,11 +165,11 @@ watch(() => route.fullPath, hideHint)
                 :aria-expanded="groupOpen(item)"
                 @click="toggleGroup(item.to)"
               >
-                <UiIcon :name="item.icon" :size="19" />
+                <UiIcon :name="item.icon" :size="20" />
                 <span class="flex-1 truncate">{{ navLabel(item) }}</span>
                 <UiIcon
                   name="chevronDown"
-                  :size="15"
+                  :size="16"
                   class="transition-transform"
                   :class="groupOpen(item) ? '' : '-rotate-90'"
                 />
@@ -243,7 +243,7 @@ watch(() => route.fullPath, hideHint)
         @focusin="showHint(HELP_HINT, $event)"
         @focusout="hideHint"
       >
-        <UiIcon name="headset" :size="21" />
+        <UiIcon name="headset" :size="20" />
       </NuxtLink>
 
       <NuxtLink
@@ -263,7 +263,7 @@ watch(() => route.fullPath, hideHint)
         <span
           class="grid size-11 shrink-0 place-items-center rounded-field bg-brand-500 text-white shadow-brand"
         >
-          <UiIcon name="headset" :size="22" />
+          <UiIcon name="headset" :size="20" />
         </span>
       </NuxtLink>
     </div>

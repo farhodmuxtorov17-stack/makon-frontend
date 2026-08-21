@@ -473,17 +473,17 @@ const STEPS = [
                 class="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t border-ink-100 pt-4 text-[13px] text-ink-600"
               >
                 <span class="inline-flex items-center gap-1.5">
-                  <UiIcon name="layers" :size="15" class="text-ink-400" />
+                  <UiIcon name="layers" :size="16" class="text-ink-400" />
                   <span class="tabular">{{ area(l.unit.area) }}</span>
                 </span>
                 <span class="inline-flex items-center gap-1.5">
-                  <UiIcon name="building" :size="15" class="text-ink-400" />
+                  <UiIcon name="building" :size="16" class="text-ink-400" />
                   <span class="tabular">{{
                     t("landing.floorNo", { floor: l.unit.floor })
                   }}</span>
                 </span>
                 <span class="inline-flex items-center gap-1.5">
-                  <UiIcon name="cube" :size="15" class="text-ink-400" />
+                  <UiIcon name="cube" :size="16" class="text-ink-400" />
                   {{ unitUsageLabel(l.unit.usage) }}
                 </span>
               </div>
@@ -545,7 +545,7 @@ const STEPS = [
             <span
               class="grid size-12 place-items-center rounded-full bg-white text-brand-600 shadow-card ring-1 ring-ink-200 transition-colors duration-150 group-hover:ring-brand-300"
             >
-              <UiIcon name="map" :size="22" />
+              <UiIcon name="map" :size="20" />
             </span>
             <span class="text-[16px] font-bold text-ink-900">{{
               t("landing.mapOpen")

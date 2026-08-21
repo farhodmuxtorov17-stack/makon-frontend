@@ -473,7 +473,7 @@ const channels = computed(() => [
               @click="select(n)"
             >
               <span
-                class="grid size-10 shrink-0 place-items-center rounded-[10px]"
+                class="grid size-10 shrink-0 place-items-center rounded-field"
                 :class="CATEGORY_TONE[n.category]"
               >
                 <UiIcon :name="n.icon" :size="18" />
@@ -552,7 +552,7 @@ const channels = computed(() => [
               class="grid size-12 shrink-0 place-items-center rounded-field"
               :class="CATEGORY_TONE[selected.category]"
             >
-              <UiIcon :name="selected.icon" :size="22" />
+              <UiIcon :name="selected.icon" :size="20" />
             </span>
             <div class="min-w-0 flex-1">
               <h3 class="text-[16px] font-bold text-ink-900">

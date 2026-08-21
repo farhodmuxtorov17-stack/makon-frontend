@@ -379,7 +379,7 @@ const summary = computed(() => {
             class="flex items-center justify-between gap-3 text-[12px] text-white"
           >
             <span class="flex min-w-0 items-center gap-1.5">
-              <span class="size-2 shrink-0 rounded-[2px]" :style="{ background: base(s.tone) }" />
+              <span class="size-2 shrink-0 rounded-[4px]" :style="{ background: base(s.tone) }" />
               <span class="truncate">{{ s.label }}</span>
             </span>
             <span class="tabular shrink-0 font-semibold">{{ fmt(s.values[active] ?? 0) }}</span>
@@ -398,7 +398,7 @@ const summary = computed(() => {
     <ul class="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2">
       <li v-for="s in series" :key="s.label" class="flex items-center gap-2 text-[13px]">
         <span
-          class="size-2.5 rounded-[3px]"
+          class="size-2.5 rounded-[4px]"
           :style="{
             backgroundImage: `linear-gradient(180deg, ${tint(base(s.tone), 0.3)}, ${base(s.tone)})`,
           }"

@@ -312,7 +312,7 @@ function resetFilters() {
         >
           <span class="flex items-center gap-2.5">
             <span
-              class="grid size-9 shrink-0 place-items-center rounded-[9px] bg-brand-50 text-brand-600"
+              class="grid size-9 shrink-0 place-items-center rounded-field bg-brand-50 text-brand-600"
             >
               <UiIcon name="building" :size="18" />
             </span>
@@ -371,7 +371,7 @@ function resetFilters() {
           class="min-w-[200px] flex-1"
         >
           <template #prefix>
-            <UiIcon name="search" :size="17" />
+            <UiIcon name="search" :size="16" />
           </template>
         </UiInput>
 
@@ -387,7 +387,7 @@ function resetFilters() {
         />
 
         <UiButton variant="ghost" :disabled="!dirty" @click="resetFilters">
-          <UiIcon name="refresh" :size="15" />
+          <UiIcon name="refresh" :size="16" />
           {{ t("common.reset") }}
         </UiButton>
       </div>
@@ -416,7 +416,7 @@ function resetFilters() {
           <span
             class="flex items-center gap-2 text-[13px] font-semibold text-ink-900"
           >
-            <UiIcon name="layers" :size="15" class="text-ink-400" />
+            <UiIcon name="layers" :size="16" class="text-ink-400" />
             {{ row.floorName }}
           </span>
         </template>
@@ -439,7 +439,7 @@ function resetFilters() {
                 : 'bg-warn-50 text-warn-700 ring-warn-100'
             "
           >
-            <UiIcon :name="row.planDone ? 'check' : 'clock'" :size="13" />
+            <UiIcon :name="row.planDone ? 'check' : 'clock'" :size="14" />
             {{ row.planDone ? t("kpi.planDrawn") : t("kpi.planPending") }}
           </span>
         </template>
@@ -454,7 +454,7 @@ function resetFilters() {
                   : 'bg-danger-50 text-danger-700 ring-danger-100'
               "
             >
-              <UiIcon :name="row.attrsDone ? 'check' : 'warning'" :size="13" />
+              <UiIcon :name="row.attrsDone ? 'check' : 'warning'" :size="14" />
               {{ row.attrsDone ? t("tab.complete") : t("tab.incomplete") }}
             </span>
             <span v-if="row.units" class="tabular text-[12px] text-ink-500">
@@ -486,7 +486,7 @@ function resetFilters() {
           {{ t("cnt.planPendingSuffix") }}
         </p>
         <UiButton variant="secondary" size="sm" to="/content/floors">
-          <UiIcon name="edit" :size="15" />
+          <UiIcon name="edit" :size="16" />
           {{ t("cnt.openEditor") }}
         </UiButton>
       </div>

@@ -469,7 +469,7 @@ function submitCreate() {
         v-else
         class="inline-flex items-center gap-2 rounded-pill bg-ink-100 px-3 py-1.5 text-[12px] font-semibold text-ink-600"
       >
-        <UiIcon name="eye" :size="15" />
+        <UiIcon name="eye" :size="16" />
         {{ t("common.readOnly") }}
       </span>
     </template>
@@ -488,7 +488,7 @@ function submitCreate() {
         :aria-label="t('common.dismissNotice')"
         @click="notice = ''"
       >
-        <UiIcon name="x" :size="15" />
+        <UiIcon name="x" :size="16" />
       </button>
     </div>
 
@@ -525,7 +525,7 @@ function submitCreate() {
           class="min-w-[200px] flex-1"
         >
           <template #prefix>
-            <UiIcon name="search" :size="17" />
+            <UiIcon name="search" :size="16" />
           </template>
         </UiInput>
 
@@ -600,7 +600,7 @@ function submitCreate() {
           :disabled="!activeFilters"
           @click="resetFilters"
         >
-          <UiIcon name="refresh" :size="15" />
+          <UiIcon name="refresh" :size="16" />
           {{ t("filter.reset") }}
         </UiButton>
         <span v-if="activeFilters" class="text-[12px] text-ink-500">
@@ -628,7 +628,7 @@ function submitCreate() {
               :name="String(row.photo)"
               :alt="String(row.name)"
               ratio="aspect-square"
-              rounded="rounded-[9px]"
+              rounded="rounded-field"
               sizes="56px"
               class="size-11 shrink-0"
             />
@@ -782,7 +782,7 @@ function submitCreate() {
         >
           <div class="flex items-center gap-2.5">
             <span
-              class="grid size-9 place-items-center rounded-[9px] bg-brand-50 text-brand-600"
+              class="grid size-9 place-items-center rounded-field bg-brand-50 text-brand-600"
             >
               <UiIcon :name="step.icon" :size="18" />
             </span>
@@ -821,7 +821,7 @@ function submitCreate() {
           @click="exportFormat = f.value"
         >
           <span
-            class="grid size-10 shrink-0 place-items-center rounded-[10px]"
+            class="grid size-10 shrink-0 place-items-center rounded-field"
             :class="
               exportFormat === f.value
                 ? 'bg-brand-500 text-white'

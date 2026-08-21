@@ -99,7 +99,7 @@ async function copyHash() {
           :aria-label="t('ui.removeUploaded')"
           @click="emit('remove')"
         >
-          <UiIcon name="trash" :size="17" />
+          <UiIcon name="trash" :size="16" />
         </button>
       </div>
 
@@ -107,7 +107,7 @@ async function copyHash() {
         <span class="text-[12px] font-semibold uppercase tracking-wide text-ink-500">
           {{ t('ui.fileSha256') }}
         </span>
-        <code class="tabular min-w-0 truncate rounded-[6px] bg-white px-2 py-1 text-[12px] text-ink-700">
+        <code class="tabular min-w-0 truncate rounded-[8px] bg-white px-2 py-1 text-[12px] text-ink-700">
           {{ document.hash.slice(0, 24) }}…{{ document.hash.slice(-8) }}
         </code>
         <button
@@ -165,7 +165,7 @@ async function copyHash() {
         class="mt-2.5 flex items-start gap-2 rounded-field bg-danger-50 px-3.5 py-2.5 text-[13px] leading-relaxed text-danger-700 ring-1 ring-inset ring-danger-100"
         role="alert"
       >
-        <UiIcon name="warning" :size="15" class="mt-px shrink-0" />
+        <UiIcon name="warning" :size="16" class="mt-px shrink-0" />
         {{ error }}
       </p>
     </div>

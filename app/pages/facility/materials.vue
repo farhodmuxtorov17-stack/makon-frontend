@@ -461,7 +461,7 @@ function submitRequest() {
         :to="`/service-requests/${detailOrder.id}`"
       >
         {{ t("wo.orderCard") }}
-        <UiIcon name="chevronRight" :size="15" />
+        <UiIcon name="chevronRight" :size="16" />
       </UiButton>
       <template v-if="canDecide && detail?.status === 'SUBMITTED'">
         <UiButton variant="secondary" @click="decide('REJECTED')">

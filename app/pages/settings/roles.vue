@@ -257,15 +257,15 @@ function capabilitiesOf(role: Role) {
       v-if="flash"
       class="flex items-start gap-2.5 rounded-card bg-ok-50 px-4 py-3 text-[13px] text-ok-700 ring-1 ring-ok-100"
     >
-      <UiIcon name="check" :size="17" class="mt-0.5 shrink-0" />
+      <UiIcon name="check" :size="16" class="mt-0.5 shrink-0" />
       <span class="min-w-0 flex-1">{{ flash }}</span>
       <button
         type="button"
-        class="shrink-0 rounded-[6px] p-1 transition-colors hover:bg-ok-100"
+        class="shrink-0 rounded-[8px] p-1 transition-colors hover:bg-ok-100"
         :aria-label="t('common.dismiss')"
         @click="flash = ''"
       >
-        <UiIcon name="x" :size="15" />
+        <UiIcon name="x" :size="16" />
       </button>
     </div>
 
@@ -273,7 +273,7 @@ function capabilitiesOf(role: Role) {
       v-if="dirty"
       class="flex flex-wrap items-center gap-3 rounded-card bg-warn-50 px-4 py-3 text-[13px] text-warn-700 ring-1 ring-warn-100"
     >
-      <UiIcon name="warning" :size="17" class="shrink-0" />
+      <UiIcon name="warning" :size="16" class="shrink-0" />
       <span class="min-w-0 flex-1">{{ t('cfg.matrixDirty', { n: changes.length }) }}</span>
       <UiButton size="sm" @click="saveOpen = true">{{ t('common.saveChanges') }}</UiButton>
     </div>
@@ -508,7 +508,7 @@ function capabilitiesOf(role: Role) {
                 class="inline-flex items-center gap-1 font-semibold text-brand-600 hover:text-brand-700"
               >
                 {{ ROLE_META[role].home }}
-                <UiIcon name="external" :size="13" />
+                <UiIcon name="external" :size="14" />
               </NuxtLink>
             </dd>
           </div>
@@ -523,7 +523,7 @@ function capabilitiesOf(role: Role) {
         <div
           class="mt-3.5 flex items-start gap-2 rounded-field bg-warn-50 px-3 py-2.5 text-[13px] leading-relaxed text-warn-700 ring-1 ring-inset ring-warn-100"
         >
-          <UiIcon name="lock" :size="15" class="mt-0.5 shrink-0" />
+          <UiIcon name="lock" :size="16" class="mt-0.5 shrink-0" />
           <span class="min-w-0">
             <b class="font-semibold">{{ t('cfg.limitation') }}</b> {{ roleLimitation(role) }}
           </span>
@@ -585,7 +585,7 @@ function capabilitiesOf(role: Role) {
           >
             {{ LEVEL_META[c.from].label }}
           </span>
-          <UiIcon name="arrowRight" :size="15" class="text-ink-400" />
+          <UiIcon name="arrowRight" :size="16" class="text-ink-400" />
           <span
             class="inline-flex items-center rounded-pill px-2.5 py-1 text-[12px] font-semibold ring-1 ring-inset"
             :class="LEVEL_META[c.to].badge"

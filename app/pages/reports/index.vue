@@ -761,7 +761,7 @@ function confirmExport() {
                 class="mb-1 flex w-full items-center gap-2 rounded-[8px] px-2.5 py-2 text-[13px] font-semibold text-brand-600 transition-colors hover:bg-brand-50"
                 @click="toggleAllBuildings"
               >
-                <UiIcon name="check" :size="15" />
+                <UiIcon name="check" :size="16" />
                 {{
                   draftBuildings.length === scopedBuildings.length
                     ? t("usr.repUnselectAll")
@@ -812,7 +812,7 @@ function confirmExport() {
         v-if="filterChanged"
         class="mt-3 flex items-center gap-2 text-[13px] font-medium text-warn-700"
       >
-        <UiIcon name="info" :size="15" />
+        <UiIcon name="info" :size="16" />
         {{ t("usr.repFiltersChanged", { action: t("common.applyFilters") }) }}
       </p>
     </UiCard>
@@ -957,7 +957,7 @@ function confirmExport() {
           size="sm"
           @click="openExport(t('usr.repByObjects'), 'CSV')"
         >
-          <UiIcon name="download" :size="15" />
+          <UiIcon name="download" :size="16" />
           CSV
         </UiButton>
       </template>
@@ -1141,7 +1141,7 @@ function confirmExport() {
           class="flex items-center gap-4 px-5 py-3.5"
         >
           <span
-            class="grid size-10 shrink-0 place-items-center rounded-[10px] bg-brand-50 text-brand-600"
+            class="grid size-10 shrink-0 place-items-center rounded-field bg-brand-50 text-brand-600"
           >
             <UiIcon :name="r.icon" :size="18" />
           </span>
@@ -1216,7 +1216,7 @@ function confirmExport() {
             "
             @click="exportFormat = f"
           >
-            <UiIcon :name="exportFormat === f ? 'check' : 'doc'" :size="15" />
+            <UiIcon :name="exportFormat === f ? 'check' : 'doc'" :size="16" />
             {{ f }}
           </button>
         </div>

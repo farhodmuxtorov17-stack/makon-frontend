@@ -180,7 +180,7 @@ function activate(row: T) {
           :disabled="page === 1"
           @click="page -= 1"
         >
-          <UiIcon name="chevronLeft" :size="15" />
+          <UiIcon name="chevronLeft" :size="16" />
           {{ t("common.previous") }}
         </UiButton>
         <span class="tabular text-[12px] font-semibold text-ink-700">
@@ -193,7 +193,7 @@ function activate(row: T) {
           @click="page += 1"
         >
           {{ t("common.next") }}
-          <UiIcon name="chevronRight" :size="15" />
+          <UiIcon name="chevronRight" :size="16" />
         </UiButton>
       </div>
     </div>

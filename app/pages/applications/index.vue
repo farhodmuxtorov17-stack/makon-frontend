@@ -174,7 +174,7 @@ const tourId = computed(() => `applications:${auth.role ?? 'guest'}`)
       v-if="!canDecide"
       class="flex items-start gap-3 rounded-card bg-ink-50 px-4 py-3 text-[13px] leading-relaxed text-ink-600 ring-1 ring-inset ring-ink-200"
     >
-      <UiIcon name="eye" :size="17" class="mt-0.5 shrink-0 text-ink-500" />
+      <UiIcon name="eye" :size="16" class="mt-0.5 shrink-0 text-ink-500" />
       <span>{{ t('app2.watchNotice') }}</span>
     </p>
 
@@ -187,7 +187,7 @@ const tourId = computed(() => `applications:${auth.role ?? 'guest'}`)
           :placeholder="t('app2.searchPlaceholder')"
           class="w-full sm:w-64"
         >
-          <template #prefix><UiIcon name="search" :size="17" /></template>
+          <template #prefix><UiIcon name="search" :size="16" /></template>
         </UiInput>
         <UiSelect
           v-model="buildingFilter"
@@ -230,7 +230,7 @@ const tourId = computed(() => `applications:${auth.role ?? 'guest'}`)
             <div class="flex flex-wrap items-center gap-2">
               <NuxtLink
                 :to="`/applications/${c.id}`"
-                class="rounded-[6px] text-[16px] font-bold text-ink-900 transition-colors hover:text-brand-600"
+                class="rounded-[8px] text-[16px] font-bold text-ink-900 transition-colors hover:text-brand-600"
               >
                 {{ c.code }}
               </NuxtLink>
@@ -302,7 +302,7 @@ const tourId = computed(() => `applications:${auth.role ?? 'guest'}`)
             size="sm"
             :to="`/applications/${c.id}`"
           >
-            <UiIcon :name="isMine(c) ? 'arrowRight' : 'eye'" :size="15" />
+            <UiIcon :name="isMine(c) ? 'arrowRight' : 'eye'" :size="16" />
             {{ isMine(c) ? t('app2.review') : t('common.view') }}
           </UiButton>
         </div>

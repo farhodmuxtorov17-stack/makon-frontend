@@ -415,14 +415,14 @@ const agingTotal = computed(() => aging.value.reduce((s, a) => s + a.amount, 0))
           >
             <template #cell-pick="{ row }">
               <span
-                class="grid size-5 place-items-center rounded-[6px] ring-1 transition-colors"
+                class="grid size-5 place-items-center rounded-[8px] ring-1 transition-colors"
                 :class="
                   selectedId === row.id
                     ? 'bg-brand-500 text-white ring-brand-500'
                     : 'bg-white text-transparent ring-ink-300'
                 "
               >
-                <UiIcon name="check" :size="13" />
+                <UiIcon name="check" :size="14" />
               </span>
             </template>
             <template #cell-code="{ row }">
@@ -462,8 +462,8 @@ const agingTotal = computed(() => aging.value.reduce((s, a) => s + a.amount, 0))
         >
           <ul class="divide-y divide-ink-100 border-t border-ink-100">
             <li v-for="r in returned" :key="r.id" class="flex flex-wrap items-center gap-3 px-5 py-3.5">
-              <span class="grid size-9 shrink-0 place-items-center rounded-[10px] bg-ink-100 text-ink-600">
-                <UiIcon name="doc" :size="17" />
+              <span class="grid size-9 shrink-0 place-items-center rounded-field bg-ink-100 text-ink-600">
+                <UiIcon name="doc" :size="16" />
               </span>
               <span class="min-w-0 flex-1">
                 <span class="block truncate text-[13px] font-semibold text-ink-900">
@@ -475,7 +475,7 @@ const agingTotal = computed(() => aging.value.reduce((s, a) => s + a.amount, 0))
               </span>
               <UiStatus kind="invoice" :value="r.status" size="sm" />
               <UiButton v-if="canConfirm" variant="secondary" size="sm" @click="reissue(r.id)">
-                <UiIcon name="refresh" :size="15" />
+                <UiIcon name="refresh" :size="16" />
                 {{ t('bil.backToQueue') }}
               </UiButton>
             </li>
@@ -520,7 +520,7 @@ const agingTotal = computed(() => aging.value.reduce((s, a) => s + a.amount, 0))
         <UiCard :title="t('bil.confirmPayment')" :subtitle="t('bil.confirmPaymentCaption')">
           <div v-if="!selected" class="py-10 text-center">
             <span class="mx-auto grid size-12 place-items-center rounded-full bg-ink-100 text-ink-400">
-              <UiIcon name="wallet" :size="22" />
+              <UiIcon name="wallet" :size="20" />
             </span>
             <p class="mt-3 text-[14px] font-semibold text-ink-800">
               {{ t('bil.noPaymentSelected') }}
@@ -655,10 +655,10 @@ const agingTotal = computed(() => aging.value.reduce((s, a) => s + a.amount, 0))
           <ul v-else class="divide-y divide-ink-100 border-t border-ink-100">
             <li v-for="p in payments.slice(0, 8)" :key="p.id" class="flex items-start gap-3 px-5 py-3">
               <span
-                class="grid size-9 shrink-0 place-items-center rounded-[10px]"
+                class="grid size-9 shrink-0 place-items-center rounded-field"
                 :class="p.kind === 'payment' ? 'bg-ok-50 text-ok-600' : 'bg-danger-50 text-danger-600'"
               >
-                <UiIcon :name="p.kind === 'payment' ? 'check' : 'refresh'" :size="17" />
+                <UiIcon :name="p.kind === 'payment' ? 'check' : 'refresh'" :size="16" />
               </span>
               <span class="min-w-0 flex-1">
                 <span class="block truncate text-[13px] font-semibold text-ink-900">

@@ -704,15 +704,15 @@ function confirmAction() {
       v-if="flash"
       class="flex items-start gap-2.5 rounded-card bg-ok-50 px-4 py-3 text-[13px] text-ok-700 ring-1 ring-ok-100"
     >
-      <UiIcon name="check" :size="17" class="mt-0.5 shrink-0" />
+      <UiIcon name="check" :size="16" class="mt-0.5 shrink-0" />
       <span class="min-w-0 flex-1">{{ flash }}</span>
       <button
         type="button"
-        class="shrink-0 rounded-[6px] p-1 transition-colors hover:bg-ok-100"
+        class="shrink-0 rounded-[8px] p-1 transition-colors hover:bg-ok-100"
         :aria-label="t('common.dismiss')"
         @click="flash = ''"
       >
-        <UiIcon name="x" :size="15" />
+        <UiIcon name="x" :size="16" />
       </button>
     </div>
 
@@ -729,7 +729,7 @@ function confirmAction() {
     >
       <div class="grid gap-3 px-5 pb-4 sm:grid-cols-[minmax(0,1fr)_220px]">
         <UiInput v-model="search" :placeholder="t('cfg.refSearchPlaceholder')">
-          <template #prefix><UiIcon name="search" :size="17" /></template>
+          <template #prefix><UiIcon name="search" :size="16" /></template>
         </UiInput>
         <UiSelect v-model="statusFilter" :options="filterStatusOptions" />
       </div>
@@ -743,7 +743,7 @@ function confirmAction() {
         <template #cell-name="{ row }">
           <span class="flex items-center gap-3">
             <span
-              class="grid size-9 shrink-0 place-items-center rounded-[10px] bg-brand-50 text-brand-600"
+              class="grid size-9 shrink-0 place-items-center rounded-field bg-brand-50 text-brand-600"
             >
               <UiIcon :name="row.icon" :size="18" />
             </span>
@@ -771,7 +771,7 @@ function confirmAction() {
 
         <template #cell-code="{ row }">
           <span
-            class="tabular rounded-[6px] bg-ink-100 px-2 py-1 text-[12px] font-semibold text-ink-700"
+            class="tabular rounded-[8px] bg-ink-100 px-2 py-1 text-[12px] font-semibold text-ink-700"
           >
             {{ row.code }}
           </span>
@@ -833,7 +833,7 @@ function confirmAction() {
             class="inline-flex items-center gap-1.5 rounded-[8px] px-2.5 py-1.5 text-[13px] font-semibold text-brand-600 transition-colors hover:bg-brand-50"
             @click.stop="openPanel(row)"
           >
-            <UiIcon name="edit" :size="15" />
+            <UiIcon name="edit" :size="16" />
             {{ t("common.open") }}
           </button>
         </template>
@@ -915,9 +915,9 @@ function confirmAction() {
             class="flex items-center gap-3.5 px-5 py-3"
           >
             <span
-              class="grid size-9 shrink-0 place-items-center rounded-[10px] bg-brand-50 text-brand-600"
+              class="grid size-9 shrink-0 place-items-center rounded-field bg-brand-50 text-brand-600"
             >
-              <UiIcon :name="a.icon" :size="17" />
+              <UiIcon :name="a.icon" :size="16" />
             </span>
             <span class="min-w-0 flex-1">
               <span
@@ -1113,7 +1113,7 @@ function confirmAction() {
                     size="sm"
                     @click="openRecordForm"
                   >
-                    <UiIcon name="plus" :size="15" />
+                    <UiIcon name="plus" :size="16" />
                     {{ t("common.add") }}
                   </UiButton>
                 </div>
@@ -1133,7 +1133,7 @@ function confirmAction() {
                     class="flex items-center gap-3 px-4 py-2.5"
                   >
                     <span
-                      class="tabular shrink-0 rounded-[6px] bg-ink-100 px-2 py-1 text-[12px] font-semibold text-ink-700"
+                      class="tabular shrink-0 rounded-[8px] bg-ink-100 px-2 py-1 text-[12px] font-semibold text-ink-700"
                     >
                       {{ r.code }}
                     </span>
@@ -1144,7 +1144,7 @@ function confirmAction() {
                     </span>
                     <button
                       type="button"
-                      class="shrink-0 rounded-[6px] p-1.5 text-ink-400 transition-colors hover:bg-danger-50 hover:text-danger-600"
+                      class="shrink-0 rounded-[8px] p-1.5 text-ink-400 transition-colors hover:bg-danger-50 hover:text-danger-600"
                       :aria-label="
                         t('cfg.removeRecordAria', { label: recordLabel(r) })
                       "

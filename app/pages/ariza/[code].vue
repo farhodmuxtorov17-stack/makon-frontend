@@ -115,9 +115,9 @@ const CONTACTS = computed(() => [
       class="flex flex-wrap items-center gap-1.5 text-[13px] text-ink-500"
       :aria-label="t('common.breadcrumb')"
     >
-      <NuxtLink to="/" class="rounded-[6px] hover:text-brand-600">{{ t('nav.cabinet') }}</NuxtLink>
+      <NuxtLink to="/" class="rounded-[8px] hover:text-brand-600">{{ t('nav.cabinet') }}</NuxtLink>
       <span aria-hidden="true">/</span>
-      <NuxtLink to="/ariza" class="rounded-[6px] hover:text-brand-600">
+      <NuxtLink to="/ariza" class="rounded-[8px] hover:text-brand-600">
         {{ t('field.application') }}
       </NuxtLink>
       <span aria-hidden="true">/</span>
@@ -129,10 +129,10 @@ const CONTACTS = computed(() => [
       <UiCard>
         <div class="py-6 text-center">
           <span
-            class="mx-auto grid size-14 place-items-center rounded-[16px] bg-danger-50 text-danger-600"
+            class="mx-auto grid size-14 place-items-center rounded-card bg-danger-50 text-danger-600"
             aria-hidden="true"
           >
-            <UiIcon name="warning" :size="26" />
+            <UiIcon name="warning" :size="24" />
           </span>
           <h1 class="mt-4 font-display text-[22px] font-extrabold text-ink-900">
             {{ t('apply.notFoundTitle') }}
@@ -159,7 +159,7 @@ const CONTACTS = computed(() => [
     <div v-else-if="!opened" class="mx-auto mt-8 max-w-[520px]">
       <UiCard>
         <span
-          class="grid size-12 place-items-center rounded-[14px] bg-brand-50 text-brand-600"
+          class="grid size-12 place-items-center rounded-card bg-brand-50 text-brand-600"
           aria-hidden="true"
         >
           <UiIcon name="lock" :size="24" />
@@ -247,7 +247,7 @@ const CONTACTS = computed(() => [
           v-if="stageHint"
           class="mt-4 flex items-start gap-2 rounded-field bg-surface-sunken px-3.5 py-2.5 text-[13px] leading-relaxed text-ink-700 ring-1 ring-inset ring-ink-200"
         >
-          <UiIcon name="info" :size="15" class="mt-px shrink-0 text-brand-600" />
+          <UiIcon name="info" :size="16" class="mt-px shrink-0 text-brand-600" />
           <span>
             <span class="font-semibold text-ink-900">{{ statusLabel }}.</span>
             {{ stageHint }}
@@ -258,7 +258,7 @@ const CONTACTS = computed(() => [
           v-if="item.status === 'RAD_ETILDI' && item.rejectReason"
           class="mt-3 flex items-start gap-2 rounded-field bg-danger-50 px-3.5 py-2.5 text-[13px] leading-relaxed text-danger-700 ring-1 ring-inset ring-danger-100"
         >
-          <UiIcon name="warning" :size="15" class="mt-px shrink-0" />
+          <UiIcon name="warning" :size="16" class="mt-px shrink-0" />
           {{ t('apply.rejectReasonLabel') }} {{ item.rejectReason }}
         </p>
 
@@ -266,7 +266,7 @@ const CONTACTS = computed(() => [
           v-if="item.contactedAt"
           class="mt-3 flex items-center gap-2 text-[13px] font-medium text-ok-700"
         >
-          <UiIcon name="check" :size="15" class="shrink-0" />
+          <UiIcon name="check" :size="16" class="shrink-0" />
           {{ t('apply.contactedLabel') }} {{ dateShort(item.contactedAt) }}
           {{ timeOf(item.contactedAt) }}
         </p>
@@ -281,7 +281,7 @@ const CONTACTS = computed(() => [
         <p class="text-[13px] leading-relaxed text-ink-700">
           {{ t('apply.cabinetOpenedText') }}
         </p>
-        <dl class="mt-4 rounded-[12px] border border-brand-200 bg-white px-4 py-3">
+        <dl class="mt-4 rounded-card border border-brand-200 bg-white px-4 py-3">
           <div class="flex items-baseline justify-between gap-3">
             <dt class="text-[13px] text-ink-500">{{ field('login') }}</dt>
             <dd class="tabular text-[14px] font-bold text-ink-900">{{ item.access.login }}</dd>
@@ -343,7 +343,7 @@ const CONTACTS = computed(() => [
                 :class="c.href ? 'hover:bg-surface-sunken' : ''"
               >
                 <span
-                  class="grid size-9 shrink-0 place-items-center rounded-[10px] bg-surface-sunken text-brand-600 ring-1 ring-ink-200"
+                  class="grid size-9 shrink-0 place-items-center rounded-field bg-surface-sunken text-brand-600 ring-1 ring-ink-200"
                 >
                   <UiIcon :name="c.icon" :size="16" />
                 </span>
