@@ -152,7 +152,7 @@ const root = computed(() => (props.to ? NuxtLink : 'div'))
           </p>
 
           <span
-            v-if="delta !== undefined"
+            v-if="delta !== undefined && delta !== 0"
             class="mt-2.5 inline-flex items-center gap-1 rounded-pill px-2 py-0.5 text-[12px] font-semibold ring-1 ring-inset"
             :class="
               good

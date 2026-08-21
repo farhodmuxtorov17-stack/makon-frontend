@@ -185,12 +185,6 @@ function pickAttachments() {
   fileInput.value?.click()
 }
 
-/** Ro‘yxatdagi qisqa yo‘l: ariza oynasini ochadi va fayl tanlashni boshlaydi */
-function startRequestWithPhoto() {
-  newRequestOpen.value = true
-  nextTick(() => pickAttachments())
-}
-
 function onFiles(event: Event) {
   const target = event.target as HTMLInputElement
   const picked = Array.from(target.files ?? [])
@@ -649,9 +643,6 @@ const tourId = computed(() => `cabinet:${auth.role ?? 'guest'}`)
                     {{ t('cab.unpaidBalance') }}
                   </span>
                 </div>
-                <p class="mt-2 text-[12px] text-ink-500">
-                  {{ t('cab.overdueInvoicesLine', { n: overdueCount }) }}
-                </p>
               </div>
             </div>
 
@@ -727,27 +718,6 @@ const tourId = computed(() => `cabinet:${auth.role ?? 'guest'}`)
             </li>
           </ul>
 
-          <div class="flex flex-wrap gap-3 p-5 pt-4">
-            <UiButton class="min-w-[196px] flex-1" @click="newRequestOpen = true">
-              <UiIcon name="plus" :size="16" />
-              {{ t('cab.newServiceRequest') }}
-            </UiButton>
-            <button
-              type="button"
-              class="flex h-11 min-w-[168px] flex-1 items-center gap-2.5 rounded-field border border-dashed border-ink-300 px-3.5 text-left transition-colors hover:border-brand-400 hover:bg-brand-50"
-              @click="startRequestWithPhoto"
-            >
-              <UiIcon name="image" :size="18" class="shrink-0 text-ink-400" />
-              <span class="min-w-0">
-                <span class="block truncate text-[13px] font-semibold leading-tight text-ink-800">
-                  {{ t('cab.addPhoto') }}
-                </span>
-                <span class="block truncate text-[11px] leading-tight text-ink-500">
-                  {{ t('cab.photoHint') }}
-                </span>
-              </span>
-            </button>
-          </div>
         </UiCard>
 
         <UiCard data-tour="cab-docs" :title="t('nav.myDocuments')" :subtitle="t('cab.docsCaption')" flush>

@@ -299,7 +299,8 @@ const payValid = computed(() => {
     !!inv &&
     payable.value &&
     payValue.value > 0 &&
-    payValue.value <= inv.total - inv.paid
+    payValue.value <= inv.total - inv.paid &&
+    !!payDate.value
   );
 });
 
@@ -456,7 +457,7 @@ const pending = computed<PendingRow[]>(() => {
 const pendingOptions = computed(() =>
   pending.value.map((p) => ({
     value: p.caseId,
-    label: `${p.code} · ${p.tenant} · ${p.label}`,
+    label: `${p.code} · ${p.tenant} · ${periodLabel(p.label)}`,
   })),
 );
 
@@ -1127,7 +1128,7 @@ const tariffTotal = TARIFF_LINES.reduce((s, t) => s + t.sum, 0);
               {{ field("billingPeriod", "Hisob davri") }}
             </dt>
             <dd class="text-[13px] font-semibold text-ink-900">
-              {{ selected.label }}
+              {{ periodLabel(selected.label) }}
             </dd>
           </div>
           <div class="mt-2.5 flex items-baseline justify-between gap-3">

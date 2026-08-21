@@ -37,10 +37,10 @@ const TONE: Record<string, string> = {
   >
     <header
       v-if="title || $slots.header || $slots.actions"
-      class="flex items-start justify-between gap-4 px-5 pt-5"
+      class="flex flex-wrap items-start justify-between gap-4 px-5 pt-5"
       :class="flush ? 'pb-4' : 'pb-0'"
     >
-      <div v-if="title || subtitle" class="flex min-w-0 items-start gap-3">
+      <div v-if="title || subtitle" class="flex min-w-0 flex-1 items-start gap-3">
         <span
           v-if="icon"
           class="grid size-9 shrink-0 place-items-center rounded-field"

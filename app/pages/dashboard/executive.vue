@@ -186,19 +186,6 @@ const mapMarkers = computed(() =>
   })),
 )
 
-const mapStats = computed(() => [
-  { label: t('nav.objects'), value: String(visible.value.length) },
-  { label: t('kpi.occupancy'), value: percent(totals.value.occupancy) },
-  {
-    label: t('kpi.totalArea'),
-    value: t('svc.thousandSqm', { value: num(Math.round(totals.value.gla / 1000)) }),
-  },
-  {
-    label: t('kpi.vacantArea'),
-    value: t('svc.thousandSqm', { value: num(Math.round(totals.value.vacantArea / 1000)) }),
-  },
-])
-
 // Shkala bitta manbadan: reyestr, xarita va landing bir xil chegara ko‘rsatadi
 const mapLegend = computed(() =>
   OCCUPANCY_BANDS.map((b) => ({ label: t(b.labelKey), class: b.class })),
@@ -319,7 +306,6 @@ const tourId = computed(() => `executive:${auth.role ?? 'guest'}`)
 
         <UiMap
           :markers="mapMarkers"
-          :stats="mapStats"
           :legend="mapLegend"
           height="368px"
           :zoom="11"
@@ -358,7 +344,11 @@ const tourId = computed(() => `executive:${auth.role ?? 'guest'}`)
         </div>
       </UiCard>
 
-      <UiCard :title="t('svc.portfolioView')" :subtitle="t('svc.areaSplit')">
+      <UiCard
+        class="xl:col-span-2"
+        :title="t('svc.portfolioView')"
+        :subtitle="t('svc.areaSplit')"
+      >
         <UiDonut
           :slices="portfolioSlices"
           :center-value="percent(totals.occupancy)"
@@ -387,6 +377,7 @@ const tourId = computed(() => `executive:${auth.role ?? 'guest'}`)
       </UiCard>
 
       <UiCard
+        class="lg:col-span-2"
         :title="scope === 'all' ? t('svc.portfolioDynamics') : t('svc.objectDynamics')"
         :subtitle="t('svc.lastPointHint')"
       >
@@ -412,8 +403,9 @@ const tourId = computed(() => `executive:${auth.role ?? 'guest'}`)
       </UiCard>
     </section>
 
-    <!-- Obyektlar taqqoslanishi -->
+    <!-- Obyektlar taqqoslanishi: bitta obyekt qamrovida taqqoslashga narsa yo‘q -->
     <UiCard
+      v-if="visible.length > 1"
       data-tour="exec-attention"
       :title="t('tour.executive.attention.title')"
       :subtitle="t('svc.attentionSubtitle', { shown: highlighted.length, total: visible.length })"

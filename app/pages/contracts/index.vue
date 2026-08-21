@@ -354,11 +354,12 @@ function applyStep(key: string) {
             </span>
             <span class="tabular shrink-0 text-[13px] font-bold text-ink-700">{{ s.count }}</span>
           </button>
+          <!-- Oxirgi katakda ham joy saqlanadi, aks holda karta kengroq chiqadi -->
           <UiIcon
-            v-if="i < steps.length - 1"
             name="arrowRight"
             :size="18"
             class="hidden shrink-0 text-ink-300 xl:block"
+            :class="i < steps.length - 1 ? '' : 'invisible'"
           />
         </div>
       </div>

@@ -497,7 +497,7 @@ function toggleStatus(id: string) {
           </p>
           <button
             type="button"
-            class="mt-3 inline-flex items-center gap-1.5 text-[13px] font-semibold text-brand-600 transition-colors hover:text-brand-700"
+            class="mt-3 inline-flex min-h-6 items-center gap-1.5 text-[13px] font-semibold text-brand-600 transition-colors hover:text-brand-700"
             @click="roleFilter = r"
           >
             {{ t("cfg.showRoleUsers") }}

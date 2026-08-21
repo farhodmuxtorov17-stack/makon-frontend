@@ -112,9 +112,12 @@ function saveReading() {
   m.previousReading = m.lastReading
   m.lastReading = value
   m.readAt = todayIso()
-  // Boshlang‘ich ro‘yxat oxirgi 5 oyni qamraydi, keyingi yozuv keyingi oy nomini oladi
-  m.labels = [...m.labels, monthName(m.labels.length - 4)]
-  m.history = [...m.history, used]
+  // Oxirgi yorliq joriy oy, kiritilgan ko‘rsatkich ham shu oyga tegishli:
+  // yangi nuqta qo‘shilsa grafikda hali kelmagan oy paydo bo‘lardi.
+  m.history = [
+    ...m.history.slice(0, -1),
+    Math.round(((m.history[m.history.length - 1] ?? 0) + used) * 100) / 100,
+  ]
   selectedId.value = m.id
   savedMessage.value = t('cab.readingSaved', {
     type: typeLabel(m.type),

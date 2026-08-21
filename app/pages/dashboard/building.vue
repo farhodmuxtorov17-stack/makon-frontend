@@ -670,14 +670,14 @@ const tourId = computed(() => `building:${auth.role ?? "guest"}`);
           <li v-for="c in pendingApprovalRows" :key="c.id" class="px-5 py-3.5">
             <NuxtLink
               :to="`/applications/${c.id}`"
-              class="group flex items-center gap-4"
+              class="group flex flex-wrap items-center gap-4"
             >
               <span
                 class="grid size-10 shrink-0 place-items-center rounded-field bg-warn-50 text-warn-600"
               >
                 <UiIcon name="clock" :size="18" />
               </span>
-              <span class="min-w-0 flex-1">
+              <span class="min-w-0 flex-1 basis-40">
                 <span
                   class="block truncate text-[14px] font-semibold text-ink-900 group-hover:text-brand-600"
                 >

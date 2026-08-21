@@ -1066,41 +1066,6 @@ onMounted(() => {
   </AppTopbar>
 
   <main class="scroll-slim flex-1 space-y-5 overflow-y-auto p-4 sm:p-6">
-    <section
-      v-if="DOCUMENTS.length"
-      class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
-    >
-      <button
-        v-for="c in categoryTabs.slice(1)"
-        :key="c.value"
-        type="button"
-        class="rounded-card bg-surface p-4 text-left shadow-card ring-1 transition-all hover:shadow-panel"
-        :class="
-          category === c.value
-            ? 'ring-2 ring-brand-500'
-            : 'ring-ink-200/60 hover:ring-brand-300'
-        "
-        @click="category = category === c.value ? 'all' : c.value"
-      >
-        <div class="flex items-start justify-between gap-3">
-          <span
-            class="grid size-10 place-items-center rounded-field"
-            :class="CATEGORY_TONE[c.value]"
-          >
-            <UiIcon name="doc" :size="20" />
-          </span>
-          <span
-            class="tabular text-[22px] font-bold leading-none text-ink-900"
-            >{{ c.count }}</span
-          >
-        </div>
-        <p class="mt-3 text-[14px] font-semibold text-ink-900">{{ c.label }}</p>
-        <p class="mt-0.5 text-[12px] text-ink-500">
-          {{ t("cab.filterByCategory") }}
-        </p>
-      </button>
-    </section>
-
     <UiCard
       :title="t('cab.documentsList')"
       :subtitle="

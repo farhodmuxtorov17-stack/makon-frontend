@@ -10,7 +10,7 @@ import {
   meterStateLabel,
   type Meter,
 } from "~/data/operations";
-import { dateShort, num } from "~/utils/format";
+import { dateShort, isoOf, num } from "~/utils/format";
 
 const auth = useAuthStore();
 
@@ -88,7 +88,7 @@ function roundTo(value: number, decimals: number) {
 function monthsBack(iso: string, back: number) {
   const d = new Date(`${iso}T00:00:00`);
   d.setMonth(d.getMonth() - back);
-  return d.toISOString().slice(0, 10);
+  return isoOf(d);
 }
 
 function seedReadings(m: Meter): Reading[] {
@@ -324,7 +324,7 @@ watch(entryMeter, () => {
   }
 });
 
-const entryError = computed(() => {
+const entryValueError = computed(() => {
   const m = activeMeter.value;
   if (!m) return t("svc.errPickMeter");
   const value = Number(entryValue.value);
@@ -335,9 +335,15 @@ const entryError = computed(() => {
     return t("svc.errValueTooLow", {
       value: `${num(m.lastReading, decimalsOf(m))} ${m.unit}`,
     });
-  if (!entryDate.value) return t("svc.errEnterDate");
   return "";
 });
+
+/** Sana xatosi o‘z maydonida chiqadi, aks holda to‘g‘ri to‘ldirilgan qiymat qizil bo‘lib qolardi */
+const entryDateError = computed(() =>
+  entryDate.value ? "" : t("svc.errEnterDate"),
+);
+
+const entryError = computed(() => entryValueError.value || entryDateError.value);
 
 const entryUsage = computed(() => {
   const m = activeMeter.value;
@@ -767,14 +773,18 @@ function saveReading() {
       </UiField>
 
       <div class="grid gap-4 sm:grid-cols-2">
-        <UiField :label="field('date')" required>
-          <UiInput v-model="entryDate" type="date" />
+        <UiField :label="field('date')" required :error="entryDateError">
+          <UiInput
+            v-model="entryDate"
+            type="date"
+            :invalid="!!entryDateError"
+          />
         </UiField>
 
         <UiField
           :label="field('current')"
           required
-          :error="entryError"
+          :error="entryValueError"
           :hint="
             activeMeter
               ? t('svc.previousReadingValue', {
@@ -786,8 +796,8 @@ function saveReading() {
           <UiInput
             v-model="entryValue"
             type="number"
-            :invalid="!!entryError"
-            :valid="!entryError"
+            :invalid="!!entryValueError"
+            :valid="!entryValueError"
           />
         </UiField>
       </div>

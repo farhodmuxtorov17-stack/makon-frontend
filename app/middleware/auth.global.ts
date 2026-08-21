@@ -26,11 +26,14 @@ export default defineNuxtRouteMiddleware((to) => {
   // Kirgan foydalanuvchi kirish yoki qayd oynasiga qaytmaydi.
   if (GUEST_ONLY.includes(path)) return navigateTo(home)
 
-  // Super rahbar barcha modullarni ochadi, `role.ts` bilan bir xil qoida.
-  if (auth.role === 'SUPER_HEAD') return
-
-  // Ruxsat berilmagan: taqiqlangan: noma’lum holatda ham kirish yopiladi.
-  // `path !== home` sharti yo‘naltirish halqasining oldini oladi.
+  /*
+   * Yagona manba: `ROUTE_ACCESS` jadvali. Rol bo‘yicha istisno qoldirilmaydi,
+   * yon menyu, havolalar va `canRoute()` shu jadvaldan o‘qiydi, shuning uchun
+   * qo‘riqchi ham undan chetga chiqmasligi kerak. Aks holda menyuda
+   * ko‘rinmaydigan bo‘lim manzil orqali ochilib qoladi.
+   *
+   * `path !== home` sharti yo‘naltirish halqasining oldini oladi.
+   */
   if (!isPublic && path !== home && !auth.canRoute(path)) {
     return navigateTo(home)
   }

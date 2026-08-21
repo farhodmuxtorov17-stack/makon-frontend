@@ -534,14 +534,6 @@ const channels = computed(() => [
             <b class="text-ink-800">{{ filtered.length }}</b>
             {{ t("usr.notifCountUnit") }}
           </p>
-          <UiButton
-            variant="ghost"
-            size="sm"
-            :disabled="!unreadTotal"
-            @click="markAllRead"
-          >
-            {{ t("common.markAllRead") }}
-          </UiButton>
         </div>
       </UiCard>
 

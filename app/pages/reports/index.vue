@@ -204,24 +204,21 @@ watch(
 );
 
 const singleOptions = computed(() =>
-  (filtered.value.length ? filtered.value : scopedBuildings.value).map((b) => ({
+  filtered.value.map((b) => ({
     value: b.id,
     label: b.name,
   })),
 );
 
+/** Faqat filtrga tushgan binolar ichidan: aks holda ro‘yxatdan chiqarilgan bino nomi chiqib qolardi */
 const singleBuilding = computed(
-  () =>
-    filtered.value.find((b) => b.id === singleId.value) ??
-    filtered.value[0] ??
-    scopedBuildings.value.find((b) => b.id === singleId.value) ??
-    BUILDINGS.find((b) => b.id === singleId.value)!,
+  () => filtered.value.find((b) => b.id === singleId.value) ?? filtered.value[0],
 );
 
 const active = computed(() =>
   mode.value === "single"
     ? filtered.value.length
-      ? [singleBuilding.value]
+      ? [singleBuilding.value!]
       : []
     : filtered.value,
 );
@@ -308,9 +305,9 @@ const periodLabel = computed(
 );
 
 const scopeLabel = computed(() => {
+  if (!totals.value.count) return t("usr.repNoObjectSelected");
   if (mode.value === "single")
     return singleBuilding.value?.name ?? t("usr.repNoObjectSelected");
-  if (!totals.value.count) return t("usr.repNoObjectSelected");
   if (totals.value.count === scopedBuildings.value.length)
     return t("usr.repAllObjectsCount", {
       current: totals.value.count,
@@ -834,7 +831,8 @@ function confirmExport() {
       />
 
       <p
-        class="flex min-w-0 flex-1 items-center gap-2 rounded-field bg-brand-50 px-3.5 py-2.5 text-[13px] text-brand-800"
+        v-if="totals.count"
+        class="flex flex-1 basis-64 items-center gap-2 rounded-field bg-brand-50 px-3.5 py-2.5 text-[13px] text-brand-800"
       >
         <UiIcon name="info" :size="16" class="text-brand-600" />
         <span v-if="mode === 'portfolio'">

@@ -75,7 +75,12 @@ function pad(value: number): string {
   return String(value).padStart(2, '0')
 }
 
-function isoOf(date: Date): string {
+/**
+ * Sanani mahalliy vaqt zonasida ISO ko‘rinishga o‘giradi.
+ * `toISOString()` UTC ga o‘tkazadi va UTC+5 da kunni bir kun orqaga suradi,
+ * shuning uchun sana yorliqlari uchun faqat shu funksiya ishlatiladi.
+ */
+export function isoOf(date: Date): string {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
 }
 

@@ -301,6 +301,17 @@ const contractEditOpen = ref(false);
 const rejectOpen = ref(false);
 const reworkOpen = ref(false);
 const reason = ref("");
+
+/*
+ * Rad etish va qayta ishlash oynalari bitta matn maydonini bo‘lishadi.
+ * Oyna to‘rt yo‘l bilan yopiladi (tugma, Escape, fon, X), shuning uchun
+ * tozalash har bir yopish joyida emas, holat kuzatuvchisida bajariladi:
+ * aks holda rad etish sababi qayta ishlash oynasiga o‘tib qoladi.
+ */
+watch([rejectOpen, reworkOpen], ([rad, qayta]) => {
+  if (!rad && !qayta) reason.value = "";
+});
+
 const notice = ref("");
 /** Xabar ohangi: tekshiruv natijasi o‘zgarishsiz bo‘lsa yashil emas, kulrang */
 const noticeTone = ref<"ok" | "info">("ok");

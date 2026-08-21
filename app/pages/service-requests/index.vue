@@ -9,7 +9,7 @@ import {
 } from '~/data/operations'
 import type { Capability } from '~/types/rbac'
 import { fileSize } from '~/utils/docx'
-import { dateShort, num, todayIso } from '~/utils/format'
+import { dateShort, isoOf, num, todayIso } from '~/utils/format'
 
 type ServiceStatus = ServiceRequest['status']
 
@@ -414,7 +414,7 @@ const latestDay = computed(() =>
 function addDays(iso: string, days: number) {
   const d = new Date(`${iso}T00:00:00`)
   d.setDate(d.getDate() + days)
-  return d.toISOString().slice(0, 10)
+  return isoOf(d)
 }
 
 const createOpen = ref(false)

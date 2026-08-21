@@ -416,7 +416,7 @@ const agingSlices = computed(() =>
             <li v-for="b in buckets" :key="b.key" class="py-2">
               <button
                 type="button"
-                class="flex w-full items-center gap-3 text-left"
+                class="flex min-h-6 w-full items-center gap-3 text-left"
                 @click="toggleBucket(b.key)"
               >
                 <span class="min-w-0 flex-1 text-[13px] text-ink-600">{{

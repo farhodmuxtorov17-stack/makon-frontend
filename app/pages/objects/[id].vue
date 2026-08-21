@@ -10,6 +10,8 @@ const { t } = useI18n();
 const {
   buildingTypeLabel,
   unitUsageLabel,
+  offerLabel,
+  priceUnitLabel,
   money,
   moneyShort,
   field,
@@ -225,9 +227,11 @@ const unitRows = computed(() =>
     floor: u.floor,
     areaLabel: area(u.area),
     usage: unitUsageLabel(u.usage),
-    offer: u.offer,
+    offer: offerLabel(u.offer),
     tenant: showFinance.value ? (u.tenant ?? "-") : "",
-    priceLabel: showFinance.value ? `${num(u.price)} ${u.priceUnit}` : "",
+    priceLabel: showFinance.value
+      ? `${num(u.price)} ${priceUnitLabel(u.priceUnit)}`
+      : "",
     status: u.status,
   })),
 );

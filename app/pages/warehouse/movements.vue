@@ -450,7 +450,6 @@ const receiveItem = ref(stock.value[0]?.id ?? allStock.value[0]!.id)
 const receiveQty = ref(10)
 const receiveParty = ref('')
 const receiveDoc = ref('')
-const receiveDate = ref(CURRENT_DAY)
 const receiveError = ref('')
 
 const receivePool = computed(() => stock.value.filter((i) => i.warehouse === receiveWarehouse.value))
@@ -489,7 +488,7 @@ function saveReceive() {
   const created: Movement = {
     id: `mv-${Date.now().toString(36)}`,
     doc: receiveDoc.value.trim(),
-    date: receiveDate.value,
+    date: CURRENT_DAY,
     kind: 'IN',
     itemId: item.id,
     itemCode: item.code,
@@ -851,9 +850,6 @@ function saveIssue() {
       <div class="grid gap-4 sm:grid-cols-2">
         <UiField :label="field('supplier', 'Yetkazib beruvchi')" required>
           <UiInput v-model="receiveParty" :placeholder="t('apply.orgLabel')" />
-        </UiField>
-        <UiField :label="field('date', 'Sana')" required>
-          <UiInput v-model="receiveDate" type="date" />
         </UiField>
       </div>
 

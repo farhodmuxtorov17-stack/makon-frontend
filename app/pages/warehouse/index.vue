@@ -391,6 +391,14 @@ function resetIssue() {
   issueError.value = ''
 }
 
+watch(receiveOpen, (ochiq) => {
+  if (!ochiq) receiveError.value = ''
+})
+
+watch(issueOpen, (ochiq) => {
+  if (!ochiq) resetIssue()
+})
+
 function saveIssue() {
   if (!issueLines.value.length) {
     issueError.value = t('whs.enterAtLeastOneQty')
@@ -513,7 +521,7 @@ const tourId = computed(() => `warehouse:${auth.role ?? 'guest'}`)
           <UiButton variant="ghost" size="sm" @click="fCategory = 'all'">{{ t('tab.all') }}</UiButton>
         </template>
 
-        <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
+        <div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
           <button
             v-for="c in STOCK_CATEGORIES"
             :key="c.label"
@@ -778,12 +786,12 @@ const tourId = computed(() => `warehouse:${auth.role ?? 'guest'}`)
             :options="receivePool.map((i) => ({ value: i.id, label: `${i.name} (${i.code})` }))"
           />
         </UiField>
-        <UiField :label="field('quantity', 'Miqdor')" required>
-          <UiInput v-model="receiveQty" type="number" />
+        <UiField :label="field('quantity', 'Miqdor')" required :error="receiveError">
+          <UiInput v-model="receiveQty" type="number" :invalid="!!receiveError" />
         </UiField>
       </div>
 
-      <UiField :label="t('common.note')" :error="receiveError" :hint="t('whs.receiveNoteHint')">
+      <UiField :label="t('common.note')" :hint="t('whs.receiveNoteHint')">
         <textarea
           v-model="receiveNote"
           rows="3"

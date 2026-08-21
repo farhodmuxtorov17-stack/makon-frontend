@@ -11,9 +11,9 @@ const {
   buildingClassLabel,
   field,
   columns: labelColumns,
-  statusLabel,
   tr,
-  addressLabel} = useAppLabels();
+  addressLabel,
+} = useAppLabels();
 
 /** Ro‘yxat, filtr variantlari, jamlar va eksport faqat biriktirilgan obyektlardan */
 const scoped = computed(() => BUILDINGS.filter((b) => auth.inScope(b.id)));
@@ -23,7 +23,6 @@ const canCreate = computed(() => auth.can("system.administer"));
 
 const search = ref("");
 const typeFilter = ref("");
-const statusFilter = ref("");
 const cityFilter = ref("");
 const districtFilter = ref("");
 const classFilter = ref("");
@@ -70,11 +69,6 @@ const classOptions = computed(() =>
     label: v,
   })),
 );
-
-const statusOptions = computed(() => [
-  { value: "ACTIVE", label: statusLabel("contract", "ACTIVE") },
-  { value: "ARCHIVED", label: statusLabel("unit", "ARCHIVED") },
-]);
 
 const occupancyOptions = computed(() => [
   {
@@ -152,7 +146,6 @@ const filtered = computed(() => {
       if (!haystack.includes(q)) return false;
     }
     if (typeFilter.value && b.type !== typeFilter.value) return false;
-    if (statusFilter.value && b.status !== statusFilter.value) return false;
     if (cityFilter.value && b.city !== cityFilter.value) return false;
     if (districtFilter.value && b.district !== districtFilter.value)
       return false;
@@ -222,7 +215,6 @@ const activeFilters = computed(
     [
       search.value,
       typeFilter.value,
-      statusFilter.value,
       cityFilter.value,
       districtFilter.value,
       classFilter.value,
@@ -234,7 +226,6 @@ watch(
   [
     search,
     typeFilter,
-    statusFilter,
     cityFilter,
     districtFilter,
     classFilter,
@@ -265,7 +256,6 @@ const columns = computed(() =>
       numeric: true,
     },
     { key: "vacantUnits", field: "vacantUnits", align: "right", numeric: true },
-    { key: "status", field: "status", align: "center", width: "120px" },
   ]),
 );
 
@@ -276,7 +266,6 @@ function objectPath(row: Record<string, unknown>) {
 function resetFilters() {
   search.value = "";
   typeFilter.value = "";
-  statusFilter.value = "";
   cityFilter.value = "";
   districtFilter.value = "";
   classFilter.value = "";
@@ -536,12 +525,6 @@ function submitCreate() {
           class="w-44"
         />
         <UiSelect
-          v-model="statusFilter"
-          :options="statusOptions"
-          :placeholder="field('status')"
-          class="w-36"
-        />
-        <UiSelect
           v-model="cityFilter"
           :options="cityOptions"
           :placeholder="field('city')"
@@ -671,14 +654,6 @@ function submitCreate() {
           <span class="tabular font-semibold text-warn-600">{{
             row.vacantUnits
           }}</span>
-        </template>
-
-        <template #cell-status="{ row }">
-          <UiStatus
-            :kind="row.status === 'ACTIVE' ? 'contract' : 'unit'"
-            :value="row.status === 'ACTIVE' ? 'ACTIVE' : 'ARCHIVED'"
-            size="sm"
-          />
         </template>
       </UiTable>
 
