@@ -168,11 +168,15 @@ function signOut() {
             <NuxtLink
               v-if="c.to"
               :to="c.to"
-              class="text-ink-500 transition-colors hover:text-brand-600"
+              class="inline-flex min-h-6 items-center rounded-[6px] text-ink-500 transition-colors hover:text-brand-600"
             >
               {{ c.label }}
             </NuxtLink>
-            <span v-else class="text-ink-500">{{ c.label }}</span>
+            <span
+              v-else
+              class="inline-flex min-h-6 items-center text-ink-500"
+              >{{ c.label }}</span
+            >
             <UiIcon
               v-if="i < breadcrumb.length - 1"
               name="chevronRight"
