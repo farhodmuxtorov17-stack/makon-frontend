@@ -4052,5 +4052,22 @@
     "cylinder": "ballon",
     "tube": "tuba",
     "set": "to‘plam"
+  },
+  "notif": {
+    "dueSoonTitle": "To‘lov muddati yaqinlashdi",
+    "duePastTitle": "To‘lov muddati o‘tdi",
+    "dueInDays": "{code} hisob-fakturasi bo‘yicha to‘lov muddatiga {days} kun qoldi.",
+    "dueToday": "{code} hisob-fakturasi bo‘yicha to‘lov muddati bugun tugaydi.",
+    "dueLate": "{code} hisob-fakturasi bo‘yicha to‘lov muddati {date} da tugagan, kechikish {days} kun.",
+    "overdueTitle": "To‘lov kechikkanligi haqida ogohlantirish",
+    "overdueBody": "«{tenant}» bo‘yicha {code} hisob-fakturasi {amount} so‘m qarz bilan {days} kundan beri to‘lanmagan.",
+    "newDeviceTitle": "Tizimga kirish: yangi qurilma",
+    "newDeviceBody": "Profilingizga yangi qurilmadan kirildi: Chrome · Windows 11.",
+    "unitVacantTitle": "Yangi unit bo‘shadi",
+    "unitVacantBody": "Green Business Center, 706-unit bo‘sh holatga o‘tdi va katalogda e’lon qilindi.",
+    "didoxSigningTitle": "Shartnoma Didox’da imzolanmoqda",
+    "didoxSigningBody": "MKON-2025-0155 shartnomasi Didox tizimiga yuborildi, imzo kutilmoqda.",
+    "serviceDoneTitle": "Servis arizasi bajarildi",
+    "serviceDoneBody": "{code} «{title}» arizasi bajarildi va tasdiqlashga yuborildi."
   }
 }

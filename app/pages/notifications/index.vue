@@ -1,4 +1,5 @@
 <script setup lang="ts">
+const { title: notifTitle, body: notifBody } = useNotificationText();
 import {
   NOTIFICATION_CATEGORIES,
   type AppNotification,
@@ -269,8 +270,8 @@ const filtered = computed(() =>
     const q = query.value.trim().toLowerCase();
     const byQuery =
       !q ||
-      n.title.toLowerCase().includes(q) ||
-      n.body.toLowerCase().includes(q);
+      notifTitle(n).toLowerCase().includes(q) ||
+      notifBody(n).toLowerCase().includes(q);
     return byCategory && byRead && byQuery;
   }),
 );
@@ -488,11 +489,11 @@ const channels = computed(() => [
                         : 'font-bold text-ink-900'
                     "
                   >
-                    {{ n.title }}
+                    {{ notifTitle(n) }}
                   </span>
                 </span>
                 <span class="mt-0.5 block truncate text-[13px] text-ink-500">{{
-                  n.body
+                  notifBody(n)
                 }}</span>
               </span>
 
@@ -555,7 +556,7 @@ const channels = computed(() => [
             </span>
             <div class="min-w-0 flex-1">
               <h3 class="text-[16px] font-bold text-ink-900">
-                {{ selected.title }}
+                {{ notifTitle(selected) }}
               </h3>
               <p class="mt-0.5 text-[13px] text-ink-500">
                 {{ categoryLabel(selected.category) }} · {{ selected.at }}
@@ -570,7 +571,7 @@ const channels = computed(() => [
           </div>
 
           <p class="mt-4 text-[14px] leading-relaxed text-ink-700">
-            {{ selected.body }}
+            {{ notifBody(selected) }}
           </p>
 
           <div v-if="selectedDetail" class="mt-4">

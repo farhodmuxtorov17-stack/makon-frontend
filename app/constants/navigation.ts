@@ -96,7 +96,15 @@ function paymentQueue(): number {
  * mos tushadi.
  */
 function materialQueue(): number {
-  return MATERIAL_REQUESTS.filter((r) => r.status === "APPROVED").length;
+  /*
+   * Nishoncha sahifa bilan bitta manbadan o'qiydi. Ilgari u o'zgarmas
+   * konstantadan sanardi: so'rov tasdiqlansa yoki berilsa, sahifadagi son
+   * o'zgarar, yon paneldagi nishoncha esa eski qiymatda qolardi.
+   */
+  const list = useState<typeof MATERIAL_REQUESTS>("material-requests", () =>
+    MATERIAL_REQUESTS.map((r) => ({ ...r })),
+  );
+  return list.value.filter((r) => r.status === "APPROVED").length;
 }
 
 export interface NavSection {

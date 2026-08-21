@@ -1,4 +1,5 @@
 <script setup lang="ts">
+const { title: notifTitle } = useNotificationText();
 import { ROLE_TONE_CLASSES } from "~/constants/roles";
 import { NOTIFICATIONS, type AppNotification } from "~/data/operations";
 
@@ -409,7 +410,7 @@ function signOut() {
                             : 'font-bold text-ink-900'
                         "
                       >
-                        {{ n.title }}
+                        {{ notifTitle(n) }}
                       </span>
                       <span
                         class="mt-0.5 block truncate text-[12px] text-ink-500"

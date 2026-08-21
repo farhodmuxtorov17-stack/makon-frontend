@@ -352,6 +352,37 @@ export function useAppLabels() {
     });
   }
 
+  /*
+   * Hisob davri ma'lumotda o'zbekcha satr bo'lib saqlanadi: «Avgust 2026».
+   * Ekranda tanlangan tilda ko'rsatiladi, reyestrdagi qiymat esa o'zgarmaydi:
+   * filtr va solishtirish o'sha satr bo'yicha ishlaydi.
+   */
+  const OY_TARTIBI = [
+    "Yanvar",
+    "Fevral",
+    "Mart",
+    "Aprel",
+    "May",
+    "Iyun",
+    "Iyul",
+    "Avgust",
+    "Sentabr",
+    "Oktabr",
+    "Noyabr",
+    "Dekabr",
+  ];
+
+  function periodLabel(value: string) {
+    const parts = value.trim().split(/\s+/);
+    if (parts.length !== 2) return value;
+    const index = OY_TARTIBI.indexOf(parts[0]!);
+    if (index < 0) return value;
+    return t("dateFormat.monthTitle", {
+      month: monthName(index + 1),
+      year: parts[1]!,
+    });
+  }
+
   /** «2026-08-18» → «Avgust 2026» / «Август 2026» (hisob davri yorlig‘i) */
   function monthTitle(iso: string) {
     const p = isoParts(iso);
@@ -399,5 +430,6 @@ export function useAppLabels() {
     monthOfName,
     dateLong,
     monthTitle,
+    periodLabel,
   };
 }

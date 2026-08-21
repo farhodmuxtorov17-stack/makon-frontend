@@ -1149,6 +1149,17 @@ function goApply() {
               </UiButton>
             </div>
 
+            <!--
+              Xodimga tugma o'rniga qisqa izoh: arizani kim yuboradi va kim
+              qabul qiladi. Katalogda ham xuddi shunday yozuv turadi.
+            -->
+            <p
+              v-if="selected.status === 'VACANT' && staffHint"
+              class="mt-3 rounded-field bg-surface-sunken px-3.5 py-2.5 text-[12px] leading-relaxed text-ink-600"
+            >
+              {{ staffHint }}
+            </p>
+
             <div
               v-if="units.length > 1"
               class="mt-5 border-t border-ink-100 pt-4"

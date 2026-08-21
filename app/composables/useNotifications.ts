@@ -5,7 +5,7 @@
  * ko‘rsatadi: birida o‘qilgan deb belgilangan xabar ikkinchisida ham darhol
  * o‘qilgan bo‘ladi va holat sahifalar orasida saqlanib qoladi.
  */
-import { NOTIFICATIONS, type AppNotification } from '~/data/operations'
+import { NOTIFICATIONS, type AppNotification } from "~/data/operations";
 
 /**
  * Kategoriya qaysi modulga tegishli. Modulga kirish huquqi bo'lmagan rol
@@ -14,39 +14,64 @@ import { NOTIFICATIONS, type AppNotification } from '~/data/operations'
  * o'qiy olardi. Qo'ng'iroq menyusida bu filtr bor edi, sahifada yo'q edi,
  * shuning uchun qoida shu yerga, yagona manbaga ko'chirildi.
  */
-const CATEGORY_MODULE: Partial<Record<AppNotification['category'], string>> = {
-  'To‘lovlar': '/billing',
-  Hujjatlar: '/contracts',
-}
+const CATEGORY_MODULE: Partial<Record<AppNotification["category"], string>> = {
+  "To‘lovlar": "/billing",
+  Hujjatlar: "/contracts",
+};
 
 export function useNotifications() {
-  const auth = useAuthStore()
+  const auth = useAuthStore();
 
-  const all = useState<AppNotification[]>('header-notifications', () =>
+  const all = useState<AppNotification[]>("header-notifications", () =>
     NOTIFICATIONS.map((n) => ({ ...n })),
-  )
+  );
 
   const items = computed(() =>
     all.value.filter((n) => {
-      const module = CATEGORY_MODULE[n.category]
-      return module ? auth.canRoute(module) : true
+      const module = CATEGORY_MODULE[n.category];
+      return module ? auth.canRoute(module) : true;
     }),
-  )
+  );
 
-  const unread = computed(() => items.value.filter((n) => !n.read).length)
+  const unread = computed(() => items.value.filter((n) => !n.read).length);
 
   function markRead(id: string) {
-    const item = all.value.find((n) => n.id === id)
-    if (item) item.read = true
+    const item = all.value.find((n) => n.id === id);
+    if (item) item.read = true;
   }
 
   /** Faqat ko'rinadigan xabarlar belgilanadi, yashiringani tegilmaydi */
   function markAllRead() {
-    const visible = new Set(items.value.map((n) => n.id))
+    const visible = new Set(items.value.map((n) => n.id));
     all.value.forEach((n) => {
-      if (visible.has(n.id)) n.read = true
-    })
+      if (visible.has(n.id)) n.read = true;
+    });
   }
 
-  return { items, unread, markRead, markAllRead }
+  return { items, unread, markRead, markAllRead };
+}
+
+/**
+ * Bildirishnoma matni tanlangan tilda. Ma'lumot qatlami faqat kalit va
+ * parametr beradi, matn shu yerda yig'iladi. Kalit topilmasa zaxira
+ * qiymat (o'zbekcha satr) qaytadi, shuning uchun eski yozuvlar ham
+ * to'g'ri ko'rinadi.
+ */
+export function useNotificationText() {
+  const { t, te } = useI18n();
+
+  const title = (n: {
+    titleKey?: string;
+    title: string;
+    params?: Record<string, unknown>;
+  }) =>
+    n.titleKey && te(n.titleKey) ? t(n.titleKey, n.params ?? {}) : n.title;
+
+  const body = (n: {
+    bodyKey?: string;
+    body: string;
+    params?: Record<string, unknown>;
+  }) => (n.bodyKey && te(n.bodyKey) ? t(n.bodyKey, n.params ?? {}) : n.body);
+
+  return { title, body };
 }
