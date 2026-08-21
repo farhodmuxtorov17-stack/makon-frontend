@@ -4021,7 +4021,9 @@
     "repDocSla": "Servis SLA bajarilishi: {value}",
     "repObjectBreakdown": "Obyektlar kesimi",
     "repDocBuildingLine": "{name} ({location}). GLA {gla} m², bandlik {occupancy}, ijara tushumi {revenue}, bo‘sh maydon {vacant} m², SLA {sla}.",
-    "repDocFooter": "Hisobot {count} ta obyekt bo‘yicha, {period} davri uchun tayyorlandi."
+    "repDocFooter": "Hisobot {count} ta obyekt bo‘yicha, {period} davri uchun tayyorlandi.",
+    "repVacantKpi": "Bo‘sh maydon",
+    "repReservedKpi": "Zaxira va ta’mirdagi maydon"
   },
   "err": {
     "forbiddenTitle": "Ruxsat berilmagan",

@@ -4021,7 +4021,9 @@
     "repDocSla": "Соблюдение сервисного SLA: {value}",
     "repObjectBreakdown": "Разрез по объектам",
     "repDocBuildingLine": "{name} ({location}). GLA {gla} м², заполняемость {occupancy}, доход от аренды {revenue}, свободная площадь {vacant} м², SLA {sla}.",
-    "repDocFooter": "Отчёт подготовлен по {count} объектам за период {period}."
+    "repDocFooter": "Отчёт подготовлен по {count} объектам за период {period}.",
+    "repVacantKpi": "Свободная площадь",
+    "repReservedKpi": "Резерв и ремонт"
   },
   "err": {
     "forbiddenTitle": "Доступ запрещён",

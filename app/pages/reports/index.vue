@@ -273,6 +273,18 @@ const totals = computed(() => {
      */
     unoccupied: round1(gla - occupiedArea),
     /*
+     * «Band bo'lmagan» ichida ikki xil maydon bor va ularni ajratmaslik
+     * ekranlar orasida ziddiyat tug'diradi: boshqaruv panelida «bo'sh
+     * maydon 23 299 m²» turadi, bu yerda esa «band bo'lmagan 50 305 m²»
+     * chiqardi. Farq rezerv, ta'mir va e'lon qilinmagan unitlar edi, lekin
+     * ular hech qaysi ekranda ko'rsatilmasdi. Endi uchala qiymat ham
+     * alohida turadi va yig'indisi GLA ga teng bo'ladi.
+     */
+    vacant: round1(list.reduce((s, b) => s + b.vacantArea, 0)),
+    reserved: round1(
+      gla - occupiedArea - list.reduce((s, b) => s + b.vacantArea, 0),
+    ),
+    /*
      * Oylik ijara tushumi: reyestrdagi ijaradagi unitlarning oylik narxi.
      * Jadval qatorlari ham, jam qatori ham aynan shu manbadan o'qiydi.
      */
@@ -862,15 +874,27 @@ function confirmExport() {
         tone="ok"
         :spark="trendSpark('occupancy', totals.occupancy)"
       />
+      <!--
+        Bo'sh maydon va zaxiradagi maydon alohida ko'rsatiladi: band, bo'sh
+        va zaxira yig'indisi GLA ga teng bo'ladi, shuning uchun boshqaruv
+        paneli bilan bu ekran bir xil raqamni ko'rsatadi.
+      -->
       <UiKpi
-        :label="t('usr.repUnoccupiedKpi')"
-        :value="num(totals.unoccupied)"
+        :label="t('usr.repVacantKpi')"
+        :value="num(totals.vacant)"
         :unit="t('unitOf.sqm')"
         :delta="trendDelta('vacantArea')"
         invert
         icon="cube"
         tone="violet"
-        :spark="trendSpark('vacantArea', totals.unoccupied / 1000)"
+        :spark="trendSpark('vacantArea', totals.vacant / 1000)"
+      />
+      <UiKpi
+        :label="t('usr.repReservedKpi')"
+        :value="num(totals.reserved)"
+        :unit="t('unitOf.sqm')"
+        icon="lock"
+        tone="neutral"
       />
       <UiKpi
         :label="t('usr.repBilledKpi')"
