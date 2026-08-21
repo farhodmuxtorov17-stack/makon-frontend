@@ -175,25 +175,31 @@
   --color-teal-400: #3fbda8;
   --color-teal-500: #16b99a;
   --color-teal-600: #01a573;
-  --color-teal-700: #04835d;
+  --color-teal-700: #04805b;
   --color-teal-800: #08684c;
   --color-teal-900: #0a5540;
   --color-teal-950: #023026;
 
   /* --- Holat ranglari --- */
+  /*
+   * Matn ranglari WCAG AA bo'yicha o'lchab tanlangan: ok-600, warn-600 va
+   * ink-400 oq fonda, ok-700 va warn-700 esa o'z nishoncha fonida kamida
+   * 4.5:1 beradi. Ilgari ular 2.59 dan 4.45 gacha edi, ya'ni raqamlar va
+   * status yozuvlari talabdan past kontrastda chiqardi.
+   */
   --color-ok-50: #eefaf6;
   --color-ok-100: #d3f4ea;
   --color-ok-500: #16b99a;
-  --color-ok-600: #01a573;
-  --color-ok-700: #04835d;
+  --color-ok-600: #01825b;
+  --color-ok-700: #04805b;
   /* Nishoncha matni uchun: ok-50 fonida 6.35:1 */
   --color-ok-800: #08684c;
 
   --color-warn-50: #fff8ec;
   --color-warn-100: #ffefd0;
   --color-warn-500: #faa53f;
-  --color-warn-600: #e8871a;
-  --color-warn-700: #bd6512;
+  --color-warn-600: #a86010;
+  --color-warn-700: #ac5d11;
   /* Nishoncha matni uchun: warn-50 fonida 6.49:1 */
   --color-warn-800: #8a4a0d;
 
@@ -202,7 +208,7 @@
   /* Xato halqasi uchun: oq fonda 3.05:1, WCAG 1.4.11 chegarasidan yuqori */
   --color-danger-400: #fa5f63;
   --color-danger-500: #f84448;
-  --color-danger-600: #e11d24;
+  --color-danger-600: #d91c23;
   --color-danger-700: #bd131a;
   /* Qizil tugmaning hover va active pog‘onalari: oq matn bilan 8.42:1 va 10.83:1 */
   --color-danger-800: #9c0f16;
@@ -235,8 +241,8 @@
   --color-ink-100: #eef2f8;
   --color-ink-200: #e2e8f2;
   --color-ink-300: #cbd4e3;
-  --color-ink-400: #94a2b8;
-  --color-ink-500: #64748b;
+  --color-ink-400: #607391;
+  --color-ink-500: #63738a;
   --color-ink-600: #48566b;
   --color-ink-700: #354152;
   --color-ink-800: #1f2937;
