@@ -13,7 +13,14 @@ definePageMeta({ layout: "public", public: true });
 const route = useRoute();
 const lease = useLeaseStore();
 const { t } = useI18n();
-const { unitUsageLabel, money, field, priceUnitLabel } = useAppLabels();
+const {
+  unitUsageLabel,
+  money,
+  field,
+  priceUnitLabel,
+  cityLabel,
+  districtLabel,
+} = useAppLabels();
 
 lease.seed();
 
@@ -651,7 +658,8 @@ const lastFour = computed(() => form.phone.slice(-4));
                 {{ building.name }}
               </p>
               <p class="mt-1 text-[13px] text-ink-500">
-                {{ building.city }}, {{ building.district }},
+                {{ cityLabel(building.city) }},
+                {{ districtLabel(building.district) }},
                 {{ building.street }}
               </p>
 

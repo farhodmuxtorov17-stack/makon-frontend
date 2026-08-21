@@ -70,7 +70,8 @@ const {
   tr,
   priceUnitLabel,
   offerLabel,
-} = useAppLabels();
+  cityLabel,
+  districtLabel} = useAppLabels();
 const { action: leadAction, label: leadLabel, staffHint } = useLeadAction();
 
 function categoryLabel(key: string) {
@@ -400,7 +401,8 @@ function goApply() {
             >
               <UiIcon name="location" :size="15" class="shrink-0" />
               <span class="min-w-0 truncate">
-                {{ building.city }}, {{ building.district }},
+                {{ cityLabel(building.city) }},
+                {{ districtLabel(building.district) }},
                 {{ building.street }}
               </span>
             </p>

@@ -261,6 +261,51 @@ export function useAppLabels() {
     return key ? t(key) : unit;
   }
 
+  /*
+   * MANZIL. Shahar, tuman va ko'cha ma'lumotda o'zbekcha saqlanadi va
+   * qidiruvda ham shu qiymat bo'yicha solishtiriladi, shuning uchun reyestr
+   * o'zgarmaydi. Ekranda esa tanlangan tildagi nom chiqadi: rus tilida
+   * «Мирабадский район, улица Амира Темура 88».
+   *
+   * Kalit lotin harflaridan yasaladi, uy raqami esa tarjima qilinmaydi.
+   */
+  function addrSlug(value: string) {
+    const clean = value.replace(/[‘’]/g, "'");
+    const words = clean
+      .replace(/[^A-Za-z0-9]+/g, " ")
+      .trim()
+      .split(/\s+/);
+    if (!words.length) return "";
+    return (
+      words[0]!.toLowerCase() +
+      words
+        .slice(1)
+        .map((w) => w[0]!.toUpperCase() + w.slice(1))
+        .join("")
+    );
+  }
+
+  function cityLabel(value: string) {
+    return tr(`city.${addrSlug(value)}`, value);
+  }
+
+  function districtLabel(value: string) {
+    const nom = value.replace(/\s*tumani\s*$/, "");
+    return tr(`district.${addrSlug(nom)}`, value);
+  }
+
+  function streetLabel(value: string) {
+    const m = /^(.*?)\s+(ko‘chasi|yo‘li|shoh ko‘chasi)\s+(\S+)$/.exec(value);
+    if (!m) return value;
+    const nom = tr(`street.${addrSlug(m[1]!)}`, "");
+    return nom ? `${nom} ${m[3]}` : value;
+  }
+
+  /** To'liq manzil: «Toshkent, Mirobod tumani, Amir Temur ko'chasi 88» */
+  function addressLabel(b: { city: string; district: string; street: string }) {
+    return `${cityLabel(b.city)}, ${districtLabel(b.district)}, ${streetLabel(b.street)}`;
+  }
+
   /**
    * Unit taklif turi ma’lumotda «Ijara» yoki «Sotuv» deb saqlanadi.
    * Ekranda tarjimasi ko‘rsatiladi, reyestrdagi qiymat esa o‘zgarmaydi.
@@ -424,6 +469,10 @@ export function useAppLabels() {
     measureLabel,
     buildingClassLabel,
     offerLabel,
+    cityLabel,
+    districtLabel,
+    streetLabel,
+    addressLabel,
     unitOf,
     floorLabel,
     monthName,

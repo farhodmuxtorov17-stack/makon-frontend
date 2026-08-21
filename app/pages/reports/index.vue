@@ -16,7 +16,8 @@ import {
   monthShift,
 } from "~/utils/format";
 
-const { buildingTypeLabel, moneyShort } = useAppLabels();
+const { buildingTypeLabel, moneyShort, cityLabel, districtLabel } =
+  useAppLabels();
 
 const auth = useAuthStore();
 const { t } = useI18n();
@@ -525,7 +526,7 @@ const tableRows = computed(() => {
   const rows = active.value.map((b) => ({
     id: b.id,
     name: b.name,
-    district: `${b.city}, ${b.district}`,
+    district: `${cityLabel(b.city)}, ${districtLabel(b.district)}`,
     gla: b.gla,
     occupancy: b.occupancy,
     revenue: b.monthlyRevenue,
@@ -657,7 +658,7 @@ function exportDocument() {
     ...active.value.map((b) => ({
       text: t("usr.repDocBuildingLine", {
         name: b.name,
-        location: `${b.city}, ${b.district}`,
+        location: `${cityLabel(b.city)}, ${districtLabel(b.district)}`,
         gla: num(b.gla),
         occupancy: percent(b.occupancy),
         revenue: sumShort(b.monthlyRevenue),

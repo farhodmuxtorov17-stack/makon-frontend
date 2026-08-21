@@ -13,7 +13,7 @@ const {
   columns: labelColumns,
   statusLabel,
   tr,
-} = useAppLabels();
+  addressLabel} = useAppLabels();
 
 /** Ro‘yxat, filtr variantlari, jamlar va eksport faqat biriktirilgan obyektlardan */
 const scoped = computed(() => BUILDINGS.filter((b) => auth.inScope(b.id)));
@@ -199,7 +199,7 @@ const rows = computed(() => {
       name: b.name,
       photo: b.photo,
       meta: `${buildingClassLabel(b.buildingClass)} · ${t("unitOf.yearNo", { year: b.buildYear })}`,
-      address: `${b.city}, ${b.district}, ${b.street}`,
+      address: addressLabel(b),
       type: buildingTypeLabel(b.type),
       floors: b.floors,
       units: b.units,
@@ -342,7 +342,7 @@ function submitExport() {
           text: t("obj.exportRow", {
             code: b.code,
             name: b.name,
-            address: `${b.city}, ${b.district}, ${b.street}`,
+            address: addressLabel(b),
             type: b.type,
             floors: b.floors,
             units: b.units,

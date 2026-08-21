@@ -17,6 +17,8 @@ const {
   statusLabel,
   floorLabel,
   buildingClassLabel,
+  addressLabel,
+  cityLabel,
 } = useAppLabels();
 
 /** Rang ham, nom ham status registridan: legenda va reja bir xil gapiradi */
@@ -383,7 +385,7 @@ function goApply(unitId?: string) {
             class="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[14px] text-ink-500"
           >
             <UiIcon name="location" :size="15" class="text-ink-400" />
-            {{ building.city }}, {{ building.district }}, {{ building.street }}
+            {{ addressLabel(building) }}
             <span class="text-ink-300">·</span>
             {{ buildingTypeLabel(building.type) }}
             <span class="text-ink-300">·</span>
@@ -798,7 +800,7 @@ function goApply(unitId?: string) {
             <h2 class="text-[18px] font-bold">{{ t("cat.locationTitle") }}</h2>
             <p class="mt-1 text-[13px] text-ink-500">
               {{ building.street }}, {{ building.district }},
-              {{ building.city }}
+              {{ cityLabel(building.city) }}
             </p>
 
             <div

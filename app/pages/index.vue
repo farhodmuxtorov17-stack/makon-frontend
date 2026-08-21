@@ -15,6 +15,8 @@ const {
   unitUsageLabel,
   priceUnitLabel,
   buildingClassLabel,
+  cityLabel,
+  districtLabel,
 } = useAppLabels();
 
 definePageMeta({ layout: "public" });
@@ -394,7 +396,8 @@ const STEPS = [
                     class="mt-0.5 flex items-center gap-1.5 truncate text-[13px] text-white/75"
                   >
                     <UiIcon name="location" :size="14" />
-                    {{ l.building.city }}, {{ l.building.district }}
+                    {{ cityLabel(l.building.city) }},
+                    {{ districtLabel(l.building.district) }}
                   </p>
                 </div>
               </NuxtLink>

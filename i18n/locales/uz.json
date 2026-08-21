@@ -4071,5 +4071,48 @@
     "didoxSigningBody": "MKON-2025-0155 shartnomasi Didox tizimiga yuborildi, imzo kutilmoqda.",
     "serviceDoneTitle": "Servis arizasi bajarildi",
     "serviceDoneBody": "{code} «{title}» arizasi bajarildi va tasdiqlashga yuborildi."
+  },
+  "city": {
+    "toshkent": "Toshkent",
+    "toshkentViloyati": "Toshkent viloyati"
+  },
+  "district": {
+    "bektemir": "Bektemir tumani",
+    "chilonzor": "Chilonzor tumani",
+    "mirobod": "Mirobod tumani",
+    "mirzoUlugBek": "Mirzo Ulug‘bek tumani",
+    "olmazor": "Olmazor tumani",
+    "qibray": "Qibray tumani",
+    "sergeli": "Sergeli tumani",
+    "shayxontohur": "Shayxontohur tumani",
+    "uchtepa": "Uchtepa tumani",
+    "yakkasaroy": "Yakkasaroy tumani",
+    "yashnobod": "Yashnobod tumani",
+    "yunusobod": "Yunusobod tumani",
+    "yuqoriChirchiq": "Yuqori Chirchiq tumani",
+    "zangiota": "Zangiota tumani"
+  },
+  "street": {
+    "abdullaQodiriy": "Abdulla Qodiriy",
+    "amirTemur": "Amir Temur",
+    "aviasozlar": "Aviasozlar",
+    "bobur": "Bobur",
+    "bogIshamol": "Bog‘ishamol",
+    "bunyodkor": "Bunyodkor",
+    "buyukIpakYoLi": "Buyuk Ipak Yo‘li",
+    "chinobod": "Chinobod",
+    "doStlik": "Do‘stlik",
+    "fargOnaYoLi": "Farg‘ona yo‘li",
+    "farobiy": "Farobiy",
+    "furqat": "Furqat",
+    "navoiy": "Navoiy",
+    "nazarbek": "Nazarbek",
+    "nukus": "Nukus",
+    "qatortol": "Qatortol",
+    "sanoat": "Sanoat",
+    "sergeli": "Sergeli",
+    "shotaRustaveli": "Shota Rustaveli",
+    "temiryoLchilar": "Temiryo‘lchilar",
+    "yangiSergeli": "Yangi Sergeli"
   }
 }

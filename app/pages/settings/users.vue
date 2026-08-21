@@ -1,163 +1,189 @@
 <script setup lang="ts">
-import { USERS, type UserRow } from '~/data/users'
-import { BUILDINGS } from '~/data/buildings'
-import { ROLE_META, ROLE_TONE_CLASSES } from '~/constants/roles'
-import { ROLES, type Role } from '~/types/rbac'
-import { ROUTE_ACCESS } from '~/constants/navigation'
+import { USERS, type UserRow } from "~/data/users";
+import { BUILDINGS } from "~/data/buildings";
+import { ROLE_META, ROLE_TONE_CLASSES } from "~/constants/roles";
+import { ROLES, type Role } from "~/types/rbac";
+import { ROUTE_ACCESS } from "~/constants/navigation";
 
-const { t } = useI18n()
-const { tr, field, columns: labelColumns, roleLabel, roleCaption } = useAppLabels()
+const { t } = useI18n();
+const {
+  tr,
+  field,
+  columns: labelColumns,
+  roleLabel,
+  roleCaption,
+  cityLabel,
+  districtLabel,
+} = useAppLabels();
 
 /** Rol kartochkasidagi daraja, ko‘rish sohasi va cheklov matni */
-const roleLevel = (r: Role) => tr(`role.${r}.level`, ROLE_META[r].level)
-const roleScope = (r: Role) => tr(`role.${r}.scope`, ROLE_META[r].scope)
-const roleLimitation = (r: Role) => tr(`role.${r}.limitation`, ROLE_META[r].limitation)
+const roleLevel = (r: Role) => tr(`role.${r}.level`, ROLE_META[r].level);
+const roleScope = (r: Role) => tr(`role.${r}.scope`, ROLE_META[r].scope);
+const roleLimitation = (r: Role) =>
+  tr(`role.${r}.limitation`, ROLE_META[r].limitation);
 
 const SETTINGS_TABS = computed(() => [
-  { label: t('nav.settingsUsers'), to: '/settings/users', icon: 'users' },
-  { label: t('nav.settingsRoles'), to: '/settings/roles', icon: 'shield' },
-  { label: t('nav.settingsIntegrations'), to: '/settings/integrations', icon: 'globe' },
-  { label: t('nav.settingsReference'), to: '/settings/reference-data', icon: 'layers' },
-  { label: t('nav.settingsSystem'), to: '/settings/system', icon: 'gear' },
-  { label: t('nav.settingsAudit'), to: '/settings/audit', icon: 'clipboard' },
-])
-const CURRENT_TAB = '/settings/users'
+  { label: t("nav.settingsUsers"), to: "/settings/users", icon: "users" },
+  { label: t("nav.settingsRoles"), to: "/settings/roles", icon: "shield" },
+  {
+    label: t("nav.settingsIntegrations"),
+    to: "/settings/integrations",
+    icon: "globe",
+  },
+  {
+    label: t("nav.settingsReference"),
+    to: "/settings/reference-data",
+    icon: "layers",
+  },
+  { label: t("nav.settingsSystem"), to: "/settings/system", icon: "gear" },
+  { label: t("nav.settingsAudit"), to: "/settings/audit", icon: "clipboard" },
+]);
+const CURRENT_TAB = "/settings/users";
 
-const users = ref<UserRow[]>(USERS.map((u) => ({ ...u })))
+const users = ref<UserRow[]>(USERS.map((u) => ({ ...u })));
 
-const search = ref('')
-const roleFilter = ref('all')
-const statusFilter = ref('all')
+const search = ref("");
+const roleFilter = ref("all");
+const statusFilter = ref("all");
 
 const roleOptions = computed(() => [
-  { value: 'all', label: t('filter.allRoles') },
+  { value: "all", label: t("filter.allRoles") },
   ...ROLES.map((r) => ({ value: r, label: roleLabel(r) })),
-])
+]);
 
 const statusOptions = computed(() => [
-  { value: 'all', label: t('filter.allStatuses') },
-  { value: 'ACTIVE', label: t('common.active') },
-  { value: 'INACTIVE', label: t('common.inactive') },
-])
+  { value: "all", label: t("filter.allStatuses") },
+  { value: "ACTIVE", label: t("common.active") },
+  { value: "INACTIVE", label: t("common.inactive") },
+]);
 
-const buildingOptions = BUILDINGS.map((b) => ({ value: b.id, label: b.name }))
+const buildingOptions = BUILDINGS.map((b) => ({ value: b.id, label: b.name }));
 
 function initials(name: string) {
   return name
-    .split(' ')
+    .split(" ")
     .slice(0, 2)
     .map((w) => w[0])
-    .join('')
-    .toUpperCase()
+    .join("")
+    .toUpperCase();
 }
 
 function scopeLabel(u: UserRow) {
-  if (u.scopeAll) return t('cfg.scopeAll', { a: BUILDINGS.length, b: BUILDINGS.length })
-  if (!u.buildings.length) return t('cfg.scopeNone')
+  if (u.scopeAll)
+    return t("cfg.scopeAll", { a: BUILDINGS.length, b: BUILDINGS.length });
+  if (!u.buildings.length) return t("cfg.scopeNone");
   if (u.buildings.length === 1)
-    return BUILDINGS.find((b) => b.id === u.buildings[0])?.name ?? field('object')
-  return t('cfg.scopeCount', { n: u.buildings.length })
+    return (
+      BUILDINGS.find((b) => b.id === u.buildings[0])?.name ?? field("object")
+    );
+  return t("cfg.scopeCount", { n: u.buildings.length });
 }
 
 const filtered = computed(() => {
-  const q = search.value.trim().toLowerCase()
+  const q = search.value.trim().toLowerCase();
   return users.value.filter((u) => {
     const matchQ =
       !q ||
       u.fullName.toLowerCase().includes(q) ||
       u.email.toLowerCase().includes(q) ||
-      u.phone.replace(/\s/g, '').includes(q.replace(/\s/g, ''))
-    const matchRole = roleFilter.value === 'all' || u.role === roleFilter.value
-    const matchStatus = statusFilter.value === 'all' || u.status === statusFilter.value
-    return matchQ && matchRole && matchStatus
-  })
-})
+      u.phone.replace(/\s/g, "").includes(q.replace(/\s/g, ""));
+    const matchRole = roleFilter.value === "all" || u.role === roleFilter.value;
+    const matchStatus =
+      statusFilter.value === "all" || u.status === statusFilter.value;
+    return matchQ && matchRole && matchStatus;
+  });
+});
 
 const columns = computed(() =>
   labelColumns([
-    { key: 'fullName', field: 'fullName' },
-    { key: 'email', field: 'emailPhone' },
-    { key: 'role', field: 'role' },
-    { key: 'scope', field: 'buildingScope' },
-    { key: 'status', field: 'status' },
-    { key: 'lastLogin', field: 'lastLogin', align: 'right' },
+    { key: "fullName", field: "fullName" },
+    { key: "email", field: "emailPhone" },
+    { key: "role", field: "role" },
+    { key: "scope", field: "buildingScope" },
+    { key: "status", field: "status" },
+    { key: "lastLogin", field: "lastLogin", align: "right" },
   ]),
-)
+);
 
 const rows = computed(() =>
-  filtered.value.map((u) => ({ ...u, scope: scopeLabel(u), meta: ROLE_META[u.role] })),
-)
+  filtered.value.map((u) => ({
+    ...u,
+    scope: scopeLabel(u),
+    meta: ROLE_META[u.role],
+  })),
+);
 
-const flash = ref('')
+const flash = ref("");
 
-const editOpen = ref(false)
-const editTab = ref('main')
+const editOpen = ref(false);
+const editTab = ref("main");
 const editTabs = computed(() => [
-  { value: 'main', label: t('cfg.tabMain') },
-  { value: 'access', label: t('cfg.tabAccess') },
-  { value: 'prefs', label: t('nav.settings') },
-])
+  { value: "main", label: t("cfg.tabMain") },
+  { value: "access", label: t("cfg.tabAccess") },
+  { value: "prefs", label: t("nav.settings") },
+]);
 
 const draft = reactive({
-  id: '',
-  fullName: '',
-  email: '',
-  phone: '',
-  position: '',
-  role: 'BUILDING_MANAGER' as Role,
+  id: "",
+  fullName: "",
+  email: "",
+  phone: "",
+  position: "",
+  role: "BUILDING_MANAGER" as Role,
   scopeAll: false,
   buildings: [] as string[],
-  status: 'ACTIVE' as 'ACTIVE' | 'INACTIVE',
+  status: "ACTIVE" as "ACTIVE" | "INACTIVE",
   notifyInApp: true,
   notifyDigest: false,
-  language: 'uz',
-})
+  language: "uz",
+});
 
 function openEdit(row: Record<string, unknown>) {
-  const u = users.value.find((x) => x.id === row.id)
-  if (!u) return
-  draft.id = u.id
-  draft.fullName = u.fullName
-  draft.email = u.email
-  draft.phone = u.phone
-  draft.position = u.position
-  draft.role = u.role
-  draft.scopeAll = u.scopeAll
-  draft.buildings = [...u.buildings]
-  draft.status = u.status
-  draft.notifyInApp = u.notifyInApp
-  draft.notifyDigest = u.notifyDigest
-  draft.language = u.language
-  editTab.value = 'main'
-  editOpen.value = true
+  const u = users.value.find((x) => x.id === row.id);
+  if (!u) return;
+  draft.id = u.id;
+  draft.fullName = u.fullName;
+  draft.email = u.email;
+  draft.phone = u.phone;
+  draft.position = u.position;
+  draft.role = u.role;
+  draft.scopeAll = u.scopeAll;
+  draft.buildings = [...u.buildings];
+  draft.status = u.status;
+  draft.notifyInApp = u.notifyInApp;
+  draft.notifyDigest = u.notifyDigest;
+  draft.language = u.language;
+  editTab.value = "main";
+  editOpen.value = true;
 }
 
 /** Boshqa dialoglar kabi Escape bilan yopiladi */
-onKeyStroke('Escape', () => {
-  if (editOpen.value) editOpen.value = false
-})
+onKeyStroke("Escape", () => {
+  if (editOpen.value) editOpen.value = false;
+});
 
 function toggleDraftBuilding(id: string) {
-  const i = draft.buildings.indexOf(id)
-  if (i === -1) draft.buildings.push(id)
-  else draft.buildings.splice(i, 1)
-  if (draft.buildings.length) draft.scopeAll = false
+  const i = draft.buildings.indexOf(id);
+  if (i === -1) draft.buildings.push(id);
+  else draft.buildings.splice(i, 1);
+  if (draft.buildings.length) draft.scopeAll = false;
 }
 
 function setScopeAll(value: boolean) {
-  draft.scopeAll = value
-  if (value) draft.buildings = []
+  draft.scopeAll = value;
+  if (value) draft.buildings = [];
 }
 
 const draftValid = computed(
-  () => draft.fullName.trim().length > 2 && /.+@.+\..+/.test(draft.email.trim()),
-)
+  () =>
+    draft.fullName.trim().length > 2 && /.+@.+\..+/.test(draft.email.trim()),
+);
 
 function saveEdit() {
-  if (!draftValid.value) return
-  const i = users.value.findIndex((u) => u.id === draft.id)
-  if (i === -1) return
-  const prev = users.value[i]!
+  if (!draftValid.value) return;
+  const i = users.value.findIndex((u) => u.id === draft.id);
+  if (i === -1) return;
+  const prev = users.value[i]!;
   users.value[i] = {
     ...prev,
     fullName: draft.fullName.trim(),
@@ -171,29 +197,29 @@ function saveEdit() {
     notifyInApp: draft.notifyInApp,
     notifyDigest: draft.notifyDigest,
     language: draft.language,
-  }
-  flash.value = t('cfg.userUpdated', { name: users.value[i]!.fullName })
-  editOpen.value = false
+  };
+  flash.value = t("cfg.userUpdated", { name: users.value[i]!.fullName });
+  editOpen.value = false;
 }
 
 const AREA_LABEL_KEY: Record<string, string> = {
-  '/dashboard/executive': 'nav.dashboardExecutive',
-  '/dashboard/building': 'cfg.areaBuildingPanel',
-  '/objects': 'nav.objects',
-  '/content': 'cfg.areaContent',
-  '/applications': 'nav.applications',
-  '/contracts': 'nav.contracts',
-  '/billing': 'nav.billing',
-  '/service-requests': 'nav.serviceMonitoring',
-  '/facility/materials': 'nav.materials',
-  '/facility': 'section.facility',
-  '/warehouse': 'nav.warehouse',
-  '/settings/audit': 'nav.settingsAudit',
-  '/meters': 'nav.meters',
-  '/reports': 'nav.reports',
-  '/settings': 'nav.settings',
-  '/cabinet': 'cfg.areaTenantCabinet',
-}
+  "/dashboard/executive": "nav.dashboardExecutive",
+  "/dashboard/building": "cfg.areaBuildingPanel",
+  "/objects": "nav.objects",
+  "/content": "cfg.areaContent",
+  "/applications": "nav.applications",
+  "/contracts": "nav.contracts",
+  "/billing": "nav.billing",
+  "/service-requests": "nav.serviceMonitoring",
+  "/facility/materials": "nav.materials",
+  "/facility": "section.facility",
+  "/warehouse": "nav.warehouse",
+  "/settings/audit": "nav.settingsAudit",
+  "/meters": "nav.meters",
+  "/reports": "nav.reports",
+  "/settings": "nav.settings",
+  "/cabinet": "cfg.areaTenantCabinet",
+};
 
 const roleAreas = computed(() =>
   ROUTE_ACCESS.map((r) => ({
@@ -201,54 +227,56 @@ const roleAreas = computed(() =>
     label: tr(AREA_LABEL_KEY[r.prefix], r.prefix),
     allowed: r.roles.includes(draft.role),
   })),
-)
+);
 
-const addOpen = ref(false)
+const addOpen = ref(false);
 const addForm = reactive({
-  fullName: '',
-  email: '',
-  phone: '',
-  position: '',
-  role: 'BUILDING_MANAGER' as Role,
+  fullName: "",
+  email: "",
+  phone: "",
+  position: "",
+  role: "BUILDING_MANAGER" as Role,
   scopeAll: false,
   buildings: [] as string[],
-})
-const addTouched = ref(false)
+});
+const addTouched = ref(false);
 
 const addValid = computed(
-  () => addForm.fullName.trim().length > 2 && /.+@.+\..+/.test(addForm.email.trim()),
-)
+  () =>
+    addForm.fullName.trim().length > 2 &&
+    /.+@.+\..+/.test(addForm.email.trim()),
+);
 
 function openAdd() {
-  addForm.fullName = ''
-  addForm.email = ''
-  addForm.phone = '+998 '
-  addForm.position = ''
-  addForm.role = 'BUILDING_MANAGER'
-  addForm.scopeAll = false
-  addForm.buildings = []
-  addTouched.value = false
-  addOpen.value = true
+  addForm.fullName = "";
+  addForm.email = "";
+  addForm.phone = "+998 ";
+  addForm.position = "";
+  addForm.role = "BUILDING_MANAGER";
+  addForm.scopeAll = false;
+  addForm.buildings = [];
+  addTouched.value = false;
+  addOpen.value = true;
 }
 
 function setAddScopeAll(value: boolean) {
-  addForm.scopeAll = value
-  if (value) addForm.buildings = []
+  addForm.scopeAll = value;
+  if (value) addForm.buildings = [];
 }
 
 function toggleAddBuilding(id: string) {
-  const i = addForm.buildings.indexOf(id)
-  if (i === -1) addForm.buildings.push(id)
-  else addForm.buildings.splice(i, 1)
-  if (addForm.buildings.length) addForm.scopeAll = false
+  const i = addForm.buildings.indexOf(id);
+  if (i === -1) addForm.buildings.push(id);
+  else addForm.buildings.splice(i, 1);
+  if (addForm.buildings.length) addForm.scopeAll = false;
 }
 
 function submitAdd() {
-  addTouched.value = true
-  if (!addValid.value) return
-  const next = users.value.length + 1
+  addTouched.value = true;
+  if (!addValid.value) return;
+  const next = users.value.length + 1;
   users.value.unshift({
-    id: `u-${String(next).padStart(2, '0')}-n`,
+    id: `u-${String(next).padStart(2, "0")}-n`,
     fullName: addForm.fullName.trim(),
     email: addForm.email.trim(),
     phone: addForm.phone.trim(),
@@ -256,24 +284,25 @@ function submitAdd() {
     role: addForm.role,
     scopeAll: addForm.scopeAll,
     buildings: addForm.scopeAll ? [] : [...addForm.buildings],
-    status: 'ACTIVE',
-    lastLogin: t('cfg.neverLoggedIn'),
+    status: "ACTIVE",
+    lastLogin: t("cfg.neverLoggedIn"),
     notifyInApp: true,
-    notifyDigest: addForm.role === 'SUPER_HEAD' || addForm.role === 'ACCOUNTANT',
-    language: 'uz',
-  })
-  flash.value = t('cfg.userAdded', { name: addForm.fullName.trim() })
-  addOpen.value = false
+    notifyDigest:
+      addForm.role === "SUPER_HEAD" || addForm.role === "ACCOUNTANT",
+    language: "uz",
+  });
+  flash.value = t("cfg.userAdded", { name: addForm.fullName.trim() });
+  addOpen.value = false;
 }
 
 function toggleStatus(id: string) {
-  const u = users.value.find((x) => x.id === id)
-  if (!u) return
-  u.status = u.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE'
-  flash.value = t('cfg.userStatusChanged', {
+  const u = users.value.find((x) => x.id === id);
+  if (!u) return;
+  u.status = u.status === "ACTIVE" ? "INACTIVE" : "ACTIVE";
+  flash.value = t("cfg.userStatusChanged", {
     name: u.fullName,
-    status: u.status === 'ACTIVE' ? t('common.active') : t('common.inactive'),
-  })
+    status: u.status === "ACTIVE" ? t("common.active") : t("common.inactive"),
+  });
 }
 </script>
 
@@ -289,7 +318,7 @@ function toggleStatus(id: string) {
     <template #actions>
       <UiButton size="sm" @click="openAdd">
         <UiIcon name="plus" :size="16" />
-        {{ t('cfg.addUser') }}
+        {{ t("cfg.addUser") }}
       </UiButton>
     </template>
   </AppTopbar>
@@ -331,10 +360,14 @@ function toggleStatus(id: string) {
 
     <UiCard
       :title="t('cfg.usersList')"
-      :subtitle="t('cfg.totalShown', { total: users.length, shown: filtered.length })"
+      :subtitle="
+        t('cfg.totalShown', { total: users.length, shown: filtered.length })
+      "
       flush
     >
-      <div class="grid gap-3 px-5 pb-4 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_220px_200px]">
+      <div
+        class="grid gap-3 px-5 pb-4 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_220px_200px]"
+      >
         <UiInput v-model="search" :placeholder="t('cfg.userSearchPlaceholder')">
           <template #prefix><UiIcon name="search" :size="17" /></template>
         </UiInput>
@@ -350,19 +383,30 @@ function toggleStatus(id: string) {
       >
         <template #cell-fullName="{ row }">
           <span class="flex items-center gap-3">
-            <UiAvatar :user-id="row.id" :full-name="row.fullName" :role="row.role" size="sm" />
+            <UiAvatar
+              :user-id="row.id"
+              :full-name="row.fullName"
+              :role="row.role"
+              size="sm"
+            />
             <span class="min-w-0">
-              <span class="block truncate text-[14px] font-semibold text-ink-900">
+              <span
+                class="block truncate text-[14px] font-semibold text-ink-900"
+              >
                 {{ row.fullName }}
               </span>
-              <span class="block truncate text-[12px] text-ink-500">{{ row.position }}</span>
+              <span class="block truncate text-[12px] text-ink-500">{{
+                row.position
+              }}</span>
             </span>
           </span>
         </template>
 
         <template #cell-email="{ row }">
           <span class="block text-[13px] text-ink-800">{{ row.email }}</span>
-          <span class="tabular block text-[12px] text-ink-500">{{ row.phone }}</span>
+          <span class="tabular block text-[12px] text-ink-500">{{
+            row.phone
+          }}</span>
         </template>
 
         <template #cell-role="{ row }">
@@ -387,24 +431,49 @@ function toggleStatus(id: string) {
                 ? 'bg-ok-50 text-ok-700 ring-ok-100 hover:bg-ok-100'
                 : 'bg-ink-100 text-ink-700 ring-ink-200 hover:bg-ink-200'
             "
-            :title="row.status === 'ACTIVE' ? t('cfg.deactivate') : t('cfg.activate')"
+            :title="
+              row.status === 'ACTIVE' ? t('cfg.deactivate') : t('cfg.activate')
+            "
             @click.stop="toggleStatus(row.id)"
           >
             <svg class="size-3 shrink-0" viewBox="0 0 12 12" aria-hidden="true">
-              <circle v-if="row.status === 'ACTIVE'" cx="6" cy="6" r="4" fill="currentColor" />
-              <circle v-else cx="6" cy="6" r="3.6" fill="none" stroke="currentColor" stroke-width="2" />
+              <circle
+                v-if="row.status === 'ACTIVE'"
+                cx="6"
+                cy="6"
+                r="4"
+                fill="currentColor"
+              />
+              <circle
+                v-else
+                cx="6"
+                cy="6"
+                r="3.6"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              />
             </svg>
-            {{ row.status === 'ACTIVE' ? t('common.active') : t('common.inactive') }}
+            {{
+              row.status === "ACTIVE"
+                ? t("common.active")
+                : t("common.inactive")
+            }}
           </button>
         </template>
 
         <template #cell-lastLogin="{ row }">
-          <span class="tabular text-[13px] text-ink-600">{{ row.lastLogin }}</span>
+          <span class="tabular text-[13px] text-ink-600">{{
+            row.lastLogin
+          }}</span>
         </template>
       </UiTable>
     </UiCard>
 
-    <UiCard :title="t('cfg.permissionHierarchy')" :subtitle="t('cfg.permissionHierarchyCaption')">
+    <UiCard
+      :title="t('cfg.permissionHierarchy')"
+      :subtitle="t('cfg.permissionHierarchyCaption')"
+    >
       <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <div
           v-for="r in ROLES"
@@ -419,16 +488,19 @@ function toggleStatus(id: string) {
               {{ roleLabel(r) }}
             </span>
             <span class="tabular text-[12px] font-semibold text-ink-500">
-              {{ users.filter((u) => u.role === r).length }} {{ t('unitOf.pcs') }}
+              {{ users.filter((u) => u.role === r).length }}
+              {{ t("unitOf.pcs") }}
             </span>
           </div>
-          <p class="mt-2 text-[13px] leading-relaxed text-ink-600">{{ roleCaption(r) }}</p>
+          <p class="mt-2 text-[13px] leading-relaxed text-ink-600">
+            {{ roleCaption(r) }}
+          </p>
           <button
             type="button"
             class="mt-3 inline-flex items-center gap-1.5 text-[13px] font-semibold text-brand-600 transition-colors hover:text-brand-700"
             @click="roleFilter = r"
           >
-            {{ t('cfg.showRoleUsers') }}
+            {{ t("cfg.showRoleUsers") }}
             <UiIcon name="arrowRight" :size="14" />
           </button>
         </div>
@@ -453,10 +525,16 @@ function toggleStatus(id: string) {
             aria-modal="true"
             :aria-label="t('cfg.editUser')"
           >
-            <header class="flex items-start justify-between gap-4 border-b border-ink-200 px-6 py-5">
+            <header
+              class="flex items-start justify-between gap-4 border-b border-ink-200 px-6 py-5"
+            >
               <div class="min-w-0">
-                <h2 class="text-lg font-bold text-ink-900">{{ t('cfg.editUser') }}</h2>
-                <p class="mt-0.5 truncate text-[13px] text-ink-500">{{ draft.email }}</p>
+                <h2 class="text-lg font-bold text-ink-900">
+                  {{ t("cfg.editUser") }}
+                </h2>
+                <p class="mt-0.5 truncate text-[13px] text-ink-500">
+                  {{ draft.email }}
+                </p>
               </div>
               <button
                 type="button"
@@ -468,10 +546,20 @@ function toggleStatus(id: string) {
               </button>
             </header>
 
-            <div class="flex items-center gap-3.5 border-b border-ink-100 px-6 py-4">
-              <UiAvatar :user-id="draft.id" :full-name="draft.fullName" :role="draft.role" size="lg" ring />
+            <div
+              class="flex items-center gap-3.5 border-b border-ink-100 px-6 py-4"
+            >
+              <UiAvatar
+                :user-id="draft.id"
+                :full-name="draft.fullName"
+                :role="draft.role"
+                size="lg"
+                ring
+              />
               <div class="min-w-0">
-                <p class="truncate text-[16px] font-bold text-ink-900">{{ draft.fullName }}</p>
+                <p class="truncate text-[16px] font-bold text-ink-900">
+                  {{ draft.fullName }}
+                </p>
                 <div class="mt-1.5 flex flex-wrap items-center gap-2">
                   <span
                     class="inline-flex items-center rounded-pill px-2.5 py-1 text-xs font-semibold ring-1 ring-inset"
@@ -488,10 +576,28 @@ function toggleStatus(id: string) {
                     "
                   >
                     <svg class="size-3" viewBox="0 0 12 12" aria-hidden="true">
-                      <circle v-if="draft.status === 'ACTIVE'" cx="6" cy="6" r="4" fill="currentColor" />
-                      <circle v-else cx="6" cy="6" r="3.6" fill="none" stroke="currentColor" stroke-width="2" />
+                      <circle
+                        v-if="draft.status === 'ACTIVE'"
+                        cx="6"
+                        cy="6"
+                        r="4"
+                        fill="currentColor"
+                      />
+                      <circle
+                        v-else
+                        cx="6"
+                        cy="6"
+                        r="3.6"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                      />
                     </svg>
-                    {{ draft.status === 'ACTIVE' ? t('common.active') : t('common.inactive') }}
+                    {{
+                      draft.status === "ACTIVE"
+                        ? t("common.active")
+                        : t("common.inactive")
+                    }}
                   </span>
                 </div>
               </div>
@@ -507,7 +613,9 @@ function toggleStatus(id: string) {
                   :label="field('fullName')"
                   required
                   :error="
-                    draft.fullName.trim().length > 2 ? '' : t('common.minChars', { n: 3 })
+                    draft.fullName.trim().length > 2
+                      ? ''
+                      : t('common.minChars', { n: 3 })
                   "
                 >
                   <UiInput v-model="draft.fullName" />
@@ -515,7 +623,9 @@ function toggleStatus(id: string) {
                 <UiField
                   :label="t('common.email')"
                   required
-                  :error="/.+@.+\..+/.test(draft.email) ? '' : t('cfg.invalidEmail')"
+                  :error="
+                    /.+@.+\..+/.test(draft.email) ? '' : t('cfg.invalidEmail')
+                  "
                 >
                   <UiInput v-model="draft.email" type="email" />
                 </UiField>
@@ -529,7 +639,9 @@ function toggleStatus(id: string) {
                   <UiField :label="field('role')">
                     <UiSelect
                       v-model="draft.role"
-                      :options="ROLES.map((r) => ({ value: r, label: roleLabel(r) }))"
+                      :options="
+                        ROLES.map((r) => ({ value: r, label: roleLabel(r) }))
+                      "
                     />
                   </UiField>
                   <p
@@ -537,24 +649,30 @@ function toggleStatus(id: string) {
                   >
                     <UiIcon name="lock" :size="15" class="mt-0.5 shrink-0" />
                     <span class="min-w-0">
-                      <b class="font-semibold">{{ t('cfg.limitation') }}</b>
+                      <b class="font-semibold">{{ t("cfg.limitation") }}</b>
                       {{ roleLimitation(draft.role) }}
                     </span>
                   </p>
                   <p class="mt-1.5 text-[12px] text-ink-500">
                     {{ roleLevel(draft.role) }} · {{ roleScope(draft.role) }}.
-                    {{ t('cfg.roleChangeNote') }}
+                    {{ t("cfg.roleChangeNote") }}
                   </p>
                 </div>
               </template>
 
               <template v-else-if="editTab === 'access'">
                 <div>
-                  <p class="text-[13px] font-semibold text-ink-700">{{ field('buildingScope') }}</p>
+                  <p class="text-[13px] font-semibold text-ink-700">
+                    {{ field("buildingScope") }}
+                  </p>
                   <div class="mt-2.5 space-y-2">
                     <label
                       class="flex cursor-pointer items-start gap-3 rounded-field p-3 ring-1 ring-inset transition-colors"
-                      :class="draft.scopeAll ? 'bg-brand-50 ring-brand-300' : 'ring-ink-200 hover:ring-ink-300'"
+                      :class="
+                        draft.scopeAll
+                          ? 'bg-brand-50 ring-brand-300'
+                          : 'ring-ink-200 hover:ring-ink-300'
+                      "
                     >
                       <input
                         type="radio"
@@ -563,23 +681,29 @@ function toggleStatus(id: string) {
                         @change="setScopeAll(true)"
                       />
                       <span>
-                        <span class="block text-[14px] font-semibold text-ink-900">
+                        <span
+                          class="block text-[14px] font-semibold text-ink-900"
+                        >
                           {{
-                            t('cfg.allObjectsCount', {
+                            t("cfg.allObjectsCount", {
                               a: BUILDINGS.length,
                               b: BUILDINGS.length,
                             })
                           }}
                         </span>
                         <span class="block text-[12px] text-ink-500">
-                          {{ t('cfg.scopeAllHint') }}
+                          {{ t("cfg.scopeAllHint") }}
                         </span>
                       </span>
                     </label>
 
                     <label
                       class="flex cursor-pointer items-start gap-3 rounded-field p-3 ring-1 ring-inset transition-colors"
-                      :class="!draft.scopeAll ? 'bg-brand-50 ring-brand-300' : 'ring-ink-200 hover:ring-ink-300'"
+                      :class="
+                        !draft.scopeAll
+                          ? 'bg-brand-50 ring-brand-300'
+                          : 'ring-ink-200 hover:ring-ink-300'
+                      "
                     >
                       <input
                         type="radio"
@@ -588,11 +712,13 @@ function toggleStatus(id: string) {
                         @change="setScopeAll(false)"
                       />
                       <span>
-                        <span class="block text-[14px] font-semibold text-ink-900">
-                          {{ t('cfg.scopeSelected') }}
+                        <span
+                          class="block text-[14px] font-semibold text-ink-900"
+                        >
+                          {{ t("cfg.scopeSelected") }}
                         </span>
                         <span class="block text-[12px] text-ink-500">
-                          {{ t('cfg.scopeSelectedHint') }}
+                          {{ t("cfg.scopeSelectedHint") }}
                         </span>
                       </span>
                     </label>
@@ -615,38 +741,48 @@ function toggleStatus(id: string) {
                           @change="toggleDraftBuilding(b.id)"
                         />
                         <span class="min-w-0 flex-1">
-                          <span class="block truncate text-[13px] font-semibold text-ink-900">
+                          <span
+                            class="block truncate text-[13px] font-semibold text-ink-900"
+                          >
                             {{ b.name }}
                           </span>
                           <span class="block truncate text-[12px] text-ink-500">
-                            {{ b.city }}, {{ b.district }}
+                            {{ cityLabel(b.city) }},
+                            {{ districtLabel(b.district) }}
                           </span>
                         </span>
                         <span
                           v-if="draft.buildings.includes(b.id)"
                           class="shrink-0 text-[12px] font-semibold text-brand-600"
                         >
-                          {{ t('cfg.attached') }}
+                          {{ t("cfg.attached") }}
                         </span>
                       </label>
                     </li>
                   </ul>
 
-                  <p v-if="draft.scopeAll" class="mt-2.5 text-[12px] text-ink-500">
-                    {{ t('cfg.scopeAllNote') }}
+                  <p
+                    v-if="draft.scopeAll"
+                    class="mt-2.5 text-[12px] text-ink-500"
+                  >
+                    {{ t("cfg.scopeAllNote") }}
                   </p>
                 </div>
 
                 <div>
                   <p class="text-[13px] font-semibold text-ink-700">
-                    {{ t('cfg.openAreasFor', { role: roleLabel(draft.role) }) }}
+                    {{ t("cfg.openAreasFor", { role: roleLabel(draft.role) }) }}
                   </p>
                   <ul class="mt-2.5 grid gap-1.5 sm:grid-cols-2">
                     <li
                       v-for="a in roleAreas"
                       :key="a.prefix"
                       class="flex items-center gap-2 rounded-[8px] px-2.5 py-1.5 text-[13px]"
-                      :class="a.allowed ? 'bg-ok-50 text-ok-700' : 'bg-ink-100 text-ink-500'"
+                      :class="
+                        a.allowed
+                          ? 'bg-ok-50 text-ok-700'
+                          : 'bg-ink-100 text-ink-500'
+                      "
                     >
                       <UiIcon :name="a.allowed ? 'check' : 'x'" :size="14" />
                       <span class="truncate">{{ a.label }}</span>
@@ -656,7 +792,7 @@ function toggleStatus(id: string) {
                     to="/settings/roles"
                     class="mt-3 inline-flex items-center gap-1.5 text-[13px] font-semibold text-brand-600 hover:text-brand-700"
                   >
-                    {{ t('cfg.openMatrix') }}
+                    {{ t("cfg.openMatrix") }}
                     <UiIcon name="arrowRight" :size="14" />
                   </NuxtLink>
                 </div>
@@ -667,14 +803,19 @@ function toggleStatus(id: string) {
                   <button
                     type="button"
                     class="flex w-full items-center justify-between gap-3 rounded-field px-4 py-3 text-left ring-1 ring-inset ring-ink-200 transition-colors hover:ring-ink-300"
-                    @click="draft.status = draft.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE'"
+                    @click="
+                      draft.status =
+                        draft.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE'
+                    "
                   >
                     <span>
-                      <span class="block text-[14px] font-semibold text-ink-900">
-                        {{ t('cfg.accountState') }}
+                      <span
+                        class="block text-[14px] font-semibold text-ink-900"
+                      >
+                        {{ t("cfg.accountState") }}
                       </span>
                       <span class="block text-[12px] text-ink-500">
-                        {{ t('cfg.inactiveAccountHint') }}
+                        {{ t("cfg.inactiveAccountHint") }}
                       </span>
                     </span>
                     <span
@@ -685,7 +826,11 @@ function toggleStatus(id: string) {
                           : 'bg-ink-100 text-ink-700 ring-ink-200'
                       "
                     >
-                      {{ draft.status === 'ACTIVE' ? t('common.active') : t('common.inactive') }}
+                      {{
+                        draft.status === "ACTIVE"
+                          ? t("common.active")
+                          : t("common.inactive")
+                      }}
                     </span>
                   </button>
 
@@ -695,7 +840,7 @@ function toggleStatus(id: string) {
                     @click="draft.notifyInApp = !draft.notifyInApp"
                   >
                     <span class="text-[14px] font-semibold text-ink-900">
-                      {{ t('cfg.inAppNotifications') }}
+                      {{ t("cfg.inAppNotifications") }}
                     </span>
                     <span
                       class="inline-flex h-6 w-11 shrink-0 items-center rounded-pill p-0.5 transition-colors"
@@ -714,14 +859,20 @@ function toggleStatus(id: string) {
                     @click="draft.notifyDigest = !draft.notifyDigest"
                   >
                     <span>
-                      <span class="block text-[14px] font-semibold text-ink-900">
-                        {{ t('cfg.dailyReportDigest') }}
+                      <span
+                        class="block text-[14px] font-semibold text-ink-900"
+                      >
+                        {{ t("cfg.dailyReportDigest") }}
                       </span>
-                      <span class="block text-[12px] text-ink-500">{{ t('cfg.shownInSystem') }}</span>
+                      <span class="block text-[12px] text-ink-500">{{
+                        t("cfg.shownInSystem")
+                      }}</span>
                     </span>
                     <span
                       class="inline-flex h-6 w-11 shrink-0 items-center rounded-pill p-0.5 transition-colors"
-                      :class="draft.notifyDigest ? 'bg-brand-500' : 'bg-ink-300'"
+                      :class="
+                        draft.notifyDigest ? 'bg-brand-500' : 'bg-ink-300'
+                      "
                     >
                       <span
                         class="size-5 rounded-full bg-white transition-transform"
@@ -731,7 +882,10 @@ function toggleStatus(id: string) {
                   </button>
                 </div>
 
-                <UiField :label="t('common.language')" :hint="t('cfg.userLanguageHint')">
+                <UiField
+                  :label="t('common.language')"
+                  :hint="t('cfg.userLanguageHint')"
+                >
                   <UiSelect
                     v-model="draft.language"
                     :options="[
@@ -743,16 +897,26 @@ function toggleStatus(id: string) {
               </template>
             </div>
 
-            <footer class="flex items-center justify-end gap-3 border-t border-ink-200 bg-surface-sunken px-6 py-4">
-              <UiButton variant="ghost" @click="editOpen = false">{{ t('common.cancel') }}</UiButton>
-              <UiButton :disabled="!draftValid" @click="saveEdit">{{ t('common.save') }}</UiButton>
+            <footer
+              class="flex items-center justify-end gap-3 border-t border-ink-200 bg-surface-sunken px-6 py-4"
+            >
+              <UiButton variant="ghost" @click="editOpen = false">{{
+                t("common.cancel")
+              }}</UiButton>
+              <UiButton :disabled="!draftValid" @click="saveEdit">{{
+                t("common.save")
+              }}</UiButton>
             </footer>
           </aside>
         </div>
       </Transition>
     </Teleport>
 
-    <UiModal v-model="addOpen" :title="t('cfg.addUser')" :subtitle="t('cfg.addUserCaption')">
+    <UiModal
+      v-model="addOpen"
+      :title="t('cfg.addUser')"
+      :subtitle="t('cfg.addUserCaption')"
+    >
       <div class="space-y-4">
         <UiField
           :label="field('fullName')"
@@ -763,16 +927,27 @@ function toggleStatus(id: string) {
               : ''
           "
         >
-          <UiInput v-model="addForm.fullName" :placeholder="t('cfg.nameExample')" />
+          <UiInput
+            v-model="addForm.fullName"
+            :placeholder="t('cfg.nameExample')"
+          />
         </UiField>
 
         <div class="grid gap-4 sm:grid-cols-2">
           <UiField
             :label="t('common.email')"
             required
-            :error="addTouched && !/.+@.+\..+/.test(addForm.email) ? t('cfg.invalidEmail') : ''"
+            :error="
+              addTouched && !/.+@.+\..+/.test(addForm.email)
+                ? t('cfg.invalidEmail')
+                : ''
+            "
           >
-            <UiInput v-model="addForm.email" type="email" placeholder="a.sobirov@makon.uz" />
+            <UiInput
+              v-model="addForm.email"
+              type="email"
+              placeholder="a.sobirov@makon.uz"
+            />
           </UiField>
           <UiField :label="t('common.phone')">
             <UiInput v-model="addForm.phone" placeholder="+998 90 000 00 00" />
@@ -781,7 +956,10 @@ function toggleStatus(id: string) {
 
         <div class="grid gap-4 sm:grid-cols-2">
           <UiField :label="field('position')">
-            <UiInput v-model="addForm.position" :placeholder="t('cfg.positionExample')" />
+            <UiInput
+              v-model="addForm.position"
+              :placeholder="t('cfg.positionExample')"
+            />
           </UiField>
           <UiField :label="field('role')" required>
             <UiSelect
@@ -792,24 +970,30 @@ function toggleStatus(id: string) {
         </div>
 
         <div>
-          <p class="mb-2 text-[13px] font-semibold text-ink-700">{{ field('buildingScope') }}</p>
-          <label class="mb-2 flex cursor-pointer items-center gap-2.5 text-[13px] text-ink-700">
+          <p class="mb-2 text-[13px] font-semibold text-ink-700">
+            {{ field("buildingScope") }}
+          </p>
+          <label
+            class="mb-2 flex cursor-pointer items-center gap-2.5 text-[13px] text-ink-700"
+          >
             <input
               type="radio"
               class="size-4 accent-brand-500"
               :checked="addForm.scopeAll"
               @change="setAddScopeAll(true)"
             />
-            {{ t('landing.allObjects') }}
+            {{ t("landing.allObjects") }}
           </label>
-          <label class="mb-2 flex cursor-pointer items-center gap-2.5 text-[13px] text-ink-700">
+          <label
+            class="mb-2 flex cursor-pointer items-center gap-2.5 text-[13px] text-ink-700"
+          >
             <input
               type="radio"
               class="size-4 accent-brand-500"
               :checked="!addForm.scopeAll"
               @change="setAddScopeAll(false)"
             />
-            {{ t('cfg.scopeSelected') }}
+            {{ t("cfg.scopeSelected") }}
           </label>
 
           <div class="grid gap-1.5 sm:grid-cols-2">
@@ -836,10 +1020,12 @@ function toggleStatus(id: string) {
       </div>
 
       <template #footer>
-        <UiButton variant="ghost" @click="addOpen = false">{{ t('common.cancel') }}</UiButton>
+        <UiButton variant="ghost" @click="addOpen = false">{{
+          t("common.cancel")
+        }}</UiButton>
         <UiButton @click="submitAdd">
           <UiIcon name="plus" :size="16" />
-          {{ t('common.add') }}
+          {{ t("common.add") }}
         </UiButton>
       </template>
     </UiModal>
