@@ -875,11 +875,7 @@ function confirmExport() {
         tone="ok"
         :spark="trendSpark('occupancy', totals.occupancy)"
       />
-      <!--
-        Bo'sh maydon va zaxiradagi maydon alohida ko'rsatiladi: band, bo'sh
-        va zaxira yig'indisi GLA ga teng bo'ladi, shuning uchun boshqaruv
-        paneli bilan bu ekran bir xil raqamni ko'rsatadi.
-      -->
+      <!-- Bo'sh maydon boshqaruv panelidagi bilan bir xil raqamni beradi -->
       <UiKpi
         :label="t('usr.repVacantKpi')"
         :value="num(totals.vacant)"
@@ -889,13 +885,6 @@ function confirmExport() {
         icon="cube"
         tone="violet"
         :spark="trendSpark('vacantArea', totals.vacant / 1000)"
-      />
-      <UiKpi
-        :label="t('usr.repReservedKpi')"
-        :value="num(totals.reserved)"
-        :unit="t('unitOf.sqm')"
-        icon="lock"
-        tone="neutral"
       />
       <UiKpi
         :label="t('usr.repBilledKpi')"

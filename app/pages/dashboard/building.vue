@@ -183,10 +183,6 @@ const floorOccupancy = computed(() =>
     .sort((a, b) => b.floor - a.floor),
 );
 
-const floorsHidden = computed(() =>
-  Math.max(floorOccupancyAll.value.length - floorOccupancy.value.length, 0),
-);
-
 /*
  * Eng katta qarzi bor beshta hujjat. Qolganlari qarzdorlik ekranida, kartadagi
  * «Barchasi» havolasi o‘sha yerga olib boradi.
@@ -203,10 +199,6 @@ const debtAlerts = computed(() =>
   [...debtAlertsAll.value]
     .sort((a, b) => b.total - b.paid - (a.total - a.paid))
     .slice(0, 5),
-);
-
-const debtsHidden = computed(() =>
-  Math.max(debtAlertsAll.value.length - debtAlerts.value.length, 0),
 );
 
 const problems = computed(() => [
@@ -473,14 +465,6 @@ const tourId = computed(() => `building:${auth.role ?? "guest"}`);
             </NuxtLink>
           </li>
         </ul>
-
-        <NuxtLink
-          v-if="floorsHidden"
-          :to="`/objects/${building.id}`"
-          class="mt-3 block rounded-field px-2 py-1.5 text-[12px] font-semibold text-brand-600 hover:bg-brand-50/50"
-        >
-          {{ t("svc.moreFloors", { count: floorsHidden }) }}
-        </NuxtLink>
       </UiCard>
 
       <!-- Tushum dinamikasi -->
@@ -661,14 +645,6 @@ const tourId = computed(() => `building:${auth.role ?? "guest"}`);
             </NuxtLink>
           </li>
         </ul>
-
-        <NuxtLink
-          v-if="debtsHidden"
-          :to="debtsTarget"
-          class="block px-5 py-3 text-[12px] font-semibold text-brand-600 hover:bg-brand-50/50"
-        >
-          {{ t("svc.moreDebts", { count: debtsHidden }) }}
-        </NuxtLink>
       </UiCard>
 
       <UiCard

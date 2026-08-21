@@ -3650,9 +3650,7 @@
     "noRequestForObject": "По этому объекту заявок нет",
     "noDebtForObject": "По этому объекту задолженности нет",
     "noPendingApplications": "Заявок на утверждение нет",
-    "perMonth": "{value} / мес.",
-    "moreFloors": "Ещё {count} этажей, в паспорте здания",
-    "moreDebts": "Ещё {count} документов, на экране задолженности"
+    "perMonth": "{value} / мес."
   },
   "ui": {
     "layerCount": "{active} / {total} слоёв",
@@ -4022,8 +4020,7 @@
     "repObjectBreakdown": "Разрез по объектам",
     "repDocBuildingLine": "{name} ({location}). GLA {gla} м², заполняемость {occupancy}, доход от аренды {revenue}, свободная площадь {vacant} м², SLA {sla}.",
     "repDocFooter": "Отчёт подготовлен по {count} объектам за период {period}.",
-    "repVacantKpi": "Свободная площадь",
-    "repReservedKpi": "Резерв и ремонт"
+    "repVacantKpi": "Свободная площадь"
   },
   "err": {
     "forbiddenTitle": "Доступ запрещён",

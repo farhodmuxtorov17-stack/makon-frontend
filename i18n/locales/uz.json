@@ -3650,9 +3650,7 @@
     "noRequestForObject": "Ushbu obyekt bo‘yicha ariza yo‘q",
     "noDebtForObject": "Ushbu obyekt bo‘yicha qarzdorlik yo‘q",
     "noPendingApplications": "Tasdiqlash kutayotgan ariza yo‘q",
-    "perMonth": "{value} / oy",
-    "moreFloors": "Yana {count} ta qavat, bino pasportida",
-    "moreDebts": "Yana {count} ta hujjat, qarzdorlik ekranida"
+    "perMonth": "{value} / oy"
   },
   "ui": {
     "layerCount": "{active} / {total} qatlam",
@@ -4022,8 +4020,7 @@
     "repObjectBreakdown": "Obyektlar kesimi",
     "repDocBuildingLine": "{name} ({location}). GLA {gla} m², bandlik {occupancy}, ijara tushumi {revenue}, bo‘sh maydon {vacant} m², SLA {sla}.",
     "repDocFooter": "Hisobot {count} ta obyekt bo‘yicha, {period} davri uchun tayyorlandi.",
-    "repVacantKpi": "Bo‘sh maydon",
-    "repReservedKpi": "Zaxira va ta’mirdagi maydon"
+    "repVacantKpi": "Bo‘sh maydon"
   },
   "err": {
     "forbiddenTitle": "Ruxsat berilmagan",
